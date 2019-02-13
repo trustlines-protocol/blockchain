@@ -1,0 +1,7 @@
+web3
+pytest
+flake8
+pep8-naming
+rlp
+eth-utils
+contract-deploy-tools>=0.2.0

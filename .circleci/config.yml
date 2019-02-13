@@ -1,0 +1,153 @@
+version: 2.1
+
+executors:
+  ubuntu-builder:
+    docker:
+      - image: trustlines/builder:master8
+        environment:
+          - SOLC_VERSION=v0.4.25
+    working_directory: ~/repo
+
+# define some common commands
+# see https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21
+commands:
+  create-venv:
+    description: "Create venv"
+    steps:
+      - run:
+          name: Create python venv
+          command: |
+            python3 -m venv venv
+            venv/bin/pip install -c contracts/constraints.txt pip wheel setuptools
+
+  config-path:
+    description: "set environment variables and change PATH"
+    steps:
+    - run:
+        name: Configuring PATH
+        command: |
+          echo 'export PATH=~/bin:~/opt/node/bin:~/repo/venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
+
+jobs:
+  run-flake8:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-path
+      - run:
+          name: Run flake8
+          command: |
+            flake8 contracts/tests
+  run-solium:
+    executor: ubuntu-builder
+    steps:
+      - checkout
+      - config-path
+      - run:
+          name: Install solium
+          command: |
+            npm install -g 'solium@>=1.0.9'
+      - run:
+          name: Run solium
+          command: |
+            cd contracts
+            solium --dir contracts
+  install:
+    executor: ubuntu-builder
+    steps:
+      - checkout
+      - config-path
+      - restore_cache:
+          key: venv-{{ checksum "contracts/constraints.txt" }}-{{ checksum "contracts/requirements.txt" }}
+      - create-venv
+      - run:
+          name: Install requirements
+          command: |
+            pip install -c contracts/constraints.txt -r contracts/requirements.txt
+      - save_cache:
+          key: venv-{{ checksum "contracts/constraints.txt" }}-{{ checksum "contracts/requirements.txt" }}
+          paths:
+            - venv
+      - persist_to_workspace:
+          root: "~"
+          paths:
+            - repo
+  run-pytest:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-path
+      - run:
+          name: Run pytest
+          command: pytest contracts/tests
+  build-docker-image:
+    executor: ubuntu-builder
+    steps:
+      - setup_remote_docker
+      - checkout
+      - run:
+          name: Build docker image
+          command: |
+            docker build -f docker/Dockerfile -t tlbc-testnet .
+      - run:
+          name: Save docker image
+          command: |
+            mkdir -p ~/images
+            docker save --output ~/images/tlbc-testnet.tar tlbc-testnet
+            du -hc ~/images
+      - persist_to_workspace:
+          root: "~"
+          paths:
+            - images
+
+  deploy-docker-image:
+    executor: ubuntu-builder
+    working_directory: ~/repo
+    steps:
+      - setup_remote_docker
+      - attach_workspace:
+          at: '~'
+      - run:
+          name: Load docker image
+          command: |
+            du -hc ~/images/*
+            docker load --input ~/images/tlbc-testnet.tar
+            docker image ls
+      # XXX deployment is not done yet.
+
+workflows:
+  version: 2
+  default:
+    jobs:
+      - run-solium
+      - install
+      - run-flake8:
+          requires:
+            - install
+      - run-pytest:
+          requires:
+            - install
+      # building the docker image takes a long time. only do this on dedicated branches
+      # At the moment I imagine builds being done the the pre-release branch first
+      # We could automatically upload those to dockerhub under a different name!
+      # However, this is not done yet at the moment..
+      - build-docker-image:
+          filters:
+            branches:
+              only:
+              - release
+              - pre-release
+      - deploy-docker-image:
+          filters:
+            branches:
+              only:
+                - release
+                - pre-release
+          requires:
+            - run-solium
+            - run-flake8
+            - install
+            - run-pytest
+            - build-docker-image
