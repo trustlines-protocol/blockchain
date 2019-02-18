@@ -1,0 +1,29 @@
+repos:
+-   repo: https://github.com/ambv/black
+    rev: 18.9b0
+    hooks:
+    - id: black
+      language_version: python3.6
+
+-   repo: git://github.com/pre-commit/pre-commit-hooks
+    sha: v2.0.0
+    hooks:
+    - id: check-added-large-files
+    - id: check-ast
+      language_version: python3.6
+    - id: check-byte-order-marker
+    - id: check-case-conflict
+    - id: check-json
+    - id: check-merge-conflict
+    - id: check-yaml
+    - id: debug-statements
+      language_version: python3.6
+    - id: end-of-file-fixer
+      exclude: ^contracts/contracts/lib/.*\.sol$
+    - id: flake8
+      language_version: python3.6
+      additional_dependencies: ["flake8-string-format", "flake8-per-file-ignores"]
+    - id: trailing-whitespace
+      exclude: ^contracts/contracts/lib/.*\.sol$
+    - id: no-commit-to-branch
+      args: [--branch, develop, --branch, master]

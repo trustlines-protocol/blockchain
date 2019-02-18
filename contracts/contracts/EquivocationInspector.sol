@@ -12,7 +12,7 @@ library EquivocationInspector {
     using RLPReader for RLPReader.RLPItem;
     using RLPReader for bytes;
 
-    
+
     /**
      * Get the signer address for a given signature and the related data.
      *

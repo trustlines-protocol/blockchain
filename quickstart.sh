@@ -106,7 +106,7 @@ function setup {
 
 # Start the Watchtower within its Docker container.
 # It checks if the container is already running and do nothing, is stopped and restart it or create a new one.
-# 
+#
 function startWatchtower {
   # Check if container is already running.
   if [[ $($PERMISSION_PREFIX docker ps) == *"$DOCKER_CONTAINER_WATCHTOWER"* ]] ; then

@@ -39,6 +39,18 @@ jobs:
           name: Run flake8
           command: |
             flake8 contracts/tests
+
+  run-black:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-path
+      - run:
+          name: Run black
+          command: |
+            black --check contracts
+
   run-solium:
     executor: ubuntu-builder
     steps:
@@ -124,6 +136,9 @@ workflows:
       - run-solium
       - install
       - run-flake8:
+          requires:
+            - install
+      - run-black:
           requires:
             - install
       - run-pytest:

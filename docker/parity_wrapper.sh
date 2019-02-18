@@ -15,7 +15,7 @@
 #                       Depending on the chosen role Parity gets prepared for that role.
 #                       Selecting a specific role can require further arguments.
 #                       Checkout ROLES for further information.
-#   
+#
 #   -a [--address]      The Ethereum address that parity should use.
 #                       Depending on the chosen role, the address gets inserted at the right
 #                       place of the configuration, so Parity is aware of it.
@@ -115,7 +115,7 @@ function checkRoleArgument {
   echo "Please choose of the following: ${VALID_ROLE_LIST[@]}"
   exit 1
 }
-  
+
 # Parse the arguments, given to the script by the caller.
 # Not defined configuration values stay with their default values.
 # A not known argument leads to an exit with status code 1.
@@ -127,7 +127,7 @@ function parseArguments {
   for (( i=0; i<${#ARG_VEC[@]}; i++ )) ; do
     arg="${ARG_VEC[i]}"
     nextIndex=$((i + 1))
-   
+
     # Print help and exit if requested.
     if [[ $arg == --help ]] || [[ $arg == -h ]] ; then
       printHelp
@@ -150,9 +150,9 @@ function parseArguments {
     elif [[ $arg == --parity-args ]] || [[ $arg == -p ]] ; then
       PARITY_ARGS="$PARITY_ARGS ${ARG_VEC[@]:$nextIndex}"
       i=${#ARG_VEC[@]}
-    
+
     # A not known argument.
-    else 
+    else
       echo Unkown argument: $arg
       exit 1
     fi
@@ -189,7 +189,7 @@ function adjustConfiguration {
       printf "$template\n$CONFIG_SNIPPET_ACCOUNT" "$ADDRESS" > $PARITY_CONFIG_FILE
       ;;
 
-    
+
     "observer")
       echo "Run as observer without any account."
       printf "$template" > $PARITY_CONFIG_FILE
@@ -202,7 +202,7 @@ function adjustConfiguration {
 #
 function runParity {
   echo "Start Parity with the following arguments: '${PARITY_ARGS}'"
-  exec $PARITY_BIN $PARITY_ARGS 
+  exec $PARITY_BIN $PARITY_ARGS
 }
 
 

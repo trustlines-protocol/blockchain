@@ -95,7 +95,7 @@ contract ValidatorSet {
             _rlpUnsignedHeaderTwo,
             _signatureTwo
         );
-        
+
         // Since the proof has already verified, that both blocks have been
         // issued by the same validator, it doesn't matter which one is used here
         // to recover the address.
@@ -103,12 +103,12 @@ contract ValidatorSet {
             _rlpUnsignedHeaderOne,
             _signatureOne
         );
-        
+
         require(
             status[validator].isValidator,
             "The reported address is not a validator."
         );
-        
+
         removeValidator(validator);
     }
 
