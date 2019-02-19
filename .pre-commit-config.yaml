@@ -27,3 +27,8 @@ repos:
       exclude: ^contracts/contracts/lib/.*\.sol$
     - id: no-commit-to-branch
       args: [--branch, develop, --branch, master]
+-   repo: https://github.com/schmir/ethlint-pre-commit.git
+    rev: 'fc4f655fe2ad22a6f3668045a99b5cc1b21f79da'
+    hooks:
+    - id: ethlint
+      args: ["--config", "contracts/.soliumrc"]
