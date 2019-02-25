@@ -10,9 +10,6 @@ import "./ValidatorSlasher.sol";
 
 contract TestValidatorSlasher is ValidatorSlasher {
 
-    constructor() public {
-    }
-
     function() external {}
 
     function testRemoveValidatorFromSet(address _validator) public returns (bool _success) {

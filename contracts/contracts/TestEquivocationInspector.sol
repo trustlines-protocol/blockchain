@@ -10,9 +10,6 @@ import "./EquivocationInspector.sol";
 
 contract TestEquivocationInspector {
 
-    constructor() public {
-    }
-
     function() external {}
 
     function testGetSignerAddress(

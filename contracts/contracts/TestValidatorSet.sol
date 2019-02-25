@@ -10,9 +10,6 @@ import "./ValidatorSet.sol";
 
 contract TestValidatorSet is ValidatorSet {
 
-    constructor() public {
-    }
-
     function() external {}
 
     function testRemoveValidator(address _validator) public returns (bool _success) {
