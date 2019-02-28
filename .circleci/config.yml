@@ -98,7 +98,7 @@ jobs:
   build-docker-image:
     executor: ubuntu-builder
     environment:
-      LOCAL_IMAGE: tlbc-testnet
+      LOCAL_IMAGE: tlbc-testnet-next
     steps:
       - setup_remote_docker
       - checkout
@@ -121,7 +121,7 @@ jobs:
     executor: ubuntu-builder
     environment:
       DOCKER_REPO: trustlines/tlbc-testnet-next
-      LOCAL_IMAGE: tlbc-testnet
+      LOCAL_IMAGE: tlbc-testnet-next
     working_directory: ~/repo
     steps:
       - setup_remote_docker
