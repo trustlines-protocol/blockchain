@@ -1,37 +1,13 @@
-# Build Image
-FROM ubuntu:18.04 as builder
+# This will build a docker image suitable for the tlbc-testnet
+# We basically just copy the image from an official parity docker image.
+# At the moment we cannot use the latest version, because of the following issue:
+# https://github.com/paritytech/parity-ethereum/issues/10401
+#
+# You can build the image from the *parent directory* with this command:
+#
+#   docker build -f docker/Dockerfile -t tlbc-testnet-next .
 
-## Preparations
-WORKDIR /build
-
-### Install package depenencies
-RUN apt-get -y update && \
-    apt-get install -y --force-yes --no-install-recommends \
-      curl git ca-certificates make g++ libudev-dev cmake \
-      && \
-    apt-get clean
-
-### Set-up RustUp
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-ENV PATH=/root/.cargo/bin:$PATH
-
-
-## Parity
-### Environment
-ARG PARITY_BUILD_DIR=/build/parity
-ARG PARITY_SOURCE_URL="https://github.com/paritytech/parity-ethereum "
-ARG PARITY_BRANCH="stable"
-
-### Building
-RUN git clone --depth 1 --branch $PARITY_BRANCH $PARITY_SOURCE_URL $PARITY_BUILD_DIR && \
-    cd $PARITY_BUILD_DIR && \
-    cargo build --release --features final
-
-# ---
-
-
-# Client Image
-FROM ubuntu:18.04 as client
+FROM ubuntu:18.04
 
 ## Environment
 ENV HOME=/home/parity
@@ -48,7 +24,7 @@ RUN mkdir -p $PARITY_HOME_DIR && \
 
 ## Get the build binaries from the previous image.
 ## (using environment variable from previous image not possible...)
-COPY --from=builder /build/parity/target/release/parity $PARITY_BIN
+COPY --from=parity/parity:v2.1.11 /bin/parity $PARITY_BIN
 
 ## Configuring
 ### Network RPC WebSocket SecretStore IPFS
