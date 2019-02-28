@@ -94,20 +94,23 @@ jobs:
       - run:
           name: Run pytest
           command: pytest contracts/tests
+
   build-docker-image:
     executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: tlbc-testnet
     steps:
       - setup_remote_docker
       - checkout
       - run:
           name: Build docker image
           command: |
-            docker build -f docker/Dockerfile -t tlbc-testnet .
+            docker build -f docker/Dockerfile -t $LOCAL_IMAGE .
       - run:
           name: Save docker image
           command: |
             mkdir -p ~/images
-            docker save --output ~/images/tlbc-testnet.tar tlbc-testnet
+            docker save --output ~/images/$LOCAL_IMAGE.tar $LOCAL_IMAGE
             du -hc ~/images
       - persist_to_workspace:
           root: "~"
@@ -116,6 +119,9 @@ jobs:
 
   deploy-docker-image:
     executor: ubuntu-builder
+    environment:
+      DOCKER_REPO: trustlines/tlbc-testnet-next
+      LOCAL_IMAGE: tlbc-testnet
     working_directory: ~/repo
     steps:
       - setup_remote_docker
@@ -125,9 +131,17 @@ jobs:
           name: Load docker image
           command: |
             du -hc ~/images/*
-            docker load --input ~/images/tlbc-testnet.tar
+            docker load --input ~/images/$LOCAL_IMAGE.tar
             docker image ls
-      # XXX deployment is not done yet.
+      - run:
+          name: Login to dockerhub
+          command: |
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+      - run:
+          name: Upload latest
+          command: |
+            docker tag $LOCAL_IMAGE $DOCKER_REPO:latest
+            docker push $DOCKER_REPO:latest
 
 workflows:
   version: 2
@@ -146,8 +160,6 @@ workflows:
             - install
       # building the docker image takes a long time. only do this on dedicated branches
       # At the moment I imagine builds being done the the pre-release branch first
-      # We could automatically upload those to dockerhub under a different name!
-      # However, this is not done yet at the moment..
       - build-docker-image:
           filters:
             branches:
@@ -166,3 +178,4 @@ workflows:
             - install
             - run-pytest
             - build-docker-image
+          context: docker-credentials
