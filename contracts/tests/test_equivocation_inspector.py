@@ -25,7 +25,7 @@ def test_get_signer_address_valid(
     assert is_same_address(address_recovered, signed_block_header_one_address)
 
 
-def test_proof_equivocation_different_blocks_rule(
+def test_fail_prove_equivcation_for_duplicated_block(
     equivocation_inspector_contract_session, signed_block_header_one
 ):
 
@@ -44,7 +44,7 @@ def test_proof_equivocation_different_blocks_rule(
         ).call()
 
 
-def test_proof_equivocation_header_structure(
+def test_fail_prove_equivocation_for_incorrect_block_header_structure(
     equivocation_inspector_contract_session, two_signed_blocks_no_list_header
 ):
 
@@ -63,7 +63,7 @@ def test_proof_equivocation_header_structure(
         ).call()
 
 
-def test_proof_equivocation_header_length_rule(
+def test_fail_prove_equivocation_for_too_short_block_header(
     equivocation_inspector_contract_session, two_signed_blocks_too_short_header
 ):
 
@@ -82,7 +82,7 @@ def test_proof_equivocation_header_length_rule(
         ).call()
 
 
-def test_proof_equivocation_equal_signer_rule(
+def test_fail_prove_equivocation_for_different_block_signers(
     equivocation_inspector_contract_session, two_signed_blocks_different_signer
 ):
 
@@ -101,7 +101,7 @@ def test_proof_equivocation_equal_signer_rule(
         ).call()
 
 
-def test_proof_equivocation_different_height(
+def test_fail_prove_equivocation_for_different_block_heights(
     equivocation_inspector_contract_session, two_signed_blocks_different_height
 ):
 
@@ -120,7 +120,7 @@ def test_proof_equivocation_different_height(
         ).call()
 
 
-def test_proof_equivocation_valid(
+def test_prove_equivocation_successfully(
     equivocation_inspector_contract_session,
     sign_two_equivocating_block_header,
     malicious_validator_key,
