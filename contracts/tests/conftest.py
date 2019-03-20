@@ -18,6 +18,15 @@ HONEST_VALIDATOR_COUNT = 2
 MALICIOUS_VALIDATOR_INDEX = HONEST_VALIDATOR_COUNT
 MALICIOUS_NON_VALIDATOR_INDEX = MALICIOUS_VALIDATOR_INDEX + 1
 
+# Duration and time values are defined in seconds.
+STEP = 10
+STEP_DURATION = 5
+STEP_TIME_BEGIN = STEP * STEP_DURATION
+STEP_TIME_END = STEP_TIME_BEGIN + STEP_DURATION - 1
+
+# Maximum uint256 value in Solidity for the timestamp field boundaries.
+MAX_UINT = 2 ** 256 - 1
+
 
 SignedBlockHeader = namedtuple("SignedBlockHeader", "unsignedBlockHeader signature")
 
@@ -175,22 +184,60 @@ def signed_block_header_one_address(signed_block_header_one):
     return block_header[2].hex()
 
 
+@pytest.fixture(
+    params=[STEP_TIME_BEGIN, STEP_TIME_BEGIN + 1, STEP_TIME_END - 1, STEP_TIME_END]
+)
+def timestamp_within_step_one(request):
+    """Boundary timestamp values within a step, depending on the step duration.
+
+    Note that the 'one' is not related to the step number (which is derived from the
+    global variable), but to the block tuple index used for equivocation proofs.
+    """
+    return request.param
+
+
+@pytest.fixture(
+    params=[STEP_TIME_BEGIN, STEP_TIME_BEGIN + 1, STEP_TIME_END - 1, STEP_TIME_END]
+)
+def timestamp_within_step_two(request):
+    """Duplicate of timestamp_within_step_one with purpose.
+
+    The intention is to have two parametrized timestamp fixtures which can be
+    use combined to test all combinations of them. Exporting them as standalone
+    fixtures seems to be necessary, since fixtures can't be parametrized
+    partially.
+    Note that the 'two' is not related to the step number (which is derived from the
+    global variable), but to the block tuple index used for equivocation proofs.
+    """
+    return request.param
+
+
+@pytest.fixture(params=[1, STEP_TIME_BEGIN - 1, STEP_TIME_END + 1, MAX_UINT])
+def timestamp_outside_step(request):
+    """Boundary timestamp values outside a step, depending on the step duration."""
+    return request.param
+
+
 @pytest.fixture
-def two_equivocating_block_header(signed_block_header_one, signed_block_header_two):
+def two_equivocating_block_header(
+    signed_block_header_one,
+    timestamp_within_step_one,
+    signed_block_header_two,
+    timestamp_within_step_two,
+):
 
     """Test data of two equivocating block header.
 
     Both blocks fulfill all rules to get verified as equivocated.
     These block header can be signed by any address to use in further test cases.
+    Note that this fixture is using the parametrized timestamp values.
     """
-
-    equal_block_height = 10
 
     block_header_one = rlp.decode(signed_block_header_one.unsignedBlockHeader)
     block_header_two = rlp.decode(signed_block_header_two.unsignedBlockHeader)
 
-    block_header_one[8] = equal_block_height
-    block_header_two[8] = equal_block_height
+    block_header_one[11] = timestamp_within_step_one
+    block_header_two[11] = timestamp_within_step_two
 
     rlp_block_header_one = rlp.encode(block_header_one)
     rlp_block_header_two = rlp.encode(block_header_two)
@@ -295,17 +342,19 @@ def two_signed_blocks_different_signer(
 
 
 @pytest.fixture
-def two_signed_blocks_different_height(
-    two_equivocating_block_header, malicious_validator_key
+def two_signed_blocks_different_block_step(
+    two_equivocating_block_header, malicious_validator_key, timestamp_outside_step
 ):
 
-    """Test data with two blocks which fulfill all equivocation rules except the block height."""
+    """Test data with two blocks which fulfill all equivocation rules except the block step.
+
+    Note that this fixture is using a parametrized timestamp value.
+    """
 
     unsigned_block_header_one = rlp.decode(two_equivocating_block_header[0])
-    unsigned_block_header_one[8] = (
-        rlp.decode(unsigned_block_header_one[8], rlp.sedes.big_endian_int) + 1
-    )
+    unsigned_block_header_one[11] = timestamp_outside_step
     rlp_unsigned_block_header_one = rlp.encode(unsigned_block_header_one)
+
     rlp_unsigned_block_header_two = two_equivocating_block_header[1]
 
     signature_one = malicious_validator_key.sign_msg(

@@ -101,22 +101,22 @@ def test_fail_prove_equivocation_for_different_block_signers(
         ).call()
 
 
-def test_fail_prove_equivocation_for_different_block_heights(
-    equivocation_inspector_contract_session, two_signed_blocks_different_height
+def test_fail_prove_equivocation_for_different_block_step(
+    equivocation_inspector_contract_session, two_signed_blocks_different_block_step
 ):
 
-    """Test equal block height rule.
+    """Test equal block step rule.
 
-    Case with two blocks which fulfill all equivocation rules, except the block height.
-    Expected to fail cause the equal block height rule for equivocation could not been verified.
+    Case with two blocks which fulfill all equivocation rules, except the equal block step.
+    Expected to fail cause the equal slot rule for equivocation could not been verified.
     """
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         equivocation_inspector_contract_session.functions.testVerifyEquivocationProof(
-            two_signed_blocks_different_height[0].unsignedBlockHeader,
-            two_signed_blocks_different_height[0].signature,
-            two_signed_blocks_different_height[1].unsignedBlockHeader,
-            two_signed_blocks_different_height[1].signature,
+            two_signed_blocks_different_block_step[0].unsignedBlockHeader,
+            two_signed_blocks_different_block_step[0].signature,
+            two_signed_blocks_different_block_step[1].unsignedBlockHeader,
+            two_signed_blocks_different_block_step[1].signature,
         ).call()
 
 
