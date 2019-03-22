@@ -1,34 +1,41 @@
 #! pytest
 
 import pytest
+import itertools
 import eth_tester.exceptions
 from eth_utils.address import is_same_address
+from .data_generation import make_equivocated_signed_block_header
+
+
+STEP_DURATION = 5  # Value in seconds
+MAX_UINT = 2 ** 256 - 1  # Maximum uint256 value in Solidity
 
 
 def test_get_signer_address_valid(
     equivocation_inspector_contract_session,
-    signed_block_header_one,
-    signed_block_header_one_address,
+    equivocated_signed_block_header_malicious_validator,
+    malicious_validator_address,
 ):
 
     """Test the address recovery for signatures.
 
-    Since the issued blocks from the Koven test network have used the same address for the signing
-    the block as well as getting the reward, it is possible to compare the outcome of the recovery
-    with the content of the block header.
+    Since the generated blocks use the same address for the signing the block as
+    well as getting the reward, it is possible to compare the outcome of the
+    recovery with the content of the block header.
     """
 
     address_recovered = equivocation_inspector_contract_session.functions.testGetSignerAddress(
-        signed_block_header_one.unsignedBlockHeader, signed_block_header_one.signature
+        equivocated_signed_block_header_malicious_validator.unsignedBlockHeader,
+        equivocated_signed_block_header_malicious_validator.signature,
     ).call()
 
-    assert is_same_address(address_recovered, signed_block_header_one_address)
+    assert is_same_address(address_recovered, malicious_validator_address)
 
 
 def test_fail_prove_equivcation_for_duplicated_block(
-    equivocation_inspector_contract_session, signed_block_header_one
+    equivocation_inspector_contract_session,
+    equivocated_signed_block_header_malicious_validator,
 ):
-
     """Test different blocks rule.
 
     Case with two times the same block.
@@ -37,15 +44,17 @@ def test_fail_prove_equivcation_for_duplicated_block(
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         equivocation_inspector_contract_session.functions.testVerifyEquivocationProof(
-            signed_block_header_one.unsignedBlockHeader,
-            signed_block_header_one.signature,
-            signed_block_header_one.unsignedBlockHeader,
-            signed_block_header_one.signature,
+            equivocated_signed_block_header_malicious_validator.unsignedBlockHeader,
+            equivocated_signed_block_header_malicious_validator.signature,
+            equivocated_signed_block_header_malicious_validator.unsignedBlockHeader,
+            equivocated_signed_block_header_malicious_validator.signature,
         ).call()
 
 
 def test_fail_prove_equivocation_for_incorrect_block_header_structure(
-    equivocation_inspector_contract_session, two_signed_blocks_no_list_header
+    equivocation_inspector_contract_session,
+    equivocated_signed_block_header_malicious_validator,
+    equivocated_signed_block_header_incorrect_structure,
 ):
 
     """Test header structure type.
@@ -56,15 +65,17 @@ def test_fail_prove_equivocation_for_incorrect_block_header_structure(
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         equivocation_inspector_contract_session.functions.testVerifyEquivocationProof(
-            two_signed_blocks_no_list_header[0].unsignedBlockHeader,
-            two_signed_blocks_no_list_header[0].signature,
-            two_signed_blocks_no_list_header[1].unsignedBlockHeader,
-            two_signed_blocks_no_list_header[1].signature,
+            equivocated_signed_block_header_malicious_validator.unsignedBlockHeader,
+            equivocated_signed_block_header_malicious_validator.signature,
+            equivocated_signed_block_header_incorrect_structure.unsignedBlockHeader,
+            equivocated_signed_block_header_incorrect_structure.signature,
         ).call()
 
 
 def test_fail_prove_equivocation_for_too_short_block_header(
-    equivocation_inspector_contract_session, two_signed_blocks_too_short_header
+    equivocation_inspector_contract_session,
+    equivocated_signed_block_header_malicious_validator,
+    equivocated_signed_block_header_short_list,
 ):
 
     """Test header length rule.
@@ -75,15 +86,17 @@ def test_fail_prove_equivocation_for_too_short_block_header(
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         equivocation_inspector_contract_session.functions.testVerifyEquivocationProof(
-            two_signed_blocks_too_short_header[0].unsignedBlockHeader,
-            two_signed_blocks_too_short_header[0].signature,
-            two_signed_blocks_too_short_header[1].unsignedBlockHeader,
-            two_signed_blocks_too_short_header[1].signature,
+            equivocated_signed_block_header_malicious_validator.unsignedBlockHeader,
+            equivocated_signed_block_header_malicious_validator.signature,
+            equivocated_signed_block_header_short_list.unsignedBlockHeader,
+            equivocated_signed_block_header_short_list.signature,
         ).call()
 
 
 def test_fail_prove_equivocation_for_different_block_signers(
-    equivocation_inspector_contract_session, two_signed_blocks_different_signer
+    equivocation_inspector_contract_session,
+    equivocated_signed_block_header_malicious_validator,
+    equivocated_signed_block_header_malicious_non_validator,
 ):
 
     """Test equal signer rule.
@@ -94,15 +107,27 @@ def test_fail_prove_equivocation_for_different_block_signers(
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         equivocation_inspector_contract_session.functions.testVerifyEquivocationProof(
-            two_signed_blocks_different_signer[0].unsignedBlockHeader,
-            two_signed_blocks_different_signer[0].signature,
-            two_signed_blocks_different_signer[1].unsignedBlockHeader,
-            two_signed_blocks_different_signer[1].signature,
+            equivocated_signed_block_header_malicious_validator.unsignedBlockHeader,
+            equivocated_signed_block_header_malicious_validator.signature,
+            equivocated_signed_block_header_malicious_non_validator.unsignedBlockHeader,
+            equivocated_signed_block_header_malicious_non_validator.signature,
         ).call()
 
 
+@pytest.mark.parametrize(
+    "signed_block_header_one, signed_block_header_two",
+    [
+        (
+            make_equivocated_signed_block_header(timestamp=1.5 * STEP_DURATION),
+            make_equivocated_signed_block_header(timestamp=timestamp),
+        )
+        for timestamp in [1, STEP_DURATION - 1, 2 * STEP_DURATION, MAX_UINT]
+    ],
+)
 def test_fail_prove_equivocation_for_different_block_step(
-    equivocation_inspector_contract_session, two_signed_blocks_different_block_step
+    equivocation_inspector_contract_session,
+    signed_block_header_one,
+    signed_block_header_two,
 ):
 
     """Test equal block step rule.
@@ -113,17 +138,35 @@ def test_fail_prove_equivocation_for_different_block_step(
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         equivocation_inspector_contract_session.functions.testVerifyEquivocationProof(
-            two_signed_blocks_different_block_step[0].unsignedBlockHeader,
-            two_signed_blocks_different_block_step[0].signature,
-            two_signed_blocks_different_block_step[1].unsignedBlockHeader,
-            two_signed_blocks_different_block_step[1].signature,
+            signed_block_header_one.unsignedBlockHeader,
+            signed_block_header_one.signature,
+            signed_block_header_two.unsignedBlockHeader,
+            signed_block_header_two.signature,
         ).call()
 
 
+@pytest.mark.parametrize(
+    "signed_block_header_one, signed_block_header_two",
+    [
+        (
+            make_equivocated_signed_block_header(timestamp=timestamp_one),
+            make_equivocated_signed_block_header(timestamp=timestamp_two),
+        )
+        for timestamp_one, timestamp_two in itertools.product(
+            [
+                STEP_DURATION,
+                STEP_DURATION + 1,
+                2 * STEP_DURATION - 2,
+                2 * STEP_DURATION - 1,
+            ],
+            repeat=2,
+        )
+    ],
+)
 def test_prove_equivocation_successfully(
     equivocation_inspector_contract_session,
-    sign_two_equivocating_block_header,
-    malicious_validator_key,
+    signed_block_header_one,
+    signed_block_header_two,
 ):
 
     """Test full equivocation proof.
@@ -132,13 +175,9 @@ def test_prove_equivocation_successfully(
     Expected to run through without exception cause all rules can be verified.
     """
 
-    two_signed_blocks_equivocated_by_malicious_non_validator = sign_two_equivocating_block_header(
-        malicious_validator_key
-    )
-
     equivocation_inspector_contract_session.functions.testVerifyEquivocationProof(
-        two_signed_blocks_equivocated_by_malicious_non_validator[0].unsignedBlockHeader,
-        two_signed_blocks_equivocated_by_malicious_non_validator[0].signature,
-        two_signed_blocks_equivocated_by_malicious_non_validator[1].unsignedBlockHeader,
-        two_signed_blocks_equivocated_by_malicious_non_validator[1].signature,
+        signed_block_header_one.unsignedBlockHeader,
+        signed_block_header_one.signature,
+        signed_block_header_two.unsignedBlockHeader,
+        signed_block_header_two.signature,
     ).call()
