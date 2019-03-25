@@ -1,6 +1,5 @@
 import random
 import rlp
-import codecs
 
 from collections import namedtuple
 from web3.datastructures import AttributeDict
@@ -11,25 +10,26 @@ from eth_keys import keys
 SignedBlockHeader = namedtuple("SignedBlockHeader", "unsignedBlockHeader signature")
 
 _REQUIRED_BLOCK_HEADER_LENGTH = 12
-
-_RANDOM_GENERATOR = random.Random(0)
 _PRIVATE_KEY_DEFAULT = keys.PrivateKey(b"1" * 32)
+_TIMESTAMP_DEFAULT = 100
+
+_random_generator = random.Random(0)
 
 
 def random_hash():
-    return bytes(_RANDOM_GENERATOR.randint(0, 255) for _ in range(32))
+    return bytes(_random_generator.randint(0, 255) for _ in range(32))
 
 
 def random_number():
-    return _RANDOM_GENERATOR.randint(0, 100)
+    return _random_generator.randint(0, 100)
 
 
 def random_private_key():
     return keys.PrivateKey(random_hash())
 
 
-def encode_block_header(block_header):
-    block_header_serialzied = [
+def serialize_block_header(block_header):
+    return [
         block_header.parentHash,
         block_header.sha3Uncles,
         block_header.author,
@@ -45,62 +45,49 @@ def encode_block_header(block_header):
         block_header.extraData,
     ]
 
-    return rlp.encode(block_header_serialzied)
+
+def sign_data(data, private_key):
+    data_hash = keccak(data)
+    return private_key.sign_msg_hash(data_hash).to_bytes()
 
 
-def make_equivocated_signed_block_header(
-    *,
-    use_incorrect_structure=False,
-    use_short_list=False,
-    timestamp=100,
-    private_key=_PRIVATE_KEY_DEFAULT,
+def make_block_header(
+    timestamp=_TIMESTAMP_DEFAULT, private_key=_PRIVATE_KEY_DEFAULT, use_short_list=False
 ):
-    """Generates an equivocated signed block header.
+    unsigned_block_header = AttributeDict(
+        {
+            "parentHash": random_hash(),
+            "sha3Uncles": random_hash(),
+            "author": decode_hex(private_key.public_key.to_address()),
+            "stateRoot": random_hash(),
+            "transactionsRoot": random_hash(),
+            "receiptsRoot": random_hash(),
+            "logsBloom": b"\x00" * 256,
+            "difficulty": 0,
+            "number": random_number(),
+            "gasLimit": 0,
+            "gasUsed": 0,
+            "timestamp": timestamp,
+            "extraData": random_hash(),
+        }
+    )
 
-    Each pair of generated block header by this function are equivocated.
-    This is true unless a parameter gets adjusted. Then it can hold true.
-    Trough the parameters, the generation could be varied to get manipulated
-    block headers related to the relevant properties of equivocated blocks.
-    The configuration of the generation can be used to test the various rules of
-    the equivocation proof.
-    """
+    unsigned_block_header_serialized = serialize_block_header(unsigned_block_header)
 
-    block_header_encoded = None
+    if use_short_list:
+        unsigned_block_header_serialized = unsigned_block_header_serialized[
+            : _REQUIRED_BLOCK_HEADER_LENGTH - 1
+        ]
 
-    if use_incorrect_structure:
-        block_header = codecs.decode("123456789abcde", "hex")
-        block_header_encoded = rlp.encode(block_header)
+    unsigned_block_header_encoded = rlp.encode(unsigned_block_header_serialized)
+    signature = sign_data(unsigned_block_header_encoded, private_key)
 
-    else:
-        block_header = AttributeDict(
-            {
-                "parentHash": random_hash(),
-                "sha3Uncles": random_hash(),
-                "author": decode_hex(private_key.public_key.to_address()),
-                "stateRoot": random_hash(),
-                "transactionsRoot": random_hash(),
-                "receiptsRoot": random_hash(),
-                "logsBloom": b"\x00" * 256,
-                "difficulty": 0,
-                "number": random_number(),
-                "gasLimit": 0,
-                "gasUsed": 0,
-                "timestamp": int(timestamp),
-                "extraData": random_hash(),
-            }
-        )
+    return SignedBlockHeader(unsigned_block_header_encoded, signature)
 
-        block_header_encoded = encode_block_header(block_header)
 
-        if use_short_list:
-            block_header_decoded = rlp.decode(block_header_encoded)
-            block_header_encoded = rlp.encode(
-                block_header_decoded[: _REQUIRED_BLOCK_HEADER_LENGTH - 1]
-            )
+def make_random_signed_data(*, private_key=_PRIVATE_KEY_DEFAULT):
+    random_data = random_hash()
+    random_data_encoded = rlp.encode(random_data)
+    signature = sign_data(random_data_encoded, private_key)
 
-    block_header_hash = keccak(block_header_encoded)
-    signature = private_key.sign_msg_hash(block_header_hash).to_bytes()
-
-    # TODO: short header
-
-    return SignedBlockHeader(block_header_encoded, signature)
+    return SignedBlockHeader(random_data_encoded, signature)

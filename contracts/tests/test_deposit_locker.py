@@ -2,7 +2,7 @@
 
 import pytest
 import eth_tester.exceptions
-from .data_generation import make_equivocated_signed_block_header
+from .data_generation import make_block_header
 
 
 @pytest.fixture()
@@ -194,11 +194,12 @@ def test_event_slash(
 
     latest_block_number = web3.eth.blockNumber
 
-    signed_block_header_one = make_equivocated_signed_block_header(
-        private_key=malicious_validator_key
+    timestamp = 100
+    signed_block_header_one = make_block_header(
+        timestamp=timestamp, private_key=malicious_validator_key
     )
-    signed_block_header_two = make_equivocated_signed_block_header(
-        private_key=malicious_validator_key
+    signed_block_header_two = make_block_header(
+        timestamp=timestamp, private_key=malicious_validator_key
     )
 
     validator_slasher_contract.functions.reportMaliciousValidator(

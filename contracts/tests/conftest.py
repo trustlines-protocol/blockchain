@@ -8,7 +8,7 @@ from .deploy_util import (
     initialize_deposit_locker,
 )
 
-from .data_generation import make_equivocated_signed_block_header
+from .data_generation import make_block_header
 
 
 RELEASE_BLOCK_NUMBER_OFFSET = 50
@@ -18,7 +18,6 @@ RELEASE_BLOCK_NUMBER_OFFSET = 50
 HONEST_VALIDATOR_COUNT = 2
 MALICIOUS_VALIDATOR_INDEX = HONEST_VALIDATOR_COUNT
 MALICIOUS_NON_VALIDATOR_INDEX = MALICIOUS_VALIDATOR_INDEX + 1
-
 
 SignedBlockHeader = namedtuple("SignedBlockHeader", "unsignedBlockHeader signature")
 
@@ -147,26 +146,10 @@ def deposit_locker_contract_with_deposits(
 
 
 @pytest.fixture()
-def equivocated_signed_block_header_malicious_validator(malicious_validator_key):
-    return make_equivocated_signed_block_header(private_key=malicious_validator_key)
+def block_header_by_malicious_validator(malicious_validator_key):
+    return make_block_header(private_key=malicious_validator_key)
 
 
 @pytest.fixture()
-def equivocated_signed_block_header_incorrect_structure(malicious_validator_key):
-    return make_equivocated_signed_block_header(
-        private_key=malicious_validator_key, use_incorrect_structure=True
-    )
-
-
-@pytest.fixture()
-def equivocated_signed_block_header_short_list(malicious_validator_key):
-    return make_equivocated_signed_block_header(
-        private_key=malicious_validator_key, use_short_list=True
-    )
-
-
-@pytest.fixture()
-def equivocated_signed_block_header_malicious_non_validator(
-    malicious_non_validator_key
-):
-    return make_equivocated_signed_block_header(private_key=malicious_non_validator_key)
+def block_header_by_malicious_non_validator(malicious_non_validator_key):
+    return make_block_header(private_key=malicious_non_validator_key)

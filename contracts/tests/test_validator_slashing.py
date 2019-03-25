@@ -2,7 +2,7 @@
 
 import pytest
 import eth_tester.exceptions
-from .data_generation import make_equivocated_signed_block_header
+from .data_generation import make_block_header
 
 
 def test_init_already_initialized(validator_slasher_contract, accounts):
@@ -84,11 +84,12 @@ def test_report_malicious_validator_malicious_validator(
         == malicious_validator_address
     )
 
-    signed_block_header_one = make_equivocated_signed_block_header(
-        private_key=malicious_validator_key
+    timestamp = 100
+    signed_block_header_one = make_block_header(
+        timestamp=timestamp, private_key=malicious_validator_key
     )
-    signed_block_header_two = make_equivocated_signed_block_header(
-        private_key=malicious_validator_key
+    signed_block_header_two = make_block_header(
+        timestamp=timestamp, private_key=malicious_validator_key
     )
 
     # Approve that the malicious validator is active before reporting.
@@ -124,11 +125,12 @@ def test_report_malicious_validator_malicious_non_validator(
     validator and can't be removed.
     """
 
-    signed_block_header_one = make_equivocated_signed_block_header(
-        private_key=malicious_non_validator_key
+    timestamp = 100
+    signed_block_header_one = make_block_header(
+        timestamp=timestamp, private_key=malicious_non_validator_key
     )
-    signed_block_header_two = make_equivocated_signed_block_header(
-        private_key=malicious_non_validator_key
+    signed_block_header_two = make_block_header(
+        timestamp=timestamp, private_key=malicious_non_validator_key
     )
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
