@@ -9,7 +9,6 @@ from eth_keys import keys
 
 SignedBlockHeader = namedtuple("SignedBlockHeader", "unsignedBlockHeader signature")
 
-_REQUIRED_BLOCK_HEADER_LENGTH = 12
 _PRIVATE_KEY_DEFAULT = keys.PrivateKey(b"1" * 32)
 _TIMESTAMP_DEFAULT = 100
 
@@ -28,7 +27,13 @@ def random_private_key():
     return keys.PrivateKey(random_hash())
 
 
-def serialize_block_header(block_header):
+def make_short_block_header_list(block_header):
+    """Order the first 11 block header fields into a list.
+
+    The number relates to the minimum required block header fields by the
+    equivocation proof implementation in the contracts. Using the short header
+    list of a block will lead to an exception.
+    """
     return [
         block_header.parentHash,
         block_header.sha3Uncles,
@@ -41,6 +46,12 @@ def serialize_block_header(block_header):
         block_header.number,
         block_header.gasLimit,
         block_header.gasUsed,
+    ]
+
+
+def make_full_block_header_list(block_header):
+    """Order all block header fields into a list."""
+    return make_short_block_header_list(block_header) + [
         block_header.timestamp,
         block_header.extraData,
     ]
@@ -54,6 +65,16 @@ def sign_data(data, private_key):
 def make_block_header(
     timestamp=_TIMESTAMP_DEFAULT, private_key=_PRIVATE_KEY_DEFAULT, use_short_list=False
 ):
+    """Generates a signed block header
+
+    :param timestamp: timestamp field of the block header, optional
+    :param private_key: used for the author field of the block as well as for
+                        signing the block header, optional
+    :use_short_list:    when set, the list of block header fields will be
+                        truncated and the short version will not be accepted by
+                        the equivocation proof
+    :returns: unsigned block header list in RLP encoding and the related signature
+    """
     unsigned_block_header = AttributeDict(
         {
             "parentHash": random_hash(),
@@ -72,14 +93,13 @@ def make_block_header(
         }
     )
 
-    unsigned_block_header_serialized = serialize_block_header(unsigned_block_header)
-
     if use_short_list:
-        unsigned_block_header_serialized = unsigned_block_header_serialized[
-            : _REQUIRED_BLOCK_HEADER_LENGTH - 1
-        ]
+        unsigned_block_header_list = make_short_block_header_list(unsigned_block_header)
 
-    unsigned_block_header_encoded = rlp.encode(unsigned_block_header_serialized)
+    else:
+        unsigned_block_header_list = make_full_block_header_list(unsigned_block_header)
+
+    unsigned_block_header_encoded = rlp.encode(unsigned_block_header_list)
     signature = sign_data(unsigned_block_header_encoded, private_key)
 
     return SignedBlockHeader(unsigned_block_header_encoded, signature)
