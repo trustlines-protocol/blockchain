@@ -12,7 +12,7 @@ library EquivocationInspector {
     using RLPReader for RLPReader.RLPItem;
     using RLPReader for bytes;
 
-    uint8 constant stepDuration = 5;
+    uint constant stepDuration = 5;
 
 
     /**
