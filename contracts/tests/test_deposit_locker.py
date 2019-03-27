@@ -2,6 +2,7 @@
 
 import pytest
 import eth_tester.exceptions
+from .data_generation import make_block_header
 
 
 @pytest.fixture()
@@ -185,7 +186,6 @@ def test_event_withdraw(
 def test_event_slash(
     deposit_locker_contract_with_deposits,
     validator_slasher_contract,
-    sign_two_equivocating_block_header,
     malicious_validator_address,
     malicious_validator_key,
     deposit_amount,
@@ -194,15 +194,19 @@ def test_event_slash(
 
     latest_block_number = web3.eth.blockNumber
 
-    two_signed_blocks_equivocated_by_malicious_validator = sign_two_equivocating_block_header(
-        malicious_validator_key
+    timestamp = 100
+    signed_block_header_one = make_block_header(
+        timestamp=timestamp, private_key=malicious_validator_key
+    )
+    signed_block_header_two = make_block_header(
+        timestamp=timestamp, private_key=malicious_validator_key
     )
 
     validator_slasher_contract.functions.reportMaliciousValidator(
-        two_signed_blocks_equivocated_by_malicious_validator[0].unsignedBlockHeader,
-        two_signed_blocks_equivocated_by_malicious_validator[0].signature,
-        two_signed_blocks_equivocated_by_malicious_validator[1].unsignedBlockHeader,
-        two_signed_blocks_equivocated_by_malicious_validator[1].signature,
+        signed_block_header_one.unsignedBlockHeader,
+        signed_block_header_one.signature,
+        signed_block_header_two.unsignedBlockHeader,
+        signed_block_header_two.signature,
     ).transact()
 
     event = deposit_locker_contract_with_deposits.events.Slash.createFilter(

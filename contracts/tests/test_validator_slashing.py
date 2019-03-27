@@ -2,6 +2,7 @@
 
 import pytest
 import eth_tester.exceptions
+from .data_generation import make_block_header
 
 
 def test_init_already_initialized(validator_slasher_contract, accounts):
@@ -58,7 +59,6 @@ def test_remove_validator0(validator_slasher_contract, validators, accounts):
 def test_report_malicious_validator_malicious_validator(
     validator_slasher_contract,
     deposit_locker_contract_with_deposits,
-    sign_two_equivocating_block_header,
     malicious_validator_address,
     malicious_validator_key,
     deposit_amount,
@@ -84,16 +84,20 @@ def test_report_malicious_validator_malicious_validator(
         == malicious_validator_address
     )
 
-    two_signed_blocks_equivocated_by_malicious_validator = sign_two_equivocating_block_header(
-        malicious_validator_key
+    timestamp = 100
+    signed_block_header_one = make_block_header(
+        timestamp=timestamp, private_key=malicious_validator_key
+    )
+    signed_block_header_two = make_block_header(
+        timestamp=timestamp, private_key=malicious_validator_key
     )
 
     # Approve that the malicious validator is active before reporting.
     validator_slasher_contract.functions.reportMaliciousValidator(
-        two_signed_blocks_equivocated_by_malicious_validator[0].unsignedBlockHeader,
-        two_signed_blocks_equivocated_by_malicious_validator[0].signature,
-        two_signed_blocks_equivocated_by_malicious_validator[1].unsignedBlockHeader,
-        two_signed_blocks_equivocated_by_malicious_validator[1].signature,
+        signed_block_header_one.unsignedBlockHeader,
+        signed_block_header_one.signature,
+        signed_block_header_two.unsignedBlockHeader,
+        signed_block_header_two.signature,
     ).transact()
 
     assert (
@@ -112,10 +116,7 @@ def test_report_malicious_validator_malicious_validator(
 
 
 def test_report_malicious_validator_malicious_non_validator(
-    validator_slasher_contract,
-    deposit_locker_contract,
-    sign_two_equivocating_block_header,
-    malicious_non_validator_key,
+    validator_slasher_contract, deposit_locker_contract, malicious_non_validator_key
 ):
 
     """Test a failing report of a malicious non validator.
@@ -124,18 +125,18 @@ def test_report_malicious_validator_malicious_non_validator(
     validator and can't be removed.
     """
 
-    two_signed_blocks_equivocated_by_malicious_non_validator = sign_two_equivocating_block_header(
-        malicious_non_validator_key
+    timestamp = 100
+    signed_block_header_one = make_block_header(
+        timestamp=timestamp, private_key=malicious_non_validator_key
+    )
+    signed_block_header_two = make_block_header(
+        timestamp=timestamp, private_key=malicious_non_validator_key
     )
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         validator_slasher_contract.functions.reportMaliciousValidator(
-            two_signed_blocks_equivocated_by_malicious_non_validator[
-                0
-            ].unsignedBlockHeader,
-            two_signed_blocks_equivocated_by_malicious_non_validator[0].signature,
-            two_signed_blocks_equivocated_by_malicious_non_validator[
-                1
-            ].unsignedBlockHeader,
-            two_signed_blocks_equivocated_by_malicious_non_validator[1].signature,
+            signed_block_header_one.unsignedBlockHeader,
+            signed_block_header_one.signature,
+            signed_block_header_two.unsignedBlockHeader,
+            signed_block_header_two.signature,
         ).transact()
