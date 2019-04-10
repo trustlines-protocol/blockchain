@@ -12,7 +12,7 @@ library EquivocationInspector {
     using RLPReader for RLPReader.RLPItem;
     using RLPReader for bytes;
 
-    uint constant stepDuration = 5;
+    uint constant STEP_DURATION = 5;
 
 
     /**
@@ -95,8 +95,8 @@ library EquivocationInspector {
         );
 
         // Equal block step rule.
-        uint stepOne = blockOne[11].toUint() / stepDuration;
-        uint stepTwo = blockTwo[11].toUint() / stepDuration;
+        uint stepOne = blockOne[11].toUint() / STEP_DURATION;
+        uint stepTwo = blockTwo[11].toUint() / STEP_DURATION;
 
         require(
             stepOne == stepTwo,
