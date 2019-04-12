@@ -162,66 +162,56 @@ def block_header_by_malicious_non_validator(malicious_non_validator_key):
 
 
 @pytest.fixture(scope="session")
-def validator_auction_contract(
-    deploy_contract, extended_accounts, send_ether_to_extended_accounts
-):
+def validator_auction_contract(deploy_contract, whitelist):
     contract = deploy_contract("TestValidatorAuctionFixedPrice")
-    whitelist = extended_accounts[1:]
-    whitelist_validator_auction_contract(contract, whitelist)
+    add_whitelist_to_validator_auction_contract(contract, whitelist)
 
     return contract
 
 
 @pytest.fixture(scope="session")
 def almost_filled_validator_auction(
-    deploy_contract,
-    extended_accounts,
-    send_ether_to_extended_accounts,
-    number_of_auction_participants,
+    deploy_contract, whitelist, number_of_auction_participants
 ):
     """Validator auction contract missing one bid to reach the maximum amount of bidders
     account[1] has not bid and can be used to test the behaviour of sending the last bid"""
 
     contract = deploy_contract("TestValidatorAuctionFixedPrice")
-    whitelist = extended_accounts[1:]
-    whitelist_validator_auction_contract(contract, whitelist)
+    add_whitelist_to_validator_auction_contract(contract, whitelist)
 
-    contract.functions.startAuction().transact({"from": extended_accounts[0]})
+    contract.functions.startAuction().transact()
 
-    for i in range(2, 1 + number_of_auction_participants):
-        contract.functions.bid().transact({"from": extended_accounts[i], "value": 100})
+    for participant in whitelist[1:123]:
+        contract.functions.bid().transact({"from": participant, "value": 100})
 
     return contract
 
 
 @pytest.fixture(scope="session")
-def send_ether_to_extended_accounts(
-    chain, extended_accounts, number_of_auction_participants
-):
-    account_0 = chain.get_accounts()[0]
-
-    for i in range(1, 1 + number_of_auction_participants):
-        chain.send_transaction(
-            {
-                "from": account_0,
-                "to": extended_accounts[i],
-                "gas": 21000,
-                "value": 10000000,
-            }
-        )
-
-
-@pytest.fixture(scope="session")
-def extended_accounts(chain, number_of_auction_participants):
+def whitelist(chain, number_of_auction_participants):
+    """Every known accounts appart from accounts[0] is in the whitelist"""
     new_chain = chain
     for i in range(100, 100 + number_of_auction_participants):
         new_chain.add_account(
             "0x0000000000000000000000000000000000000000000000000000000000000" + str(i)
         )
 
-    return new_chain.get_accounts()
+    whitelist = new_chain.get_accounts()[1:]
+
+    send_ether_to_whitelisted_accounts(chain, whitelist)
+
+    return whitelist
 
 
-def whitelist_validator_auction_contract(contract, whitelist):
+def send_ether_to_whitelisted_accounts(chain, whitelist):
+    account_0 = chain.get_accounts()[0]
+
+    for participant in whitelist:
+        chain.send_transaction(
+            {"from": account_0, "to": participant, "gas": 21000, "value": 10000000}
+        )
+
+
+def add_whitelist_to_validator_auction_contract(contract, whitelist):
     contract.functions.addToWhitelist(whitelist).transact()
     return contract
