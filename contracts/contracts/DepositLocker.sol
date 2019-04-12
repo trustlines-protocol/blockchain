@@ -23,13 +23,13 @@ contract DepositLocker is DepositLockerInterface, Ownable {
 
     function() external {}
 
-    function init(uint _releaseBlockNumber, address _validatorSlasherAddress) external onlyOwner returns (bool _success) {
+    function init(uint _releaseBlockNumber, address _validatorSlasherAddress, address _auctionContractAddress) external onlyOwner returns (bool _success) {
         require(! initialised, "The contract is already initialised.");
         require(_releaseBlockNumber > block.number, "The release block number cannot be lower or equal to the current block number");
 
         releaseBlockNumber = _releaseBlockNumber;
         validatorSlasherAddress = _validatorSlasherAddress;
-
+        auctionContractAddress = _auctionContractAddress;
         initialised = true;
         owner = address(0);
         return true;

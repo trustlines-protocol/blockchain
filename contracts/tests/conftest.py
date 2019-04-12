@@ -87,7 +87,6 @@ def non_initialised_deposit_locker_contract_session(deploy_contract):
 def initialised_deposit_and_slasher_contracts(validators, deploy_contract, web3):
     slasher_contract = deploy_contract("TestValidatorSlasher")
     locker_contract = deploy_contract("DepositLocker")
-
     """Initialises both the slasher and deposit contract, both initialisation are in the same fixture because we want
     a snapshot where both contracts are initialised and aware of the address of the other"""
 
@@ -99,9 +98,13 @@ def initialised_deposit_and_slasher_contracts(validators, deploy_contract, web3)
     # if this number is too high, tests are slowed down
 
     slasher_contract_address = slasher_contract.address
-
+    auction_contract_address = "0x0000000000000000000000000000000000000000"
     initialised_deposit_contract = initialize_deposit_locker(
-        locker_contract, release_number, slasher_contract_address, web3
+        locker_contract,
+        release_number,
+        slasher_contract_address,
+        auction_contract_address,
+        web3,
     )
 
     # initialise slasher contract

@@ -26,10 +26,10 @@ def test_init_already_initialized(deposit_locker_contract, accounts):
     contract = deposit_locker_contract
     validator_contract_address = accounts[0]
     release_block_number = 100
-
+    auction_contract_address = accounts[1]
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         contract.functions.init(
-            release_block_number, validator_contract_address
+            release_block_number, validator_contract_address, auction_contract_address
         ).transact({"from": accounts[0]})
 
 
@@ -37,10 +37,10 @@ def test_init_not_owner(non_initialised_deposit_locker_contract_session, account
     contract = non_initialised_deposit_locker_contract_session
     validator_contract_address = accounts[0]
     release_block_number = 100
-
+    auction_contract_address = accounts[1]
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         contract.functions.init(
-            release_block_number, validator_contract_address
+            release_block_number, validator_contract_address, auction_contract_address
         ).transact({"from": accounts[1]})
 
 
@@ -51,10 +51,12 @@ def test_init_passed_realease_block(
     validator_contract_address = accounts[0]
     release_block = web3.eth.blockNumber - 1
 
+    auction_contract_address = accounts[1]
+
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        contract.functions.init(release_block, validator_contract_address).transact(
-            {"from": web3.eth.defaultAccount}
-        )
+        contract.functions.init(
+            release_block, validator_contract_address, auction_contract_address
+        ).transact({"from": web3.eth.defaultAccount})
 
 
 def test_owner_after_init(deposit_locker_contract):
