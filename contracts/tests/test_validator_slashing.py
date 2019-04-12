@@ -72,12 +72,9 @@ def test_report_malicious_validator_malicious_validator(
     as well as his deposit should be empty.
     """
 
-    assert (
-        deposit_locker_contract_with_deposits.functions.deposits(
-            malicious_validator_address
-        ).call()
-        == deposit_amount
-    )
+    assert deposit_locker_contract_with_deposits.functions.canWithdraw(
+        malicious_validator_address
+    ).call()
 
     assert (
         validator_slasher_contract.functions.getValidator(2).call()
@@ -100,12 +97,9 @@ def test_report_malicious_validator_malicious_validator(
         signed_block_header_two.signature,
     ).transact()
 
-    assert (
-        deposit_locker_contract_with_deposits.functions.deposits(
-            malicious_validator_address
-        ).call()
-        == 0
-    )
+    assert not deposit_locker_contract_with_deposits.functions.canWithdraw(
+        malicious_validator_address
+    ).call()
 
     assert validator_slasher_contract.functions.getValidator(0).call() == validators[0]
 

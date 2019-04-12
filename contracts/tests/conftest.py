@@ -34,6 +34,12 @@ def number_of_auction_participants():
 
 
 @pytest.fixture(scope="session")
+def auction_address(accounts):
+    return accounts[4]
+    # Come said I should use 4. We should fix that index stuff here
+
+
+@pytest.fixture(scope="session")
 def malicious_non_validator_address(accounts):
     return accounts[MALICIOUS_NON_VALIDATOR_INDEX]
 
@@ -84,7 +90,9 @@ def non_initialised_deposit_locker_contract_session(deploy_contract):
 
 
 @pytest.fixture(scope="session")
-def initialised_deposit_and_slasher_contracts(validators, deploy_contract, web3):
+def initialised_deposit_and_slasher_contracts(
+    validators, deploy_contract, auction_address, web3
+):
     slasher_contract = deploy_contract("TestValidatorSlasher")
     locker_contract = deploy_contract("DepositLocker")
     """Initialises both the slasher and deposit contract, both initialisation are in the same fixture because we want
@@ -98,7 +106,7 @@ def initialised_deposit_and_slasher_contracts(validators, deploy_contract, web3)
     # if this number is too high, tests are slowed down
 
     slasher_contract_address = slasher_contract.address
-    auction_contract_address = "0x0000000000000000000000000000000000000000"
+    auction_contract_address = auction_address
     initialised_deposit_contract = initialize_deposit_locker(
         locker_contract,
         release_number,
@@ -142,14 +150,19 @@ def deposit_locker_contract_with_deposits(
     validators,
     malicious_validator_address,
     deposit_amount,
+    auction_address,
 ):
 
     deposit_contract = initialised_deposit_and_slasher_contracts.deposit_contract
 
     for validator in validators:
-        deposit_contract.functions.deposit(validator).transact(
-            {"from": validator, "value": deposit_amount}
+        deposit_contract.functions.registerParticipant(validator).transact(
+            {"from": auction_address}
         )
+
+    deposit_contract.functions.depositAllBids(deposit_amount).transact(
+        {"from": auction_address, "value": deposit_amount * len(validators)}
+    )
 
     return deposit_contract
 
