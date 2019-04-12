@@ -68,24 +68,6 @@ def test_owner_after_init(deposit_locker_contract):
     )
 
 
-def test_deposit(deposit_locker_contract, accounts, web3):
-    contract = deposit_locker_contract
-
-    pre_balance = web3.eth.getBalance(accounts[2])
-    assert contract.functions.deposits(accounts[2]).call() == 0
-
-    deposit = 10000000
-    tx = contract.functions.deposit(accounts[2]).transact(
-        {"from": accounts[2], "value": deposit}
-    )
-    gas_used = web3.eth.getTransactionReceipt(tx).gasUsed
-
-    assert contract.functions.deposits(accounts[2]).call() == deposit
-    new_balance = web3.eth.getBalance(accounts[2])
-
-    assert pre_balance - new_balance == deposit + gas_used
-
-
 def test_withdraw(deposit_contract_on_longer_chain, accounts, web3, deposit_amount):
     """test whether we can withdraw after block 10"""
     contract = deposit_contract_on_longer_chain
@@ -114,17 +96,6 @@ def test_withdraw_too_soon(
         contract.functions.withdraw().transact({"from": accounts[0]})
 
 
-def test_deposit_not_initialised(
-    non_initialised_deposit_locker_contract_session, accounts, deposit_amount
-):
-    contract = non_initialised_deposit_locker_contract_session
-
-    with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        contract.functions.deposit(accounts[0]).transact(
-            {"from": accounts[0], "value": deposit_amount}
-        )
-
-
 def test_withdraw_not_initialised(
     non_initialised_deposit_locker_contract_session, accounts
 ):
@@ -141,24 +112,6 @@ def test_slash_not_initialised(
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         contract.functions.slash(accounts[0]).transact({"from": accounts[0]})
-
-
-def test_event_deposit(deposit_locker_contract, accounts, web3):
-    contract = deposit_locker_contract
-
-    latest_block_number = web3.eth.blockNumber
-
-    deposit = 10000000
-    contract.functions.deposit(accounts[0]).transact(
-        {"from": accounts[0], "value": deposit}
-    )
-
-    event = contract.events.Deposit.createFilter(
-        fromBlock=latest_block_number
-    ).get_all_entries()[0]["args"]
-
-    assert event["depositOwner"] == accounts[0]
-    assert event["value"] == deposit
 
 
 def test_event_withdraw(
