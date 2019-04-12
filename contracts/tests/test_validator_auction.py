@@ -52,8 +52,6 @@ def test_auction_start_not_owner(validator_auction_contract, accounts):
 
 def test_bidding_not_whitelisted(started_validator_auction, accounts):
 
-    print(accounts[0])
-
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         started_validator_auction.functions.bid().transact(
             {"from": accounts[0], "value": 100}
