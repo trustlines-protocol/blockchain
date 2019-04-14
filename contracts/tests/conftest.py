@@ -156,11 +156,11 @@ def deposit_locker_contract_with_deposits(
     deposit_contract = initialised_deposit_and_slasher_contracts.deposit_contract
 
     for validator in validators:
-        deposit_contract.functions.registerParticipant(validator).transact(
+        deposit_contract.functions.registerDepositor(validator).transact(
             {"from": auction_address}
         )
 
-    deposit_contract.functions.depositAllBids(deposit_amount).transact(
+    deposit_contract.functions.deposit(deposit_amount).transact(
         {"from": auction_address, "value": deposit_amount * len(validators)}
     )
 

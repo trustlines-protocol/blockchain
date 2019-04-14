@@ -163,5 +163,5 @@ def test_event_slash(
         fromBlock=latest_block_number
     ).get_all_entries()[0]["args"]
 
-    assert event["validator"] == malicious_validator_address
+    assert event["slashedDepositor"] == malicious_validator_address
     assert event["slashedValue"] == deposit_amount
