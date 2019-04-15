@@ -159,7 +159,7 @@ def test_withdraw_overbid(almost_filled_validator_auction, accounts, web3):
 
     pre_balance = web3.eth.getBalance(accounts[1], "latest")
 
-    almost_filled_validator_auction.functions.withdrawOverbid().transact(
+    almost_filled_validator_auction.functions.withdraw().transact(
         {"from": accounts[1], "gasPrice": 0}
     )
     closing_price = almost_filled_validator_auction.functions.closingPrice().call()
@@ -169,49 +169,56 @@ def test_withdraw_overbid(almost_filled_validator_auction, accounts, web3):
     assert post_balance - pre_balance == value_to_bid - closing_price
 
 
-def test_cannot_withdraw_overbid_too_soon(started_validator_auction, accounts):
+def test_cannot_withdraw_too_soon(started_validator_auction, accounts):
 
     started_validator_auction.functions.bid().transact(
         {"from": accounts[1], "value": 1234}
     )
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        started_validator_auction.functions.withdrawOverbid().transact(
+        started_validator_auction.functions.withdraw().transact(
             {"from": accounts[1], "gasPrice": 0}
         )
 
 
 @pytest.mark.slow
-def test_cannot_withdraw_overbid_twice(almost_filled_validator_auction, accounts, web3):
+def test_cannot_withdraw_twice(almost_filled_validator_auction, accounts, web3):
 
     almost_filled_validator_auction.functions.bid().transact(
         {"from": accounts[1], "value": 1234}
     )
 
-    almost_filled_validator_auction.functions.withdrawOverbid().transact(
+    almost_filled_validator_auction.functions.withdraw().transact(
         {"from": accounts[1], "gasPrice": 0}
     )
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        almost_filled_validator_auction.functions.withdrawOverbid().transact(
+        almost_filled_validator_auction.functions.withdraw().transact(
             {"from": accounts[1]}
         )
 
 
-def test_cannot_withdraw_overbid_auction_failed(
-    started_validator_auction, accounts, chain
-):
+def test_withdraw_auction_failed(started_validator_auction, accounts, chain, web3):
+
+    value_to_bid = 1234
 
     started_validator_auction.functions.bid().transact(
-        {"from": accounts[1], "value": 1234}
+        {"from": accounts[1], "value": value_to_bid}
     )
+
+    pre_balance = web3.eth.getBalance(accounts[1], "latest")
 
     time_travel_to_end_of_auction(chain)
 
-    with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        started_validator_auction.functions.withdrawOverbid().transact(
-            {"from": accounts[1], "gasPrice": 0}
-        )
+    started_validator_auction.functions.closeAuction().transact({"from": accounts[2]})
+
+    started_validator_auction.functions.withdraw().transact(
+        {"from": accounts[1], "gasPrice": 0}
+    )
+
+    post_balance = web3.eth.getBalance(accounts[1], "latest")
+
+    assert post_balance - pre_balance == value_to_bid
 
 
 @pytest.mark.slow
@@ -222,7 +229,7 @@ def test_cannot_withdraw_overbid_not_bidder(almost_filled_validator_auction, acc
     )
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        almost_filled_validator_auction.functions.withdrawOverbid().transact(
+        almost_filled_validator_auction.functions.withdraw().transact(
             {"from": accounts[0], "gasPrice": 0}
         )
 

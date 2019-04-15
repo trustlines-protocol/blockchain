@@ -92,12 +92,15 @@ contract ValidatorAuction is Ownable {
         return 1;
     }
 
-    function withdrawOverbid() public stateIs(AuctionStates.Ended) {
+    function withdraw() public {
+        require(auctionState == AuctionStates.Ended || auctionState == AuctionStates.Failed, "You cannot withdraw before the auction is ended or it failed.");
         require(bids[msg.sender] > closingPrice, "The sender has nothing to withdraw.");
-        uint overbid = bids[msg.sender] - closingPrice;
-        assert(overbid < bids[msg.sender]);
+
+        uint valueToWithdraw = bids[msg.sender] - closingPrice;
+        assert(valueToWithdraw <= bids[msg.sender]);
+
         bids[msg.sender] = closingPrice;
-        msg.sender.transfer(overbid);
+        msg.sender.transfer(valueToWithdraw);
     }
 
     function isSenderContract() internal returns (bool isContract) {
