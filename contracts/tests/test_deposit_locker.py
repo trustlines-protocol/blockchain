@@ -5,6 +5,7 @@ import pytest
 import eth_tester.exceptions
 from .data_generation import make_block_header
 from typing import Any, List
+from web3.datastructures import AttributeDict
 
 
 @pytest.fixture()
@@ -249,7 +250,7 @@ def test_register_same_depositor_throws(testenv, web3):
         testenv.register_depositor(testenv.depositors[0])
 
 
-def test_register_after_deposi_throws(testenv_deposited):
+def test_register_after_deposit_throws(testenv_deposited):
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         testenv_deposited.register_depositor(testenv_deposited.other_accounts[0])
 
@@ -260,9 +261,43 @@ def test_deposit_with_no_depositors_throws(testenv):
         testenv.deposit(100, 100)
 
 
-def test_deposit_right_amount(testenv):
+def test_register_logs_event(testenv):
+    assert (
+        testenv.deposit_locker.events.DepositorRegistered.createFilter(
+            fromBlock=0
+        ).get_all_entries()
+        == []
+    )
+
     testenv.register_all_depositors()
-    testenv.deposit(100, len(testenv.depositors) * 100)
+
+    events = testenv.deposit_locker.events.DepositorRegistered.createFilter(
+        fromBlock=0
+    ).get_all_entries()
+    assert len(events) == len(testenv.depositors)
+    print(events[0].args)
+    expected_args = [
+        AttributeDict({"depositorAddress": depositor, "numberOfDepositors": i + 1})
+        for i, depositor in enumerate(testenv.depositors)
+    ]
+    args = [ev.args for ev in events]
+    assert args == expected_args
+
+
+def test_deposit_with_right_amount_logs_event(testenv):
+    testenv.register_all_depositors()
+    testenv.deposit(3456, len(testenv.depositors) * 3456)
+    events = testenv.deposit_locker.events.Deposit.createFilter(
+        fromBlock=0
+    ).get_all_entries()
+    assert len(events) == 1
+    assert events[0].args == AttributeDict(
+        {
+            "totalValue": 3456 * len(testenv.depositors),
+            "valuePerDepositor": 3456,
+            "numberOfDepositors": len(testenv.depositors),
+        }
+    )
 
 
 def test_deposit_twice_throws(testenv):
