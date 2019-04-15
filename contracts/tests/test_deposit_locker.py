@@ -1,8 +1,10 @@
 #! pytest
 
+import attr
 import pytest
 import eth_tester.exceptions
 from .data_generation import make_block_header
+from typing import Any, List
 
 
 @pytest.fixture()
@@ -165,3 +167,154 @@ def test_event_slash(
 
     assert event["slashedDepositor"] == malicious_validator_address
     assert event["slashedValue"] == deposit_amount
+
+
+@attr.s(auto_attribs=True)
+class Env:
+    deposit_locker: Any
+    slasher: Any
+    proxy: Any
+    depositors: List[Any]
+    other_accounts: List[Any]
+
+    def register_depositor(self, depositor):
+        return self.deposit_locker.functions.registerDepositor(depositor).transact(
+            {"from": self.proxy}
+        )
+
+    def register_all_depositors(self):
+        for d in self.depositors:
+            self.register_depositor(d)
+
+    def deposit(self, value_per_depositor, total_value):
+        return self.deposit_locker.functions.deposit(value_per_depositor).transact(
+            {"from": self.proxy, "value": total_value}
+        )
+
+    def slash(self, depositor):
+        return self.deposit_locker.functions.slash(depositor).transact(
+            {"from": self.slasher}
+        )
+
+    def withdraw(self, depositor):
+        return self.deposit_locker.functions.withdraw().transact({"from": depositor})
+
+    def can_withdraw(self, depositor):
+        return self.deposit_locker.functions.canWithdraw(depositor).call()
+
+
+@pytest.fixture()
+def testenv(deploy_contract, accounts, web3):
+    """return a initialized testenv instance"""
+    deposit_locker = deploy_contract("DepositLocker")
+    slasher = accounts[1]
+    proxy = accounts[2]
+    depositors = accounts[3:6]
+    other_accounts = accounts[6:]
+    deposit_locker.functions.init(web3.eth.blockNumber + 50, slasher, proxy).transact(
+        {"from": web3.eth.defaultAccount}
+    )
+
+    return Env(
+        deposit_locker=deposit_locker,
+        slasher=slasher,
+        proxy=proxy,
+        depositors=depositors,
+        other_accounts=other_accounts,
+    )
+
+
+@pytest.fixture()
+def testenv_deposited(testenv):
+    """return a test environment, with all depositors registered and the deposit already made"""
+    testenv.register_all_depositors()
+    testenv.deposit(1000, len(testenv.depositors) * 1000)
+    return testenv
+
+
+def test_register_from_non_proxy_throws(testenv, web3):
+    """make sure we can only register a depositor from the proxy"""
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        testenv.deposit_locker.functions.registerDepositor(
+            testenv.depositors[0]
+        ).transact({"from": web3.eth.defaultAccount})
+
+
+def test_register_same_depositor_throws(testenv, web3):
+    """make sure we can only register a depositor once"""
+
+    print(testenv.depositors)
+    testenv.register_depositor(testenv.depositors[0])
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        testenv.register_depositor(testenv.depositors[0])
+
+
+def test_register_after_deposi_throws(testenv_deposited):
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        testenv_deposited.register_depositor(testenv_deposited.other_accounts[0])
+
+
+def test_deposit_with_no_depositors_throws(testenv):
+    """a depositor must have been registers for deposit to work"""
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        testenv.deposit(100, 100)
+
+
+def test_deposit_right_amount(testenv):
+    testenv.register_all_depositors()
+    testenv.deposit(100, len(testenv.depositors) * 100)
+
+
+def test_deposit_twice_throws(testenv):
+    testenv.register_all_depositors()
+    testenv.deposit(100, len(testenv.depositors) * 100)
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        testenv.deposit(100, len(testenv.depositors) * 100)
+
+
+def test_deposit_unequal_amount(testenv):
+    """total value send must match sum of deposits"""
+    testenv.register_all_depositors()
+    total_deposit = 100 * len(testenv.depositors)
+
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        testenv.deposit(100, total_deposit + 1)
+
+
+def test_zero_deposit_throws(testenv):
+    """deposit must be positive"""
+    testenv.register_all_depositors()
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        testenv.deposit(0, 0)
+
+
+def test_slash_from_non_slasher_throws(testenv):
+    testenv.register_all_depositors()
+    testenv.deposit(100, len(testenv.depositors) * 100)
+    depositor = testenv.depositors[0]
+
+    assert testenv.can_withdraw(depositor)
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        testenv.deposit_locker.functions.slash(depositor).transact(
+            {"from": testenv.depositors[0]}
+        )
+
+
+def test_slash_after_deposit_works(testenv_deposited):
+    depositor = testenv_deposited.depositors[0]
+    assert testenv_deposited.can_withdraw(depositor)
+    testenv_deposited.slash(depositor)
+    assert not testenv_deposited.can_withdraw(depositor)
+
+
+def test_slash_twice_throws(testenv_deposited):
+    depositor = testenv_deposited.depositors[0]
+    assert testenv_deposited.can_withdraw(depositor)
+    testenv_deposited.slash(depositor)
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        testenv_deposited.slash(depositor)
+
+
+def test_slash_non_depositor_throws(testenv_deposited):
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        testenv_deposited.slash(testenv_deposited.other_accounts[0])

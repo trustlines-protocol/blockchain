@@ -7,3 +7,4 @@ eth-utils
 contract-deploy-tools>=0.2.0
 black
 pre-commit
+attrs
