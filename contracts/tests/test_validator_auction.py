@@ -148,6 +148,68 @@ def test_enough_bidders_ends_auction(almost_filled_validator_auction, accounts):
     assert almost_filled_validator_auction.functions.auctionState().call() == 2
 
 
+@pytest.mark.slow
+def test_withdraw_overbid(almost_filled_validator_auction, accounts, web3):
+
+    value_to_bid = 1234
+
+    almost_filled_validator_auction.functions.bid().transact(
+        {"from": accounts[1], "value": value_to_bid}
+    )
+
+    pre_balance = web3.eth.getBalance(accounts[1], "latest")
+
+    almost_filled_validator_auction.functions.withdrawOverbid().transact(
+        {"from": accounts[1], "gasPrice": 0}
+    )
+    closing_price = almost_filled_validator_auction.functions.closingPrice().call()
+
+    post_balance = web3.eth.getBalance(accounts[1], "latest")
+
+    assert post_balance - pre_balance == value_to_bid - closing_price
+
+
+def test_cannot_withdraw_overbid_too_soon(started_validator_auction, accounts):
+
+    started_validator_auction.functions.bid().transact(
+        {"from": accounts[1], "value": 1234}
+    )
+
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        started_validator_auction.functions.withdrawOverbid().transact(
+            {"from": accounts[1], "gasPrice": 0}
+        )
+
+
+def test_cannot_withdraw_overbid_auction_failed(
+    started_validator_auction, accounts, chain
+):
+
+    started_validator_auction.functions.bid().transact(
+        {"from": accounts[1], "value": 1234}
+    )
+
+    time_travel_to_end_of_auction(chain)
+
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        started_validator_auction.functions.withdrawOverbid().transact(
+            {"from": accounts[1], "gasPrice": 0}
+        )
+
+
+@pytest.mark.slow
+def test_cannot_withdraw_overbid_not_bidder(almost_filled_validator_auction, accounts):
+
+    almost_filled_validator_auction.functions.bid().transact(
+        {"from": accounts[1], "value": 1234}
+    )
+
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        almost_filled_validator_auction.functions.withdrawOverbid().transact(
+            {"from": accounts[0], "gasPrice": 0}
+        )
+
+
 def test_event_bid_submitted(started_validator_auction, accounts, web3):
 
     latest_block_number = web3.eth.blockNumber

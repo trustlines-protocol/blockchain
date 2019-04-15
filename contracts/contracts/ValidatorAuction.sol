@@ -8,7 +8,7 @@ contract ValidatorAuction is Ownable {
     mapping (address => bool) public whitelist;
     mapping (address => uint) public bids;
     address[] public bidders;
-    uint closingPrice;
+    uint public closingPrice;
     AuctionStates public auctionState;
 
     uint public startTime;
@@ -90,6 +90,13 @@ contract ValidatorAuction is Ownable {
     function currentPrice() public pure returns (uint) {
         // to be implemented later
         return 1;
+    }
+
+    function withdrawOverbid() public stateIs(AuctionStates.Ended) {
+        require(bids[msg.sender] != 0, "The sender has not bid.");
+        uint overbid = bids[msg.sender] - closingPrice;
+        assert(overbid < bids[msg.sender]);
+        msg.sender.transfer(overbid);
     }
 
     function isSenderContract() internal returns (bool isContract) {
