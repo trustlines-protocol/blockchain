@@ -87,9 +87,13 @@ contract ValidatorAuction is Ownable {
         }
     }
 
-    function currentPrice() public pure returns (uint) {
-        // to be implemented later
-        return 1;
+    function currentPrice() public view returns (uint) {
+        uint msSinceStart = (now - startTime) * 1000;
+        uint startingPrice = 10000 ether;
+        uint decayDivisor = 146328000000000;
+        uint decay = msSinceStart ** 3 / decayDivisor;
+        uint price = startingPrice * (1 + msSinceStart)/(1 + msSinceStart + decay);
+        return price;
     }
 
     function withdraw() public {
@@ -104,6 +108,7 @@ contract ValidatorAuction is Ownable {
     }
 
     function isSenderContract() internal returns (bool isContract) {
+    function isSenderContract() internal view returns (bool isContract) {
         uint32 size;
         address sender = msg.sender;
         // solium-disable-next-line security/no-inline-assembly

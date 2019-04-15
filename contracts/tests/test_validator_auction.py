@@ -5,6 +5,7 @@ import eth_tester.exceptions
 import time
 
 TWO_WEEKS_IN_SECONDS = 14 * 24 * 60 * 60
+ONE_HOUR_IN_SECONDS = 60 * 60
 
 
 def time_travel_to_end_of_auction(chain):
@@ -291,7 +292,7 @@ def test_event_auction_failed(started_validator_auction, accounts, chain, web3):
 
 
 @pytest.mark.slow
-def test_event_auction_ended(almost_filled_validator_auction, accounts, chain, web3):
+def test_event_auction_ended(almost_filled_validator_auction, accounts, web3):
 
     latest_block_number = web3.eth.blockNumber
 
@@ -307,3 +308,54 @@ def test_event_auction_ended(almost_filled_validator_auction, accounts, chain, w
 
     assert event["closeTime"] == close_time
     assert event["closingPrice"] == 100
+
+
+def generate_expected_prices():
+    prices = []
+    for i in range(0, 56 + 1):
+        # I just want to generate tests spanning 336 hours (= 2 weeks) but not necessarily 336 tests.
+        hours_since_start = 6 * i
+        ms_since_start = hours_since_start * ONE_HOUR_IN_SECONDS * 1000
+        starting_price = 10000 * 1e18
+        decay_divisor = 146328000000000
+        decay = ms_since_start ** 3 / decay_divisor
+        price = starting_price * (1 + ms_since_start) / (1 + ms_since_start + decay)
+
+        prices.append((hours_since_start, price))
+
+    return prices
+
+
+def pytest_generate_tests(metafunc):
+    arg_values = generate_expected_prices()
+    if "hours_since_start" in metafunc.fixturenames:
+        metafunc.parametrize(["hours_since_start", "python_price"], arg_values)
+
+
+@pytest.mark.slow
+def test_price_function(
+    real_price_validator_auction_contract,
+    hours_since_start,
+    python_price,
+    accounts,
+    chain,
+    web3,
+):
+
+    real_price_validator_auction_contract.functions.startAuction().transact(
+        {"from": accounts[0]}
+    )
+    start_time = web3.eth.getBlock("latest").timestamp
+
+    seconds_since_start = ONE_HOUR_IN_SECONDS * hours_since_start
+
+    if seconds_since_start != 0:
+        chain.time_travel(start_time + seconds_since_start)
+        # It appears that if we do not mine a block, the time travel does not work properly.
+        chain.mine_block()
+
+    blockchain_price = (
+        real_price_validator_auction_contract.functions.currentPrice().call()
+    )
+
+    assert blockchain_price == pytest.approx(python_price, abs=1e15)

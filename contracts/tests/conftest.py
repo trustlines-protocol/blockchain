@@ -177,6 +177,14 @@ def block_header_by_malicious_non_validator(malicious_non_validator_key):
 
 
 @pytest.fixture(scope="session")
+def real_price_validator_auction_contract(deploy_contract, whitelist):
+    contract = deploy_contract("ValidatorAuction")
+    add_whitelist_to_validator_auction_contract(contract, whitelist)
+
+    return contract
+
+
+@pytest.fixture(scope="session")
 def validator_auction_contract(deploy_contract, whitelist):
     contract = deploy_contract("TestValidatorAuctionFixedPrice")
     add_whitelist_to_validator_auction_contract(contract, whitelist)

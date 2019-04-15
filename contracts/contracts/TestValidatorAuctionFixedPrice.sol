@@ -10,7 +10,7 @@ import "./ValidatorAuction.sol";
 
 contract TestValidatorAuctionFixedPrice is ValidatorAuction {
 
-    function currentPrice() public pure returns (uint) {
+    function currentPrice() public view returns (uint) {
         return 100;
     }
 }
