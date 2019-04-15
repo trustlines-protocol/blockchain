@@ -93,9 +93,10 @@ contract ValidatorAuction is Ownable {
     }
 
     function withdrawOverbid() public stateIs(AuctionStates.Ended) {
-        require(bids[msg.sender] != 0, "The sender has not bid.");
+        require(bids[msg.sender] > closingPrice, "The sender has nothing to withdraw.");
         uint overbid = bids[msg.sender] - closingPrice;
         assert(overbid < bids[msg.sender]);
+        bids[msg.sender] = closingPrice;
         msg.sender.transfer(overbid);
     }
 

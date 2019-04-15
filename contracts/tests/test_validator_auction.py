@@ -181,6 +181,23 @@ def test_cannot_withdraw_overbid_too_soon(started_validator_auction, accounts):
         )
 
 
+@pytest.mark.slow
+def test_cannot_withdraw_overbid_twice(almost_filled_validator_auction, accounts, web3):
+
+    almost_filled_validator_auction.functions.bid().transact(
+        {"from": accounts[1], "value": 1234}
+    )
+
+    almost_filled_validator_auction.functions.withdrawOverbid().transact(
+        {"from": accounts[1], "gasPrice": 0}
+    )
+
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        almost_filled_validator_auction.functions.withdrawOverbid().transact(
+            {"from": accounts[1]}
+        )
+
+
 def test_cannot_withdraw_overbid_auction_failed(
     started_validator_auction, accounts, chain
 ):
