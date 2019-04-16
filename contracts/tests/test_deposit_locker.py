@@ -117,6 +117,24 @@ def test_slash_not_initialised(
         contract.functions.slash(accounts[0]).transact({"from": accounts[0]})
 
 
+def test_register_depositor_not_initialised(
+    non_initialised_deposit_locker_contract_session, accounts
+):
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        non_initialised_deposit_locker_contract_session.functions.registerDepositor(
+            accounts[0]
+        ).transact({"from": accounts[0]})
+
+
+def test_deposit_not_initialised(
+    non_initialised_deposit_locker_contract_session, accounts
+):
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        non_initialised_deposit_locker_contract_session.functions.deposit(0).transact(
+            {"from": accounts[0], "value": 0}
+        )
+
+
 def test_event_withdraw(
     deposit_contract_on_longer_chain, deposit_amount, validators, web3
 ):
