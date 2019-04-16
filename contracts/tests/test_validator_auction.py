@@ -310,11 +310,11 @@ def test_event_auction_ended(almost_filled_validator_auction, accounts, web3):
     assert event["closingPrice"] == 100
 
 
-def generate_expected_prices():
+def generate_price_test_data():
     prices = []
-    for i in range(0, 56 + 1):
-        # I just want to generate tests spanning 336 hours (= 2 weeks) but not necessarily 336 tests.
-        hours_since_start = 6 * i
+    for i in range(0, 42 + 1):
+        # Generate test data spanning 336 hours (= 2 weeks) across 43 tests.
+        hours_since_start = 8 * i
         ms_since_start = hours_since_start * ONE_HOUR_IN_SECONDS * 1000
         starting_price = 10000 * 1e18
         decay_divisor = 146328000000000
@@ -327,7 +327,7 @@ def generate_expected_prices():
 
 
 def pytest_generate_tests(metafunc):
-    arg_values = generate_expected_prices()
+    arg_values = generate_price_test_data()
     if "hours_since_start" in metafunc.fixturenames:
         metafunc.parametrize(["hours_since_start", "python_price"], arg_values)
 
@@ -359,3 +359,57 @@ def test_price_function(
     )
 
     assert blockchain_price == pytest.approx(python_price, abs=1e15)
+
+
+def test_bid_real_price_auction(
+    real_price_validator_auction_contract, accounts, chain, web3
+):
+
+    real_price_validator_auction_contract.functions.startAuction().transact(
+        {"from": accounts[0]}
+    )
+    start_time = web3.eth.getBlock("latest").timestamp
+
+    chain.time_travel(start_time + 123456)
+    # It appears that if we do not mine a block, the time travel does not work properly.
+    chain.mine_block()
+
+    price = real_price_validator_auction_contract.functions.currentPrice().call()
+
+    real_price_validator_auction_contract.functions.bid().transact(
+        {"from": accounts[1], "value": price}
+    )
+
+
+def test_too_low_bid_fails_real_price_auction(
+    real_price_validator_auction_contract, accounts, chain, web3
+):
+
+    real_price_validator_auction_contract.functions.startAuction().transact(
+        {"from": accounts[0]}
+    )
+    start_time = web3.eth.getBlock("latest").timestamp
+
+    chain.time_travel(start_time + 123456)
+    # It appears that if we do not mine a block, the time travel does not work properly.
+    chain.mine_block()
+
+    price_before_mining = (
+        real_price_validator_auction_contract.functions.currentPrice().call()
+    )
+    chain.mine_block()
+    price_after_mining = (
+        real_price_validator_auction_contract.functions.currentPrice().call()
+    )
+
+    price_variation_on_block = price_before_mining - price_after_mining
+
+    too_low_price = (
+        real_price_validator_auction_contract.functions.currentPrice().call()
+        - price_variation_on_block
+    )
+
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        real_price_validator_auction_contract.functions.bid().transact(
+            {"from": accounts[1], "value": too_low_price}
+        )
