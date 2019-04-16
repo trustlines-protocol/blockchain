@@ -20,10 +20,14 @@ def initialize_test_validator_slasher(
 
 
 def initialize_deposit_locker(
-    deployed_contract, block_number, validator_contract_address, web3
+    deployed_contract,
+    block_number,
+    validator_contract_address,
+    auction_contract_address,
+    web3,
 ):
     txid = deployed_contract.functions.init(
-        block_number, validator_contract_address
+        block_number, validator_contract_address, auction_contract_address
     ).transact({"from": web3.eth.defaultAccount})
     wait_for_successful_transaction_receipt(web3, txid)
     return deployed_contract
