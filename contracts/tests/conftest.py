@@ -34,7 +34,7 @@ def number_of_auction_participants():
 
 
 @pytest.fixture(scope="session")
-def auction_address(accounts):
+def fake_auction_address(accounts):
     return accounts[4]
 
 
@@ -90,7 +90,7 @@ def non_initialised_deposit_locker_contract_session(deploy_contract):
 
 @pytest.fixture(scope="session")
 def initialised_deposit_and_slasher_contracts(
-    validators, deploy_contract, auction_address, web3
+    validators, deploy_contract, fake_auction_address, web3
 ):
     slasher_contract = deploy_contract("TestValidatorSlasher")
     locker_contract = deploy_contract("DepositLocker")
@@ -105,7 +105,7 @@ def initialised_deposit_and_slasher_contracts(
     # if this number is too high, tests are slowed down
 
     slasher_contract_address = slasher_contract.address
-    auction_contract_address = auction_address
+    auction_contract_address = fake_auction_address
     initialised_deposit_contract = initialize_deposit_locker(
         locker_contract,
         release_number,
@@ -149,18 +149,18 @@ def deposit_locker_contract_with_deposits(
     validators,
     malicious_validator_address,
     deposit_amount,
-    auction_address,
+    fake_auction_address,
 ):
 
     deposit_contract = initialised_deposit_and_slasher_contracts.deposit_contract
 
     for validator in validators:
         deposit_contract.functions.registerDepositor(validator).transact(
-            {"from": auction_address}
+            {"from": fake_auction_address}
         )
 
     deposit_contract.functions.deposit(deposit_amount).transact(
-        {"from": auction_address, "value": deposit_amount * len(validators)}
+        {"from": fake_auction_address, "value": deposit_amount * len(validators)}
     )
 
     return deposit_contract
