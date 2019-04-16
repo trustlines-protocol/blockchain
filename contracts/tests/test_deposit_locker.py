@@ -204,7 +204,7 @@ class Env:
         return self.deposit_locker.functions.canWithdraw(depositor).call()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def testenv(deploy_contract, accounts, web3):
     """return a initialized testenv instance"""
     deposit_locker = deploy_contract("DepositLocker")
