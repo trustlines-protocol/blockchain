@@ -206,7 +206,7 @@ class Env:
 
 @pytest.fixture(scope="session")
 def testenv(deploy_contract, accounts, web3):
-    """return a initialized testenv instance"""
+    """return an initialized Env instance"""
     deposit_locker = deploy_contract("DepositLocker")
     slasher = accounts[1]
     proxy = accounts[2]
