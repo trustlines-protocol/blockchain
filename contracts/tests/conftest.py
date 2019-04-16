@@ -36,7 +36,6 @@ def number_of_auction_participants():
 @pytest.fixture(scope="session")
 def auction_address(accounts):
     return accounts[4]
-    # Come said I should use 4. We should fix that index stuff here
 
 
 @pytest.fixture(scope="session")
