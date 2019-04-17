@@ -88,7 +88,12 @@ contract ValidatorAuction is Ownable {
     }
 
     function currentPrice() public view returns (uint) {
-        uint msSinceStart = (now - startTime) * 1000;
+        uint secondsSinceStart = (now - startTime);
+        return priceAtElapsedTime(secondsSinceStart);
+    }
+
+    function priceAtElapsedTime(uint secondsSinceStart) public pure returns (uint) {
+        uint msSinceStart = 1000 * secondsSinceStart;
         uint startingPrice = 10000 ether;
         uint decayDivisor = 146328000000000;
         uint decay = msSinceStart ** 3 / decayDivisor;
