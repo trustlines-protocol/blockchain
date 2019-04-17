@@ -336,7 +336,7 @@ def test_event_whitelist(no_whitelist_validator_auction_contract, whitelist, web
 
     latest_block_number = web3.eth.blockNumber
 
-    events = no_whitelist_validator_auction_contract.events.AddedToWhitelist.createFilter(
+    events = no_whitelist_validator_auction_contract.events.AddressWhitelisted.createFilter(
         fromBlock=latest_block_number
     ).get_all_entries()
 
