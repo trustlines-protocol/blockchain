@@ -336,15 +336,13 @@ def test_event_whitelist(no_whitelist_validator_auction_contract, whitelist, web
 
     latest_block_number = web3.eth.blockNumber
 
-    event = no_whitelist_validator_auction_contract.events.AddedToWhitelist.createFilter(
+    events = no_whitelist_validator_auction_contract.events.AddedToWhitelist.createFilter(
         fromBlock=latest_block_number
-    ).get_all_entries()[
-        0
-    ][
-        "args"
-    ]
+    ).get_all_entries()
 
-    assert event["whitelistedAddresses"] == list(whitelist)
+    assert len(events) == len(whitelist)
+    for i, event in enumerate(events):
+        assert event["args"]["whitelistedAddress"] == whitelist[i]
 
 
 def generate_price_test_data():
