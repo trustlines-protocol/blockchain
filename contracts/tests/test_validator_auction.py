@@ -10,7 +10,9 @@ ONE_HOUR_IN_SECONDS = 60 * 60
 
 def time_travel_to_end_of_auction(chain):
     chain.time_travel(int(time.time()) + TWO_WEEKS_IN_SECONDS + 10000)
-    # It appears that if we do not mine a block, the time travel does not work properly.
+    # It appears that the estimation of whether a transaction will fail is done on the latest block
+    # while estimating gas cost for the transaction.
+    # If we do not mine a block, the estimation will consider the wrong block time.
     chain.mine_block()
 
 
@@ -341,29 +343,18 @@ def pytest_generate_tests(metafunc):
 
 @pytest.mark.slow
 def test_price_function(
-    real_price_validator_auction_contract,
-    hours_since_start,
-    python_price,
-    accounts,
-    chain,
-    web3,
+    real_price_validator_auction_contract, hours_since_start, python_price, accounts
 ):
 
     real_price_validator_auction_contract.functions.startAuction().transact(
         {"from": accounts[0]}
     )
-    start_time = web3.eth.getBlock("latest").timestamp
 
     seconds_since_start = ONE_HOUR_IN_SECONDS * hours_since_start
 
-    if seconds_since_start != 0:
-        chain.time_travel(start_time + seconds_since_start)
-        # It appears that if we do not mine a block, the time travel does not work properly.
-        chain.mine_block()
-
-    blockchain_price = (
-        real_price_validator_auction_contract.functions.currentPrice().call()
-    )
+    blockchain_price = real_price_validator_auction_contract.functions.priceAtElapsedTime(
+        seconds_since_start
+    ).call()
 
     assert blockchain_price == pytest.approx(python_price, abs=1e15)
 
@@ -398,7 +389,9 @@ def test_too_low_bid_fails_real_price_auction(
     start_time = web3.eth.getBlock("latest").timestamp
 
     chain.time_travel(start_time + 123456)
-    # It appears that if we do not mine a block, the time travel does not work properly.
+    # It appears that the estimation of whether a transaction will fail is done on the latest block
+    # while estimating gas cost for the transaction.
+    # If we do not mine a block, the estimation will consider the wrong block time.
     chain.mine_block()
 
     price_before_mining = (
