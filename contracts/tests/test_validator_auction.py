@@ -28,8 +28,9 @@ def assert_auction_state(validator_contract, expected_auction_state):
 class AuctionStates(Enum):
     Deployed = 0
     Started = 1
-    Ended = 2
-    Failed = 3
+    DepositPending = 2
+    Ended = 3
+    Failed = 4
 
 
 def assert_auction_state(validator_contract, expected_auction_state):
@@ -175,10 +176,19 @@ def test_bidding_auction_ended(started_validator_auction, accounts, chain):
 @pytest.mark.slow
 def test_enough_bidders_ends_auction(almost_filled_validator_auction, accounts):
 
+    assert_auction_state(almost_filled_validator_auction, AuctionStates.Started)
+
     almost_filled_validator_auction.functions.bid().transact(
         {"from": accounts[1], "value": 100}
     )
 
+    assert_auction_state(almost_filled_validator_auction, AuctionStates.DepositPending)
+
+    # we could test the rest of this in another function, but it's slow anyway
+    # and I'm lazy
+    almost_filled_validator_auction.functions.depositBids().transact(
+        {"from": accounts[5]}
+    )
     assert_auction_state(almost_filled_validator_auction, AuctionStates.Ended)
 
 
@@ -189,6 +199,10 @@ def test_withdraw_overbid(almost_filled_validator_auction, accounts, web3):
 
     almost_filled_validator_auction.functions.bid().transact(
         {"from": accounts[1], "value": value_to_bid}
+    )
+
+    almost_filled_validator_auction.functions.depositBids().transact(
+        {"from": accounts[0]}
     )
 
     pre_balance = web3.eth.getBalance(accounts[1], "latest")
@@ -220,6 +234,10 @@ def test_cannot_withdraw_twice(almost_filled_validator_auction, accounts, web3):
 
     almost_filled_validator_auction.functions.bid().transact(
         {"from": accounts[1], "value": 1234}
+    )
+
+    almost_filled_validator_auction.functions.depositBids().transact(
+        {"from": accounts[0]}
     )
 
     almost_filled_validator_auction.functions.withdraw().transact(
