@@ -24,6 +24,21 @@ def assert_auction_state(validator_contract, expected_auction_state):
     ), "wrong auction state, make sure test_validator_auction.AuctionState is in sync with contracts"
 
 
+# This has to be in sync with the AuctionStates in ValidatorAuction.sol
+class AuctionStates(Enum):
+    Deployed = 0
+    Started = 1
+    Ended = 2
+    Failed = 3
+
+
+def assert_auction_state(validator_contract, expected_auction_state):
+    """assert that the current auctionState() of validator_contract is expected_auction_state"""
+    assert expected_auction_state == AuctionStates(
+        validator_contract.functions.auctionState().call()
+    ), "wrong auction state, make sure test_validator_auction.AuctionState is in sync with contracts"
+
+
 def time_travel_to_end_of_auction(chain):
     chain.time_travel(int(time.time()) + TWO_WEEKS_IN_SECONDS + 10000)
     # It appears that the estimation of whether a transaction will fail is done on the latest block
