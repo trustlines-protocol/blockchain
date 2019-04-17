@@ -369,7 +369,7 @@ def test_bid_real_price_auction(
     start_time = web3.eth.getBlock("latest").timestamp
 
     chain.time_travel(start_time + 123456)
-    # It appears that if we do not mine a block, the time travel does not work properly.
+    # Need to mine a block after time travel to make the call consider the new block time.
     chain.mine_block()
 
     price = real_price_validator_auction_contract.functions.currentPrice().call()
@@ -389,9 +389,7 @@ def test_too_low_bid_fails_real_price_auction(
     start_time = web3.eth.getBlock("latest").timestamp
 
     chain.time_travel(start_time + 123456)
-    # It appears that the estimation of whether a transaction will fail is done on the latest block
-    # while estimating gas cost for the transaction.
-    # If we do not mine a block, the estimation will consider the wrong block time.
+    # Need to mine a block after time travel to make the call consider the new block time.
     chain.mine_block()
 
     price_before_mining = (
