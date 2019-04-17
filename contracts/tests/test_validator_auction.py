@@ -315,15 +315,22 @@ def generate_price_test_data():
     for i in range(0, 42 + 1):
         # Generate test data spanning 336 hours (= 2 weeks) across 43 tests.
         hours_since_start = 8 * i
-        ms_since_start = hours_since_start * ONE_HOUR_IN_SECONDS * 1000
-        starting_price = 10000 * 1e18
-        decay_divisor = 146328000000000
-        decay = ms_since_start ** 3 / decay_divisor
-        price = starting_price * (1 + ms_since_start) / (1 + ms_since_start + decay)
+        seconds_from_start = hours_since_start * ONE_HOUR_IN_SECONDS
 
+        price = auction_price_at_elapsed_time(seconds_from_start)
         prices.append((hours_since_start, price))
 
     return prices
+
+
+def auction_price_at_elapsed_time(seconds_from_start):
+    ms_since_start = seconds_from_start * 1000
+    starting_price = 10000 * 1e18
+    decay_divisor = 146328000000000
+    decay = ms_since_start ** 3 / decay_divisor
+    price = starting_price * (1 + ms_since_start) / (1 + ms_since_start + decay)
+
+    return price
 
 
 def pytest_generate_tests(metafunc):
