@@ -107,7 +107,6 @@ contract ValidatorAuction is Ownable {
         msg.sender.transfer(valueToWithdraw);
     }
 
-    function isSenderContract() internal returns (bool isContract) {
     function isSenderContract() internal view returns (bool isContract) {
         uint32 size;
         address sender = msg.sender;
