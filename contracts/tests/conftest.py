@@ -185,6 +185,13 @@ def real_price_validator_auction_contract(deploy_contract, whitelist):
 
 
 @pytest.fixture(scope="session")
+def no_whitelist_validator_auction_contract(deploy_contract):
+    contract = deploy_contract("TestValidatorAuctionFixedPrice")
+
+    return contract
+
+
+@pytest.fixture(scope="session")
 def validator_auction_contract(deploy_contract, whitelist):
     contract = deploy_contract("TestValidatorAuctionFixedPrice")
     add_whitelist_to_validator_auction_contract(contract, whitelist)

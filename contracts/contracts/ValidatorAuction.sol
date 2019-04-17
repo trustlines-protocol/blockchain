@@ -17,6 +17,7 @@ contract ValidatorAuction is Ownable {
     uint public constant NUMBER_OF_PARTICIPANTS = 123;
 
     event BidSubmitted(address bidder, uint bidValue, uint slotPrice, uint timestamp);
+    event AddedToWhitelist(address[] whitelistedAddresses);
     event AuctionStarted(uint startTime);
     event AuctionEnded(uint closeTime, uint closingPrice);
     event AuctionFailed(uint closeTime, uint numberOfBidders);
@@ -85,6 +86,7 @@ contract ValidatorAuction is Ownable {
         for (uint32 i = 0; i < addressesToWhitelist.length; i++) {
             whitelist[addressesToWhitelist[i]] = true;
         }
+        emit AddedToWhitelist(addressesToWhitelist);
     }
 
     function currentPrice() public view returns (uint) {

@@ -328,6 +328,25 @@ def test_event_auction_ended(almost_filled_validator_auction, accounts, web3):
     assert event["closingPrice"] == 100
 
 
+def test_event_whitelist(no_whitelist_validator_auction_contract, whitelist, web3):
+
+    no_whitelist_validator_auction_contract.functions.addToWhitelist(
+        whitelist
+    ).transact()
+
+    latest_block_number = web3.eth.blockNumber
+
+    event = no_whitelist_validator_auction_contract.events.AddedToWhitelist.createFilter(
+        fromBlock=latest_block_number
+    ).get_all_entries()[
+        0
+    ][
+        "args"
+    ]
+
+    assert event["whitelistedAddresses"] == list(whitelist)
+
+
 def generate_price_test_data():
     prices = []
     for i in range(0, 42 + 1):
