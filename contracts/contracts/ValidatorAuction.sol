@@ -25,6 +25,7 @@ contract ValidatorAuction is Ownable {
     enum AuctionStates{
         Deployed,
         Started,
+        DepositPending, /* all slots sold, someone needs to call depositBids */
         Ended,
         Failed
     }
@@ -58,7 +59,7 @@ contract ValidatorAuction is Ownable {
         emit BidSubmitted(msg.sender, msg.value, now);
 
         if (bidders.length == NUMBER_OF_PARTICIPANTS) {
-            auctionState = AuctionStates.Ended;
+            auctionState = AuctionStates.DepositPending;
             closeTime = now;
             closingPrice = price;
             emit AuctionEnded(closeTime, closingPrice);
@@ -70,6 +71,11 @@ contract ValidatorAuction is Ownable {
         startTime = now;
 
         emit AuctionStarted(now);
+    }
+
+    function depositBids() public stateIs(AuctionStates.DepositPending) {
+        // XXX still needs to be implemented
+        auctionState = AuctionStates.Ended;
     }
 
     function closeAuction() public stateIs(AuctionStates.Started) {
