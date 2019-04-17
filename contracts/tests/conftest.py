@@ -1,6 +1,7 @@
-import pytest
-
 from collections import namedtuple
+
+import pytest
+import eth_tester
 
 from .deploy_util import (
     initialize_validator_set,
@@ -9,6 +10,11 @@ from .deploy_util import (
 )
 
 from .data_generation import make_block_header
+
+# increase eth_tester's GAS_LIMIT
+# Otherwise we can't whitelist enough addresses
+assert eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT < 8 * 10 ** 6
+eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT = 8 * 10 ** 6
 
 
 RELEASE_BLOCK_NUMBER_OFFSET = 50
