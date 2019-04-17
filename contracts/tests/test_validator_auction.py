@@ -3,8 +3,24 @@
 import pytest
 import eth_tester.exceptions
 import time
+from enum import Enum
 
 TWO_WEEKS_IN_SECONDS = 14 * 24 * 60 * 60
+
+
+# This has to be in sync with the AuctionStates in ValidatorAuction.sol
+class AuctionStates(Enum):
+    Deployed = 0
+    Started = 1
+    Ended = 2
+    Failed = 3
+
+
+def assert_auction_state(validator_contract, expected_auction_state):
+    """assert that the current auctionState() of validator_contract is expected_auction_state"""
+    assert expected_auction_state == AuctionStates(
+        validator_contract.functions.auctionState().call()
+    ), "wrong auction state, make sure test_validator_auction.AuctionState is in sync with contracts"
 
 
 def time_travel_to_end_of_auction(chain):
@@ -22,7 +38,7 @@ def started_validator_auction(validator_auction_contract, accounts):
 
 
 def test_auction_state_deployed(validator_auction_contract):
-    assert validator_auction_contract.functions.auctionState().call() == 0
+    assert_auction_state(validator_auction_contract, AuctionStates.Deployed)
 
 
 def test_cannot_bid_when_not_started(validator_auction_contract, accounts):
@@ -39,7 +55,7 @@ def test_auction_start(validator_auction_contract, accounts, web3):
     start_time = web3.eth.getBlock("latest").timestamp
 
     assert validator_auction_contract.functions.startTime().call() == start_time
-    assert validator_auction_contract.functions.auctionState().call() == 1
+    assert_auction_state(validator_auction_contract, AuctionStates.Started)
 
 
 def test_auction_start_not_owner(validator_auction_contract, accounts):
@@ -104,7 +120,7 @@ def test_auction_failed(started_validator_auction, accounts, chain):
     time_travel_to_end_of_auction(chain)
     started_validator_auction.functions.closeAuction().transact({"from": accounts[2]})
 
-    assert started_validator_auction.functions.auctionState().call() == 3
+    assert_auction_state(started_validator_auction, AuctionStates.Failed)
 
 
 def test_bidding_auction_failed(started_validator_auction, accounts, chain):
@@ -145,7 +161,7 @@ def test_enough_bidders_ends_auction(almost_filled_validator_auction, accounts):
         {"from": accounts[1], "value": 100}
     )
 
-    assert almost_filled_validator_auction.functions.auctionState().call() == 2
+    assert_auction_state(almost_filled_validator_auction, AuctionStates.Ended)
 
 
 @pytest.mark.slow
