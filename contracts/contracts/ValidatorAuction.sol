@@ -16,7 +16,7 @@ contract ValidatorAuction is Ownable {
     uint public constant AUCTION_DURATION = 14 days;
     uint public constant NUMBER_OF_PARTICIPANTS = 123;
 
-    event BidSubmitted(address bidder, uint bidValue, uint timestamp);
+    event BidSubmitted(address bidder, uint bidValue, uint slotPrice, uint timestamp);
     event AuctionStarted(uint startTime);
     event AuctionEnded(uint closeTime, uint closingPrice);
     event AuctionFailed(uint closeTime, uint numberOfBidders);
@@ -55,7 +55,7 @@ contract ValidatorAuction is Ownable {
         bids[msg.sender] = msg.value;
         bidders.push(msg.sender);
 
-        emit BidSubmitted(msg.sender, msg.value, now);
+        emit BidSubmitted(msg.sender, msg.value, price, now);
 
         if (bidders.length == NUMBER_OF_PARTICIPANTS) {
             auctionState = AuctionStates.Ended;
