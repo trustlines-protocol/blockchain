@@ -6,6 +6,7 @@ import time
 from enum import Enum
 
 TWO_WEEKS_IN_SECONDS = 14 * 24 * 60 * 60
+ONE_HOUR_IN_SECONDS = 60 * 60
 
 
 # This has to be in sync with the AuctionStates in ValidatorAuction.sol
@@ -26,7 +27,9 @@ def assert_auction_state(validator_contract, expected_auction_state):
 
 def time_travel_to_end_of_auction(chain):
     chain.time_travel(int(time.time()) + TWO_WEEKS_IN_SECONDS + 10000)
-    # It appears that if we do not mine a block, the time travel does not work properly.
+    # It appears that the estimation of whether a transaction will fail is done on the latest block
+    # while estimating gas cost for the transaction.
+    # If we do not mine a block, the estimation will consider the wrong block time.
     chain.mine_block()
 
 
@@ -338,7 +341,7 @@ def test_event_auction_failed(started_validator_auction, accounts, chain, web3):
 
 
 @pytest.mark.slow
-def test_event_auction_ended(almost_filled_validator_auction, accounts, chain, web3):
+def test_event_auction_ended(almost_filled_validator_auction, accounts, web3):
 
     latest_block_number = web3.eth.blockNumber
 
@@ -354,3 +357,121 @@ def test_event_auction_ended(almost_filled_validator_auction, accounts, chain, w
 
     assert event["closeTime"] == close_time
     assert event["closingPrice"] == 100
+
+
+def test_event_whitelist(no_whitelist_validator_auction_contract, whitelist, web3):
+
+    no_whitelist_validator_auction_contract.functions.addToWhitelist(
+        whitelist
+    ).transact()
+
+    latest_block_number = web3.eth.blockNumber
+
+    events = no_whitelist_validator_auction_contract.events.AddressWhitelisted.createFilter(
+        fromBlock=latest_block_number
+    ).get_all_entries()
+
+    assert len(events) == len(whitelist)
+    for i, event in enumerate(events):
+        assert event["args"]["whitelistedAddress"] == whitelist[i]
+
+
+def generate_price_test_data():
+    prices = []
+    for i in range(0, 42 + 1):
+        # Generate test data spanning 336 hours (= 2 weeks) across 43 tests.
+        hours_since_start = 8 * i
+        seconds_from_start = hours_since_start * ONE_HOUR_IN_SECONDS
+
+        price = auction_price_at_elapsed_time(seconds_from_start)
+        prices.append((hours_since_start, price))
+
+    return prices
+
+
+def auction_price_at_elapsed_time(seconds_from_start):
+    ms_since_start = seconds_from_start * 1000
+    starting_price = 10000 * 1e18
+    decay_divisor = 146328000000000
+    decay = ms_since_start ** 3 / decay_divisor
+    price = starting_price * (1 + ms_since_start) / (1 + ms_since_start + decay)
+
+    return price
+
+
+def pytest_generate_tests(metafunc):
+    arg_values = generate_price_test_data()
+    if "hours_since_start" in metafunc.fixturenames:
+        metafunc.parametrize(["hours_since_start", "python_price"], arg_values)
+
+
+@pytest.mark.slow
+def test_price_function(
+    real_price_validator_auction_contract, hours_since_start, python_price, accounts
+):
+
+    real_price_validator_auction_contract.functions.startAuction().transact(
+        {"from": accounts[0]}
+    )
+
+    seconds_since_start = ONE_HOUR_IN_SECONDS * hours_since_start
+
+    blockchain_price = real_price_validator_auction_contract.functions.priceAtElapsedTime(
+        seconds_since_start
+    ).call()
+
+    assert blockchain_price == pytest.approx(python_price, abs=1e15)
+
+
+def test_bid_real_price_auction(
+    real_price_validator_auction_contract, accounts, chain, web3
+):
+
+    real_price_validator_auction_contract.functions.startAuction().transact(
+        {"from": accounts[0]}
+    )
+    start_time = web3.eth.getBlock("latest").timestamp
+
+    chain.time_travel(start_time + 123456)
+    # Need to mine a block after time travel to make the call consider the new block time.
+    chain.mine_block()
+
+    price = real_price_validator_auction_contract.functions.currentPrice().call()
+
+    real_price_validator_auction_contract.functions.bid().transact(
+        {"from": accounts[1], "value": price}
+    )
+
+
+def test_too_low_bid_fails_real_price_auction(
+    real_price_validator_auction_contract, accounts, chain, web3
+):
+
+    real_price_validator_auction_contract.functions.startAuction().transact(
+        {"from": accounts[0]}
+    )
+    start_time = web3.eth.getBlock("latest").timestamp
+
+    chain.time_travel(start_time + 123456)
+    # Need to mine a block after time travel to make the call consider the new block time.
+    chain.mine_block()
+
+    price_before_mining = (
+        real_price_validator_auction_contract.functions.currentPrice().call()
+    )
+    chain.mine_block()
+    price_after_mining = (
+        real_price_validator_auction_contract.functions.currentPrice().call()
+    )
+
+    price_variation_on_block = price_before_mining - price_after_mining
+
+    too_low_price = (
+        real_price_validator_auction_contract.functions.currentPrice().call()
+        - price_variation_on_block
+    )
+
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        real_price_validator_auction_contract.functions.bid().transact(
+            {"from": accounts[1], "value": too_low_price}
+        )

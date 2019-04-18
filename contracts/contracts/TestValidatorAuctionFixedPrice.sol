@@ -12,7 +12,7 @@ contract TestValidatorAuctionFixedPrice is ValidatorAuction {
     constructor(DepositLocker _depositLocker) ValidatorAuction(_depositLocker) {
     }
 
-    function currentPrice() public pure returns (uint) {
+    function currentPrice() public view returns (uint) {
         return 100;
     }
 }

@@ -17,7 +17,8 @@ contract ValidatorAuction is Ownable {
     uint public constant AUCTION_DURATION = 14 days;
     uint public constant NUMBER_OF_PARTICIPANTS = 123;
 
-    event BidSubmitted(address bidder, uint bidValue, uint timestamp);
+    event BidSubmitted(address bidder, uint bidValue, uint slotPrice, uint timestamp);
+    event AddressWhitelisted(address whitelistedAddress);
     event AuctionStarted(uint startTime);
     event AuctionEnded(uint closeTime, uint closingPrice);
     event AuctionFailed(uint closeTime, uint numberOfBidders);
@@ -59,7 +60,7 @@ contract ValidatorAuction is Ownable {
         bidders.push(msg.sender);
 
         depositLocker.registerDepositor(msg.sender);
-        emit BidSubmitted(msg.sender, msg.value, now);
+        emit BidSubmitted(msg.sender, msg.value, price, now);
 
         if (bidders.length == NUMBER_OF_PARTICIPANTS) {
             auctionState = AuctionStates.DepositPending;
@@ -93,12 +94,23 @@ contract ValidatorAuction is Ownable {
     function addToWhitelist(address[] addressesToWhitelist) public onlyOwner stateIs(AuctionStates.Deployed) {
         for (uint32 i = 0; i < addressesToWhitelist.length; i++) {
             whitelist[addressesToWhitelist[i]] = true;
+            emit AddressWhitelisted(addressesToWhitelist[i]);
         }
     }
 
-    function currentPrice() public pure returns (uint) {
-        // to be implemented later
-        return 1;
+    function currentPrice() public view returns (uint) {
+        require(now >= startTime, "The current price can only be calculated after the auction started.");
+        uint secondsSinceStart = (now - startTime);
+        return priceAtElapsedTime(secondsSinceStart);
+    }
+
+    function priceAtElapsedTime(uint secondsSinceStart) public pure returns (uint) {
+        uint msSinceStart = 1000 * secondsSinceStart;
+        uint startingPrice = 10000 ether;
+        uint decayDivisor = 146328000000000;
+        uint decay = msSinceStart ** 3 / decayDivisor;
+        uint price = startingPrice * (1 + msSinceStart)/(1 + msSinceStart + decay);
+        return price;
     }
 
     function withdraw() public {
@@ -112,7 +124,7 @@ contract ValidatorAuction is Ownable {
         msg.sender.transfer(valueToWithdraw);
     }
 
-    function isSenderContract() internal returns (bool isContract) {
+    function isSenderContract() internal view returns (bool isContract) {
         uint32 size;
         address sender = msg.sender;
         // solium-disable-next-line security/no-inline-assembly

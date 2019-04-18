@@ -1,6 +1,7 @@
-import pytest
-
 from collections import namedtuple
+
+import pytest
+import eth_tester
 
 from .deploy_util import (
     initialize_validator_set,
@@ -9,6 +10,11 @@ from .deploy_util import (
 )
 
 from .data_generation import make_block_header
+
+# increase eth_tester's GAS_LIMIT
+# Otherwise we can't whitelist enough addresses
+assert eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT < 8 * 10 ** 6
+eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT = 8 * 10 ** 6
 
 
 RELEASE_BLOCK_NUMBER_OFFSET = 50
@@ -187,7 +193,43 @@ def validator_auction_contract(deploy_contract, whitelist, web3, default_account
         "0x0000000000000000000000000000000000000000",
         contract.address,
     ).transact({"from": default_account})
+
     add_whitelist_to_validator_auction_contract(contract, whitelist)
+
+    return contract
+
+
+@pytest.fixture(scope="session")
+def real_price_validator_auction_contract(
+    deploy_contract, whitelist, default_account, web3
+):
+    deposit_locker = deploy_contract("DepositLocker")
+
+    contract = deploy_contract(
+        "ValidatorAuction", constructor_args=(deposit_locker.address,)
+    )
+    deposit_locker.functions.init(
+        web3.eth.blockNumber + 50,
+        "0x0000000000000000000000000000000000000000",
+        contract.address,
+    ).transact({"from": default_account})
+
+    add_whitelist_to_validator_auction_contract(contract, whitelist)
+
+    return contract
+
+
+@pytest.fixture(scope="session")
+def no_whitelist_validator_auction_contract(deploy_contract, web3, default_account):
+    deposit_locker = deploy_contract("DepositLocker")
+    contract = deploy_contract(
+        "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
+    )
+    deposit_locker.functions.init(
+        web3.eth.blockNumber + 50,
+        "0x0000000000000000000000000000000000000000",
+        contract.address,
+    ).transact({"from": default_account})
 
     return contract
 
