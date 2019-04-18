@@ -156,7 +156,9 @@ def test_bidding_auction_ended(started_validator_auction, accounts, chain):
 
 
 @pytest.mark.slow
-def test_enough_bidders_ends_auction(almost_filled_validator_auction, accounts):
+def test_enough_bidders_ends_auction(
+    almost_filled_validator_auction, accounts, web3, number_of_auction_participants
+):
 
     assert_auction_state(almost_filled_validator_auction, AuctionStates.Started)
 
@@ -166,11 +168,22 @@ def test_enough_bidders_ends_auction(almost_filled_validator_auction, accounts):
 
     assert_auction_state(almost_filled_validator_auction, AuctionStates.DepositPending)
 
+    deposit_locker = almost_filled_validator_auction.functions.depositLocker().call()
+    assert web3.eth.getBalance(deposit_locker) == 0
+
     # we could test the rest of this in another function, but it's slow anyway
     # and I'm lazy
+    pre_balance = web3.eth.getBalance(almost_filled_validator_auction.address)
     almost_filled_validator_auction.functions.depositBids().transact(
         {"from": accounts[5]}
     )
+    post_balance = web3.eth.getBalance(almost_filled_validator_auction.address)
+    total_price = (
+        number_of_auction_participants
+        * almost_filled_validator_auction.functions.closingPrice().call()
+    )
+    assert post_balance == pre_balance - total_price
+    assert web3.eth.getBalance(deposit_locker) == total_price
     assert_auction_state(almost_filled_validator_auction, AuctionStates.Ended)
 
 
