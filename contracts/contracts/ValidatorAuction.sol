@@ -1,10 +1,11 @@
 pragma solidity ^0.4.25;
 
 import "./lib/Ownable.sol";
+import "./DepositLocker.sol";
 
 
 contract ValidatorAuction is Ownable {
-
+    DepositLocker public depositLocker;
     mapping (address => bool) public whitelist;
     mapping (address => uint) public bids;
     address[] public bidders;
@@ -35,7 +36,8 @@ contract ValidatorAuction is Ownable {
         _;
     }
 
-    constructor() {
+    constructor(DepositLocker _depositLocker) {
+        depositLocker = _depositLocker;
         auctionState = AuctionStates.Deployed;
     }
 
@@ -56,6 +58,7 @@ contract ValidatorAuction is Ownable {
         bids[msg.sender] = msg.value;
         bidders.push(msg.sender);
 
+        depositLocker.registerDepositor(msg.sender);
         emit BidSubmitted(msg.sender, msg.value, now);
 
         if (bidders.length == NUMBER_OF_PARTICIPANTS) {
@@ -74,8 +77,8 @@ contract ValidatorAuction is Ownable {
     }
 
     function depositBids() public stateIs(AuctionStates.DepositPending) {
-        // XXX still needs to be implemented
         auctionState = AuctionStates.Ended;
+        depositLocker.deposit.value(closingPrice * NUMBER_OF_PARTICIPANTS)(closingPrice);
     }
 
     function closeAuction() public stateIs(AuctionStates.Started) {
