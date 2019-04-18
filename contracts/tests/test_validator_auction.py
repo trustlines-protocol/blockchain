@@ -345,6 +345,11 @@ def test_event_whitelist(no_whitelist_validator_auction_contract, whitelist, web
         assert event["args"]["whitelistedAddress"] == whitelist[i]
 
 
+ETH_IN_WEI = 1e18
+START_PRICE = 10000 * ETH_IN_WEI
+AUCTION_DURATION_IN_DAYS = 14
+
+
 def generate_price_test_data():
     prices = []
     for i in range(0, 42 + 1):
@@ -360,22 +365,27 @@ def generate_price_test_data():
 
 def auction_price_at_elapsed_time(seconds_from_start):
     ms_since_start = seconds_from_start * 1000
-    starting_price = 10000 * 1e18
-    decay_divisor = 146328000000000
-    decay = ms_since_start ** 3 / decay_divisor
-    price = starting_price * (1 + ms_since_start) / (1 + ms_since_start + decay)
+    relative_auction_time = ms_since_start / AUCTION_DURATION_IN_DAYS
+    decay_divisor = 746571428571
+    decay = relative_auction_time ** 3 / decay_divisor
+    price = (
+        START_PRICE * (1 + relative_auction_time) / (1 + relative_auction_time + decay)
+    )
 
     return price
 
 
 def pytest_generate_tests(metafunc):
     arg_values = generate_price_test_data()
-    if "hours_since_start" in metafunc.fixturenames:
+    if (
+        "hours_since_start" in metafunc.fixturenames
+        and "python_price" in metafunc.fixturenames
+    ):
         metafunc.parametrize(["hours_since_start", "python_price"], arg_values)
 
 
 @pytest.mark.slow
-def test_price_function(
+def test_against_python_price_function(
     real_price_validator_auction_contract, hours_since_start, python_price, accounts
 ):
 
@@ -389,7 +399,36 @@ def test_price_function(
         seconds_since_start
     ).call()
 
-    assert blockchain_price == pytest.approx(python_price, abs=1e15)
+    assert blockchain_price == pytest.approx(python_price, abs=1e16)
+
+
+@pytest.mark.parametrize(
+    "hours_since_start, price_min, price_max",
+    [
+        (0, START_PRICE, START_PRICE),
+        (AUCTION_DURATION_IN_DAYS * 24 // 2, 3 * ETH_IN_WEI, 4 * ETH_IN_WEI),
+        (AUCTION_DURATION_IN_DAYS * 24, 1 * ETH_IN_WEI, 2 * ETH_IN_WEI),
+    ],
+)
+def test_price(
+    real_price_validator_auction_contract,
+    hours_since_start,
+    price_min,
+    price_max,
+    accounts,
+):
+
+    real_price_validator_auction_contract.functions.startAuction().transact(
+        {"from": accounts[0]}
+    )
+
+    seconds_since_start = ONE_HOUR_IN_SECONDS * hours_since_start
+
+    blockchain_price = real_price_validator_auction_contract.functions.priceAtElapsedTime(
+        seconds_since_start
+    ).call()
+
+    assert price_min <= blockchain_price <= price_max
 
 
 def test_bid_real_price_auction(
