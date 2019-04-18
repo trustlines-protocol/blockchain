@@ -9,6 +9,8 @@ import "./ValidatorAuction.sol";
 
 
 contract TestValidatorAuctionFixedPrice is ValidatorAuction {
+    constructor(DepositLocker _depositLocker) ValidatorAuction(_depositLocker) {
+    }
 
     function currentPrice() public view returns (uint) {
         return 100;
