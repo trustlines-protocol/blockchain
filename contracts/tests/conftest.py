@@ -25,6 +25,9 @@ HONEST_VALIDATOR_COUNT = 2
 MALICIOUS_VALIDATOR_INDEX = HONEST_VALIDATOR_COUNT
 MALICIOUS_NON_VALIDATOR_INDEX = MALICIOUS_VALIDATOR_INDEX + 1
 
+AUCTION_DURATION_IN_DAYS = 14
+START_PRICE_IN_ETH = 10000
+
 SignedBlockHeader = namedtuple("SignedBlockHeader", "unsignedBlockHeader signature")
 
 
@@ -184,7 +187,10 @@ def block_header_by_malicious_non_validator(malicious_non_validator_key):
 
 @pytest.fixture(scope="session")
 def real_price_validator_auction_contract(deploy_contract, whitelist):
-    contract = deploy_contract("ValidatorAuction")
+    contract = deploy_contract(
+        "ValidatorAuction",
+        constructor_args=(START_PRICE_IN_ETH, AUCTION_DURATION_IN_DAYS),
+    )
     add_whitelist_to_validator_auction_contract(contract, whitelist)
 
     return contract

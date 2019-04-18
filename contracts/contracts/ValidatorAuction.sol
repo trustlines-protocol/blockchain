@@ -13,7 +13,8 @@ contract ValidatorAuction is Ownable {
 
     uint public startTime;
     uint public closeTime;
-    uint public constant AUCTION_DURATION = 14 days;
+    uint public auctionDurationInDays;
+    uint public startPrice;
     uint public constant NUMBER_OF_PARTICIPANTS = 123;
 
     event BidSubmitted(address bidder, uint bidValue, uint slotPrice, uint timestamp);
@@ -35,7 +36,15 @@ contract ValidatorAuction is Ownable {
         _;
     }
 
-    constructor() {
+    constructor(
+        uint _startPriceInEth,
+        uint _auctionDurationInDays
+    ) {
+        require(_auctionDurationInDays > 0, "Duration of auction must be greater than 0");
+
+        auctionDurationInDays = _auctionDurationInDays;
+        startPrice = _startPriceInEth * 1 ether;
+
         auctionState = AuctionStates.Deployed;
     }
 
@@ -45,7 +54,7 @@ contract ValidatorAuction is Ownable {
 
     function bid() public payable stateIs(AuctionStates.Started) {
         assert(now > startTime);
-        require(now <= startTime + AUCTION_DURATION, "Auction has already ended.");
+        require(now <= startTime + auctionDurationInDays * 1 days, "Auction has already ended.");
         uint price = currentPrice();
         require(msg.value >= price, "Not enough ether was provided for bidding.");
         require(whitelist[msg.sender], "The sender is not whitelisted.");
@@ -74,7 +83,7 @@ contract ValidatorAuction is Ownable {
     }
 
     function closeAuction() public stateIs(AuctionStates.Started) {
-        require(now > startTime + AUCTION_DURATION, "The auction cannot be closed this early.");
+        require(now > startTime + auctionDurationInDays * 1 days, "The auction cannot be closed this early.");
         assert(bidders.length < NUMBER_OF_PARTICIPANTS);
 
         auctionState = AuctionStates.Failed;
@@ -95,12 +104,12 @@ contract ValidatorAuction is Ownable {
         return priceAtElapsedTime(secondsSinceStart);
     }
 
-    function priceAtElapsedTime(uint secondsSinceStart) public pure returns (uint) {
+    function priceAtElapsedTime(uint secondsSinceStart) public view returns (uint) {
         uint msSinceStart = 1000 * secondsSinceStart;
-        uint startingPrice = 10000 ether;
-        uint decayDivisor = 146328000000000;
-        uint decay = msSinceStart ** 3 / decayDivisor;
-        uint price = startingPrice * (1 + msSinceStart)/(1 + msSinceStart + decay);
+        uint relativeAuctionTime = msSinceStart / auctionDurationInDays;
+        uint decayDivisor = 746571428571;
+        uint decay = relativeAuctionTime ** 3 / decayDivisor;
+        uint price = startPrice * (1 + relativeAuctionTime)/(1 + relativeAuctionTime + decay);
         return price;
     }
 
