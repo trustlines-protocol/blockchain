@@ -189,7 +189,7 @@ def validator_auction_contract(deploy_contract, whitelist, web3):
         "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
     )
     deposit_locker.functions.init(
-        web3.eth.blockNumber + 50,
+        web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
         "0x0000000000000000000000000000000000000000",
         contract.address,
     ).transact()
@@ -207,7 +207,7 @@ def real_price_validator_auction_contract(deploy_contract, whitelist, web3):
         "ValidatorAuction", constructor_args=(deposit_locker.address,)
     )
     deposit_locker.functions.init(
-        web3.eth.blockNumber + 50,
+        web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
         "0x0000000000000000000000000000000000000000",
         contract.address,
     ).transact()
@@ -224,7 +224,7 @@ def no_whitelist_validator_auction_contract(deploy_contract, web3):
         "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
     )
     deposit_locker.functions.init(
-        web3.eth.blockNumber + 50,
+        web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
         "0x0000000000000000000000000000000000000000",
         contract.address,
     ).transact()
@@ -244,7 +244,7 @@ def almost_filled_validator_auction(
         "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
     )
     deposit_locker.functions.init(
-        web3.eth.blockNumber + 50,
+        web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
         "0x0000000000000000000000000000000000000000",
         contract.address,
     ).transact()
