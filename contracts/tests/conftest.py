@@ -183,7 +183,7 @@ def block_header_by_malicious_non_validator(malicious_non_validator_key):
 
 
 @pytest.fixture(scope="session")
-def validator_auction_contract(deploy_contract, whitelist, web3, default_account):
+def validator_auction_contract(deploy_contract, whitelist, web3):
     deposit_locker = deploy_contract("DepositLocker")
     contract = deploy_contract(
         "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
@@ -192,7 +192,7 @@ def validator_auction_contract(deploy_contract, whitelist, web3, default_account
         web3.eth.blockNumber + 50,
         "0x0000000000000000000000000000000000000000",
         contract.address,
-    ).transact({"from": default_account})
+    ).transact()
 
     add_whitelist_to_validator_auction_contract(contract, whitelist)
 
@@ -200,9 +200,7 @@ def validator_auction_contract(deploy_contract, whitelist, web3, default_account
 
 
 @pytest.fixture(scope="session")
-def real_price_validator_auction_contract(
-    deploy_contract, whitelist, default_account, web3
-):
+def real_price_validator_auction_contract(deploy_contract, whitelist, web3):
     deposit_locker = deploy_contract("DepositLocker")
 
     contract = deploy_contract(
@@ -212,7 +210,7 @@ def real_price_validator_auction_contract(
         web3.eth.blockNumber + 50,
         "0x0000000000000000000000000000000000000000",
         contract.address,
-    ).transact({"from": default_account})
+    ).transact()
 
     add_whitelist_to_validator_auction_contract(contract, whitelist)
 
@@ -220,7 +218,7 @@ def real_price_validator_auction_contract(
 
 
 @pytest.fixture(scope="session")
-def no_whitelist_validator_auction_contract(deploy_contract, web3, default_account):
+def no_whitelist_validator_auction_contract(deploy_contract, web3):
     deposit_locker = deploy_contract("DepositLocker")
     contract = deploy_contract(
         "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
@@ -229,14 +227,14 @@ def no_whitelist_validator_auction_contract(deploy_contract, web3, default_accou
         web3.eth.blockNumber + 50,
         "0x0000000000000000000000000000000000000000",
         contract.address,
-    ).transact({"from": default_account})
+    ).transact()
 
     return contract
 
 
 @pytest.fixture(scope="session")
 def almost_filled_validator_auction(
-    deploy_contract, whitelist, number_of_auction_participants, web3, default_account
+    deploy_contract, whitelist, number_of_auction_participants, web3
 ):
     """Validator auction contract missing one bid to reach the maximum amount of bidders
     account[1] has not bid and can be used to test the behaviour of sending the last bid"""
@@ -249,7 +247,7 @@ def almost_filled_validator_auction(
         web3.eth.blockNumber + 50,
         "0x0000000000000000000000000000000000000000",
         contract.address,
-    ).transact({"from": default_account})
+    ).transact()
 
     add_whitelist_to_validator_auction_contract(contract, whitelist)
 
