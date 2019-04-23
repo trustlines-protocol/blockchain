@@ -189,9 +189,9 @@ def validator_auction_contract(deploy_contract, whitelist, web3):
         "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
     )
     deposit_locker.functions.init(
-        web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
-        "0x0000000000000000000000000000000000000000",
-        contract.address,
+        _releaseBlockNumber=web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
+        _slasher="0x0000000000000000000000000000000000000000",
+        _depositorsProxy=contract.address,
     ).transact()
 
     add_whitelist_to_validator_auction_contract(contract, whitelist)
@@ -207,9 +207,9 @@ def real_price_validator_auction_contract(deploy_contract, whitelist, web3):
         "ValidatorAuction", constructor_args=(deposit_locker.address,)
     )
     deposit_locker.functions.init(
-        web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
-        "0x0000000000000000000000000000000000000000",
-        contract.address,
+        _releaseBlockNumber=web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
+        _slasher="0x0000000000000000000000000000000000000000",
+        _depositorsProxy=contract.address,
     ).transact()
 
     add_whitelist_to_validator_auction_contract(contract, whitelist)
@@ -224,9 +224,9 @@ def no_whitelist_validator_auction_contract(deploy_contract, web3):
         "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
     )
     deposit_locker.functions.init(
-        web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
-        "0x0000000000000000000000000000000000000000",
-        contract.address,
+        _releaseBlockNumber=web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
+        _slasher="0x0000000000000000000000000000000000000000",
+        _depositorsProxy=contract.address,
     ).transact()
 
     return contract
@@ -244,9 +244,9 @@ def almost_filled_validator_auction(
         "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
     )
     deposit_locker.functions.init(
-        web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
-        "0x0000000000000000000000000000000000000000",
-        contract.address,
+        _releaseBlockNumber=web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
+        _slasher="0x0000000000000000000000000000000000000000",
+        _depositorsProxy=contract.address,
     ).transact()
 
     add_whitelist_to_validator_auction_contract(contract, whitelist)
