@@ -13,21 +13,6 @@ ONE_HOUR_IN_SECONDS = 60 * 60
 class AuctionStates(Enum):
     Deployed = 0
     Started = 1
-    Ended = 2
-    Failed = 3
-
-
-def assert_auction_state(validator_contract, expected_auction_state):
-    """assert that the current auctionState() of validator_contract is expected_auction_state"""
-    assert expected_auction_state == AuctionStates(
-        validator_contract.functions.auctionState().call()
-    ), "wrong auction state, make sure test_validator_auction.AuctionState is in sync with contracts"
-
-
-# This has to be in sync with the AuctionStates in ValidatorAuction.sol
-class AuctionStates(Enum):
-    Deployed = 0
-    Started = 1
     DepositPending = 2
     Ended = 3
     Failed = 4
@@ -186,20 +171,30 @@ def test_enough_bidders_ends_auction(
 
     assert_auction_state(almost_filled_validator_auction, AuctionStates.DepositPending)
 
+
+@pytest.mark.slow
+def test_send_bids_to_locker(
+    almost_filled_validator_auction, accounts, web3, number_of_auction_participants
+):
+
+    almost_filled_validator_auction.functions.bid().transact(
+        {"from": accounts[1], "value": 100}
+    )
+
     deposit_locker = almost_filled_validator_auction.functions.depositLocker().call()
     assert web3.eth.getBalance(deposit_locker) == 0
 
-    # we could test the rest of this in another function, but it's slow anyway
-    # and I'm lazy
     pre_balance = web3.eth.getBalance(almost_filled_validator_auction.address)
     almost_filled_validator_auction.functions.depositBids().transact(
         {"from": accounts[5]}
     )
+
     post_balance = web3.eth.getBalance(almost_filled_validator_auction.address)
     total_price = (
         number_of_auction_participants
         * almost_filled_validator_auction.functions.closingPrice().call()
     )
+
     assert post_balance == pre_balance - total_price
     assert web3.eth.getBalance(deposit_locker) == total_price
     assert_auction_state(almost_filled_validator_auction, AuctionStates.Ended)

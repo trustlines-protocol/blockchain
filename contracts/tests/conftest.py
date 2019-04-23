@@ -12,7 +12,7 @@ from .deploy_util import (
 from .data_generation import make_block_header
 
 # increase eth_tester's GAS_LIMIT
-# Otherwise we can't whitelist enough addresses
+# Otherwise we can't whitelist enough addresses in one transaction
 assert eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT < 8 * 10 ** 6
 eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT = 8 * 10 ** 6
 
