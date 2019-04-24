@@ -111,6 +111,7 @@ contract DepositLocker is DepositLockerInterface, Ownable {
         require(msg.sender == slasher, "Only the slasher can call this function.");
         require(canWithdraw[_depositorToBeSlashed], "cannot slash address");
         canWithdraw[_depositorToBeSlashed] = false;
+        address(0).transfer(valuePerDepositor);
         emit Slash(_depositorToBeSlashed, valuePerDepositor);
         return true;
     }
