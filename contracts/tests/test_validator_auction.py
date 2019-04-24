@@ -5,8 +5,13 @@ import eth_tester.exceptions
 import time
 from enum import Enum
 
+from .conftest import AUCTION_START_PRICE, AUCTION_DURATION_IN_DAYS
+
 TWO_WEEKS_IN_SECONDS = 14 * 24 * 60 * 60
 ONE_HOUR_IN_SECONDS = 60 * 60
+ETH_IN_WEI = 1e18
+
+TEST_PRICE = 100
 
 
 # This has to be in sync with the AuctionStates in ValidatorAuction.sol
@@ -59,7 +64,7 @@ def test_auction_state_deployed(validator_auction_contract):
 def test_cannot_bid_when_not_started(validator_auction_contract, accounts):
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         validator_auction_contract.functions.bid().transact(
-            {"from": accounts[1], "value": 100}
+            {"from": accounts[1], "value": TEST_PRICE}
         )
 
 
@@ -85,7 +90,7 @@ def test_bidding_not_whitelisted(started_validator_auction, accounts):
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         started_validator_auction.functions.bid().transact(
-            {"from": accounts[0], "value": 100}
+            {"from": accounts[0], "value": TEST_PRICE}
         )
 
 
@@ -93,7 +98,7 @@ def test_bidding_bid_below_current_price(started_validator_auction, accounts):
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         started_validator_auction.functions.bid().transact(
-            {"from": accounts[1], "value": 99}
+            {"from": accounts[1], "value": TEST_PRICE - 1}
         )
 
 
@@ -114,19 +119,19 @@ def test_bidding_too_late(started_validator_auction, accounts, chain):
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         started_validator_auction.functions.bid().transact(
-            {"from": accounts[1], "value": 100}
+            {"from": accounts[1], "value": TEST_PRICE}
         )
 
 
 def test_already_bid(started_validator_auction, accounts):
 
     started_validator_auction.functions.bid().transact(
-        {"from": accounts[1], "value": 100}
+        {"from": accounts[1], "value": TEST_PRICE}
     )
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         started_validator_auction.functions.bid().transact(
-            {"from": accounts[1], "value": 100}
+            {"from": accounts[1], "value": TEST_PRICE}
         )
 
 
@@ -145,7 +150,7 @@ def test_bidding_auction_failed(started_validator_auction, accounts, chain):
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         started_validator_auction.functions.bid().transact(
-            {"from": accounts[1], "value": 100}
+            {"from": accounts[1], "value": TEST_PRICE}
         )
 
 
@@ -165,7 +170,7 @@ def test_bidding_auction_ended(started_validator_auction, accounts, chain):
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         started_validator_auction.functions.bid().transact(
-            {"from": accounts[1], "value": 100}
+            {"from": accounts[1], "value": TEST_PRICE}
         )
 
 
@@ -175,7 +180,7 @@ def test_enough_bidders_ends_auction(almost_filled_validator_auction, accounts):
     assert_auction_state(almost_filled_validator_auction, AuctionState.Started)
 
     almost_filled_validator_auction.functions.bid().transact(
-        {"from": accounts[1], "value": 100}
+        {"from": accounts[1], "value": TEST_PRICE}
     )
 
     assert_auction_state(almost_filled_validator_auction, AuctionState.DepositPending)
@@ -301,7 +306,7 @@ def test_event_bid_submitted(started_validator_auction, accounts, web3):
     latest_block_number = web3.eth.blockNumber
 
     started_validator_auction.functions.bid().transact(
-        {"from": accounts[1], "value": 100}
+        {"from": accounts[1], "value": TEST_PRICE}
     )
 
     event = started_validator_auction.events.BidSubmitted.createFilter(
@@ -311,7 +316,7 @@ def test_event_bid_submitted(started_validator_auction, accounts, web3):
     bid_time = web3.eth.getBlock("latest").timestamp
 
     assert event["bidder"] == accounts[1]
-    assert event["bidValue"] == 100
+    assert event["bidValue"] == TEST_PRICE
     assert event["timestamp"] == bid_time
 
 
@@ -330,10 +335,26 @@ def test_event_auction_started(validator_auction_contract, accounts, web3):
     assert event["startTime"] == start_time
 
 
+def test_event_auction_deployed(
+    real_price_validator_auction_contract, number_of_auction_participants
+):
+    event_args = real_price_validator_auction_contract.events.AuctionDeployed.createFilter(
+        fromBlock=0
+    ).get_all_entries()[
+        0
+    ][
+        "args"
+    ]
+
+    assert event_args["startPrice"] == AUCTION_START_PRICE
+    assert event_args["auctionDurationInDays"] == AUCTION_DURATION_IN_DAYS
+    assert event_args["numberOfParticipants"] == number_of_auction_participants
+
+
 def test_event_auction_failed(started_validator_auction, accounts, chain, web3):
 
     started_validator_auction.functions.bid().transact(
-        {"from": accounts[1], "value": 100}
+        {"from": accounts[1], "value": TEST_PRICE}
     )
 
     time_travel_to_end_of_auction(chain)
@@ -368,7 +389,7 @@ def test_event_auction_ended(almost_filled_validator_auction, accounts, web3):
     ).get_all_entries()[0]["args"]
 
     assert event["closeTime"] == close_time
-    assert event["closingPrice"] == 100
+    assert event["closingPrice"] == TEST_PRICE
 
 
 def test_event_whitelist(no_whitelist_validator_auction_contract, whitelist, web3):
@@ -403,22 +424,29 @@ def generate_price_test_data():
 
 def auction_price_at_elapsed_time(seconds_from_start):
     ms_since_start = seconds_from_start * 1000
-    starting_price = 10000 * 1e18
-    decay_divisor = 146328000000000
-    decay = ms_since_start ** 3 / decay_divisor
-    price = starting_price * (1 + ms_since_start) / (1 + ms_since_start + decay)
+    relative_auction_time = ms_since_start / AUCTION_DURATION_IN_DAYS
+    decay_divisor = 746571428571
+    decay = relative_auction_time ** 3 / decay_divisor
+    price = (
+        AUCTION_START_PRICE
+        * (1 + relative_auction_time)
+        / (1 + relative_auction_time + decay)
+    )
 
     return price
 
 
 def pytest_generate_tests(metafunc):
     arg_values = generate_price_test_data()
-    if "hours_since_start" in metafunc.fixturenames:
+    if (
+        "hours_since_start" in metafunc.fixturenames
+        and "python_price" in metafunc.fixturenames
+    ):
         metafunc.parametrize(["hours_since_start", "python_price"], arg_values)
 
 
 @pytest.mark.slow
-def test_price_function(
+def test_against_python_price_function(
     real_price_validator_auction_contract, hours_since_start, python_price, accounts
 ):
 
@@ -432,7 +460,36 @@ def test_price_function(
         seconds_since_start
     ).call()
 
-    assert blockchain_price == pytest.approx(python_price, abs=1e15)
+    assert blockchain_price == pytest.approx(python_price, abs=1e16)
+
+
+@pytest.mark.parametrize(
+    "hours_since_start, price_min, price_max",
+    [
+        (0, AUCTION_START_PRICE, AUCTION_START_PRICE),
+        (AUCTION_DURATION_IN_DAYS * 24 // 2, 3 * ETH_IN_WEI, 4 * ETH_IN_WEI),
+        (AUCTION_DURATION_IN_DAYS * 24, 1 * ETH_IN_WEI, 2 * ETH_IN_WEI),
+    ],
+)
+def test_price(
+    real_price_validator_auction_contract,
+    hours_since_start,
+    price_min,
+    price_max,
+    accounts,
+):
+
+    real_price_validator_auction_contract.functions.startAuction().transact(
+        {"from": accounts[0]}
+    )
+
+    seconds_since_start = ONE_HOUR_IN_SECONDS * hours_since_start
+
+    blockchain_price = real_price_validator_auction_contract.functions.priceAtElapsedTime(
+        seconds_since_start
+    ).call()
+
+    assert price_min <= blockchain_price <= price_max
 
 
 def test_bid_real_price_auction(

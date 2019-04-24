@@ -25,6 +25,9 @@ HONEST_VALIDATOR_COUNT = 2
 MALICIOUS_VALIDATOR_INDEX = HONEST_VALIDATOR_COUNT
 MALICIOUS_NON_VALIDATOR_INDEX = MALICIOUS_VALIDATOR_INDEX + 1
 
+AUCTION_DURATION_IN_DAYS = 14
+AUCTION_START_PRICE = 10000 * 10 ** 18
+
 SignedBlockHeader = namedtuple("SignedBlockHeader", "unsignedBlockHeader signature")
 
 
@@ -98,7 +101,7 @@ def non_initialised_deposit_locker_contract_session(deploy_contract):
 def initialised_deposit_and_slasher_contracts(
     validators, deploy_contract, fake_auction_address, web3
 ):
-    slasher_contract = deploy_contract("TestValidatorSlasher")
+    slasher_contract = deploy_contract("ValidatorSlasher")
     locker_contract = deploy_contract("DepositLocker")
     """Initialises both the slasher and deposit contract, both initialisation are in the same fixture because we want
     a snapshot where both contracts are initialised and aware of the address of the other"""
@@ -200,11 +203,19 @@ def validator_auction_contract(deploy_contract, whitelist, web3):
 
 
 @pytest.fixture(scope="session")
-def real_price_validator_auction_contract(deploy_contract, whitelist, web3):
+def real_price_validator_auction_contract(
+    deploy_contract, whitelist, number_of_auction_participants, web3
+):
     deposit_locker = deploy_contract("DepositLocker")
 
     contract = deploy_contract(
-        "ValidatorAuction", constructor_args=(deposit_locker.address,)
+        "ValidatorAuction",
+        constructor_args=(
+            AUCTION_START_PRICE,
+            AUCTION_DURATION_IN_DAYS,
+            number_of_auction_participants,
+            deposit_locker.address,
+        ),
     )
     deposit_locker.functions.init(
         _releaseBlockNumber=web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
@@ -253,7 +264,7 @@ def almost_filled_validator_auction(
 
     contract.functions.startAuction().transact()
 
-    for participant in whitelist[1:123]:
+    for participant in whitelist[1:number_of_auction_participants]:
         contract.functions.bid().transact({"from": participant, "value": 100})
 
     return contract
