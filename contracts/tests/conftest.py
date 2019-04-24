@@ -88,23 +88,23 @@ def equivocation_inspector_contract_session(deploy_contract):
 
 
 @pytest.fixture(scope="session")
-def non_initialised_validator_slasher_contract_session(deploy_contract):
+def non_initialized_validator_slasher_contract_session(deploy_contract):
     return deploy_contract("ValidatorSlasher")
 
 
 @pytest.fixture(scope="session")
-def non_initialised_deposit_locker_contract_session(deploy_contract):
+def non_initialized_deposit_locker_contract_session(deploy_contract):
     return deploy_contract("DepositLocker")
 
 
 @pytest.fixture(scope="session")
-def initialised_deposit_and_slasher_contracts(
+def initialized_deposit_and_slasher_contracts(
     validators, deploy_contract, fake_auction_address, web3
 ):
     slasher_contract = deploy_contract("ValidatorSlasher")
     locker_contract = deploy_contract("DepositLocker")
     """Initialises both the slasher and deposit contract, both initialisation are in the same fixture because we want
-    a snapshot where both contracts are initialised and aware of the address of the other"""
+    a snapshot where both contracts are initialized and aware of the address of the other"""
 
     # initialise the deposit contract
     release_number = web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET
@@ -115,7 +115,7 @@ def initialised_deposit_and_slasher_contracts(
 
     slasher_contract_address = slasher_contract.address
     auction_contract_address = fake_auction_address
-    initialised_deposit_contract = initialize_deposit_locker(
+    initialized_deposit_contract = initialize_deposit_locker(
         locker_contract,
         release_number,
         slasher_contract_address,
@@ -124,9 +124,9 @@ def initialised_deposit_and_slasher_contracts(
     )
 
     # initialise slasher contract
-    fund_contract_address = initialised_deposit_contract.address
+    fund_contract_address = initialized_deposit_contract.address
 
-    initialised_slasher_contract = initialize_test_validator_slasher(
+    initialized_slasher_contract = initialize_test_validator_slasher(
         slasher_contract, validators, fund_contract_address, web3
     )
 
@@ -134,34 +134,34 @@ def initialised_deposit_and_slasher_contracts(
         "Deposit_slasher_contracts", "deposit_contract, slasher_contract"
     )
     return Deposit_slasher_contracts(
-        deposit_contract=initialised_deposit_contract,
-        slasher_contract=initialised_slasher_contract,
+        deposit_contract=initialized_deposit_contract,
+        slasher_contract=initialized_slasher_contract,
     )
 
 
 @pytest.fixture
-def validator_slasher_contract(initialised_deposit_and_slasher_contracts):
+def validator_slasher_contract(initialized_deposit_and_slasher_contracts):
 
-    return initialised_deposit_and_slasher_contracts.slasher_contract
+    return initialized_deposit_and_slasher_contracts.slasher_contract
 
 
 @pytest.fixture
-def deposit_locker_contract(initialised_deposit_and_slasher_contracts):
+def deposit_locker_contract(initialized_deposit_and_slasher_contracts):
 
-    return initialised_deposit_and_slasher_contracts.deposit_contract
+    return initialized_deposit_and_slasher_contracts.deposit_contract
 
 
 @pytest.fixture
 def deposit_locker_contract_with_deposits(
     chain_cleanup,
-    initialised_deposit_and_slasher_contracts,
+    initialized_deposit_and_slasher_contracts,
     validators,
     malicious_validator_address,
     deposit_amount,
     fake_auction_address,
 ):
 
-    deposit_contract = initialised_deposit_and_slasher_contracts.deposit_contract
+    deposit_contract = initialized_deposit_and_slasher_contracts.deposit_contract
 
     for validator in validators:
         deposit_contract.functions.registerDepositor(validator).transact(

@@ -36,8 +36,8 @@ def test_init_already_initialized(deposit_locker_contract, accounts):
         ).transact({"from": accounts[0]})
 
 
-def test_init_not_owner(non_initialised_deposit_locker_contract_session, accounts):
-    contract = non_initialised_deposit_locker_contract_session
+def test_init_not_owner(non_initialized_deposit_locker_contract_session, accounts):
+    contract = non_initialized_deposit_locker_contract_session
     validator_contract_address = accounts[0]
     release_block_number = 100
     auction_contract_address = accounts[1]
@@ -48,9 +48,9 @@ def test_init_not_owner(non_initialised_deposit_locker_contract_session, account
 
 
 def test_init_passed_realease_block(
-    non_initialised_deposit_locker_contract_session, accounts, web3
+    non_initialized_deposit_locker_contract_session, accounts, web3
 ):
-    contract = non_initialised_deposit_locker_contract_session
+    contract = non_initialized_deposit_locker_contract_session
     validator_contract_address = accounts[0]
     release_block = web3.eth.blockNumber - 1
 
@@ -99,38 +99,38 @@ def test_withdraw_too_soon(
         contract.functions.withdraw().transact({"from": accounts[0]})
 
 
-def test_withdraw_not_initialised(
-    non_initialised_deposit_locker_contract_session, accounts
+def test_withdraw_not_initialized(
+    non_initialized_deposit_locker_contract_session, accounts
 ):
-    contract = non_initialised_deposit_locker_contract_session
+    contract = non_initialized_deposit_locker_contract_session
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         contract.functions.withdraw().transact({"from": accounts[0]})
 
 
-def test_slash_not_initialised(
-    non_initialised_deposit_locker_contract_session, accounts
+def test_slash_not_initialized(
+    non_initialized_deposit_locker_contract_session, accounts
 ):
-    contract = non_initialised_deposit_locker_contract_session
+    contract = non_initialized_deposit_locker_contract_session
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         contract.functions.slash(accounts[0]).transact({"from": accounts[0]})
 
 
-def test_register_depositor_not_initialised(
-    non_initialised_deposit_locker_contract_session, accounts
+def test_register_depositor_not_initialized(
+    non_initialized_deposit_locker_contract_session, accounts
 ):
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        non_initialised_deposit_locker_contract_session.functions.registerDepositor(
+        non_initialized_deposit_locker_contract_session.functions.registerDepositor(
             accounts[0]
         ).transact({"from": accounts[0]})
 
 
-def test_deposit_not_initialised(
-    non_initialised_deposit_locker_contract_session, accounts
+def test_deposit_not_initialized(
+    non_initialized_deposit_locker_contract_session, accounts
 ):
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        non_initialised_deposit_locker_contract_session.functions.deposit(0).transact(
+        non_initialized_deposit_locker_contract_session.functions.deposit(0).transact(
             {"from": accounts[0], "value": 0}
         )
 
