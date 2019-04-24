@@ -24,7 +24,7 @@ contract DepositLocker is DepositLockerInterface, Ownable {
     bool initialised = false;
     bool deposited = false;
 
-    /* We do maintain two special addresses:
+    /* We maintain two special addresses:
        - the slasher, that is allowed to call the slash function
        - the depositorsProxy that registers depositors and deposits a value for
          all of the registered depositors with the deposit function. In our case
@@ -38,6 +38,7 @@ contract DepositLocker is DepositLockerInterface, Ownable {
     mapping (address => bool) public canWithdraw;
     uint numberOfDepositors = 0;
     uint valuePerDepositor;
+
     event DepositorRegistered(address depositorAddress, uint numberOfDepositors);
     event Deposit(uint totalValue, uint valuePerDepositor, uint numberOfDepositors);
     event Withdraw(address withdrawer, uint value);

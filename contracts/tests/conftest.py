@@ -101,7 +101,7 @@ def non_initialised_deposit_locker_contract_session(deploy_contract):
 def initialised_deposit_and_slasher_contracts(
     validators, deploy_contract, fake_auction_address, web3
 ):
-    slasher_contract = deploy_contract("TestValidatorSlasher")
+    slasher_contract = deploy_contract("ValidatorSlasher")
     locker_contract = deploy_contract("DepositLocker")
     """Initialises both the slasher and deposit contract, both initialisation are in the same fixture because we want
     a snapshot where both contracts are initialised and aware of the address of the other"""
