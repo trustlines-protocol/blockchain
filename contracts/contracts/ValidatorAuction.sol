@@ -89,7 +89,7 @@ contract ValidatorAuction is Ownable {
     }
 
     function startAuction() public onlyOwner stateIs(AuctionState.Deployed) {
-        require(depositLocker.initialised(), "The deposit locker contract is not initialized");
+        require(depositLocker.initialized(), "The deposit locker contract is not initialized");
 
         auctionState = AuctionState.Started;
         startTime = now;

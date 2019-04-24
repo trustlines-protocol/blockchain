@@ -17,9 +17,9 @@ def test_init_already_initialized(validator_slasher_contract, accounts):
 
 
 def test_init_not_owner(
-    non_initialised_validator_slasher_contract_session, accounts, validators
+    non_initialized_validator_slasher_contract_session, accounts, validators
 ):
-    contract = non_initialised_validator_slasher_contract_session
+    contract = non_initialized_validator_slasher_contract_session
     fund_contract_address = accounts[0]
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):

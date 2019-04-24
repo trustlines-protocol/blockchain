@@ -69,11 +69,11 @@ def test_cannot_bid_when_not_started(validator_auction_contract, accounts):
 
 
 def test_auction_start_deposit_not_init(
-    deploy_contract, non_initialised_deposit_locker_contract_session
+    deploy_contract, non_initialized_deposit_locker_contract_session
 ):
     contract = deploy_contract(
         "TestValidatorAuctionFixedPrice",
-        constructor_args=non_initialised_deposit_locker_contract_session.address,
+        constructor_args=(non_initialized_deposit_locker_contract_session.address,),
     )
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
