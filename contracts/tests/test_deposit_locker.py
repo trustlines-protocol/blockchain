@@ -358,14 +358,18 @@ def test_slash_from_non_slasher_throws(testenv):
         )
 
 
-def test_slash_after_deposit_works(
+def test_slash_after_deposit_can_not_withdraw(testenv_deposited):
+    depositor = testenv_deposited.depositors[0]
+    assert testenv_deposited.can_withdraw(depositor)
+    testenv_deposited.slash(depositor)
+    assert not testenv_deposited.can_withdraw(depositor)
+
+
+def test_slash_after_deposit_burn_deposit(
     testenv_deposited, web3, value_per_depositor, block_reward_amount
 ):
-    depositor = testenv_deposited.depositors[0]
     burn_address = "0x0000000000000000000000000000000000000000"
     contract_address = testenv_deposited.deposit_locker.address
-
-    assert testenv_deposited.can_withdraw(depositor)
 
     burn_address_balance_before = web3.eth.getBalance(burn_address)
     contract_address_balance_before = web3.eth.getBalance(contract_address)
@@ -373,14 +377,13 @@ def test_slash_after_deposit_works(
     # The burning address is in this testing scenario also the address getting
     # the transaction fees and block rewards. To have a clear calculation make
     # sure the transaction has no fees.
-    testenv_deposited.deposit_locker.functions.slash(depositor).transact(
-        {"from": testenv_deposited.slasher, "gasPrice": 0}
-    )
+    testenv_deposited.deposit_locker.functions.slash(
+        testenv_deposited.depositors[0]
+    ).transact({"from": testenv_deposited.slasher, "gasPrice": 0})
 
     burn_address_balance_after = web3.eth.getBalance(burn_address)
     contract_address_balance_after = web3.eth.getBalance(contract_address)
 
-    assert not testenv_deposited.can_withdraw(depositor)
     assert (
         burn_address_balance_after
         == burn_address_balance_before + value_per_depositor + block_reward_amount
