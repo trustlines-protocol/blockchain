@@ -15,16 +15,17 @@ TEST_PRICE = 100
 
 
 # This has to be in sync with the AuctionStates in ValidatorAuction.sol
-class AuctionStates(Enum):
+class AuctionState(Enum):
     Deployed = 0
     Started = 1
-    Ended = 2
-    Failed = 3
+    DepositPending = 2
+    Ended = 3
+    Failed = 4
 
 
 def assert_auction_state(validator_contract, expected_auction_state):
     """assert that the current auctionState() of validator_contract is expected_auction_state"""
-    assert expected_auction_state == AuctionStates(
+    assert expected_auction_state == AuctionState(
         validator_contract.functions.auctionState().call()
     ), "wrong auction state, make sure test_validator_auction.AuctionState is in sync with contracts"
 
@@ -45,8 +46,19 @@ def started_validator_auction(validator_auction_contract, accounts):
     return validator_auction_contract
 
 
+@pytest.fixture()
+def deposit_pending_validator_auction(almost_filled_validator_auction, accounts):
+    almost_filled_validator_auction.functions.bid().transact(
+        {"from": accounts[1], "value": 100}
+    )
+
+    assert_auction_state(almost_filled_validator_auction, AuctionState.DepositPending)
+
+    return almost_filled_validator_auction
+
+
 def test_auction_state_deployed(validator_auction_contract):
-    assert_auction_state(validator_auction_contract, AuctionStates.Deployed)
+    assert_auction_state(validator_auction_contract, AuctionState.Deployed)
 
 
 def test_cannot_bid_when_not_started(validator_auction_contract, accounts):
@@ -63,7 +75,7 @@ def test_auction_start(validator_auction_contract, accounts, web3):
     start_time = web3.eth.getBlock("latest").timestamp
 
     assert validator_auction_contract.functions.startTime().call() == start_time
-    assert_auction_state(validator_auction_contract, AuctionStates.Started)
+    assert_auction_state(validator_auction_contract, AuctionState.Started)
 
 
 def test_auction_start_not_owner(validator_auction_contract, accounts):
@@ -128,7 +140,7 @@ def test_auction_failed(started_validator_auction, accounts, chain):
     time_travel_to_end_of_auction(chain)
     started_validator_auction.functions.closeAuction().transact({"from": accounts[2]})
 
-    assert_auction_state(started_validator_auction, AuctionStates.Failed)
+    assert_auction_state(started_validator_auction, AuctionState.Failed)
 
 
 def test_bidding_auction_failed(started_validator_auction, accounts, chain):
@@ -165,11 +177,34 @@ def test_bidding_auction_ended(started_validator_auction, accounts, chain):
 @pytest.mark.slow
 def test_enough_bidders_ends_auction(almost_filled_validator_auction, accounts):
 
+    assert_auction_state(almost_filled_validator_auction, AuctionState.Started)
+
     almost_filled_validator_auction.functions.bid().transact(
         {"from": accounts[1], "value": TEST_PRICE}
     )
 
-    assert_auction_state(almost_filled_validator_auction, AuctionStates.Ended)
+    assert_auction_state(almost_filled_validator_auction, AuctionState.DepositPending)
+
+
+@pytest.mark.slow
+def test_send_bids_to_locker(
+    deposit_pending_validator_auction, accounts, web3, number_of_auction_participants
+):
+    deposit_locker = deposit_pending_validator_auction.functions.depositLocker().call()
+    assert web3.eth.getBalance(deposit_locker) == 0
+
+    pre_balance = web3.eth.getBalance(deposit_pending_validator_auction.address)
+    deposit_pending_validator_auction.functions.depositBids().transact(
+        {"from": accounts[5]}
+    )
+    post_balance = web3.eth.getBalance(deposit_pending_validator_auction.address)
+    total_price = (
+        number_of_auction_participants
+        * deposit_pending_validator_auction.functions.closingPrice().call()
+    )
+    assert post_balance == pre_balance - total_price
+    assert web3.eth.getBalance(deposit_locker) == total_price
+    assert_auction_state(deposit_pending_validator_auction, AuctionState.Ended)
 
 
 @pytest.mark.slow
@@ -179,6 +214,10 @@ def test_withdraw_overbid(almost_filled_validator_auction, accounts, web3):
 
     almost_filled_validator_auction.functions.bid().transact(
         {"from": accounts[1], "value": value_to_bid}
+    )
+
+    almost_filled_validator_auction.functions.depositBids().transact(
+        {"from": accounts[0]}
     )
 
     pre_balance = web3.eth.getBalance(accounts[1], "latest")
@@ -210,6 +249,10 @@ def test_cannot_withdraw_twice(almost_filled_validator_auction, accounts, web3):
 
     almost_filled_validator_auction.functions.bid().transact(
         {"from": accounts[1], "value": 1234}
+    )
+
+    almost_filled_validator_auction.functions.depositBids().transact(
+        {"from": accounts[0]}
     )
 
     almost_filled_validator_auction.functions.withdraw().transact(

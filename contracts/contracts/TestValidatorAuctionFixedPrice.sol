@@ -8,7 +8,9 @@ pragma solidity ^0.4.25;
 import "./ValidatorAuction.sol";
 
 
-contract TestValidatorAuctionFixedPrice is ValidatorAuction(100, 14, 123) {
+contract TestValidatorAuctionFixedPrice is ValidatorAuction {
+    constructor(DepositLocker _depositLocker) ValidatorAuction(100, 14, 123, _depositLocker) {
+    }
 
     function currentPrice() public view returns (uint) {
         return 100;

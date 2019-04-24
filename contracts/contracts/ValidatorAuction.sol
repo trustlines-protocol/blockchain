@@ -1,6 +1,7 @@
 pragma solidity ^0.4.25;
 
 import "./lib/Ownable.sol";
+import "./DepositLocker.sol";
 
 
 contract ValidatorAuction is Ownable {
@@ -11,6 +12,7 @@ contract ValidatorAuction is Ownable {
     uint public numberOfParticipants;
 
     AuctionState public auctionState;
+    DepositLocker public depositLocker;
     mapping (address => bool) public whitelist;
     mapping (address => uint) public bids;
     address[] public bidders;
@@ -29,6 +31,7 @@ contract ValidatorAuction is Ownable {
     enum AuctionState{
         Deployed,
         Started,
+        DepositPending, /* all slots sold, someone needs to call depositBids */
         Ended,
         Failed
     }
@@ -41,7 +44,8 @@ contract ValidatorAuction is Ownable {
     constructor(
         uint _startPriceInWei,
         uint _auctionDurationInDays,
-        uint _numberOfParticipants
+        uint _numberOfParticipants,
+        DepositLocker _depositLocker
     ) public
     {
         require(_auctionDurationInDays > 0, "Duration of auction must be greater than 0");
@@ -50,6 +54,7 @@ contract ValidatorAuction is Ownable {
         startPrice = _startPriceInWei;
         auctionDurationInDays = _auctionDurationInDays;
         numberOfParticipants = _numberOfParticipants;
+        depositLocker = _depositLocker;
 
         emit AuctionDeployed(startPrice, auctionDurationInDays, numberOfParticipants);
         auctionState = AuctionState.Deployed;
@@ -72,10 +77,11 @@ contract ValidatorAuction is Ownable {
         bids[msg.sender] = msg.value;
         bidders.push(msg.sender);
 
+        depositLocker.registerDepositor(msg.sender);
         emit BidSubmitted(msg.sender, msg.value, price, now);
 
         if (bidders.length == numberOfParticipants) {
-            auctionState = AuctionState.Ended;
+            auctionState = AuctionState.DepositPending;
             closeTime = now;
             closingPrice = price;
             emit AuctionEnded(closeTime, closingPrice);
@@ -87,6 +93,11 @@ contract ValidatorAuction is Ownable {
         startTime = now;
 
         emit AuctionStarted(now);
+    }
+
+    function depositBids() public stateIs(AuctionState.DepositPending) {
+        auctionState = AuctionState.Ended;
+        depositLocker.deposit.value(closingPrice * numberOfParticipants)(closingPrice);
     }
 
     function closeAuction() public stateIs(AuctionState.Started) {
