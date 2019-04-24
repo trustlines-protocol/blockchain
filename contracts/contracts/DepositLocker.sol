@@ -21,8 +21,8 @@ import "./DepositLockerInterface.sol";
 
 contract DepositLocker is DepositLockerInterface, Ownable {
 
-    bool initialised = false;
-    bool deposited = false;
+    bool public initialised = false;
+    bool public deposited = false;
 
     /* We maintain two special addresses:
        - the slasher, that is allowed to call the slash function
