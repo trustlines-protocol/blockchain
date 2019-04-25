@@ -298,3 +298,12 @@ def send_ether_to_whitelisted_accounts(chain, whitelist):
 def add_whitelist_to_validator_auction_contract(contract, whitelist):
     contract.functions.addToWhitelist(whitelist).transact()
     return contract
+
+
+@pytest.fixture()
+def block_reward_amount(chain, web3):
+    mining_reward_address = "0x0000000000000000000000000000000000000000"
+    balance_before = web3.eth.getBalance(mining_reward_address)
+    chain.mine_block()
+    balance_after = web3.eth.getBalance(mining_reward_address)
+    return balance_after - balance_before

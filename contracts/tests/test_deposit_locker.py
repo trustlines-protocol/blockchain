@@ -244,10 +244,15 @@ def testenv(deploy_contract, accounts, web3):
 
 
 @pytest.fixture()
-def testenv_deposited(testenv):
+def value_per_depositor():
+    return 1000
+
+
+@pytest.fixture()
+def testenv_deposited(testenv, value_per_depositor):
     """return a test environment, with all depositors registered and the deposit already made"""
     testenv.register_all_depositors()
-    testenv.deposit(1000, len(testenv.depositors) * 1000)
+    testenv.deposit(value_per_depositor, len(testenv.depositors) * value_per_depositor)
     return testenv
 
 
@@ -353,11 +358,40 @@ def test_slash_from_non_slasher_throws(testenv):
         )
 
 
-def test_slash_after_deposit_works(testenv_deposited):
+def test_slash_after_deposit_can_not_withdraw(testenv_deposited):
     depositor = testenv_deposited.depositors[0]
     assert testenv_deposited.can_withdraw(depositor)
     testenv_deposited.slash(depositor)
     assert not testenv_deposited.can_withdraw(depositor)
+
+
+def test_slash_after_deposit_burn_deposit(
+    testenv_deposited, web3, value_per_depositor, block_reward_amount
+):
+    burn_address = "0x0000000000000000000000000000000000000000"
+    contract_address = testenv_deposited.deposit_locker.address
+
+    burn_address_balance_before = web3.eth.getBalance(burn_address)
+    contract_address_balance_before = web3.eth.getBalance(contract_address)
+
+    # The burning address is in this testing scenario also the address getting
+    # the transaction fees and block rewards. To have a clear calculation make
+    # sure the transaction has no fees.
+    testenv_deposited.deposit_locker.functions.slash(
+        testenv_deposited.depositors[0]
+    ).transact({"from": testenv_deposited.slasher, "gasPrice": 0})
+
+    burn_address_balance_after = web3.eth.getBalance(burn_address)
+    contract_address_balance_after = web3.eth.getBalance(contract_address)
+
+    assert (
+        burn_address_balance_after
+        == burn_address_balance_before + value_per_depositor + block_reward_amount
+    )
+    assert (
+        contract_address_balance_after
+        == contract_address_balance_before - value_per_depositor
+    )
 
 
 def test_slash_twice_throws(testenv_deposited):
