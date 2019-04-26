@@ -103,10 +103,10 @@ def initialized_deposit_and_slasher_contracts(
 ):
     slasher_contract = deploy_contract("ValidatorSlasher")
     locker_contract = deploy_contract("DepositLocker")
-    """Initialises both the slasher and deposit contract, both initialisation are in the same fixture because we want
+    """Initializes both the slasher and deposit contract, both initialisation are in the same fixture because we want
     a snapshot where both contracts are initialized and aware of the address of the other"""
 
-    # initialise the deposit contract
+    # initialize the deposit contract
     release_number = web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET
 
     # we want to test withdrawing before reaching block_number
@@ -123,11 +123,11 @@ def initialized_deposit_and_slasher_contracts(
         web3,
     )
 
-    # initialise slasher contract
+    # initialize slasher contract
     fund_contract_address = initialized_deposit_contract.address
 
     initialized_slasher_contract = initialize_test_validator_slasher(
-        slasher_contract, validators, fund_contract_address, web3
+        slasher_contract, fund_contract_address, web3
     )
 
     Deposit_slasher_contracts = namedtuple(

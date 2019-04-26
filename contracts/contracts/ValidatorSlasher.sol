@@ -7,17 +7,17 @@ import "./EquivocationInspector.sol";
 
 contract ValidatorSlasher is Ownable {
 
-    bool initialised = false;
+    bool public initialized = false;
     DepositLockerInterface depositContract;
 
     function() external {}
 
-    function init(address[] _validators, address _depositContractAddress) external onlyOwner returns (bool _success) {
-        require(! initialised, "The contract is already initialised.");
+    function init(address _depositContractAddress) external onlyOwner returns (bool _success) {
+        require(! initialized, "The contract is already initialized.");
 
         depositContract = DepositLockerInterface(_depositContractAddress);
 
-        initialised = true;
+        initialized = true;
         return true;
     }
 
