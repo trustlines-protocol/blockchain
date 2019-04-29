@@ -1,8 +1,9 @@
+from collections import namedtuple
+
 import click
 from eth_keyfile import extract_key_from_keyfile
 from web3 import Web3
 from deploy_tools.deploy import send_function_call_transaction, deploy_compiled_contract
-from collections import namedtuple
 
 
 ContractOptions = namedtuple(

@@ -6,6 +6,7 @@ setup(
     # use_scm_version=True,
     version="0.0.1",
     packages=find_packages(),
+    package_data={"auction_deploy": ["contracts.json"]},
     install_requires=["click"],
     entry_points="""
     [console_scripts]
