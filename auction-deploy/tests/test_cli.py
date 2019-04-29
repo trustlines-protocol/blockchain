@@ -2,8 +2,7 @@ import pytest
 from click.testing import CliRunner
 from eth_keyfile import create_keyfile_json
 
-import sys
-from contextlib import contextmanager
+from web3 import EthereumTesterProvider
 
 from json import dumps
 from auction_deploy.cli import main, decrypt_private_key
@@ -41,18 +40,30 @@ def runner():
     return CliRunner()
 
 
-@contextmanager
-def replace_stdin(target):
-    orig = sys.stdin
-    sys.stdin = target
-    yield
-    sys.stdin = orig
+def test_cli_contract_parameters_set(runner):
+    result = runner.invoke(
+        main,
+        args="deploy --start-price 123 --duration 4 --participants 567 --release-block 789123 --jsonrpc EthereumTesterProvider",
+    )
+
+    assert result.exit_code == 0
+
+
+def test_cli_transaction_parameters_set(runner):
+    result = runner.invoke(
+        main,
+        args="--gas 7123456789 --gas_price 123 --nonce 0 --jsonrpc EthereumTesterProvider",
+    )
+
+    assert result.exit_code == 0
 
 
 def test_cli_private_key(runner, keystore_file, key_password):
 
     result = runner.invoke(
-        main, args="deploy --keystore " + str(keystore_file), input=key_password
+        main,
+        args="deploy --jsonrpc EthereumTesterProvider --keystore " + str(keystore_file),
+        input=key_password,
     )
 
     assert result.exit_code == 0

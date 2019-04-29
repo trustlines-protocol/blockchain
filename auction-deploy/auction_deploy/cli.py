@@ -8,8 +8,8 @@ from collections import namedtuple
 ContractOptions = namedtuple(
     "ContractOptions",
     "start_price auction_duration number_of_participants release_block_number",
-)
-Contracts = namedtuple("Contracts", "locker slasher auction")
+)  # change to validator options
+DeployedContracts = namedtuple("DeployedContracts", "locker slasher auction")
 
 
 jsonrpc_option = click.option(
@@ -115,7 +115,10 @@ def deploy(
     transaction_options = {"gas": gas, "gasPrice": gas_price, "nonce": nonce}
 
     contracts = deploy_contracts(
-        web3, transaction_options, private_key, contract_options
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
+        contract_options=contract_options,
     )
 
     initialize_contracts(
@@ -136,7 +139,9 @@ def increase_transaction_options_nonce(transaction_options):
         transaction_options["nonce"] = transaction_options["nonce"] + 1
 
 
-def deploy_contracts(web3, transaction_options, private_key, options):
+def deploy_contracts(
+    *, web3, transaction_options={}, private_key=None, contract_options: ContractOptions
+) -> DeployedContracts:
     deposit_locker_contract = deploy_compiled_contract(
         abi=deposit_locker_abi,
         bytecode=deposit_locker_bin,
@@ -156,9 +161,9 @@ def deploy_contracts(web3, transaction_options, private_key, options):
     increase_transaction_options_nonce(transaction_options)
 
     auction_constructor_args = (
-        options.start_price,
-        options.auction_duration,
-        options.number_of_participants,
+        contract_options.start_price,
+        contract_options.auction_duration,
+        contract_options.number_of_participants,
         validator_slasher_contract.address,
     )
 
@@ -172,7 +177,7 @@ def deploy_contracts(web3, transaction_options, private_key, options):
     )
     increase_transaction_options_nonce(transaction_options)
 
-    contracts = Contracts(
+    contracts = DeployedContracts(
         deposit_locker_contract, validator_slasher_contract, auction_contract
     )
 
@@ -184,8 +189,8 @@ def initialize_contracts(
     release_block_number,
     validator_slasher_contract,
     web3,
-    transaction_options,
-    private_key,
+    transaction_options={},
+    private_key=None,
 ):
 
     deposit_init = deposit_locker_contract.functions.init(

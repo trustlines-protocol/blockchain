@@ -1,3 +1,4 @@
 click
 setuptools_scm
 git+git://github.com/trustlines-protocol/contract-deploy-tools.git
+contract-deploy-tools>=0.2.0
