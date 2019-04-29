@@ -21,8 +21,8 @@ import "./DepositLockerInterface.sol";
 
 contract DepositLocker is DepositLockerInterface, Ownable {
 
-    bool initialised = false;
-    bool deposited = false;
+    bool public initialized = false;
+    bool public deposited = false;
 
     /* We maintain two special addresses:
        - the slasher, that is allowed to call the slash function
@@ -45,7 +45,7 @@ contract DepositLocker is DepositLockerInterface, Ownable {
     event Slash(address slashedDepositor, uint slashedValue);
 
     modifier isInitialised() {
-        require(initialised, "The contract was not initialised.");
+        require(initialized, "The contract was not initialized.");
         _;
     }
 
@@ -69,13 +69,13 @@ contract DepositLocker is DepositLockerInterface, Ownable {
     function init(uint _releaseBlockNumber, address _slasher, address _depositorsProxy)
         external onlyOwner returns (bool _success)
     {
-        require(! initialised, "The contract is already initialised.");
+        require(!initialized, "The contract is already initialised.");
         require(_releaseBlockNumber > block.number, "The release block number cannot be lower or equal to the current block number");
 
         releaseBlockNumber = _releaseBlockNumber;
         slasher = _slasher;
         depositorsProxy = _depositorsProxy;
-        initialised = true;
+        initialized = true;
         owner = address(0);
         return true;
     }
@@ -112,6 +112,7 @@ contract DepositLocker is DepositLockerInterface, Ownable {
         require(msg.sender == slasher, "Only the slasher can call this function.");
         require(canWithdraw[_depositorToBeSlashed], "cannot slash address");
         canWithdraw[_depositorToBeSlashed] = false;
+        address(0).transfer(valuePerDepositor);
         emit Slash(_depositorToBeSlashed, valuePerDepositor);
         return true;
     }

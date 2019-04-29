@@ -11,21 +11,17 @@ def test_init_already_initialized(validator_slasher_contract, accounts):
     fund_contract_address = accounts[0]
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        contract.functions.init([accounts[0]], fund_contract_address).transact(
-            {"from": accounts[0]}
-        )
+        contract.functions.init(fund_contract_address).transact({"from": accounts[0]})
 
 
 def test_init_not_owner(
-    non_initialised_validator_slasher_contract_session, accounts, validators
+    non_initialized_validator_slasher_contract_session, accounts, validators
 ):
-    contract = non_initialised_validator_slasher_contract_session
+    contract = non_initialized_validator_slasher_contract_session
     fund_contract_address = accounts[0]
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        contract.functions.init(validators, fund_contract_address).transact(
-            {"from": accounts[1]}
-        )
+        contract.functions.init(fund_contract_address).transact({"from": accounts[1]})
 
 
 def test_report_malicious_validator_malicious_validator(

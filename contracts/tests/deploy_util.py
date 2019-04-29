@@ -9,10 +9,8 @@ def initialize_validator_set(test_validator_set_contract, validators, web3):
     return test_validator_set_contract
 
 
-def initialize_test_validator_slasher(
-    deployed_contract, validators, fund_contract_address, web3
-):
-    txid = deployed_contract.functions.init(validators, fund_contract_address).transact(
+def initialize_test_validator_slasher(deployed_contract, fund_contract_address, web3):
+    txid = deployed_contract.functions.init(fund_contract_address).transact(
         {"from": web3.eth.defaultAccount}
     )
     wait_for_successful_transaction_receipt(web3, txid)

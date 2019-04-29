@@ -36,8 +36,8 @@ def test_init_already_initialized(deposit_locker_contract, accounts):
         ).transact({"from": accounts[0]})
 
 
-def test_init_not_owner(non_initialised_deposit_locker_contract_session, accounts):
-    contract = non_initialised_deposit_locker_contract_session
+def test_init_not_owner(non_initialized_deposit_locker_contract_session, accounts):
+    contract = non_initialized_deposit_locker_contract_session
     validator_contract_address = accounts[0]
     release_block_number = 100
     auction_contract_address = accounts[1]
@@ -48,9 +48,9 @@ def test_init_not_owner(non_initialised_deposit_locker_contract_session, account
 
 
 def test_init_passed_realease_block(
-    non_initialised_deposit_locker_contract_session, accounts, web3
+    non_initialized_deposit_locker_contract_session, accounts, web3
 ):
-    contract = non_initialised_deposit_locker_contract_session
+    contract = non_initialized_deposit_locker_contract_session
     validator_contract_address = accounts[0]
     release_block = web3.eth.blockNumber - 1
 
@@ -99,38 +99,38 @@ def test_withdraw_too_soon(
         contract.functions.withdraw().transact({"from": accounts[0]})
 
 
-def test_withdraw_not_initialised(
-    non_initialised_deposit_locker_contract_session, accounts
+def test_withdraw_not_initialized(
+    non_initialized_deposit_locker_contract_session, accounts
 ):
-    contract = non_initialised_deposit_locker_contract_session
+    contract = non_initialized_deposit_locker_contract_session
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         contract.functions.withdraw().transact({"from": accounts[0]})
 
 
-def test_slash_not_initialised(
-    non_initialised_deposit_locker_contract_session, accounts
+def test_slash_not_initialized(
+    non_initialized_deposit_locker_contract_session, accounts
 ):
-    contract = non_initialised_deposit_locker_contract_session
+    contract = non_initialized_deposit_locker_contract_session
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         contract.functions.slash(accounts[0]).transact({"from": accounts[0]})
 
 
-def test_register_depositor_not_initialised(
-    non_initialised_deposit_locker_contract_session, accounts
+def test_register_depositor_not_initialized(
+    non_initialized_deposit_locker_contract_session, accounts
 ):
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        non_initialised_deposit_locker_contract_session.functions.registerDepositor(
+        non_initialized_deposit_locker_contract_session.functions.registerDepositor(
             accounts[0]
         ).transact({"from": accounts[0]})
 
 
-def test_deposit_not_initialised(
-    non_initialised_deposit_locker_contract_session, accounts
+def test_deposit_not_initialized(
+    non_initialized_deposit_locker_contract_session, accounts
 ):
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        non_initialised_deposit_locker_contract_session.functions.deposit(0).transact(
+        non_initialized_deposit_locker_contract_session.functions.deposit(0).transact(
             {"from": accounts[0], "value": 0}
         )
 
@@ -244,10 +244,15 @@ def testenv(deploy_contract, accounts, web3):
 
 
 @pytest.fixture()
-def testenv_deposited(testenv):
+def value_per_depositor():
+    return 1000
+
+
+@pytest.fixture()
+def testenv_deposited(testenv, value_per_depositor):
     """return a test environment, with all depositors registered and the deposit already made"""
     testenv.register_all_depositors()
-    testenv.deposit(1000, len(testenv.depositors) * 1000)
+    testenv.deposit(value_per_depositor, len(testenv.depositors) * value_per_depositor)
     return testenv
 
 
@@ -353,11 +358,40 @@ def test_slash_from_non_slasher_throws(testenv):
         )
 
 
-def test_slash_after_deposit_works(testenv_deposited):
+def test_slash_after_deposit_can_not_withdraw(testenv_deposited):
     depositor = testenv_deposited.depositors[0]
     assert testenv_deposited.can_withdraw(depositor)
     testenv_deposited.slash(depositor)
     assert not testenv_deposited.can_withdraw(depositor)
+
+
+def test_slash_after_deposit_burn_deposit(
+    testenv_deposited, web3, value_per_depositor, block_reward_amount
+):
+    burn_address = "0x0000000000000000000000000000000000000000"
+    contract_address = testenv_deposited.deposit_locker.address
+
+    burn_address_balance_before = web3.eth.getBalance(burn_address)
+    contract_address_balance_before = web3.eth.getBalance(contract_address)
+
+    # The burning address is in this testing scenario also the address getting
+    # the transaction fees and block rewards. To have a clear calculation make
+    # sure the transaction has no fees.
+    testenv_deposited.deposit_locker.functions.slash(
+        testenv_deposited.depositors[0]
+    ).transact({"from": testenv_deposited.slasher, "gasPrice": 0})
+
+    burn_address_balance_after = web3.eth.getBalance(burn_address)
+    contract_address_balance_after = web3.eth.getBalance(contract_address)
+
+    assert (
+        burn_address_balance_after
+        == burn_address_balance_before + value_per_depositor + block_reward_amount
+    )
+    assert (
+        contract_address_balance_after
+        == contract_address_balance_before - value_per_depositor
+    )
 
 
 def test_slash_twice_throws(testenv_deposited):
