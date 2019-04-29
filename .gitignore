@@ -107,3 +107,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# contract assets
+contracts.json
+
+# controlling makefile
+.installed
