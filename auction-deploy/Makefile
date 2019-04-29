@@ -1,4 +1,4 @@
-VIRTUAL_ENV ?= "venv"
+VIRTUAL_ENV ?= venv
 
 lint: install
 	$(VIRTUAL_ENV)/bin/flake8 tests
