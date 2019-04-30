@@ -160,6 +160,10 @@ jobs:
           key: auction-venv-{{ checksum "auction-deploy/constraints.txt" }}-{{ checksum "auction-deploy/requirements.txt" }}
           paths:
             - auction-venv
+      - run:
+          name: Install auction-deploy
+          command: |
+            pip install -c auction-deploy/constraints.txt ./auction-deploy
       - persist_to_workspace:
           root: "~"
           paths:
