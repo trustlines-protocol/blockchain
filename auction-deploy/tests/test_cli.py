@@ -14,7 +14,7 @@ def keystore_file(tmp_path, key_password, private_key):
     folder.mkdir()
     file_path = folder / "keyfile.json"
 
-    key_file = create_keyfile_json(private_key, key_password.encode("utf-8"))
+    key_file = create_keyfile_json(private_key.to_bytes(), key_password.encode("utf-8"))
 
     file_path.write_text(dumps(key_file))
 
@@ -27,12 +27,8 @@ def key_password():
 
 
 @pytest.fixture()
-def private_key():
-    return (
-        b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
-        b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
-        b"\x01\x01\x01\x01\x01\x01"
-    )
+def private_key(account_keys):
+    return account_keys[0]
 
 
 @pytest.fixture()
@@ -40,10 +36,13 @@ def runner():
     return CliRunner()
 
 
-def test_cli_contract_parameters_set(runner):
+def test_cli_contract_parameters_set(runner, web3):
+
+    print(EthereumTesterProvider)
+
     result = runner.invoke(
         main,
-        args="deploy --start-price 123 --duration 4 --participants 567 --release-block 789123 --jsonrpc EthereumTesterProvider",
+        args="deploy --start-price 123 --duration 4 --participants 567 --release-block 789123 --jsonrpc test",
     )
 
     assert result.exit_code == 0
@@ -52,7 +51,7 @@ def test_cli_contract_parameters_set(runner):
 def test_cli_transaction_parameters_set(runner):
     result = runner.invoke(
         main,
-        args="--gas 7123456789 --gas_price 123 --nonce 0 --jsonrpc EthereumTesterProvider",
+        args="deploy --nonce 0 --gas-price 123456789 --gas 7000000 --release-block 789123 --jsonrpc test",
     )
 
     assert result.exit_code == 0
@@ -62,7 +61,8 @@ def test_cli_private_key(runner, keystore_file, key_password):
 
     result = runner.invoke(
         main,
-        args="deploy --jsonrpc EthereumTesterProvider --keystore " + str(keystore_file),
+        args="deploy --jsonrpc test --release-block 789123 --keystore "
+        + str(keystore_file),
         input=key_password,
     )
 

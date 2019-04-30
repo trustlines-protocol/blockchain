@@ -54,21 +54,17 @@ def test_deploy_contracts(web3):
 
     assert deployed_contracts.auction.functions.startPrice().call() == start_price
     assert (
-        deployed_contracts.auction.functions.auction_duration().call()
+        deployed_contracts.auction.functions.auctionDurationInDays().call()
         == auction_duration
     )
     assert (
-        deployed_contracts.auction.functions.number_of_participants().call()
+        deployed_contracts.auction.functions.numberOfParticipants().call()
         == number_of_participants
     )
 
-    initial_number_of_depistors = 0
-    assert (
-        deployed_contracts.locker.functions.numberOfDepositors().call()
-        == initial_number_of_depistors
-    )
+    assert deployed_contracts.locker.functions.initialized().call() is False
 
-    assert deployed_contracts.slasher.functions.initialised().call() is False
+    assert deployed_contracts.slasher.functions.initialized().call() is False
 
 
 def test_init_contracts(deployed_contracts, web3):
@@ -76,17 +72,10 @@ def test_init_contracts(deployed_contracts, web3):
     release_block_number = 123456
 
     initialize_contracts(
-        deployed_contracts.locker,
-        release_block_number,
-        deployed_contracts.slasher,
-        web3,
+        web3=web3,
+        contracts=deployed_contracts,
+        release_block_number=release_block_number,
     )
 
-    assert (
-        deployed_contracts.locker.functions.slasher().call()
-        == deployed_contracts.slasher.address
-    )
-    assert (
-        deployed_contracts.slasher.functions.depositContract().call()
-        == deployed_contracts.locker.address
-    )
+    assert deployed_contracts.locker.functions.initialized().call() is True
+    assert deployed_contracts.slasher.functions.initialized().call() is True

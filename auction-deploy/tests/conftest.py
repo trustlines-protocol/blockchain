@@ -1,4 +1,3 @@
-import pytest
 import eth_tester
 
 # increase eth_tester's GAS_LIMIT

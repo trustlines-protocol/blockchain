@@ -18,6 +18,7 @@ install: .installed
 
 .installed: constraints.txt requirements.txt venv
 	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -r requirements.txt
+	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -e .
 	@echo "This file controls for make if the requirements in your virtual env are up to date" > $@
 
 venv:

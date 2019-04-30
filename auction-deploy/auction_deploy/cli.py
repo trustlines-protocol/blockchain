@@ -2,14 +2,16 @@ from collections import namedtuple
 
 import click
 from eth_keyfile import extract_key_from_keyfile
-from web3 import Web3
+from web3 import Web3, EthereumTesterProvider
 from deploy_tools.deploy import send_function_call_transaction, deploy_compiled_contract
+
+from .core import load_contracts_json
 
 
 ContractOptions = namedtuple(
     "ContractOptions",
     "start_price auction_duration number_of_participants release_block_number",
-)  # change to validator options
+)  # TODO change to validator options
 DeployedContracts = namedtuple("DeployedContracts", "locker slasher auction")
 
 
@@ -78,8 +80,6 @@ def main(prog_name="auction-deploy"):
     "release_block_number",
     help="The release block number of the deposit locker",
     type=int,
-    show_default=True,
-    default=14,
 )
 @keystore_option
 @gas_option
@@ -98,7 +98,10 @@ def deploy(
     nonce,
 ):
 
-    web3 = Web3(Web3.HTTPProvider(jsonrpc, request_kwargs={"timeout": 180}))
+    if jsonrpc == "test":
+        web3 = Web3(EthereumTesterProvider())
+    else:
+        web3 = Web3(Web3.HTTPProvider(jsonrpc, request_kwargs={"timeout": 180}))
     private_key = None
 
     if keystore is not None:
@@ -113,7 +116,14 @@ def deploy(
         start_price, auction_duration, number_of_participants, release_block_number
     )
 
-    transaction_options = {"gas": gas, "gasPrice": gas_price, "nonce": nonce}
+    transaction_options = {}
+
+    if gas is not None:
+        transaction_options["gas"] = gas
+    if gas is not None:
+        transaction_options["gasPrice"] = gas_price
+    if gas is not None:
+        transaction_options["nonce"] = nonce
 
     contracts = deploy_contracts(
         web3=web3,
@@ -123,7 +133,11 @@ def deploy(
     )
 
     initialize_contracts(
-        contracts.locker, contracts.slasher, web3, transaction_options, private_key
+        web3=web3,
+        transaction_options=transaction_options,
+        contracts=contracts,
+        release_block_number=release_block_number,
+        private_key=private_key,
     )
 
     click.echo("Auction address: " + contracts.auction.address)
@@ -136,13 +150,25 @@ def decrypt_private_key(keystore: click.Path(), password: str):
 
 
 def increase_transaction_options_nonce(transaction_options):
-    if transaction_options["nonce"] is not None:
+    if "nonce" in transaction_options:
         transaction_options["nonce"] = transaction_options["nonce"] + 1
 
 
 def deploy_contracts(
     *, web3, transaction_options={}, private_key=None, contract_options: ContractOptions
 ) -> DeployedContracts:
+
+    compiled_contracts = load_contracts_json()
+
+    deposit_locker_abi = compiled_contracts["DepositLocker"]["abi"]
+    deposit_locker_bin = compiled_contracts["DepositLocker"]["bytecode"]
+
+    validator_slasher_abi = compiled_contracts["ValidatorSlasher"]["abi"]
+    validator_slasher_bin = compiled_contracts["ValidatorSlasher"]["bytecode"]
+
+    auction_abi = compiled_contracts["ValidatorAuction"]["abi"]
+    auction_bin = compiled_contracts["ValidatorAuction"]["bytecode"]
+
     deposit_locker_contract = deploy_compiled_contract(
         abi=deposit_locker_abi,
         bytecode=deposit_locker_bin,
@@ -150,6 +176,7 @@ def deploy_contracts(
         transaction_options=transaction_options,
         private_key=private_key,
     )
+
     increase_transaction_options_nonce(transaction_options)
 
     validator_slasher_contract = deploy_compiled_contract(
@@ -186,16 +213,16 @@ def deploy_contracts(
 
 
 def initialize_contracts(
-    deposit_locker_contract,
-    release_block_number,
-    validator_slasher_contract,
+    *,
     web3,
     transaction_options={},
+    contracts: DeployedContracts,
+    release_block_number,
     private_key=None,
 ):
 
-    deposit_init = deposit_locker_contract.functions.init(
-        release_block_number, validator_slasher_contract.address
+    deposit_init = contracts.locker.functions.init(
+        release_block_number, contracts.slasher.address, contracts.auction.address
     )
     send_function_call_transaction(
         deposit_init,
@@ -205,9 +232,7 @@ def initialize_contracts(
     )
     increase_transaction_options_nonce(transaction_options)
 
-    slasher_init = validator_slasher_contract.functions.init(
-        deposit_locker_contract.address
-    )
+    slasher_init = contracts.slasher.functions.init(contracts.locker.address)
     send_function_call_transaction(
         slasher_init,
         web3=web3,
