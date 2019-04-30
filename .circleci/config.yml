@@ -44,6 +44,7 @@ commands:
           name: Configuring PATH
           command: |
             echo 'export PATH=~/bin:~/repo/auction-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
+            echo 'export VIRTUAL_ENV=~/repo/auction-venv' >> ${BASH_ENV}
 jobs:
   run-contracts-flake8:
     executor: ubuntu-builder
@@ -153,17 +154,13 @@ jobs:
           key: auction-venv-{{ checksum "auction-deploy/constraints.txt" }}-{{ checksum "auction-deploy/requirements.txt" }}
       - create-auction-venv
       - run:
-          name: Install requirements
+          name: Install requirements and auction deploy tool
           command: |
-            pip install -c auction-deploy/constraints.txt -r auction-deploy/requirements.txt
+            - make -f auction-deploy/Makefile compile
       - save_cache:
           key: auction-venv-{{ checksum "auction-deploy/constraints.txt" }}-{{ checksum "auction-deploy/requirements.txt" }}
           paths:
             - auction-venv
-      - run:
-          name: Install auction-deploy
-          command: |
-            pip install -c auction-deploy/constraints.txt ./auction-deploy
       - persist_to_workspace:
           root: "~"
           paths:
