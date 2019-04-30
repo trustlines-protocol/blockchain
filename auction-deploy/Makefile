@@ -1,8 +1,9 @@
 VIRTUAL_ENV ?= venv
 
 lint: install
-	$(VIRTUAL_ENV)/bin/flake8 tests
-	$(VIRTUAL_ENV)/bin/black --check tests
+	$(VIRTUAL_ENV)/bin/flake8 auction_deploy tests setup.py
+	$(VIRTUAL_ENV)/bin/black --check auction_deploy tests setup.py
+	$(VIRTUAL_ENV)/bin/mypy auction_deploy tests setup.py --ignore-missing-imports
 
 test: install compile
 	$(VIRTUAL_ENV)/bin/pytest tests
