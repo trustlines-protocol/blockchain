@@ -156,7 +156,9 @@ jobs:
       - run:
           name: Install requirements and auction deploy tool
           command: |
-            - make -f auction-deploy/Makefile compile
+            cd auction-deploy
+            make install
+            cd ..
       - save_cache:
           key: auction-venv-{{ checksum "auction-deploy/constraints.txt" }}-{{ checksum "auction-deploy/requirements.txt" }}
           paths:
@@ -173,7 +175,10 @@ jobs:
       - config-auction-path
       - run:
           name: Run pytest
-          command: pytest auction-deploy/tests
+          command: |
+            cd auction-deploy
+            make test
+            cd ..
 
   build-docker-image:
     executor: ubuntu-builder

@@ -5,24 +5,26 @@ lint: install
 	$(VIRTUAL_ENV)/bin/black --check auction_deploy tests setup.py
 	$(VIRTUAL_ENV)/bin/mypy auction_deploy tests setup.py --ignore-missing-imports
 
-test: install compile
+test: install
 	$(VIRTUAL_ENV)/bin/pytest tests
 
-compile: install
+compile: install-requirements
 	$(VIRTUAL_ENV)/bin/deploy-tools compile -d ../contracts/contracts
 	$(VIRTUAL_ENV)/bin/python scripts/pack_contracts.py build/contracts.json auction_deploy/contracts.json
 
 build: compile
 	$(VIRTUAL_ENV)/bin/python setup.py sdist
 
-install: .installed
+install-requirements: .installed
 
-.installed: constraints.txt requirements.txt venv
-	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -r requirements.txt
+install: install-requirements compile
 	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -e .
+
+.installed: constraints.txt requirements.txt $(VIRTUAL_ENV)
+	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -r requirements.txt
 	@echo "This file controls for make if the requirements in your virtual env are up to date" > $@
 
-venv:
+$(VIRTUAL_ENV):
 	python3 -m venv $@
 
-.PHONY: install test lint compile build
+.PHONY: install install-requirements test lint compile build
