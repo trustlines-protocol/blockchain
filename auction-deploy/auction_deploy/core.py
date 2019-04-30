@@ -67,7 +67,6 @@ def deploy_auction_contracts(
         transaction_options=transaction_options,
         private_key=private_key,
     )
-
     increase_transaction_options_nonce(transaction_options)
 
     validator_slasher_contract = deploy_compiled_contract(
@@ -77,7 +76,6 @@ def deploy_auction_contracts(
         transaction_options=transaction_options,
         private_key=private_key,
     )
-
     increase_transaction_options_nonce(transaction_options)
 
     auction_constructor_args = (
@@ -86,7 +84,6 @@ def deploy_auction_contracts(
         auction_options.number_of_participants,
         validator_slasher_contract.address,
     )
-
     auction_contract: Contract = deploy_compiled_contract(
         abi=auction_abi,
         bytecode=auction_bin,
