@@ -38,3 +38,26 @@ def test_cli_private_key(runner, keystore_file_path, key_password):
     )
 
     assert result.exit_code == 0
+
+
+@pytest.fixture
+def deployed_auction_address(runner):
+
+    deploy_result = runner.invoke(
+        main, args="deploy --release-block 789123 --jsonrpc test"
+    )
+
+    auction_address = deploy_result.output.split("\n")[0][-42:]
+
+    return auction_address
+
+
+def test_cli_auction_status(runner, deployed_auction_address):
+
+    result = runner.invoke(
+        main,
+        args="print-auction-status --jsonrpc test --auction-address "
+        + deployed_auction_address,
+    )
+
+    assert result.exit_code == 0

@@ -6,9 +6,11 @@ from auction_deploy.core import (
     initialize_auction_contracts,
     decrypt_private_key,
     AuctionOptions,
+    load_contracts_json,
 )
 from web3 import Web3, EthereumTesterProvider
 
+test_json_rpc = Web3(EthereumTesterProvider())
 
 jsonrpc_option = click.option(
     "--jsonrpc",
@@ -93,10 +95,8 @@ def deploy(
     nonce: int,
 ) -> None:
 
-    if jsonrpc == "test":
-        web3 = Web3(EthereumTesterProvider())
-    else:
-        web3 = Web3(Web3.HTTPProvider(jsonrpc, request_kwargs={"timeout": 180}))
+    web3 = connect_to_json_rpc(jsonrpc)
+
     private_key = None
 
     if keystore is not None:
@@ -141,3 +141,65 @@ def deploy(
     click.echo("Auction address: " + contracts.auction.address)
     click.echo("Deposit locker address: " + contracts.locker.address)
     click.echo("Validator slasher address: " + contracts.slasher.address)
+
+
+@main.command(
+    short_help="Deploys validator auction, deposit locker, and slasher contract. "
+    "Initializes the contracts."
+)
+@click.option(
+    "--auction-address",
+    help='The address of the auction contract to be checked, "0x" prefixed string',
+    type=str,
+)
+@jsonrpc_option
+def print_auction_status(auction_address, jsonrpc):
+    web3 = connect_to_json_rpc(jsonrpc)
+
+    auction_abi = load_contracts_json()["ValidatorAuction"]["abi"]
+
+    auction = web3.eth.contract(address=auction_address, abi=auction_abi)
+
+    eth_in_wei = 1_000_000_000_000_000_000
+
+    # constants
+    duration_in_days = auction.functions.auctionDurationInDays().call()
+    start_price_in_eth = auction.functions.startPrice().call() / eth_in_wei
+    number_of_participants = auction.functions.numberOfParticipants().call()
+    locker_address = auction.functions.depositLocker().call()
+
+    # variables
+    auction_state = auction.functions.auctionState().call()
+    start_time = auction.functions.startTime().call()
+    close_time = auction.functions.closeTime().call()
+    closing_price = auction.functions.closingPrice().call()
+    current_price = auction.functions.currentPrice().call()
+
+    # TODO: get status of initialized for both locker and slasher
+
+    click.echo(
+        "The auction duration is:                " + str(duration_in_days) + " days"
+    )
+    click.echo(
+        "The starting price in eth is:           " + str(start_price_in_eth) + " eth"
+    )
+    click.echo("The number of participants is:          " + str(number_of_participants))
+    click.echo("The address of the locker contract is:  " + str(locker_address))
+
+    click.echo(
+        "------------------------------------    ------------------------------------------"
+    )
+
+    click.echo("The auction state is:                   " + str(auction_state))
+    click.echo("The start time is:                      " + str(start_time))
+    click.echo("The close time is:                      " + str(close_time))
+    click.echo("The current price is:                   " + str(current_price))
+    click.echo("The closing price is:                   " + str(closing_price))
+
+
+def connect_to_json_rpc(jsonrpc) -> Web3:
+    if jsonrpc == "test":
+        web3 = test_json_rpc
+    else:
+        web3 = Web3(Web3.HTTPProvider(jsonrpc, request_kwargs={"timeout": 180}))
+    return web3
