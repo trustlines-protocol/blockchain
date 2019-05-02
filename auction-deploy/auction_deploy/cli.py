@@ -12,6 +12,7 @@ from auction_deploy.core import (
 from web3 import Web3, EthereumTesterProvider
 
 test_json_rpc = Web3(EthereumTesterProvider())
+ETH_IN_WEI = 10 ** 18
 
 
 # This has to be in sync with the AuctionStates in ValidatorAuction.sol
@@ -119,7 +120,7 @@ def deploy(
         private_key = decrypt_private_key(str(keystore), password)
 
     auction_options = AuctionOptions(
-        start_price * 10 ** 18,
+        start_price * ETH_IN_WEI,
         auction_duration,
         number_of_participants,
         release_block_number,
@@ -170,11 +171,9 @@ def print_auction_status(auction_address, jsonrpc):
 
     contracts = get_deployed_auction_contracts(web3, auction_address)
 
-    eth_in_wei = 10 ** 18
-
     # constants throughout auction
     duration_in_days = contracts.auction.functions.auctionDurationInDays().call()
-    start_price_in_eth = contracts.auction.functions.startPrice().call() / eth_in_wei
+    start_price_in_eth = contracts.auction.functions.startPrice().call() / ETH_IN_WEI
     number_of_participants = contracts.auction.functions.numberOfParticipants().call()
     locker_address = contracts.locker.address
     slasher_address = contracts.slasher.address
@@ -189,7 +188,7 @@ def print_auction_status(auction_address, jsonrpc):
     closing_price = contracts.auction.functions.closingPrice().call()
     if auction_state == AuctionState.Started:
         current_price_in_eth = (
-            contracts.auction.functions.currentPrice().call() / eth_in_wei
+            contracts.auction.functions.currentPrice().call() / ETH_IN_WEI
         )
 
     click.echo(
