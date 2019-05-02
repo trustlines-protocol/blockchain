@@ -50,7 +50,9 @@ def deployed_auction_address(runner):
         main, args="deploy --release-block 789123 --jsonrpc test"
     )
 
-    auction_address = deploy_result.output.split("\n")[0][-42:]
+    for line in deploy_result.output.split("\n")[-42:]:
+        if line.startswith("Auction address:"):
+            auction_address = line[-42:]
 
     return auction_address
 
@@ -63,7 +65,4 @@ def test_cli_auction_status(runner, deployed_auction_address):
         + deployed_auction_address,
     )
 
-    # print(result.output)
-
     assert result.exit_code == 0
-    # assert False

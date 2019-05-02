@@ -1,4 +1,5 @@
 from pathlib import PosixPath
+from enum import Enum
 
 import click
 from auction_deploy.core import (
@@ -6,11 +7,21 @@ from auction_deploy.core import (
     initialize_auction_contracts,
     decrypt_private_key,
     AuctionOptions,
-    load_contracts_json,
+    get_deployed_auction_contracts,
 )
 from web3 import Web3, EthereumTesterProvider
 
 test_json_rpc = Web3(EthereumTesterProvider())
+
+
+# This has to be in sync with the AuctionStates in ValidatorAuction.sol
+class AuctionState(Enum):
+    Deployed = 0
+    Started = 1
+    DepositPending = 2
+    Ended = 3
+    Failed = 4
+
 
 jsonrpc_option = click.option(
     "--jsonrpc",
@@ -152,44 +163,36 @@ def deploy(
     "--auction-address",
     help='The address of the auction contract to be checked, "0x" prefixed string',
     type=str,
+    required=True,
 )
 @jsonrpc_option
 def print_auction_status(auction_address, jsonrpc):
+
     web3 = connect_to_json_rpc(jsonrpc)
 
-    compiled_contracts = load_contracts_json()
+    contracts = get_deployed_auction_contracts(web3, auction_address)
 
-    auction_abi = compiled_contracts["ValidatorAuction"]["abi"]
-    locker_abi = compiled_contracts["DepositLocker"]["abi"]
-    slasher_abi = compiled_contracts["ValidatorSlasher"]["abi"]
-
-    auction = web3.eth.contract(address=auction_address, abi=auction_abi)
-
-    locker_address = auction.functions.depositLocker().call()
-    locker = web3.eth.contract(address=locker_address, abi=locker_abi)
-
-    slasher_address = locker.functions.slasher().call()
-    slasher = web3.eth.contract(address=slasher_address, abi=slasher_abi)
-
-    eth_in_wei = 1_000_000_000_000_000_000
+    eth_in_wei = 10 ** 18
 
     # constants throughout auction
-    duration_in_days = auction.functions.auctionDurationInDays().call()
-    start_price_in_eth = auction.functions.startPrice().call() / eth_in_wei
-    number_of_participants = auction.functions.numberOfParticipants().call()
-    locker_address = auction.functions.depositLocker().call()
-    locker_initialized = locker.functions.initialized().call()
-    slasher_initialized = slasher.functions.initialized().call()
+    duration_in_days = contracts.auction.functions.auctionDurationInDays().call()
+    start_price_in_eth = contracts.auction.functions.startPrice().call() / eth_in_wei
+    number_of_participants = contracts.auction.functions.numberOfParticipants().call()
+    locker_address = contracts.locker.address
+    slasher_address = contracts.slasher.address
+    locker_initialized = contracts.locker.functions.initialized().call()
+    slasher_initialized = contracts.slasher.functions.initialized().call()
 
     # variables
-    auction_state = auction.functions.auctionState().call()
-    start_time = auction.functions.startTime().call()
-    close_time = auction.functions.closeTime().call()
-    closing_price = auction.functions.closingPrice().call()
-    if auction_state == 1:
-        current_price_in_eth = auction.functions.currentPrice().call() / eth_in_wei
-
-    # TODO: change the auction state to enum
+    auction_state_value = contracts.auction.functions.auctionState().call()
+    auction_state = AuctionState(auction_state_value)
+    start_time = contracts.auction.functions.startTime().call()
+    close_time = contracts.auction.functions.closeTime().call()
+    closing_price = contracts.auction.functions.closingPrice().call()
+    if auction_state == AuctionState.Started:
+        current_price_in_eth = (
+            contracts.auction.functions.currentPrice().call() / eth_in_wei
+        )
 
     click.echo(
         "The auction duration is:                " + str(duration_in_days) + " days"
@@ -207,10 +210,16 @@ def print_auction_status(auction_address, jsonrpc):
         "------------------------------------    ------------------------------------------"
     )
 
-    click.echo("The auction state is:                   " + str(auction_state))
+    click.echo(
+        "The auction state is:                   "
+        + str(auction_state_value)
+        + " ("
+        + str(auction_state.name)
+        + ")"
+    )
     click.echo("The start time is:                      " + str(start_time))
     click.echo("The close time is:                      " + str(close_time))
-    if auction_state == 1:
+    if auction_state == auction_state.Started:
         click.echo(
             "The current price is:                   "
             + str(current_price_in_eth)
