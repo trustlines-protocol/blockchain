@@ -2,14 +2,18 @@ from pathlib import PosixPath
 from enum import Enum
 
 import click
+from web3 import Web3, EthereumTesterProvider
+from deploy_tools.deploy import send_function_call_transaction
+
 from auction_deploy.core import (
     deploy_auction_contracts,
     initialize_auction_contracts,
     decrypt_private_key,
+    build_transaction_options,
     AuctionOptions,
     get_deployed_auction_contracts,
 )
-from web3 import Web3, EthereumTesterProvider
+
 
 test_json_rpc = Web3(EthereumTesterProvider())
 ETH_IN_WEI = 10 ** 18
@@ -127,14 +131,9 @@ def deploy(
         release_block_number,
     )
 
-    transaction_options = {}
-
-    if gas is not None:
-        transaction_options["gas"] = gas
-    if gas_price is not None:
-        transaction_options["gasPrice"] = gas_price
-    if nonce is not None:
-        transaction_options["nonce"] = nonce
+    transaction_options = build_transaction_options(
+        gas=gas, gas_price=gas_price, nonce=nonce
+    )
 
     contracts = deploy_auction_contracts(
         web3=web3,
@@ -154,6 +153,45 @@ def deploy(
     click.echo("Auction address: " + contracts.auction.address)
     click.echo("Deposit locker address: " + contracts.locker.address)
     click.echo("Validator slasher address: " + contracts.slasher.address)
+
+
+@main.command(short_help="Start the auction at corresponding address.")
+@click.option(
+    "--auction-address",
+    help='The address of the auction contract to be started, "0x" prefixed string',
+    type=str,
+    required=True,
+)
+@keystore_option
+@gas_option
+@gas_price_option
+@nonce_option
+@jsonrpc_option
+def start_auction(
+    auction_address,
+    keystore: PosixPath,
+    jsonrpc: str,
+    gas: int,
+    gas_price: int,
+    nonce: int,
+):
+
+    web3 = connect_to_json_rpc(jsonrpc)
+    private_key = retrieve_private_key(keystore)
+    contracts = get_deployed_auction_contracts(web3, auction_address)
+
+    transaction_options = build_transaction_options(
+        gas=gas, gas_price=gas_price, nonce=nonce
+    )
+
+    auction_start = contracts.auction.functions.startAuction()
+
+    send_function_call_transaction(
+        auction_start,
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
+    )
 
 
 @main.command(
@@ -232,3 +270,21 @@ def connect_to_json_rpc(jsonrpc) -> Web3:
     else:
         web3 = Web3(Web3.HTTPProvider(jsonrpc, request_kwargs={"timeout": 180}))
     return web3
+
+
+def retrieve_private_key(keystore):
+    """
+    return the private key corresponding to keystore or none if keystore is none
+    """
+
+    private_key = None
+
+    if keystore is not None:
+        password = click.prompt(
+            "Please enter the password to decrypt the keystore",
+            type=str,
+            hide_input=True,
+        )
+        private_key = decrypt_private_key(str(keystore), password)
+
+    return private_key
