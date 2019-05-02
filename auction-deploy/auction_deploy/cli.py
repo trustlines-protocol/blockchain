@@ -2,7 +2,7 @@ from pathlib import PosixPath
 from enum import Enum
 
 import click
-from web3 import Web3, EthereumTesterProvider
+from web3 import Web3, EthereumTesterProvider, Account
 from deploy_tools.deploy import send_function_call_transaction
 
 from auction_deploy.core import (
@@ -54,6 +54,12 @@ gas_price_option = click.option(
 nonce_option = click.option(
     "--nonce", help="Nonce of the first transaction to be sent", type=int, default=None
 )
+auto_nonce_option = click.option(
+    "--auto-nonce",
+    help="automatically determine the nonce of first transaction to be sent",
+    default=False,
+    is_flag=True,
+)
 
 
 @click.group()
@@ -99,6 +105,7 @@ def main():
 @gas_option
 @gas_price_option
 @nonce_option
+@auto_nonce_option
 @jsonrpc_option
 def deploy(
     start_price: int,
@@ -110,6 +117,7 @@ def deploy(
     gas: int,
     gas_price: int,
     nonce: int,
+    auto_nonce: bool,
 ) -> None:
 
     web3 = connect_to_json_rpc(jsonrpc)
@@ -122,6 +130,9 @@ def deploy(
         release_block_number,
     )
 
+    nonce = get_nonce(
+        web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
+    )
     transaction_options = build_transaction_options(
         gas=gas, gas_price=gas_price, nonce=nonce
     )
@@ -157,6 +168,7 @@ def deploy(
 @gas_option
 @gas_price_option
 @nonce_option
+@auto_nonce_option
 @jsonrpc_option
 def start_auction(
     auction_address,
@@ -165,11 +177,16 @@ def start_auction(
     gas: int,
     gas_price: int,
     nonce: int,
+    auto_nonce: bool,
 ):
 
     web3 = connect_to_json_rpc(jsonrpc)
     private_key = retrieve_private_key(keystore)
     contracts = get_deployed_auction_contracts(web3, auction_address)
+
+    nonce = get_nonce(
+        web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
+    )
 
     transaction_options = build_transaction_options(
         gas=gas, gas_price=gas_price, nonce=nonce
@@ -279,3 +296,24 @@ def retrieve_private_key(keystore):
         private_key = decrypt_private_key(str(keystore), password)
 
     return private_key
+
+
+def get_nonce(*, web3: Web3, nonce: int, auto_nonce: bool, private_key: bytes):
+    """get the nonce to be used as specified via command line options
+
+     we do some option checking in this function. It would be better to do this
+     before doing any real work, but we would need another function then.
+    """
+    if auto_nonce and not private_key:
+        raise click.UsageError("--auto-nonce requires --keystore argument")
+    if nonce is not None and auto_nonce:
+        raise click.UsageError(
+            "--nonce and --auto-nonce cannot be used at the same time"
+        )
+
+    if auto_nonce:
+        return web3.eth.getTransactionCount(
+            Account.privateKeyToAccount(private_key).address, block_identifier="pending"
+        )
+    else:
+        return nonce
