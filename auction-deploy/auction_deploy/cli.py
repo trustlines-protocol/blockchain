@@ -9,6 +9,7 @@ from auction_deploy.core import (
     deploy_auction_contracts,
     initialize_auction_contracts,
     decrypt_private_key,
+    build_transaction_options,
     AuctionOptions,
     get_deployed_auction_contracts,
 )
@@ -287,17 +288,3 @@ def retrieve_private_key(keystore):
         private_key = decrypt_private_key(str(keystore), password)
 
     return private_key
-
-
-def build_transaction_options(*, gas, gas_price, nonce):
-
-    transaction_options = {}
-
-    if gas is not None:
-        transaction_options["gas"] = gas
-    if gas_price is not None:
-        transaction_options["gasPrice"] = gas_price
-    if nonce is not None:
-        transaction_options["nonce"] = nonce
-
-    return transaction_options
