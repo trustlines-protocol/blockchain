@@ -185,7 +185,8 @@ def print_auction_status(auction_address, jsonrpc):
     start_time = auction.functions.startTime().call()
     close_time = auction.functions.closeTime().call()
     closing_price = auction.functions.closingPrice().call()
-    current_price_in_eth = auction.functions.currentPrice().call() / eth_in_wei
+    if auction_state == 1:
+        current_price_in_eth = auction.functions.currentPrice().call() / eth_in_wei
 
     # TODO: change the auction state to enum
 
@@ -208,9 +209,12 @@ def print_auction_status(auction_address, jsonrpc):
     click.echo("The auction state is:                   " + str(auction_state))
     click.echo("The start time is:                      " + str(start_time))
     click.echo("The close time is:                      " + str(close_time))
-    click.echo(
-        "The current price is:                   " + str(current_price_in_eth) + " eth"
-    )
+    if auction_state == 1:
+        click.echo(
+            "The current price is:                   "
+            + str(current_price_in_eth)
+            + " eth"
+        )
     click.echo("The closing price is:                   " + str(closing_price))
 
 

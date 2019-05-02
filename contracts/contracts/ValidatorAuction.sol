@@ -118,8 +118,8 @@ contract ValidatorAuction is Ownable {
         }
     }
 
-    function currentPrice() public view returns (uint) {
-        require(now >= startTime, "The current price can only be calculated after the auction started.");
+    function currentPrice() public view stateIs(AuctionState.Started) returns (uint) {
+        assert(now >= startTime);
         uint secondsSinceStart = (now - startTime);
         return priceAtElapsedTime(secondsSinceStart);
     }
