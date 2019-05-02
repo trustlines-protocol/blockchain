@@ -156,8 +156,7 @@ def deploy(
 
 
 @main.command(
-    short_help="Deploys validator auction, deposit locker, and slasher contract. "
-    "Initializes the contracts."
+    short_help="Prints the values of variables necessary to monitor the auction."
 )
 @click.option(
     "--auction-address",
