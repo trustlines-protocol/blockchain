@@ -63,4 +63,7 @@ def test_cli_auction_status(runner, deployed_auction_address):
         + deployed_auction_address,
     )
 
+    # print(result.output)
+
     assert result.exit_code == 0
+    # assert False
