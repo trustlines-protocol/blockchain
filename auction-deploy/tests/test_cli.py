@@ -47,9 +47,10 @@ def deployed_auction_address(runner):
         main, args="deploy --release-block 789123 --jsonrpc test"
     )
 
-    for line in deploy_result.output.split("\n")[-42:]:
+    for line in deploy_result.output.split("\n"):
         if line.startswith("Auction address:"):
-            auction_address = line[-42:]
+            prefixed_address_length = 42
+            auction_address = line[-prefixed_address_length:]
 
     return auction_address
 
