@@ -31,8 +31,8 @@ contract DepositLocker is DepositLockerInterface, Ownable {
          this will be the auction contract.
     */
 
-    address slasher;
-    address depositorsProxy;
+    address public slasher;
+    address public depositorsProxy;
     uint public releaseBlockNumber;
 
     mapping (address => bool) public canWithdraw;

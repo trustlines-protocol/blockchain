@@ -156,26 +156,38 @@ def deploy(
 def print_auction_status(auction_address, jsonrpc):
     web3 = connect_to_json_rpc(jsonrpc)
 
-    auction_abi = load_contracts_json()["ValidatorAuction"]["abi"]
+    compiled_contracts = load_contracts_json()
+
+    auction_abi = compiled_contracts["ValidatorAuction"]["abi"]
+    locker_abi = compiled_contracts["DepositLocker"]["abi"]
+    slasher_abi = compiled_contracts["ValidatorSlasher"]["abi"]
 
     auction = web3.eth.contract(address=auction_address, abi=auction_abi)
 
+    locker_address = auction.functions.depositLocker().call()
+    locker = web3.eth.contract(address=locker_address, abi=locker_abi)
+
+    slasher_address = locker.functions.slasher().call()
+    slasher = web3.eth.contract(address=slasher_address, abi=slasher_abi)
+
     eth_in_wei = 1_000_000_000_000_000_000
 
-    # constants
+    # constants throughout auction
     duration_in_days = auction.functions.auctionDurationInDays().call()
     start_price_in_eth = auction.functions.startPrice().call() / eth_in_wei
     number_of_participants = auction.functions.numberOfParticipants().call()
     locker_address = auction.functions.depositLocker().call()
+    locker_initialized = locker.functions.initialized().call()
+    slasher_initialized = slasher.functions.initialized().call()
 
     # variables
     auction_state = auction.functions.auctionState().call()
     start_time = auction.functions.startTime().call()
     close_time = auction.functions.closeTime().call()
     closing_price = auction.functions.closingPrice().call()
-    current_price = auction.functions.currentPrice().call()
+    current_price_in_eth = auction.functions.currentPrice().call() / eth_in_wei
 
-    # TODO: get status of initialized for both locker and slasher
+    # TODO: change the auction state to enum
 
     click.echo(
         "The auction duration is:                " + str(duration_in_days) + " days"
@@ -185,6 +197,9 @@ def print_auction_status(auction_address, jsonrpc):
     )
     click.echo("The number of participants is:          " + str(number_of_participants))
     click.echo("The address of the locker contract is:  " + str(locker_address))
+    click.echo("The address of the slasher contract is: " + str(slasher_address))
+    click.echo("The locker initialized value is:        " + str(locker_initialized))
+    click.echo("The slasher initialized value is:       " + str(slasher_initialized))
 
     click.echo(
         "------------------------------------    ------------------------------------------"
@@ -193,7 +208,9 @@ def print_auction_status(auction_address, jsonrpc):
     click.echo("The auction state is:                   " + str(auction_state))
     click.echo("The start time is:                      " + str(start_time))
     click.echo("The close time is:                      " + str(close_time))
-    click.echo("The current price is:                   " + str(current_price))
+    click.echo(
+        "The current price is:                   " + str(current_price_in_eth) + " eth"
+    )
     click.echo("The closing price is:                   " + str(closing_price))
 
 

@@ -82,7 +82,7 @@ def deploy_auction_contracts(
         auction_options.start_price,
         auction_options.auction_duration,
         auction_options.number_of_participants,
-        validator_slasher_contract.address,
+        deposit_locker_contract.address,
     )
     auction_contract: Contract = deploy_compiled_contract(
         abi=auction_abi,
