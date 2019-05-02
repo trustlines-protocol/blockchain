@@ -30,4 +30,4 @@ def key_password():
 
 @pytest.fixture()
 def private_key(account_keys):
-    return account_keys[0]
+    return account_keys[1]
