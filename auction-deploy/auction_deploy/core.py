@@ -1,8 +1,8 @@
 import json
 import pkg_resources
 from typing import Dict, NamedTuple
-from collections import namedtuple
 
+from web3.contract import Contract
 from eth_keyfile import extract_key_from_keyfile
 from deploy_tools.deploy import send_function_call_transaction, deploy_compiled_contract
 
@@ -14,14 +14,15 @@ class AuctionOptions(NamedTuple):
     release_block_number: int
 
 
-DeployedAuctionContracts = namedtuple("DeployedContracts", "locker slasher auction")
+class DeployedAuctionContracts(NamedTuple):
+    locker: Contract
+    slasher: Contract
+    auction: Contract
 
 
 def load_contracts_json() -> Dict:
     resource_package = __name__
-    stream = pkg_resources.resource_stream(resource_package, "contracts.json")
-    json_string = stream.read().decode()
-    stream.close()
+    json_string = pkg_resources.resource_string(resource_package, "contracts.json")
     return json.loads(json_string)
 
 
@@ -30,6 +31,9 @@ def decrypt_private_key(keystore: str, password: str) -> bytes:
 
 
 def increase_transaction_options_nonce(transaction_options: Dict) -> None:
+    """Increases the nonce inside of `transaction_options` by 1 if present.
+    If there is no nonce in `transaction_options`, this function will not do anything
+    """
     if "nonce" in transaction_options:
         transaction_options["nonce"] = transaction_options["nonce"] + 1
 
@@ -56,7 +60,7 @@ def deploy_auction_contracts(
     auction_abi = compiled_contracts["ValidatorAuction"]["abi"]
     auction_bin = compiled_contracts["ValidatorAuction"]["bytecode"]
 
-    deposit_locker_contract = deploy_compiled_contract(
+    deposit_locker_contract: Contract = deploy_compiled_contract(
         abi=deposit_locker_abi,
         bytecode=deposit_locker_bin,
         web3=web3,
@@ -83,7 +87,7 @@ def deploy_auction_contracts(
         validator_slasher_contract.address,
     )
 
-    auction_contract = deploy_compiled_contract(
+    auction_contract: Contract = deploy_compiled_contract(
         abi=auction_abi,
         bytecode=auction_bin,
         web3=web3,
