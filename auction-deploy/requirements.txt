@@ -1,0 +1,9 @@
+click
+setuptools_scm
+git+git://github.com/trustlines-protocol/contract-deploy-tools.git
+web3
+pytest
+flake8
+black
+mypy
+pre-commit
