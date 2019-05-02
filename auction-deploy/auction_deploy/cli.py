@@ -75,6 +75,7 @@ def main():
     "release_block_number",
     help="The release block number of the deposit locker",
     type=int,
+    required=True,
 )
 @keystore_option
 @gas_option
