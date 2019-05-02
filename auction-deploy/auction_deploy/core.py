@@ -131,3 +131,28 @@ def initialize_auction_contracts(
         private_key=private_key,
     )
     increase_transaction_options_nonce(transaction_options)
+
+
+def get_deployed_auction_contracts(
+    web3, auction_address: str
+) -> DeployedAuctionContracts:
+
+    compiled_contracts = load_contracts_json()
+
+    auction_abi = compiled_contracts["ValidatorAuction"]["abi"]
+    locker_abi = compiled_contracts["DepositLocker"]["abi"]
+    slasher_abi = compiled_contracts["ValidatorSlasher"]["abi"]
+
+    auction = web3.eth.contract(address=auction_address, abi=auction_abi)
+
+    locker_address = auction.functions.depositLocker().call()
+    locker = web3.eth.contract(address=locker_address, abi=locker_abi)
+
+    slasher_address = locker.functions.slasher().call()
+    slasher = web3.eth.contract(address=slasher_address, abi=slasher_abi)
+
+    deployed_auction_contracts: DeployedAuctionContracts = DeployedAuctionContracts(
+        locker, slasher, auction
+    )
+
+    return deployed_auction_contracts
