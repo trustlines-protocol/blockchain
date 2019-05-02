@@ -16,9 +16,6 @@ def test_cli_contract_parameters_set(runner):
         args="deploy --start-price 123 --duration 4 --participants 567 --release-block 789123 --jsonrpc test",
     )
 
-    print(result.output)
-    # assert False
-
     assert result.exit_code == 0
 
 
