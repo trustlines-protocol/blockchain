@@ -1,4 +1,3 @@
-from pathlib import PosixPath
 from enum import Enum
 
 import click
@@ -13,6 +12,8 @@ from auction_deploy.core import (
     build_transaction_options,
     AuctionOptions,
     get_deployed_auction_contracts,
+    whitelist_addresses,
+    read_whitelist,
 )
 
 # we need test_provider and test_json_rpc for running the tests in test_cli
@@ -50,7 +51,6 @@ jsonrpc_option = click.option(
     show_default=True,
     metavar="URL",
 )
-
 keystore_option = click.option(
     "--keystore",
     help="Path to the encrypted keystore",
@@ -127,7 +127,7 @@ def deploy(
     auction_duration: int,
     number_of_participants: int,
     release_block_number: int,
-    keystore: PosixPath,
+    keystore: str,
     jsonrpc: str,
     gas: int,
     gas_price: int,
@@ -189,14 +189,13 @@ def deploy(
 @jsonrpc_option
 def start_auction(
     auction_address,
-    keystore: PosixPath,
+    keystore: str,
     jsonrpc: str,
     gas: int,
     gas_price: int,
     nonce: int,
     auto_nonce: bool,
 ):
-
     web3 = connect_to_json_rpc(jsonrpc)
     private_key = retrieve_private_key(keystore)
     contracts = get_deployed_auction_contracts(web3, auction_address)
@@ -337,6 +336,73 @@ def print_auction_status(auction_address, jsonrpc):
     click.echo("The closing price is:                   " + str(closing_price))
 
 
+@main.command(short_help="Whitelists addresses for the auction")
+@click.option(
+    "--file",
+    help="Path to the csv file containing the addresses to be whitelisted",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+)
+@click.option(
+    "--auction-address",
+    help="Address of the auction contract",
+    callback=validate_address,
+    metavar="ADDRESS",
+    type=str,
+    required=True,
+)
+@click.option(
+    "--batch-size",
+    help="Number of addresses to be whitelisted within one transaction",
+    type=click.IntRange(min=1),
+    show_default=True,
+    default=100,
+)
+@keystore_option
+@gas_option
+@gas_price_option
+@nonce_option
+@auto_nonce_option
+@jsonrpc_option
+def whitelist(
+    file: str,
+    auction_address: str,
+    batch_size: int,
+    keystore: str,
+    jsonrpc: str,
+    gas: int,
+    gas_price: int,
+    nonce: int,
+    auto_nonce: bool,
+) -> None:
+
+    web3 = connect_to_json_rpc(jsonrpc)
+    whitelist = read_whitelist(file)
+    private_key = retrieve_private_key(keystore)
+
+    nonce = get_nonce(
+        web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
+    )
+
+    transaction_options = build_transaction_options(
+        gas=gas, gas_price=gas_price, nonce=nonce
+    )
+
+    contracts = get_deployed_auction_contracts(web3, auction_address)
+
+    number_of_whitelisted_addresses = whitelist_addresses(
+        contracts.auction,
+        whitelist,
+        batch_size=batch_size,
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
+    )
+    click.echo(
+        "Number of whitelisted addresses: " + str(number_of_whitelisted_addresses)
+    )
+
+
 def connect_to_json_rpc(jsonrpc) -> Web3:
     if jsonrpc == "test":
         web3 = test_json_rpc
@@ -345,20 +411,20 @@ def connect_to_json_rpc(jsonrpc) -> Web3:
     return web3
 
 
-def retrieve_private_key(keystore):
+def retrieve_private_key(keystore_path):
     """
     return the private key corresponding to keystore or none if keystore is none
     """
 
     private_key = None
 
-    if keystore is not None:
+    if keystore_path is not None:
         password = click.prompt(
             "Please enter the password to decrypt the keystore",
             type=str,
             hide_input=True,
         )
-        private_key = decrypt_private_key(str(keystore), password)
+        private_key = decrypt_private_key(keystore_path, password)
 
     return private_key
 

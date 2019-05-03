@@ -2,12 +2,17 @@ import json
 
 import pytest
 import eth_tester
+from eth_utils import to_canonical_address
 from eth_keyfile import create_keyfile_json
 
 # increase eth_tester's GAS_LIMIT
 # Otherwise we can't whitelist enough addresses for the validator auction in one transaction
 assert eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT < 8 * 10 ** 6
 eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT = 8 * 10 ** 6
+
+
+def create_address_string(i: int):
+    return f"0x{str(i).rjust(40, '0')}"
 
 
 @pytest.fixture()
@@ -44,3 +49,8 @@ def key_password():
 def private_key(account_keys):
     """private key of account[1]"""
     return account_keys[1]
+
+
+@pytest.fixture()
+def whitelist():
+    return [to_canonical_address(create_address_string(i)) for i in range(50)]

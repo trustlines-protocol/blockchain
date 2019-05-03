@@ -1,9 +1,11 @@
 import json
+import csv
 import pkg_resources
-from typing import Dict, NamedTuple
+from typing import Dict, NamedTuple, Sequence
 
 from web3.contract import Contract
 from eth_keyfile import extract_key_from_keyfile
+from eth_utils import is_checksum_address
 from deploy_tools.deploy import send_function_call_transaction, deploy_compiled_contract
 
 
@@ -26,8 +28,8 @@ def load_contracts_json() -> Dict:
     return json.loads(json_string)
 
 
-def decrypt_private_key(keystore: str, password: str) -> bytes:
-    return extract_key_from_keyfile(keystore, password.encode("utf-8"))
+def decrypt_private_key(keystore_path: str, password: str) -> bytes:
+    return extract_key_from_keyfile(keystore_path, password.encode("utf-8"))
 
 
 def build_transaction_options(*, gas, gas_price, nonce):
@@ -170,3 +172,66 @@ def get_deployed_auction_contracts(
     )
 
     return deployed_auction_contracts
+
+
+def whitelist_addresses(
+    auction_contract: Contract,
+    whitelist: Sequence[str],
+    *,
+    batch_size,
+    web3,
+    transaction_options=None,
+    private_key=None,
+) -> int:
+    """Add all not yet whitelisted addresses in `whitelist` to the whitelisted addresses in the auction contract.
+    Returns the number of new whitelisted addresses"""
+
+    if transaction_options is None:
+        transaction_options = {}
+
+    # only whitelist addresses that are not whitelisted yet
+    filtered_whitelist = _filter_whitelisted_addresses(auction_contract, whitelist)
+
+    assert batch_size > 0
+    chunks = [
+        filtered_whitelist[i : i + batch_size]
+        for i in range(0, len(filtered_whitelist), batch_size)
+    ]
+
+    for chunk in chunks:
+        assert len(chunk) <= batch_size
+
+        add_to_whitelist_call = auction_contract.functions.addToWhitelist(chunk)
+
+        send_function_call_transaction(
+            add_to_whitelist_call,
+            web3=web3,
+            transaction_options=transaction_options,
+            private_key=private_key,
+        )
+
+        increase_transaction_options_nonce(transaction_options)
+
+    return len(filtered_whitelist)
+
+
+def _filter_whitelisted_addresses(
+    auction_contract: Contract, whitelist: Sequence[str]
+) -> Sequence[str]:
+    return [
+        address
+        for address in whitelist
+        if not auction_contract.functions.whitelist(address).call()
+    ]
+
+
+def read_whitelist(file_path: str):
+    with open(file_path) as f:
+        reader = csv.reader(f)
+        addresses = []
+        for line in reader:
+            address = line[0]
+            if not is_checksum_address(address):
+                raise ValueError("Invalid address in whitelist file")
+            addresses.append(address)
+        return addresses
