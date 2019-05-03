@@ -113,16 +113,7 @@ def deploy(
 ) -> None:
 
     web3 = connect_to_json_rpc(jsonrpc)
-
-    private_key = None
-
-    if keystore is not None:
-        password = click.prompt(
-            "Please enter the password to decrypt the keystore",
-            type=str,
-            hide_input=True,
-        )
-        private_key = decrypt_private_key(str(keystore), password)
+    private_key = retrieve_private_key(keystore)
 
     auction_options = AuctionOptions(
         start_price * ETH_IN_WEI,
