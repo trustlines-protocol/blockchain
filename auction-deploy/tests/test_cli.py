@@ -66,6 +66,20 @@ def test_cli_start_auction(runner, deployed_auction_address):
     assert result.exit_code == 0
 
 
+def test_cli_start_auction_with_auto_nonce(
+    runner, deployed_auction_address, keystores, key_password
+):
+    """test the auto-nonce option. we only do this for the start-auction"""
+
+    result = runner.invoke(
+        main,
+        args=f"start-auction --jsonrpc test --keystore {keystores[0]} --auction-address {deployed_auction_address}",
+        input=key_password,
+    )
+    print(result.output)
+    assert result.exit_code == 0
+
+
 def test_cli_start_auction_key_not_owner(
     runner, deployed_auction_address, keystore_file_path, key_password
 ):
