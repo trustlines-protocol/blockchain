@@ -1,17 +1,20 @@
+import csv
+
 import pytest
 
 import re
 from click.testing import CliRunner
+from eth_utils import to_checksum_address
 
 from auction_deploy.cli import main
 
 
-@pytest.fixture()
+@pytest.fixture
 def runner():
     return CliRunner()
 
 
-@pytest.fixture
+@pytest.fixture()
 def deployed_auction_address(runner):
 
     deploy_result = runner.invoke(
@@ -24,8 +27,20 @@ def deployed_auction_address(runner):
         if match:
             return match[1]
 
-    print("Output:", lines)
-    assert False, "Could not find auction address in output"
+    raise ValueError(f"Could not find auction address in output: {lines}")
+
+
+@pytest.fixture()
+def whitelist_file(tmp_path, key_password, whitelist):
+    folder = tmp_path / "subfolder"
+    folder.mkdir()
+    file_path = folder / "whitelist.csv"
+
+    with file_path.open("w") as f:
+        writer = csv.writer(f)
+        writer.writerows([[to_checksum_address(address)] for address in whitelist])
+
+    return file_path
 
 
 def test_cli_contract_parameters_set(runner):
@@ -81,7 +96,6 @@ def test_cli_start_auction_with_auto_nonce(
         + f" --auction-address {deployed_auction_address}",
         input=key_password,
     )
-    print(result.output)
     assert result.exit_code == 0
 
 
@@ -100,7 +114,6 @@ def test_cli_start_auction_key_not_owner(
         + str(keystore_file_path),
         input=key_password,
     )
-
     assert result.exit_code == 1
 
 
@@ -111,8 +124,17 @@ def test_cli_auction_status(runner, deployed_auction_address):
         args="print-auction-status --jsonrpc test --auction-address "
         + deployed_auction_address,
     )
-
     assert result.exit_code == 0
+
+
+def test_cli_whitelist(runner, deployed_auction_address, whitelist_file, whitelist):
+    result = runner.invoke(
+        main,
+        args=f"whitelist --file {whitelist_file} --auction-address {deployed_auction_address} "
+        + "--batch-size 10 --jsonrpc test",
+    )
+    assert result.exit_code == 0
+    assert result.output == f"Number of whitelisted addresses: {len(whitelist)}\n"
 
 
 def test_cli_not_checksummed_address(runner, deployed_auction_address):

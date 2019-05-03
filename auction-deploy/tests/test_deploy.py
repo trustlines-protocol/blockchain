@@ -6,6 +6,8 @@ from auction_deploy.core import (
     DeployedAuctionContracts,
     initialize_auction_contracts,
     decrypt_private_key,
+    whitelist_addresses,
+    _filter_whitelisted_addresses,
 )
 
 
@@ -80,3 +82,67 @@ def test_init_contracts(deployed_contracts, web3):
 def test_decrypt_private_key(keystore_file_path, key_password, private_key):
     extracted_key = decrypt_private_key(str(keystore_file_path), key_password)
     assert extracted_key == private_key
+
+
+def test_whitelist_addresses(deployed_contracts, whitelist, web3):
+    auction_contract = deployed_contracts.auction
+
+    amount = whitelist_addresses(auction_contract, whitelist, batch_size=10, web3=web3)
+
+    for address in whitelist:
+        assert auction_contract.functions.whitelist(address).call() is True
+
+    assert amount == len(whitelist)
+
+
+def test_whitelist_addresses_with_nonce(
+    deployed_contracts, whitelist, web3, default_account, account_keys
+):
+    auction_contract = deployed_contracts.auction
+
+    nonce = web3.eth.getTransactionCount(default_account)
+
+    whitelist_addresses(
+        auction_contract,
+        whitelist,
+        batch_size=10,
+        web3=web3,
+        transaction_options={"nonce": nonce},
+        private_key=account_keys[0],
+    )
+
+    for address in whitelist:
+        assert auction_contract.functions.whitelist(address).call() is True
+
+
+SPLIT_SIZE = 20
+
+
+def test_whitelist_filter(deployed_contracts, whitelist, web3):
+
+    auction_contract = deployed_contracts.auction
+
+    assert _filter_whitelisted_addresses(auction_contract, whitelist) == whitelist
+
+    whitelist_addresses(
+        auction_contract, whitelist[:SPLIT_SIZE], batch_size=10, web3=web3
+    )
+
+    assert (
+        _filter_whitelisted_addresses(auction_contract, whitelist)
+        == whitelist[SPLIT_SIZE:]
+    )
+
+
+def test_whitelist_only_not_whitelisted(deployed_contracts, whitelist, web3):
+
+    auction_contract = deployed_contracts.auction
+
+    number1 = whitelist_addresses(
+        auction_contract, whitelist[:SPLIT_SIZE], batch_size=10, web3=web3
+    )
+    assert number1 == SPLIT_SIZE
+
+    number2 = whitelist_addresses(auction_contract, whitelist, batch_size=10, web3=web3)
+
+    assert number2 == len(whitelist) - number1
