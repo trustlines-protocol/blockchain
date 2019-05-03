@@ -524,6 +524,14 @@ def test_bid_real_price_auction(
     )
 
 
+def test_current_price_auction_not_started_fails(real_price_validator_auction_contract):
+    """The current price is calculated based on start time
+    The function must thus not be called when auction is not started"""
+
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        real_price_validator_auction_contract.functions.currentPrice().call()
+
+
 def test_too_low_bid_fails_real_price_auction(
     real_price_validator_auction_contract, accounts, chain, web3
 ):
