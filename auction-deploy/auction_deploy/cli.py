@@ -4,6 +4,7 @@ from enum import Enum
 import click
 from web3 import Web3, EthereumTesterProvider
 from deploy_tools.deploy import send_function_call_transaction
+from eth_utils import is_address, to_canonical_address
 
 from auction_deploy.core import (
     deploy_auction_contracts,
@@ -13,6 +14,16 @@ from auction_deploy.core import (
     AuctionOptions,
     get_deployed_auction_contracts,
 )
+
+
+def validate_address(ctx, param, value):
+    """This function must be at the top of click commands using it"""
+    if is_address(value):
+        return to_canonical_address(value)
+    else:
+        raise click.BadParameter(
+            f"The address parameter is not recognized to be an address: {value}"
+        )
 
 
 test_json_rpc = Web3(EthereumTesterProvider())
@@ -152,6 +163,8 @@ def deploy(
     help='The address of the auction contract to be started, "0x" prefixed string',
     type=str,
     required=True,
+    callback=validate_address,
+    metavar="ADDRESS",
 )
 @keystore_option
 @gas_option
@@ -193,6 +206,8 @@ def start_auction(
     help='The address of the auction contract to be checked, "0x" prefixed string',
     type=str,
     required=True,
+    callback=validate_address,
+    metavar="ADDRESS",
 )
 @jsonrpc_option
 def print_auction_status(auction_address, jsonrpc):
