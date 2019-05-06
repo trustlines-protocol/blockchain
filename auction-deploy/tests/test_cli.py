@@ -7,7 +7,7 @@ from click.testing import CliRunner
 from eth_utils import to_checksum_address
 
 from auction_deploy.cli import main, test_provider, test_json_rpc, AuctionState
-from auction_deploy.core import get_deployed_auction_contracts
+from auction_deploy.core import get_deployed_auction_contracts, DeployedAuctionContracts
 
 
 @pytest.fixture
@@ -18,8 +18,13 @@ def runner():
 @pytest.fixture()
 def deployed_auction_address(runner):
     """deploy an auction and return it's address"""
+    number_of_participants = 2
+    starting_price = 1
+
     deploy_result = runner.invoke(
-        main, args="deploy --release-block 789123 --jsonrpc test"
+        main,
+        args=f"deploy --release-block 789123 --participants {number_of_participants}"
+        f" --start-price {starting_price} --jsonrpc test",
     )
 
     lines = deploy_result.output.split("\n")
@@ -45,7 +50,7 @@ def whitelist_file(tmp_path, key_password, whitelist):
 
 
 @pytest.fixture
-def contracts(deployed_auction_address):
+def contracts(deployed_auction_address) -> DeployedAuctionContracts:
     """return the core.DeployedAuctionContracts object for the currently active auction"""
     return get_deployed_auction_contracts(test_json_rpc, deployed_auction_address)
 
@@ -59,6 +64,29 @@ def ensure_auction_state(contracts):
         assert current_state == expected_state
 
     return ensure_state
+
+
+@pytest.fixture
+def deposit_pending_auction(
+    runner, deployed_auction_address, contracts, accounts, ensure_auction_state
+):
+    """return the auction contract with enough bids so that the state is `DepositPending`"""
+
+    to_be_whitelisted = [accounts[1], accounts[2]]
+    contracts.auction.functions.addToWhitelist(to_be_whitelisted).transact()
+    contracts.auction.functions.startAuction().transact()
+
+    bid_value = contracts.auction.functions.currentPrice().call()
+
+    contracts.auction.functions.bid().transact(
+        {"from": accounts[1], "value": bid_value}
+    )
+    contracts.auction.functions.bid().transact(
+        {"from": accounts[2], "value": bid_value}
+    )
+
+    ensure_auction_state(AuctionState.DepositPending)
+    return contracts.auction
 
 
 def test_cli_contract_parameters_set(runner):
@@ -161,6 +189,17 @@ def test_cli_start_auction_key_not_owner(
         input=key_password,
     )
     assert result.exit_code == 1
+
+
+def test_cli_deposit_bids(runner, deposit_pending_auction, ensure_auction_state):
+
+    result = runner.invoke(
+        main,
+        args=f"deposit-bids --jsonrpc test --auction-address {deposit_pending_auction.address}",
+    )
+
+    assert result.exit_code == 0
+    ensure_auction_state(AuctionState.Ended)
 
 
 def test_cli_auction_status(runner, deployed_auction_address):

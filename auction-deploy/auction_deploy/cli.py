@@ -219,6 +219,55 @@ def start_auction(
     )
 
 
+@main.command(
+    short_help="Move the bids from the auction contract to the deposit locker."
+)
+@click.option(
+    "--auction-address",
+    help='The address of the auction contract to be started, "0x" prefixed string',
+    type=str,
+    required=True,
+    callback=validate_address,
+    metavar="ADDRESS",
+)
+@keystore_option
+@gas_option
+@gas_price_option
+@nonce_option
+@auto_nonce_option
+@jsonrpc_option
+def deposit_bids(
+    auction_address,
+    keystore: str,
+    jsonrpc: str,
+    gas: int,
+    gas_price: int,
+    nonce: int,
+    auto_nonce: bool,
+):
+
+    web3 = connect_to_json_rpc(jsonrpc)
+    private_key = retrieve_private_key(keystore)
+    contracts = get_deployed_auction_contracts(web3, auction_address)
+
+    nonce = get_nonce(
+        web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
+    )
+
+    transaction_options = build_transaction_options(
+        gas=gas, gas_price=gas_price, nonce=nonce
+    )
+
+    deposit_bids_call = contracts.auction.functions.depositBids()
+
+    send_function_call_transaction(
+        deposit_bids_call,
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
+    )
+
+
 @main.command(short_help="Close the auction at corresponding address.")
 @click.option(
     "--auction-address",
