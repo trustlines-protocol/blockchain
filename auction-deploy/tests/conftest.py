@@ -1,4 +1,4 @@
-from json import dumps
+import json
 
 import pytest
 import eth_tester
@@ -11,23 +11,36 @@ eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT = 8 * 10 ** 6
 
 
 @pytest.fixture()
-def keystore_file_path(tmp_path, key_password, private_key):
-    folder = tmp_path / "subfolder"
-    folder.mkdir()
-    file_path = folder / "keyfile.json"
+def keystores(tmp_path, account_keys, key_password):
+    """paths to keystore files"""
+    paths = []
+    for i, private_key in enumerate(account_keys[:2]):
+        file_path = tmp_path / f"keyfile-{i}.json"
+        file_path.write_text(
+            json.dumps(
+                create_keyfile_json(
+                    private_key.to_bytes(), key_password.encode("utf-8")
+                )
+            )
+        )
+        paths.append(file_path)
 
-    key_file = create_keyfile_json(private_key.to_bytes(), key_password.encode("utf-8"))
+    return paths
 
-    file_path.write_text(dumps(key_file))
 
-    return file_path
+@pytest.fixture()
+def keystore_file_path(tmp_path, keystores, key_password):
+    """path to keystore of account[1]"""
+    return keystores[1]
 
 
 @pytest.fixture()
 def key_password():
+    """password used for the keystores"""
     return "test_password"
 
 
 @pytest.fixture()
 def private_key(account_keys):
+    """private key of account[1]"""
     return account_keys[1]
