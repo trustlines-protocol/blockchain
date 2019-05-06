@@ -1,5 +1,6 @@
 import pytest
 
+import re
 from click.testing import CliRunner
 
 from auction_deploy.cli import main
@@ -17,12 +18,14 @@ def deployed_auction_address(runner):
         main, args="deploy --release-block 789123 --jsonrpc test"
     )
 
-    for line in deploy_result.output.split("\n"):
-        if line.startswith("Auction address:"):
-            prefixed_address_length = 42
-            auction_address = line[-prefixed_address_length:]
+    lines = deploy_result.output.split("\n")
+    for line in lines:
+        match = re.match("^Auction address: (0x[0-9a-fA-F]{40})$", line)
+        if match:
+            return match[1]
 
-    return auction_address
+    print("Output:", lines)
+    assert False, "Could not find auction address in output"
 
 
 def test_cli_contract_parameters_set(runner):
