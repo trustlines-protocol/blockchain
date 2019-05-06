@@ -14,8 +14,12 @@ from auction_deploy.core import (
     get_deployed_auction_contracts,
 )
 
+# we need test_provider and test_json_rpc for running the tests in test_cli
+# they need to persist between multiple calls to runner.invoke and are
+# therefore initialized on the module level.
+test_provider = EthereumTesterProvider()
+test_json_rpc = Web3(test_provider)
 
-test_json_rpc = Web3(EthereumTesterProvider())
 ETH_IN_WEI = 10 ** 18
 
 
