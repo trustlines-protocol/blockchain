@@ -202,6 +202,50 @@ def start_auction(
     )
 
 
+@main.command(short_help="Close the auction at corresponding address.")
+@click.option(
+    "--auction-address",
+    help='The address of the auction contract to be closed, "0x" prefixed string',
+    type=str,
+    required=True,
+)
+@keystore_option
+@gas_option
+@gas_price_option
+@nonce_option
+@auto_nonce_option
+@jsonrpc_option
+def close_auction(
+    auction_address,
+    keystore: PosixPath,
+    jsonrpc: str,
+    gas: int,
+    gas_price: int,
+    nonce: int,
+    auto_nonce: bool,
+):
+    web3 = connect_to_json_rpc(jsonrpc)
+    private_key = retrieve_private_key(keystore)
+    contracts = get_deployed_auction_contracts(web3, auction_address)
+
+    nonce = get_nonce(
+        web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
+    )
+
+    transaction_options = build_transaction_options(
+        gas=gas, gas_price=gas_price, nonce=nonce
+    )
+
+    auction_close = contracts.auction.functions.closeAuction()
+
+    send_function_call_transaction(
+        auction_close,
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
+    )
+
+
 @main.command(
     short_help="Prints the values of variables necessary to monitor the auction."
 )
