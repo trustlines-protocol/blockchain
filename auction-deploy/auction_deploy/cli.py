@@ -79,6 +79,22 @@ auto_nonce_option = click.option(
 )
 
 
+auction_address_option = click.option(
+    "--auction-address",
+    help='The address of the auction contract, "0x" prefixed string',
+    type=str,
+    required=True,
+    callback=validate_address,
+    metavar="ADDRESS",
+)
+whitelist_file_option = click.option(
+    "--file",
+    help="Path to the csv file containing the addresses to be whitelisted",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+)
+
+
 @click.group()
 def main():
     pass
@@ -175,14 +191,7 @@ def deploy(
 
 
 @main.command(short_help="Start the auction at corresponding address.")
-@click.option(
-    "--auction-address",
-    help='The address of the auction contract to be started, "0x" prefixed string',
-    type=str,
-    required=True,
-    callback=validate_address,
-    metavar="ADDRESS",
-)
+@auction_address_option
 @keystore_option
 @gas_option
 @gas_price_option
@@ -223,14 +232,7 @@ def start_auction(
 @main.command(
     short_help="Move the bids from the auction contract to the deposit locker."
 )
-@click.option(
-    "--auction-address",
-    help='The address of the auction contract to be started, "0x" prefixed string',
-    type=str,
-    required=True,
-    callback=validate_address,
-    metavar="ADDRESS",
-)
+@auction_address_option
 @keystore_option
 @gas_option
 @gas_price_option
@@ -270,14 +272,7 @@ def deposit_bids(
 
 
 @main.command(short_help="Close the auction at corresponding address.")
-@click.option(
-    "--auction-address",
-    help='The address of the auction contract to be closed, "0x" prefixed string',
-    type=str,
-    required=True,
-    callback=validate_address,
-    metavar="ADDRESS",
-)
+@auction_address_option
 @keystore_option
 @gas_option
 @gas_price_option
@@ -318,14 +313,7 @@ def close_auction(
 @main.command(
     short_help="Prints the values of variables necessary to monitor the auction."
 )
-@click.option(
-    "--auction-address",
-    help='The address of the auction contract to be checked, "0x" prefixed string',
-    type=str,
-    required=True,
-    callback=validate_address,
-    metavar="ADDRESS",
-)
+@auction_address_option
 @jsonrpc_option
 def print_auction_status(auction_address, jsonrpc):
 
@@ -388,20 +376,8 @@ def print_auction_status(auction_address, jsonrpc):
 
 
 @main.command(short_help="Whitelists addresses for the auction")
-@click.option(
-    "--file",
-    help="Path to the csv file containing the addresses to be whitelisted",
-    type=click.Path(exists=True, dir_okay=False),
-    required=True,
-)
-@click.option(
-    "--auction-address",
-    help="Address of the auction contract",
-    callback=validate_address,
-    metavar="ADDRESS",
-    type=str,
-    required=True,
-)
+@whitelist_file_option
+@auction_address_option
 @click.option(
     "--batch-size",
     help="Number of addresses to be whitelisted within one transaction",
@@ -457,20 +433,8 @@ def whitelist(
 @main.command(
     short_help="Check number of not yet whitelisted addresses for the auction"
 )
-@click.option(
-    "--file",
-    help="Path to the csv file containing the addresses to be whitelisted",
-    type=click.Path(exists=True, dir_okay=False),
-    required=True,
-)
-@click.option(
-    "--auction-address",
-    help="Address of the auction contract",
-    callback=validate_address,
-    metavar="ADDRESS",
-    type=str,
-    required=True,
-)
+@whitelist_file_option
+@auction_address_option
 @jsonrpc_option
 def check_whitelist(file: str, auction_address: str, jsonrpc: str) -> None:
     web3 = connect_to_json_rpc(jsonrpc)
