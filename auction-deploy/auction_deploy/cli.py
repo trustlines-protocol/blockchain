@@ -3,7 +3,6 @@ from enum import Enum
 import click
 from web3 import Web3, EthereumTesterProvider, Account
 from deploy_tools.deploy import send_function_call_transaction
-from eth_utils import is_address, to_checksum_address
 
 from auction_deploy.core import (
     deploy_auction_contracts,
@@ -14,6 +13,8 @@ from auction_deploy.core import (
     get_deployed_auction_contracts,
     whitelist_addresses,
     read_whitelist,
+    validate_and_format_address,
+    InvalidAddressException,
 )
 
 # we need test_provider and test_json_rpc for running the tests in test_cli
@@ -27,12 +28,12 @@ ETH_IN_WEI = 10 ** 18
 
 def validate_address(ctx, param, value):
     """This function must be at the top of click commands using it"""
-    if is_address(value):
-        return to_checksum_address(value)
-    else:
+    try:
+        return validate_and_format_address(value)
+    except InvalidAddressException as e:
         raise click.BadParameter(
             f"The address parameter is not recognized to be an address: {value}"
-        )
+        ) from e
 
 
 # This has to be in sync with the AuctionStates in ValidatorAuction.sol
