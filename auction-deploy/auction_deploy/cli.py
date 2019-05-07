@@ -285,7 +285,7 @@ def deposit_bids(
 @jsonrpc_option
 def close_auction(
     auction_address,
-    keystore: PosixPath,
+    keystore: str,
     jsonrpc: str,
     gas: int,
     gas_price: int,
