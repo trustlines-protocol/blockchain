@@ -42,7 +42,7 @@ def whitelisted_auction_address(runner, deployed_auction_address, whitelist_file
 
     runner.invoke(
         main,
-        args=f"whitelist --file {whitelist_file} --auction-address {deployed_auction_address} "
+        args=f"whitelist --file {whitelist_file} --address {deployed_auction_address} "
         + "--batch-size 100 --jsonrpc test",
     )
 
@@ -144,9 +144,7 @@ def test_cli_private_key(runner, keystore_file_path, key_password):
 def test_cli_start_auction(runner, deployed_auction_address):
 
     result = runner.invoke(
-        main,
-        args="start-auction --jsonrpc test --auction-address "
-        + deployed_auction_address,
+        main, args="start --jsonrpc test --address " + deployed_auction_address
     )
 
     assert result.exit_code == 0
@@ -156,8 +154,7 @@ def test_cli_close_auction(
     runner, deployed_auction_address, ensure_auction_state, contracts
 ):
     result = runner.invoke(
-        main,
-        args=f"start-auction --jsonrpc test --auction-address {deployed_auction_address}",
+        main, args=f"start --jsonrpc test --address {deployed_auction_address}"
     )
 
     assert result.exit_code == 0
@@ -173,8 +170,7 @@ def test_cli_close_auction(
     test_provider.ethereum_tester.mine_block()
 
     result = runner.invoke(
-        main,
-        args=f"close-auction --jsonrpc test --auction-address {deployed_auction_address}",
+        main, args=f"close --jsonrpc test --address {deployed_auction_address}"
     )
     assert result.exit_code == 0
     ensure_auction_state(AuctionState.Failed)
@@ -187,8 +183,8 @@ def test_cli_start_auction_with_auto_nonce(
 
     result = runner.invoke(
         main,
-        args=f"start-auction --auto-nonce --jsonrpc test --keystore {keystores[0]}"
-        + f" --auction-address {deployed_auction_address}",
+        args=f"start --auto-nonce --jsonrpc test --keystore {keystores[0]}"
+        + f" --address {deployed_auction_address}",
         input=key_password,
     )
     assert result.exit_code == 0
@@ -203,7 +199,7 @@ def test_cli_start_auction_key_not_owner(
 
     result = runner.invoke(
         main,
-        args="start-auction --jsonrpc test --auction-address "
+        args="start --jsonrpc test --address "
         + deployed_auction_address
         + " --keystore "
         + str(keystore_file_path),
@@ -216,7 +212,7 @@ def test_cli_deposit_bids(runner, deposit_pending_auction, ensure_auction_state)
 
     result = runner.invoke(
         main,
-        args=f"deposit-bids --jsonrpc test --auction-address {deposit_pending_auction.address}",
+        args=f"deposit-bids --jsonrpc test --address {deposit_pending_auction.address}",
     )
 
     assert result.exit_code == 0
@@ -226,9 +222,7 @@ def test_cli_deposit_bids(runner, deposit_pending_auction, ensure_auction_state)
 def test_cli_auction_status(runner, deployed_auction_address):
 
     result = runner.invoke(
-        main,
-        args="print-auction-status --jsonrpc test --auction-address "
-        + deployed_auction_address,
+        main, args="status --jsonrpc test --address " + deployed_auction_address
     )
     assert result.exit_code == 0
 
@@ -236,7 +230,7 @@ def test_cli_auction_status(runner, deployed_auction_address):
 def test_cli_whitelist(runner, deployed_auction_address, whitelist_file, whitelist):
     result = runner.invoke(
         main,
-        args=f"whitelist --file {whitelist_file} --auction-address {deployed_auction_address} "
+        args=f"whitelist --file {whitelist_file} --address {deployed_auction_address} "
         + "--batch-size 10 --jsonrpc test",
     )
     assert result.exit_code == 0
@@ -248,7 +242,7 @@ def test_cli_check_whitelist_not_whitelisted(
 ):
     result = runner.invoke(
         main,
-        args=f"check-whitelist --file {whitelist_file} --auction-address {deployed_auction_address} "
+        args=f"check-whitelist --file {whitelist_file} --address {deployed_auction_address} "
         + "--jsonrpc test",
     )
     assert result.exit_code == 0
@@ -263,7 +257,7 @@ def test_cli_check_whitelist_all_whitelisted(
 ):
     result = runner.invoke(
         main,
-        args=f"check-whitelist --file {whitelist_file} --auction-address {whitelisted_auction_address} "
+        args=f"check-whitelist --file {whitelist_file} --address {whitelisted_auction_address} "
         + "--jsonrpc test",
     )
     assert result.exit_code == 0
@@ -274,9 +268,7 @@ def test_cli_not_checksummed_address(runner, deployed_auction_address):
 
     address = deployed_auction_address.lower()
 
-    result = runner.invoke(
-        main, args=f"print-auction-status --jsonrpc test --auction-address {address}"
-    )
+    result = runner.invoke(main, args=f"status --jsonrpc test --address {address}")
 
     assert result.exit_code == 0
 
@@ -286,8 +278,7 @@ def test_cli_incorrect_address_parameter_fails(runner):
     not_an_address = "not_an_address"
 
     result = runner.invoke(
-        main,
-        args=f"print-auction-status --jsonrpc test --auction-address {not_an_address}",
+        main, args=f"status --jsonrpc test --address {not_an_address}"
     )
 
     assert (
