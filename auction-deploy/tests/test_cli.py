@@ -1,4 +1,6 @@
 import pytest
+
+import re
 from click.testing import CliRunner
 
 from auction_deploy.cli import main, test_provider, test_json_rpc, AuctionState
@@ -17,12 +19,14 @@ def deployed_auction_address(runner):
         main, args="deploy --release-block 789123 --jsonrpc test"
     )
 
-    for line in deploy_result.output.split("\n"):
-        if line.startswith("Auction address:"):
-            prefixed_address_length = 42
-            auction_address = line[-prefixed_address_length:]
+    lines = deploy_result.output.split("\n")
+    for line in lines:
+        match = re.match("^Auction address: (0x[0-9a-fA-F]{40})$", line)
+        if match:
+            return match[1]
 
-    return auction_address
+    print("Output:", lines)
+    assert False, "Could not find auction address in output"
 
 
 @pytest.fixture
@@ -119,7 +123,8 @@ def test_cli_start_auction_with_auto_nonce(
 
     result = runner.invoke(
         main,
-        args=f"start-auction --jsonrpc test --keystore {keystores[0]} --auction-address {deployed_auction_address}",
+        args=f"start-auction --auto-nonce --jsonrpc test --keystore {keystores[0]}"
+        + f" --auction-address {deployed_auction_address}",
         input=key_password,
     )
     print(result.output)
@@ -129,8 +134,8 @@ def test_cli_start_auction_with_auto_nonce(
 def test_cli_start_auction_key_not_owner(
     runner, deployed_auction_address, keystore_file_path, key_password
 ):
-    """Test that when you attempt to start the auction with a private_key not corresponding to the ow
-    ner of the auction, the command fails
+    """Test that when you attempt to start the auction with a private_key not corresponding to the
+    owner of the auction, the command fails
     This shows that the command takes into account the key"""
 
     result = runner.invoke(
@@ -154,3 +159,30 @@ def test_cli_auction_status(runner, deployed_auction_address):
     )
 
     assert result.exit_code == 0
+
+
+def test_cli_not_checksummed_address(runner, deployed_auction_address):
+
+    address = deployed_auction_address.lower()
+
+    result = runner.invoke(
+        main, args=f"print-auction-status --jsonrpc test --auction-address {address}"
+    )
+
+    assert result.exit_code == 0
+
+
+def test_cli_incorrect_address_parameter_fails(runner):
+
+    not_an_address = "not_an_address"
+
+    result = runner.invoke(
+        main,
+        args=f"print-auction-status --jsonrpc test --auction-address {not_an_address}",
+    )
+
+    assert (
+        f"The address parameter is not recognized to be an address: {not_an_address}"
+        in result.output
+    )
+    assert result.exit_code == 2
