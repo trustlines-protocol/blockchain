@@ -23,7 +23,7 @@ def deployed_auction_address(runner):
 
     deploy_result = runner.invoke(
         main,
-        args=f"deploy --release-block 789123 --participants {number_of_participants}"
+        args=f"deploy --release-timestamp 2000000000 --participants {number_of_participants}"
         f" --start-price {starting_price} --jsonrpc test",
     )
 
@@ -114,7 +114,7 @@ def test_cli_contract_parameters_set(runner):
 
     result = runner.invoke(
         main,
-        args="deploy --start-price 123 --duration 4 --participants 567 --release-block 789123 --jsonrpc test",
+        args="deploy --start-price 123 --duration 4 --participants 567 --release-timestamp 2000000000 --jsonrpc test",
     )
 
     assert result.exit_code == 0
@@ -123,7 +123,7 @@ def test_cli_contract_parameters_set(runner):
 def test_cli_transaction_parameters_set(runner):
     result = runner.invoke(
         main,
-        args="deploy --nonce 0 --gas-price 123456789 --gas 7000000 --release-block 789123 --jsonrpc test",
+        args="deploy --nonce 0 --gas-price 123456789 --gas 7000000 --release-timestamp 2000000000 --jsonrpc test",
     )
 
     assert result.exit_code == 0
@@ -133,7 +133,7 @@ def test_cli_private_key(runner, keystore_file_path, key_password):
 
     result = runner.invoke(
         main,
-        args="deploy --jsonrpc test --release-block 789123 --keystore "
+        args="deploy --jsonrpc test --release-timestamp 2000000000 --keystore "
         + str(keystore_file_path),
         input=key_password,
     )

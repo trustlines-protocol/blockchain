@@ -10,19 +10,27 @@ from auction_deploy.core import (
     missing_whitelisted_addresses,
 )
 
+RELEASE_TIMESTAMP_OFFSET = 3600 * 24 * 180
+
 
 @pytest.fixture
-def deployed_contracts(web3):
+def release_timestamp(web3):
+    """release timestamp used for DepositLocker contract"""
+    now = web3.eth.getBlock("latest").timestamp
+    return now + RELEASE_TIMESTAMP_OFFSET
+
+
+@pytest.fixture
+def deployed_contracts(web3, release_timestamp):
     start_price = 1
     auction_duration = 2
     number_of_participants = 3
-    release_block_number = 1234
 
     contract_options = AuctionOptions(
         start_price=start_price,
         auction_duration=auction_duration,
         number_of_participants=number_of_participants,
-        release_block_number=release_block_number,
+        release_timestamp=release_timestamp,
     )
 
     deployed_contracts: DeployedAuctionContracts = deploy_auction_contracts(
@@ -32,18 +40,17 @@ def deployed_contracts(web3):
     return deployed_contracts
 
 
-def test_deploy_contracts(web3):
+def test_deploy_contracts(web3, release_timestamp):
 
     start_price = 1
     auction_duration = 2
     number_of_participants = 3
-    release_block_number = 1234
 
     contract_options = AuctionOptions(
         start_price=start_price,
         auction_duration=auction_duration,
         number_of_participants=number_of_participants,
-        release_block_number=release_block_number,
+        release_timestamp=release_timestamp,
     )
 
     deployed_contracts: DeployedAuctionContracts = deploy_auction_contracts(
@@ -65,14 +72,10 @@ def test_deploy_contracts(web3):
     assert deployed_contracts.slasher.functions.initialized().call() is False
 
 
-def test_init_contracts(deployed_contracts, web3):
-
-    release_block_number = 123456
+def test_init_contracts(deployed_contracts, web3, release_timestamp):
 
     initialize_auction_contracts(
-        web3=web3,
-        contracts=deployed_contracts,
-        release_block_number=release_block_number,
+        web3=web3, contracts=deployed_contracts, release_timestamp=release_timestamp
     )
 
     assert deployed_contracts.locker.functions.initialized().call() is True

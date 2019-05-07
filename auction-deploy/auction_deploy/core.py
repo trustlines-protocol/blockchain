@@ -13,7 +13,7 @@ class AuctionOptions(NamedTuple):
     start_price: int
     auction_duration: int
     number_of_participants: int
-    release_block_number: int
+    release_timestamp: int
 
 
 class DeployedAuctionContracts(NamedTuple):
@@ -122,14 +122,14 @@ def initialize_auction_contracts(
     web3,
     transaction_options=None,
     contracts: DeployedAuctionContracts,
-    release_block_number,
+    release_timestamp,
     private_key=None,
 ) -> None:
     if transaction_options is None:
         transaction_options = {}
 
     deposit_init = contracts.locker.functions.init(
-        release_block_number, contracts.slasher.address, contracts.auction.address
+        release_timestamp, contracts.slasher.address, contracts.auction.address
     )
     send_function_call_transaction(
         deposit_init,
