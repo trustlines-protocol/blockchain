@@ -67,22 +67,30 @@ def ensure_auction_state(contracts):
 
 
 @pytest.fixture
+def ether_owning_whitelist(accounts):
+    return [accounts[1], accounts[2]]
+
+
+@pytest.fixture
 def deposit_pending_auction(
-    runner, deployed_auction_address, contracts, accounts, ensure_auction_state
+    runner,
+    deployed_auction_address,
+    contracts,
+    ether_owning_whitelist,
+    ensure_auction_state,
 ):
     """return the auction contract with enough bids so that the state is `DepositPending`"""
 
-    to_be_whitelisted = [accounts[1], accounts[2]]
-    contracts.auction.functions.addToWhitelist(to_be_whitelisted).transact()
+    contracts.auction.functions.addToWhitelist(ether_owning_whitelist).transact()
     contracts.auction.functions.startAuction().transact()
 
     bid_value = contracts.auction.functions.currentPrice().call()
 
     contracts.auction.functions.bid().transact(
-        {"from": accounts[1], "value": bid_value}
+        {"from": ether_owning_whitelist[0], "value": bid_value}
     )
     contracts.auction.functions.bid().transact(
-        {"from": accounts[2], "value": bid_value}
+        {"from": ether_owning_whitelist[1], "value": bid_value}
     )
 
     ensure_auction_state(AuctionState.DepositPending)

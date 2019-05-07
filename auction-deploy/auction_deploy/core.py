@@ -59,7 +59,7 @@ def deploy_auction_contracts(
     web3,
     transaction_options: Dict = None,
     private_key=None,
-    auction_options: AuctionOptions
+    auction_options: AuctionOptions,
 ) -> DeployedAuctionContracts:
 
     if transaction_options is None:
@@ -123,7 +123,7 @@ def initialize_auction_contracts(
     transaction_options=None,
     contracts: DeployedAuctionContracts,
     release_block_number,
-    private_key=None
+    private_key=None,
 ) -> None:
     if transaction_options is None:
         transaction_options = {}
