@@ -17,7 +17,7 @@ def runner():
 
 @pytest.fixture()
 def deployed_auction_address(runner):
-    """deploy an auction and return it's address"""
+    """Deploys an auction and return its address"""
     number_of_participants = 2
     starting_price = 1
 
@@ -38,7 +38,7 @@ def deployed_auction_address(runner):
 
 @pytest.fixture()
 def whitelisted_auction_address(runner, deployed_auction_address, whitelist_file):
-    """deploy an auction with all addresses whitelisted and return it's address"""
+    """Whitelists all addresses in the whitelist on the deployed auction and returns its address"""
 
     runner.invoke(
         main,
