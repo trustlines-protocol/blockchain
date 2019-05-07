@@ -8,6 +8,7 @@ from .deploy_util import (
     initialize_test_validator_slasher,
     initialize_deposit_locker,
 )
+from deploy_tools.deploy import wait_for_successful_transaction_receipt
 
 from .data_generation import make_block_header
 
@@ -16,8 +17,7 @@ from .data_generation import make_block_header
 assert eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT < 8 * 10 ** 6
 eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT = 8 * 10 ** 6
 
-
-RELEASE_BLOCK_NUMBER_OFFSET = 50
+RELEASE_TIMESTAMP_OFFSET = 3600 * 24 * 180
 
 # Fix the indexes used to get addresses from the test chain.
 # Mind the difference between count and index.
@@ -29,6 +29,26 @@ AUCTION_DURATION_IN_DAYS = 14
 AUCTION_START_PRICE = 10000 * 10 ** 18
 
 SignedBlockHeader = namedtuple("SignedBlockHeader", "unsignedBlockHeader signature")
+
+
+@pytest.fixture(scope="session")
+def release_timestamp(web3):
+    """release timestamp used for DepositLocker contract"""
+    now = web3.eth.getBlock("latest").timestamp
+    return now + RELEASE_TIMESTAMP_OFFSET
+
+
+@pytest.fixture(scope="session")
+def deposit_locker_init(release_timestamp, web3):
+    def init(deposit_locker, depositors_proxy):
+        txid = deposit_locker.functions.init(
+            _releaseTimestamp=release_timestamp,
+            _slasher="0x0000000000000000000000000000000000000000",
+            _depositorsProxy=depositors_proxy,
+        ).transact()
+        wait_for_successful_transaction_receipt(web3, txid)
+
+    return init
 
 
 @pytest.fixture(scope="session")
@@ -99,25 +119,18 @@ def non_initialized_deposit_locker_contract_session(deploy_contract):
 
 @pytest.fixture(scope="session")
 def initialized_deposit_and_slasher_contracts(
-    validators, deploy_contract, fake_auction_address, web3
+    validators, deploy_contract, fake_auction_address, web3, release_timestamp
 ):
     slasher_contract = deploy_contract("ValidatorSlasher")
     locker_contract = deploy_contract("DepositLocker")
     """Initializes both the slasher and deposit contract, both initialisation are in the same fixture because we want
     a snapshot where both contracts are initialized and aware of the address of the other"""
 
-    # initialize the deposit contract
-    release_number = web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET
-
-    # we want to test withdrawing before reaching block_number
-    # if we reach this block number via deploying and initialising contracts, we will need to increase this number
-    # if this number is too high, tests are slowed down
-
     slasher_contract_address = slasher_contract.address
     auction_contract_address = fake_auction_address
     initialized_deposit_contract = initialize_deposit_locker(
         locker_contract,
-        release_number,
+        release_timestamp,
         slasher_contract_address,
         auction_contract_address,
         web3,
@@ -186,16 +199,12 @@ def block_header_by_malicious_non_validator(malicious_non_validator_key):
 
 
 @pytest.fixture(scope="session")
-def validator_auction_contract(deploy_contract, whitelist, web3):
+def validator_auction_contract(deploy_contract, whitelist, web3, deposit_locker_init):
     deposit_locker = deploy_contract("DepositLocker")
     contract = deploy_contract(
         "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
     )
-    deposit_locker.functions.init(
-        _releaseBlockNumber=web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
-        _slasher="0x0000000000000000000000000000000000000000",
-        _depositorsProxy=contract.address,
-    ).transact()
+    deposit_locker_init(deposit_locker, contract.address)
 
     add_whitelist_to_validator_auction_contract(contract, whitelist)
 
@@ -204,7 +213,11 @@ def validator_auction_contract(deploy_contract, whitelist, web3):
 
 @pytest.fixture(scope="session")
 def real_price_validator_auction_contract(
-    deploy_contract, whitelist, number_of_auction_participants, web3
+    deploy_contract,
+    whitelist,
+    number_of_auction_participants,
+    web3,
+    deposit_locker_init,
 ):
     deposit_locker = deploy_contract("DepositLocker")
 
@@ -217,11 +230,7 @@ def real_price_validator_auction_contract(
             deposit_locker.address,
         ),
     )
-    deposit_locker.functions.init(
-        _releaseBlockNumber=web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
-        _slasher="0x0000000000000000000000000000000000000000",
-        _depositorsProxy=contract.address,
-    ).transact()
+    deposit_locker_init(deposit_locker, contract.address)
 
     add_whitelist_to_validator_auction_contract(contract, whitelist)
 
@@ -229,23 +238,23 @@ def real_price_validator_auction_contract(
 
 
 @pytest.fixture(scope="session")
-def no_whitelist_validator_auction_contract(deploy_contract, web3):
+def no_whitelist_validator_auction_contract(deploy_contract, web3, deposit_locker_init):
     deposit_locker = deploy_contract("DepositLocker")
     contract = deploy_contract(
         "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
     )
-    deposit_locker.functions.init(
-        _releaseBlockNumber=web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
-        _slasher="0x0000000000000000000000000000000000000000",
-        _depositorsProxy=contract.address,
-    ).transact()
+    deposit_locker_init(deposit_locker, contract.address)
 
     return contract
 
 
 @pytest.fixture(scope="session")
 def almost_filled_validator_auction(
-    deploy_contract, whitelist, number_of_auction_participants, web3
+    deploy_contract,
+    whitelist,
+    number_of_auction_participants,
+    web3,
+    deposit_locker_init,
 ):
     """Validator auction contract missing one bid to reach the maximum amount of bidders
     account[1] has not bid and can be used to test the behaviour of sending the last bid"""
@@ -254,11 +263,7 @@ def almost_filled_validator_auction(
     contract = deploy_contract(
         "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
     )
-    deposit_locker.functions.init(
-        _releaseBlockNumber=web3.eth.blockNumber + RELEASE_BLOCK_NUMBER_OFFSET,
-        _slasher="0x0000000000000000000000000000000000000000",
-        _depositorsProxy=contract.address,
-    ).transact()
+    deposit_locker_init(deposit_locker, contract.address)
 
     add_whitelist_to_validator_auction_contract(contract, whitelist)
 
