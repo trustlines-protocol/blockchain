@@ -53,4 +53,4 @@ def private_key(account_keys):
 
 @pytest.fixture()
 def whitelist():
-    return [to_canonical_address(create_address_string(i)) for i in range(50)]
+    return [to_canonical_address(create_address_string(i)) for i in range(30)]
