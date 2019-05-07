@@ -37,6 +37,19 @@ def deployed_auction_address(runner):
 
 
 @pytest.fixture()
+def whitelisted_auction_address(runner, deployed_auction_address, whitelist_file):
+    """deploy an auction with all addresses whitelisted and return it's address"""
+
+    runner.invoke(
+        main,
+        args=f"whitelist --file {whitelist_file} --auction-address {deployed_auction_address} "
+        + "--batch-size 100 --jsonrpc test",
+    )
+
+    return deployed_auction_address
+
+
+@pytest.fixture()
 def whitelist_file(tmp_path, key_password, whitelist):
     folder = tmp_path / "subfolder"
     folder.mkdir()
@@ -228,6 +241,33 @@ def test_cli_whitelist(runner, deployed_auction_address, whitelist_file, whiteli
     )
     assert result.exit_code == 0
     assert result.output == f"Number of whitelisted addresses: {len(whitelist)}\n"
+
+
+def test_cli_check_whitelist_not_whitelisted(
+    runner, deployed_auction_address, whitelist_file, whitelist
+):
+    result = runner.invoke(
+        main,
+        args=f"check-whitelist --file {whitelist_file} --auction-address {deployed_auction_address} "
+        + "--jsonrpc test",
+    )
+    assert result.exit_code == 0
+    assert (
+        result.output
+        == f"{len(whitelist)} of {len(whitelist)} addresses have not been whitelisted yet\n"
+    )
+
+
+def test_cli_check_whitelist_all_whitelisted(
+    runner, whitelisted_auction_address, whitelist_file, whitelist
+):
+    result = runner.invoke(
+        main,
+        args=f"check-whitelist --file {whitelist_file} --auction-address {whitelisted_auction_address} "
+        + "--jsonrpc test",
+    )
+    assert result.exit_code == 0
+    assert result.output == f"All {len(whitelist)} addresses have been whitelisted\n"
 
 
 def test_cli_not_checksummed_address(runner, deployed_auction_address):

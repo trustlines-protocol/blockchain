@@ -7,7 +7,7 @@ from auction_deploy.core import (
     initialize_auction_contracts,
     decrypt_private_key,
     whitelist_addresses,
-    _filter_whitelisted_addresses,
+    missing_whitelisted_addresses,
 )
 
 
@@ -122,14 +122,14 @@ def test_whitelist_filter(deployed_contracts, whitelist, web3):
 
     auction_contract = deployed_contracts.auction
 
-    assert _filter_whitelisted_addresses(auction_contract, whitelist) == whitelist
+    assert missing_whitelisted_addresses(auction_contract, whitelist) == whitelist
 
     whitelist_addresses(
         auction_contract, whitelist[:SPLIT_SIZE], batch_size=10, web3=web3
     )
 
     assert (
-        _filter_whitelisted_addresses(auction_contract, whitelist)
+        missing_whitelisted_addresses(auction_contract, whitelist)
         == whitelist[SPLIT_SIZE:]
     )
 

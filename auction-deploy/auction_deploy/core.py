@@ -190,7 +190,7 @@ def whitelist_addresses(
         transaction_options = {}
 
     # only whitelist addresses that are not whitelisted yet
-    filtered_whitelist = _filter_whitelisted_addresses(auction_contract, whitelist)
+    filtered_whitelist = missing_whitelisted_addresses(auction_contract, whitelist)
 
     assert batch_size > 0
     chunks = [
@@ -215,9 +215,12 @@ def whitelist_addresses(
     return len(filtered_whitelist)
 
 
-def _filter_whitelisted_addresses(
+def missing_whitelisted_addresses(
     auction_contract: Contract, whitelist: Sequence[str]
 ) -> Sequence[str]:
+    """
+    Returns the addresses in `whitelist` which are not yet whitelisted in the auction contract
+    """
     return [
         address
         for address in whitelist

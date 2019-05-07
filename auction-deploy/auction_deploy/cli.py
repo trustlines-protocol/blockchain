@@ -15,6 +15,7 @@ from auction_deploy.core import (
     read_whitelist,
     validate_and_format_address,
     InvalidAddressException,
+    missing_whitelisted_addresses,
 )
 
 # we need test_provider and test_json_rpc for running the tests in test_cli
@@ -451,6 +452,41 @@ def whitelist(
     click.echo(
         "Number of whitelisted addresses: " + str(number_of_whitelisted_addresses)
     )
+
+
+@main.command(
+    short_help="Check number of not yet whitelisted addresses for the auction"
+)
+@click.option(
+    "--file",
+    help="Path to the csv file containing the addresses to be whitelisted",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+)
+@click.option(
+    "--auction-address",
+    help="Address of the auction contract",
+    callback=validate_address,
+    metavar="ADDRESS",
+    type=str,
+    required=True,
+)
+@jsonrpc_option
+def check_whitelist(file: str, auction_address: str, jsonrpc: str) -> None:
+    web3 = connect_to_json_rpc(jsonrpc)
+    whitelist = read_whitelist(file)
+    contracts = get_deployed_auction_contracts(web3, auction_address)
+
+    number_of_missing_addresses = len(
+        missing_whitelisted_addresses(contracts.auction, whitelist)
+    )
+
+    if number_of_missing_addresses == 0:
+        click.echo(f"All {len(whitelist)} addresses have been whitelisted")
+    else:
+        click.echo(
+            f"{number_of_missing_addresses} of {len(whitelist)} addresses have not been whitelisted yet"
+        )
 
 
 def connect_to_json_rpc(jsonrpc) -> Web3:
