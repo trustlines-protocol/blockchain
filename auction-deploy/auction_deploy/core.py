@@ -5,7 +5,7 @@ from typing import Dict, NamedTuple, Sequence
 
 from web3.contract import Contract
 from eth_keyfile import extract_key_from_keyfile
-from eth_utils import is_checksum_address
+from eth_utils import is_address, to_checksum_address
 from deploy_tools.deploy import send_function_call_transaction, deploy_compiled_contract
 
 
@@ -225,13 +225,24 @@ def _filter_whitelisted_addresses(
     ]
 
 
+class InvalidAddressException(Exception):
+    pass
+
+
+def validate_and_format_address(address):
+    """Validates the address and formats it into the internal format
+    Will raise `InvalidAddressException, if the address is invalid"""
+    if is_address(address):
+        return to_checksum_address(address)
+    else:
+        raise InvalidAddressException()
+
+
 def read_whitelist(file_path: str):
     with open(file_path) as f:
         reader = csv.reader(f)
         addresses = []
         for line in reader:
-            address = line[0]
-            if not is_checksum_address(address):
-                raise ValueError("Invalid address in whitelist file")
+            address = validate_and_format_address(line[0])
             addresses.append(address)
         return addresses
