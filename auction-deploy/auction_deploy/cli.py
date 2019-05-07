@@ -225,6 +225,8 @@ def start_auction(
     help='The address of the auction contract to be closed, "0x" prefixed string',
     type=str,
     required=True,
+    callback=validate_address,
+    metavar="ADDRESS",
 )
 @keystore_option
 @gas_option
