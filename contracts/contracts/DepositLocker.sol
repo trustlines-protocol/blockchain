@@ -33,7 +33,7 @@ contract DepositLocker is DepositLockerInterface, Ownable {
 
     address public slasher;
     address public depositorsProxy;
-    uint public releaseBlockNumber;
+    uint public releaseTimestamp;
 
     mapping (address => bool) public canWithdraw;
     uint numberOfDepositors = 0;
@@ -66,13 +66,13 @@ contract DepositLocker is DepositLockerInterface, Ownable {
 
     function() external {}
 
-    function init(uint _releaseBlockNumber, address _slasher, address _depositorsProxy)
+    function init(uint _releaseTimestamp, address _slasher, address _depositorsProxy)
         external onlyOwner returns (bool _success)
     {
         require(!initialized, "The contract is already initialised.");
-        require(_releaseBlockNumber > block.number, "The release block number cannot be lower or equal to the current block number");
+        require(_releaseTimestamp > now, "The release timestamp must be in the future");
 
-        releaseBlockNumber = _releaseBlockNumber;
+        releaseTimestamp = _releaseTimestamp;
         slasher = _slasher;
         depositorsProxy = _depositorsProxy;
         initialized = true;
@@ -99,7 +99,7 @@ contract DepositLocker is DepositLockerInterface, Ownable {
     }
 
     function withdraw() public isInitialised isDeposited returns (bool _success) {
-        require(block.number >= releaseBlockNumber, "The deposit cannot be withdrawn yet.");
+        require(now >= releaseTimestamp, "The deposit cannot be withdrawn yet.");
         require(canWithdraw[msg.sender], "cannot withdraw from sender");
 
         canWithdraw[msg.sender] = false;
