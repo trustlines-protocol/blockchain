@@ -199,6 +199,22 @@ def test_enough_bidders_ends_auction(almost_filled_validator_auction, accounts):
 
 
 @pytest.mark.slow
+def test_end_auction_minimal_number_of_bidders(
+    almost_filled_validator_auction, accounts, chain
+):
+
+    assert_auction_state(almost_filled_validator_auction, AuctionState.Started)
+
+    time_travel_to_end_of_auction(chain)
+
+    almost_filled_validator_auction.functions.closeAuction().transact(
+        {"from": accounts[1]}
+    )
+
+    assert_auction_state(almost_filled_validator_auction, AuctionState.DepositPending)
+
+
+@pytest.mark.slow
 def test_send_bids_to_locker(
     deposit_pending_validator_auction, accounts, web3, number_of_auction_participants
 ):
@@ -212,7 +228,7 @@ def test_send_bids_to_locker(
     post_balance = web3.eth.getBalance(deposit_pending_validator_auction.address)
     total_price = (
         number_of_auction_participants
-        * deposit_pending_validator_auction.functions.closingPrice().call()
+        * deposit_pending_validator_auction.functions.lastBidPrice().call()
     )
     assert post_balance == pre_balance - total_price
     assert web3.eth.getBalance(deposit_locker) == total_price
@@ -237,7 +253,7 @@ def test_withdraw_overbid(almost_filled_validator_auction, accounts, web3):
     almost_filled_validator_auction.functions.withdraw().transact(
         {"from": accounts[1], "gasPrice": 0}
     )
-    closing_price = almost_filled_validator_auction.functions.closingPrice().call()
+    closing_price = almost_filled_validator_auction.functions.lastBidPrice().call()
 
     post_balance = web3.eth.getBalance(accounts[1], "latest")
 
@@ -401,7 +417,7 @@ def test_event_auction_ended(almost_filled_validator_auction, accounts, web3):
     ).get_all_entries()[0]["args"]
 
     assert event["closeTime"] == close_time
-    assert event["closingPrice"] == TEST_PRICE
+    assert event["lastBidPrice"] == TEST_PRICE
 
 
 def test_event_whitelist(no_whitelist_validator_auction_contract, whitelist, web3):

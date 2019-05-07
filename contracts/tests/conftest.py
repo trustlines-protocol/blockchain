@@ -57,9 +57,14 @@ def deposit_amount():
 
 
 @pytest.fixture(scope="session")
-def number_of_auction_participants():
+def maximal_number_of_auction_participants():
     number_of_participants = 123
     return number_of_participants
+
+
+@pytest.fixture(scope="session")
+def minimal_number_of_auction_participants():
+    return 50
 
 
 @pytest.fixture(scope="session")
@@ -215,7 +220,8 @@ def validator_auction_contract(deploy_contract, whitelist, web3, deposit_locker_
 def real_price_validator_auction_contract(
     deploy_contract,
     whitelist,
-    number_of_auction_participants,
+    maximal_number_of_auction_participants,
+    minimal_number_of_auction_participants,
     web3,
     deposit_locker_init,
 ):
@@ -226,7 +232,8 @@ def real_price_validator_auction_contract(
         constructor_args=(
             AUCTION_START_PRICE,
             AUCTION_DURATION_IN_DAYS,
-            number_of_auction_participants,
+            maximal_number_of_auction_participants,
+            minimal_number_of_auction_participants,
             deposit_locker.address,
         ),
     )
@@ -250,10 +257,7 @@ def no_whitelist_validator_auction_contract(deploy_contract, web3, deposit_locke
 
 @pytest.fixture(scope="session")
 def almost_filled_validator_auction(
-    deploy_contract,
-    whitelist,
-    number_of_auction_participants,
-    web3,
+    deploy_contract, whitelist, maximal_number_of_auction_participants, web3,
     deposit_locker_init,
 ):
     """Validator auction contract missing one bid to reach the maximum amount of bidders
@@ -269,17 +273,17 @@ def almost_filled_validator_auction(
 
     contract.functions.startAuction().transact()
 
-    for participant in whitelist[1:number_of_auction_participants]:
+    for participant in whitelist[1:maximal_number_of_auction_participants]:
         contract.functions.bid().transact({"from": participant, "value": 100})
 
     return contract
 
 
 @pytest.fixture(scope="session")
-def whitelist(chain, number_of_auction_participants):
+def whitelist(chain, maximal_number_of_auction_participants):
     """Every known accounts appart from accounts[0] is in the whitelist"""
     new_chain = chain
-    for i in range(100, 100 + number_of_auction_participants):
+    for i in range(100, 100 + maximal_number_of_auction_participants):
         new_chain.add_account(
             "0x0000000000000000000000000000000000000000000000000000000000000" + str(i)
         )
