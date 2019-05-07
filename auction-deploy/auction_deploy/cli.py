@@ -80,7 +80,8 @@ auto_nonce_option = click.option(
 
 
 auction_address_option = click.option(
-    "--auction-address",
+    "--address",
+    "auction_address",
     help='The address of the auction contract, "0x" prefixed string',
     type=str,
     required=True,
@@ -89,6 +90,7 @@ auction_address_option = click.option(
 )
 whitelist_file_option = click.option(
     "--file",
+    "whitelist_file",
     help="Path to the csv file containing the addresses to be whitelisted",
     type=click.Path(exists=True, dir_okay=False),
     required=True,
@@ -198,7 +200,7 @@ def deploy(
 @nonce_option
 @auto_nonce_option
 @jsonrpc_option
-def start_auction(
+def start(
     auction_address,
     keystore: str,
     jsonrpc: str,
@@ -279,7 +281,7 @@ def deposit_bids(
 @nonce_option
 @auto_nonce_option
 @jsonrpc_option
-def close_auction(
+def close(
     auction_address,
     keystore: str,
     jsonrpc: str,
@@ -315,7 +317,7 @@ def close_auction(
 )
 @auction_address_option
 @jsonrpc_option
-def print_auction_status(auction_address, jsonrpc):
+def status(auction_address, jsonrpc):
 
     web3 = connect_to_json_rpc(jsonrpc)
 
@@ -392,7 +394,7 @@ def print_auction_status(auction_address, jsonrpc):
 @auto_nonce_option
 @jsonrpc_option
 def whitelist(
-    file: str,
+    whitelist_file: str,
     auction_address: str,
     batch_size: int,
     keystore: str,
@@ -404,7 +406,7 @@ def whitelist(
 ) -> None:
 
     web3 = connect_to_json_rpc(jsonrpc)
-    whitelist = read_whitelist(file)
+    whitelist = read_whitelist(whitelist_file)
     private_key = retrieve_private_key(keystore)
 
     nonce = get_nonce(
@@ -436,9 +438,9 @@ def whitelist(
 @whitelist_file_option
 @auction_address_option
 @jsonrpc_option
-def check_whitelist(file: str, auction_address: str, jsonrpc: str) -> None:
+def check_whitelist(whitelist_file: str, auction_address: str, jsonrpc: str) -> None:
     web3 = connect_to_json_rpc(jsonrpc)
-    whitelist = read_whitelist(file)
+    whitelist = read_whitelist(whitelist_file)
     contracts = get_deployed_auction_contracts(web3, auction_address)
 
     number_of_missing_addresses = len(
