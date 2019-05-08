@@ -63,7 +63,7 @@ def deploy_auction_contracts(
     web3,
     transaction_options: Dict = None,
     private_key=None,
-    auction_options: AuctionOptions
+    auction_options: AuctionOptions,
 ) -> DeployedAuctionContracts:
 
     if transaction_options is None:
@@ -128,7 +128,7 @@ def initialize_auction_contracts(
     transaction_options=None,
     contracts: DeployedAuctionContracts,
     release_timestamp,
-    private_key=None
+    private_key=None,
 ) -> None:
     if transaction_options is None:
         transaction_options = {}
@@ -189,7 +189,7 @@ def whitelist_addresses(
     batch_size,
     web3,
     transaction_options=None,
-    private_key=None
+    private_key=None,
 ) -> int:
     """Add all not yet whitelisted addresses in `whitelist` to the whitelisted addresses in the auction contract.
     Returns the number of new whitelisted addresses"""
