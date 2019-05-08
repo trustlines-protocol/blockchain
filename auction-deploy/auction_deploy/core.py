@@ -9,6 +9,9 @@ from eth_utils import is_address, to_checksum_address
 from deploy_tools.deploy import send_function_call_transaction, deploy_compiled_contract
 
 
+ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+
+
 class AuctionOptions(NamedTuple):
     start_price: int
     auction_duration: int
@@ -60,7 +63,7 @@ def deploy_auction_contracts(
     web3,
     transaction_options: Dict = None,
     private_key=None,
-    auction_options: AuctionOptions,
+    auction_options: AuctionOptions
 ) -> DeployedAuctionContracts:
 
     if transaction_options is None:
@@ -125,7 +128,7 @@ def initialize_auction_contracts(
     transaction_options=None,
     contracts: DeployedAuctionContracts,
     release_timestamp,
-    private_key=None,
+    private_key=None
 ) -> None:
     if transaction_options is None:
         transaction_options = {}
@@ -167,7 +170,10 @@ def get_deployed_auction_contracts(
     locker = web3.eth.contract(address=locker_address, abi=locker_abi)
 
     slasher_address = locker.functions.slasher().call()
-    slasher = web3.eth.contract(address=slasher_address, abi=slasher_abi)
+    if slasher_address == ZERO_ADDRESS:
+        slasher = None
+    else:
+        slasher = web3.eth.contract(address=slasher_address, abi=slasher_abi)
 
     deployed_auction_contracts: DeployedAuctionContracts = DeployedAuctionContracts(
         locker, slasher, auction
@@ -183,7 +189,7 @@ def whitelist_addresses(
     batch_size,
     web3,
     transaction_options=None,
-    private_key=None,
+    private_key=None
 ) -> int:
     """Add all not yet whitelisted addresses in `whitelist` to the whitelisted addresses in the auction contract.
     Returns the number of new whitelisted addresses"""

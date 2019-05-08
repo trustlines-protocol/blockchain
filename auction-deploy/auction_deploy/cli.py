@@ -347,9 +347,11 @@ def status(auction_address, jsonrpc):
         contracts.auction.functions.maximalNumberOfParticipants().call()
     )
     locker_address = contracts.locker.address
-    slasher_address = contracts.slasher.address
+    if contracts.slasher is not None:
+        slasher_address = contracts.slasher.address
     locker_initialized = contracts.locker.functions.initialized().call()
-    slasher_initialized = contracts.slasher.functions.initialized().call()
+    if contracts.slasher is not None:
+        slasher_initialized = contracts.slasher.functions.initialized().call()
 
     # variables
     auction_state_value = contracts.auction.functions.auctionState().call()
@@ -377,9 +379,14 @@ def status(auction_address, jsonrpc):
         + str(maximal_number_of_participants)
     )
     click.echo("The address of the locker contract is:  " + str(locker_address))
-    click.echo("The address of the slasher contract is: " + str(slasher_address))
     click.echo("The locker initialized value is:        " + str(locker_initialized))
-    click.echo("The slasher initialized value is:       " + str(slasher_initialized))
+    if contracts.slasher is not None:
+        click.echo("The address of the slasher contract is: " + str(slasher_address))
+        click.echo(
+            "The slasher initialized value is:       " + str(slasher_initialized)
+        )
+    else:
+        click.echo("The slasher contract cannot be found.")
 
     click.echo(
         "------------------------------------    ------------------------------------------"
