@@ -47,10 +47,26 @@ def started_validator_auction(validator_auction_contract, accounts):
 
 
 @pytest.fixture()
-def deposit_pending_validator_auction(almost_filled_validator_auction, accounts):
+def deposit_pending_filled_validator_auction(almost_filled_validator_auction, accounts):
+    """A validator auction with maximal number of bidders awaiting deposit transfer"""
     almost_filled_validator_auction.functions.bid().transact(
         {"from": accounts[1], "value": 100}
     )
+
+    assert_auction_state(almost_filled_validator_auction, AuctionState.DepositPending)
+
+    return almost_filled_validator_auction
+
+
+@pytest.fixture()
+def deposit_pending_almost_filled_validator_auction(
+    almost_filled_validator_auction, accounts, chain
+):
+    """A validator auction awaiting deposit transfer with a number of bidders below the maximal number of bidders"""
+
+    time_travel_to_end_of_auction(chain)
+
+    almost_filled_validator_auction.functions.closeAuction().transact()
 
     assert_auction_state(almost_filled_validator_auction, AuctionState.DepositPending)
 
@@ -199,9 +215,7 @@ def test_enough_bidders_ends_auction(almost_filled_validator_auction, accounts):
 
 
 @pytest.mark.slow
-def test_end_auction_minimal_number_of_bidders(
-    almost_filled_validator_auction, accounts, chain
-):
+def test_end_auction_not_filled(almost_filled_validator_auction, accounts, chain):
 
     assert_auction_state(almost_filled_validator_auction, AuctionState.Started)
 
@@ -216,23 +230,52 @@ def test_end_auction_minimal_number_of_bidders(
 
 @pytest.mark.slow
 def test_send_bids_to_locker(
-    deposit_pending_validator_auction, accounts, web3, number_of_auction_participants
+    deposit_pending_filled_validator_auction,
+    accounts,
+    web3,
+    maximal_number_of_auction_participants,
 ):
-    deposit_locker = deposit_pending_validator_auction.functions.depositLocker().call()
+    deposit_locker = (
+        deposit_pending_filled_validator_auction.functions.depositLocker().call()
+    )
     assert web3.eth.getBalance(deposit_locker) == 0
 
-    pre_balance = web3.eth.getBalance(deposit_pending_validator_auction.address)
-    deposit_pending_validator_auction.functions.depositBids().transact(
+    pre_balance = web3.eth.getBalance(deposit_pending_filled_validator_auction.address)
+    deposit_pending_filled_validator_auction.functions.depositBids().transact(
         {"from": accounts[5]}
     )
-    post_balance = web3.eth.getBalance(deposit_pending_validator_auction.address)
+    post_balance = web3.eth.getBalance(deposit_pending_filled_validator_auction.address)
     total_price = (
-        number_of_auction_participants
-        * deposit_pending_validator_auction.functions.lastBidPrice().call()
+        maximal_number_of_auction_participants
+        * deposit_pending_filled_validator_auction.functions.lastBidPrice().call()
     )
     assert post_balance == pre_balance - total_price
     assert web3.eth.getBalance(deposit_locker) == total_price
-    assert_auction_state(deposit_pending_validator_auction, AuctionState.Ended)
+    assert_auction_state(deposit_pending_filled_validator_auction, AuctionState.Ended)
+
+
+@pytest.mark.slow
+def test_send_bids_to_locker_almost_filled_auction(
+    deposit_pending_almost_filled_validator_auction,
+    web3,
+    maximal_number_of_auction_participants,
+):
+    auction = deposit_pending_almost_filled_validator_auction
+    deposit_locker = auction.functions.depositLocker().call()
+    assert web3.eth.getBalance(deposit_locker) == 0
+
+    pre_balance = web3.eth.getBalance(auction.address)
+
+    auction.functions.depositBids().transact()
+
+    post_balance = web3.eth.getBalance(auction.address)
+    total_price = (
+        maximal_number_of_auction_participants - 1
+    ) * auction.functions.lastBidPrice().call()
+
+    assert post_balance == pre_balance - total_price
+    assert web3.eth.getBalance(deposit_locker) == total_price
+    assert_auction_state(auction, AuctionState.Ended)
 
 
 @pytest.mark.slow
@@ -364,7 +407,9 @@ def test_event_auction_started(validator_auction_contract, accounts, web3):
 
 
 def test_event_auction_deployed(
-    real_price_validator_auction_contract, number_of_auction_participants
+    real_price_validator_auction_contract,
+    minimal_number_of_auction_participants,
+    maximal_number_of_auction_participants,
 ):
     event_args = real_price_validator_auction_contract.events.AuctionDeployed.createFilter(
         fromBlock=0
@@ -376,7 +421,14 @@ def test_event_auction_deployed(
 
     assert event_args["startPrice"] == AUCTION_START_PRICE
     assert event_args["auctionDurationInDays"] == AUCTION_DURATION_IN_DAYS
-    assert event_args["numberOfParticipants"] == number_of_auction_participants
+    assert (
+        event_args["minimalNumberOfParticipants"]
+        == minimal_number_of_auction_participants
+    )
+    assert (
+        event_args["maximalNumberOfParticipants"]
+        == maximal_number_of_auction_participants
+    )
 
 
 def test_event_auction_failed(started_validator_auction, accounts, chain, web3):

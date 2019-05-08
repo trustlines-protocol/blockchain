@@ -9,8 +9,8 @@ contract ValidatorAuction is Ownable {
     // Auction constants set on deployment
     uint public auctionDurationInDays;
     uint public startPrice;
-    uint public maximalNumberOfParticipants;
     uint public minimalNumberOfParticipants;
+    uint public maximalNumberOfParticipants;
 
     AuctionState public auctionState;
     DepositLocker public depositLocker;
@@ -23,7 +23,7 @@ contract ValidatorAuction is Ownable {
 
     event BidSubmitted(address bidder, uint bidValue, uint slotPrice, uint timestamp);
     event AddressWhitelisted(address whitelistedAddress);
-    event AuctionDeployed(uint startPrice, uint auctionDurationInDays, uint numberOfParticipants);
+    event AuctionDeployed(uint startPrice, uint auctionDurationInDays, uint minimalNumberOfParticipants, uint maximalNumberOfParticipants);
     event AuctionStarted(uint startTime);
     event AuctionEnded(uint closeTime, uint lastBidPrice, uint totalParticipants);
     event AuctionFailed(uint closeTime, uint numberOfBidders);
@@ -45,22 +45,23 @@ contract ValidatorAuction is Ownable {
     constructor(
         uint _startPriceInWei,
         uint _auctionDurationInDays,
-        uint _numberOfParticipants,
         uint _minimalNumberOfParticipants,
+        uint _maximalNumberOfParticipants,
         DepositLocker _depositLocker
     ) public
     {
         require(_auctionDurationInDays > 0, "Duration of auction must be greater than 0");
-        require(_numberOfParticipants > 0, "Number of participants must be greater than 0");
         require(_minimalNumberOfParticipants > 0, "Minimal number of participants must be greater than 0");
+        require(_maximalNumberOfParticipants > 0, "Number of participants must be greater than 0");
+        require(_minimalNumberOfParticipants < _maximalNumberOfParticipants, "The minimal number of participants must be smaller than the maximal number of participants.");
 
         startPrice = _startPriceInWei;
         auctionDurationInDays = _auctionDurationInDays;
-        maximalNumberOfParticipants = _numberOfParticipants;
+        maximalNumberOfParticipants = _maximalNumberOfParticipants;
         minimalNumberOfParticipants = _minimalNumberOfParticipants;
         depositLocker = _depositLocker;
 
-        emit AuctionDeployed(startPrice, auctionDurationInDays, maximalNumberOfParticipants);
+        emit AuctionDeployed(startPrice, auctionDurationInDays, _minimalNumberOfParticipants, _maximalNumberOfParticipants);
         auctionState = AuctionState.Deployed;
     }
 
@@ -101,7 +102,7 @@ contract ValidatorAuction is Ownable {
 
     function depositBids() public stateIs(AuctionState.DepositPending) {
         auctionState = AuctionState.Ended;
-        depositLocker.deposit.value(lastBidPrice * maximalNumberOfParticipants)(lastBidPrice);
+        depositLocker.deposit.value(lastBidPrice * bidders.length)(lastBidPrice);
     }
 
     function closeAuction() public stateIs(AuctionState.Started) {
@@ -143,10 +144,16 @@ contract ValidatorAuction is Ownable {
         require(auctionState == AuctionState.Ended || auctionState == AuctionState.Failed, "You cannot withdraw before the auction is ended or it failed.");
         require(bids[msg.sender] > lastBidPrice, "The sender has nothing to withdraw.");
 
-        uint valueToWithdraw = bids[msg.sender] - lastBidPrice;
+        uint closingPrice;
+
+        if (auctionState == AuctionState.Ended) {
+            closingPrice = lastBidPrice;
+        }
+
+        uint valueToWithdraw = bids[msg.sender] - closingPrice;
         assert(valueToWithdraw <= bids[msg.sender]);
 
-        bids[msg.sender] = lastBidPrice;
+        bids[msg.sender] = closingPrice;
         msg.sender.transfer(valueToWithdraw);
     }
 

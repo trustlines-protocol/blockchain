@@ -232,8 +232,8 @@ def real_price_validator_auction_contract(
         constructor_args=(
             AUCTION_START_PRICE,
             AUCTION_DURATION_IN_DAYS,
-            maximal_number_of_auction_participants,
             minimal_number_of_auction_participants,
+            maximal_number_of_auction_participants,
             deposit_locker.address,
         ),
     )
