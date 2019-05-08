@@ -142,6 +142,49 @@ def test_cannot_call_finalize_change(validator_set_contract_session, accounts):
         contract.functions.finalizeChange().transact({"from": accounts[0]})
 
 
+def test_finalize_change_update_history_data_correctly(
+    validator_set_contract_session, accounts, web3
+):
+    assert (
+        validator_set_contract_session.functions.getLengthOfBlockNumbersOfFinalizedChanges().call()
+        == 0
+    )
+
+    new_validator_set = accounts[:2]
+    validator_set_contract_session.functions.testChangeValiatorSet(
+        new_validator_set
+    ).transact()
+    validator_set_contract_session.functions.testFinalizeChange().transact()
+
+    assert (
+        validator_set_contract_session.functions.getLengthOfBlockNumbersOfFinalizedChanges().call()
+        == 1
+    )
+
+    block_number_of_finalized_change = web3.eth.blockNumber
+
+    assert (
+        validator_set_contract_session.functions.blockNumbersOfFinalizedChanges(
+            0
+        ).call()
+        == block_number_of_finalized_change
+    )
+
+    finalized_validator_set_length = validator_set_contract_session.functions.getLengthOfFinalizedValidatorSet(
+        block_number_of_finalized_change
+    ).call()
+
+    assert finalized_validator_set_length == len(new_validator_set)
+
+    for i in range(0, finalized_validator_set_length):
+        assert (
+            validator_set_contract_session.functions.finalizedValidatorSets(
+                block_number_of_finalized_change, i
+            ).call()
+            == new_validator_set[i]
+        )
+
+
 def test_cannot_call_initiate_change(
     validator_set_contract_session, accounts, validators
 ):

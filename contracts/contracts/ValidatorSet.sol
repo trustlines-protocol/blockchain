@@ -29,6 +29,8 @@ contract ValidatorSet {
     mapping(address => AddressStatus) status;
     bool public finalized;  // Was the last validator change finalized. Implies currentValidators == pendingValidators
     address public systemAddress = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
+    uint[] public blockNumbersOfFinalizedChanges;
+    mapping(uint => address[]) public finalizedValidatorSets;
 
     modifier onlySystem() {
         require(
@@ -65,6 +67,14 @@ contract ValidatorSet {
         finalized = true;
         initiated = true;
         return true;
+    }
+
+    function getLengthOfBlockNumbersOfFinalizedChanges() external view returns(uint) {
+        return blockNumbersOfFinalizedChanges.length;
+    }
+
+    function getLengthOfFinalizedValidatorSet(uint _blockNumber) external view returns(uint) {
+        return finalizedValidatorSets[_blockNumber].length;
     }
 
     /**
@@ -127,6 +137,8 @@ contract ValidatorSet {
     function finalizeChange() public onlySystem {
         currentValidators = pendingValidators;
         finalized = true;
+        blockNumbersOfFinalizedChanges.push(block.number);
+        finalizedValidatorSets[block.number] = currentValidators;
     }
 
     function removeValidator(address _validator) internal isFinalized returns (bool _success) {
