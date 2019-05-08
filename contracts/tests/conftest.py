@@ -257,7 +257,10 @@ def no_whitelist_validator_auction_contract(deploy_contract, web3, deposit_locke
 
 @pytest.fixture(scope="session")
 def almost_filled_validator_auction(
-    deploy_contract, whitelist, maximal_number_of_auction_participants, web3,
+    deploy_contract,
+    whitelist,
+    maximal_number_of_auction_participants,
+    web3,
     deposit_locker_init,
 ):
     """Validator auction contract missing one bid to reach the maximum amount of bidders
