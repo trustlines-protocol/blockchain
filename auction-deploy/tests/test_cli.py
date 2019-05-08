@@ -23,7 +23,8 @@ def deployed_auction_address(runner):
 
     deploy_result = runner.invoke(
         main,
-        args=f"deploy --release-timestamp 2000000000 --participants {number_of_participants}"
+        args=f"deploy --release-timestamp 2000000000 --max-participants {number_of_participants}"
+        f" --min-participants {number_of_participants - 1}"
         f" --start-price {starting_price} --jsonrpc test",
     )
 
@@ -114,7 +115,8 @@ def test_cli_contract_parameters_set(runner):
 
     result = runner.invoke(
         main,
-        args="deploy --start-price 123 --duration 4 --participants 567 --release-timestamp 2000000000 --jsonrpc test",
+        args="deploy --start-price 123 --duration 4 --max-participants 567 --min-participants 456 "
+        "--release-timestamp 2000000000 --jsonrpc test",
     )
 
     assert result.exit_code == 0

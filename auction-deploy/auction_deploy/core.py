@@ -12,7 +12,8 @@ from deploy_tools.deploy import send_function_call_transaction, deploy_compiled_
 class AuctionOptions(NamedTuple):
     start_price: int
     auction_duration: int
-    number_of_participants: int
+    minimal_number_of_participants: int
+    maximal_number_of_participants: int
     release_timestamp: int
 
 
@@ -97,7 +98,8 @@ def deploy_auction_contracts(
     auction_constructor_args = (
         auction_options.start_price,
         auction_options.auction_duration,
-        auction_options.number_of_participants,
+        auction_options.minimal_number_of_participants,
+        auction_options.maximal_number_of_participants,
         deposit_locker_contract.address,
     )
     auction_contract: Contract = deploy_compiled_contract(
