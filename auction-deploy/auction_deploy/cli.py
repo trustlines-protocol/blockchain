@@ -352,7 +352,7 @@ def status(auction_address, jsonrpc):
     auction_state = AuctionState(auction_state_value)
     start_time = contracts.auction.functions.startTime().call()
     close_time = contracts.auction.functions.closeTime().call()
-    last_bid_price = contracts.auction.functions.lastBidPrice().call()
+    last_bid_price = contracts.auction.functions.lowestBidPrice().call()
     if auction_state == AuctionState.Started:
         current_price_in_eth = (
             contracts.auction.functions.currentPrice().call() / ETH_IN_WEI
