@@ -53,7 +53,7 @@ contract ValidatorAuction is Ownable {
         require(_auctionDurationInDays > 0, "Duration of auction must be greater than 0");
         require(_minimalNumberOfParticipants > 0, "Minimal number of participants must be greater than 0");
         require(_maximalNumberOfParticipants > 0, "Number of participants must be greater than 0");
-        require(_minimalNumberOfParticipants < _maximalNumberOfParticipants, "The minimal number of participants must be smaller than the maximal number of participants.");
+        require(_minimalNumberOfParticipants <= _maximalNumberOfParticipants, "The minimal number of participants must be smaller than the maximal number of participants.");
 
         startPrice = _startPriceInWei;
         auctionDurationInDays = _auctionDurationInDays;
@@ -146,21 +146,31 @@ contract ValidatorAuction is Ownable {
 
     function withdraw() public {
         require(auctionState == AuctionState.Ended || auctionState == AuctionState.Failed, "You cannot withdraw before the auction is ended or it failed.");
-        require(bids[msg.sender] >= lowestBidPrice, "The sender has nothing to withdraw.");
-
-        uint valueToWithdraw;
 
         if (auctionState == AuctionState.Ended) {
-            valueToWithdraw = bids[msg.sender] - lowestBidPrice;
-            assert(valueToWithdraw <= bids[msg.sender]);
-
-            bids[msg.sender] = lowestBidPrice;
+            withdrawAfterAuctionEnded();
         } else {
-            valueToWithdraw = bids[msg.sender];
-            assert(valueToWithdraw <= bids[msg.sender]);
-
-            bids[msg.sender] = 0;
+            withdrawAfterAuctionFailed();
         }
+    }
+
+    function withdrawAfterAuctionEnded() internal stateIs(AuctionState.Ended) {
+        require(bids[msg.sender] > lowestBidPrice, "The sender has nothing to withdraw.");
+
+        uint valueToWithdraw = bids[msg.sender] - lowestBidPrice;
+        assert(valueToWithdraw <= bids[msg.sender]);
+
+        bids[msg.sender] = lowestBidPrice;
+
+        msg.sender.transfer(valueToWithdraw);
+    }
+
+    function withdrawAfterAuctionFailed() internal stateIs(AuctionState.Failed) {
+        require(bids[msg.sender] > 0, "The sender has nothing to withdraw.");
+
+        uint valueToWithdraw = bids[msg.sender];
+
+        bids[msg.sender] = 0;
 
         msg.sender.transfer(valueToWithdraw);
     }
