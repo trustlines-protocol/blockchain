@@ -130,9 +130,9 @@ def main():
     default=123,
 )
 @click.option(
-    "--release-block",
-    "release_block_number",
-    help="The release block number of the deposit locker",
+    "--release-timestamp",
+    "release_timestamp",
+    help="The release timestamp of the deposit locker",
     type=int,
     required=True,
 )
@@ -146,7 +146,7 @@ def deploy(
     start_price: int,
     auction_duration: int,
     number_of_participants: int,
-    release_block_number: int,
+    release_timestamp: int,
     keystore: str,
     jsonrpc: str,
     gas: int,
@@ -162,7 +162,7 @@ def deploy(
         start_price * ETH_IN_WEI,
         auction_duration,
         number_of_participants,
-        release_block_number,
+        release_timestamp,
     )
 
     nonce = get_nonce(
@@ -183,7 +183,7 @@ def deploy(
         web3=web3,
         transaction_options=transaction_options,
         contracts=contracts,
-        release_block_number=release_block_number,
+        release_timestamp=release_timestamp,
         private_key=private_key,
     )
 

@@ -10,55 +10,53 @@ from web3.datastructures import AttributeDict
 
 @pytest.fixture()
 def deposit_contract_on_longer_chain(
-    chain_cleanup, deposit_locker_contract_with_deposits, web3, chain
+    chain_cleanup, deposit_locker_contract_with_deposits, web3, chain, release_timestamp
 ):
-    """gives a chain long enough to be able to withdraw the deposit of the deposit contract"""
+    """returns a deposit contract from which the deposits can be withdrawn"""
     contract = deposit_locker_contract_with_deposits
-
-    block_to_reach = contract.functions.releaseBlockNumber().call()
-    current_block = web3.eth.blockNumber
-    to_mine = block_to_reach - current_block
-
-    chain.mine_blocks(to_mine)
+    chain.time_travel(release_timestamp + 1)
+    chain.mine_block()
 
     return contract
 
 
-def test_init_already_initialized(deposit_locker_contract, accounts):
+def test_init_already_initialized(
+    deposit_locker_contract, accounts, deposit_locker_init
+):
     """verifies that we cannot call the init function twice"""
     contract = deposit_locker_contract
-    validator_contract_address = accounts[0]
-    release_block_number = 100
     auction_contract_address = accounts[1]
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        contract.functions.init(
-            release_block_number, validator_contract_address, auction_contract_address
-        ).transact({"from": accounts[0]})
+        deposit_locker_init(contract, auction_contract_address)
 
 
-def test_init_not_owner(non_initialized_deposit_locker_contract_session, accounts):
+def test_init_not_owner(
+    non_initialized_deposit_locker_contract_session, accounts, release_timestamp
+):
     contract = non_initialized_deposit_locker_contract_session
     validator_contract_address = accounts[0]
-    release_block_number = 100
     auction_contract_address = accounts[1]
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         contract.functions.init(
-            release_block_number, validator_contract_address, auction_contract_address
+            _releaseTimestamp=release_timestamp,
+            _slasher=validator_contract_address,
+            _depositorsProxy=auction_contract_address,
         ).transact({"from": accounts[1]})
 
 
-def test_init_passed_realease_block(
+def test_init_release_time_in_the_past(
     non_initialized_deposit_locker_contract_session, accounts, web3
 ):
     contract = non_initialized_deposit_locker_contract_session
     validator_contract_address = accounts[0]
-    release_block = web3.eth.blockNumber - 1
-
     auction_contract_address = accounts[1]
+    now = web3.eth.getBlock("latest").timestamp
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         contract.functions.init(
-            release_block, validator_contract_address, auction_contract_address
+            _releaseTimestamp=now,
+            _slasher=validator_contract_address,
+            _depositorsProxy=auction_contract_address,
         ).transact({"from": web3.eth.defaultAccount})
 
 
@@ -90,7 +88,7 @@ def test_withdraw(deposit_contract_on_longer_chain, accounts, web3, deposit_amou
 def test_withdraw_too_soon(
     deposit_locker_contract_with_deposits, accounts, deposit_amount
 ):
-    """test whether we can withdraw before releaseBlockNumber have been mined"""
+    """test whether we can withdraw before deposits are released"""
     contract = deposit_locker_contract_with_deposits
 
     assert contract.functions.canWithdraw(accounts[0]).call()
@@ -223,16 +221,16 @@ class Env:
 
 
 @pytest.fixture(scope="session")
-def testenv(deploy_contract, accounts, web3):
+def testenv(deploy_contract, accounts, web3, release_timestamp):
     """return an initialized Env instance"""
     deposit_locker = deploy_contract("DepositLocker")
     slasher = accounts[1]
     proxy = accounts[2]
     depositors = accounts[3:6]
     other_accounts = accounts[6:]
-    deposit_locker.functions.init(web3.eth.blockNumber + 50, slasher, proxy).transact(
-        {"from": web3.eth.defaultAccount}
-    )
+    deposit_locker.functions.init(
+        _releaseTimestamp=release_timestamp, _slasher=slasher, _depositorsProxy=proxy
+    ).transact({"from": web3.eth.defaultAccount})
 
     return Env(
         deposit_locker=deposit_locker,
