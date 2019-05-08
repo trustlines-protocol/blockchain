@@ -21,50 +21,54 @@ def release_timestamp(web3):
 
 
 @pytest.fixture
-def deployed_contracts(web3, release_timestamp):
+def auction_options(release_timestamp):
     start_price = 1
     auction_duration = 2
-    number_of_participants = 3
+    minimal_number_of_participants = 3
+    maximal_number_of_participants = 4
 
     contract_options = AuctionOptions(
         start_price=start_price,
         auction_duration=auction_duration,
-        number_of_participants=number_of_participants,
+        minimal_number_of_participants=minimal_number_of_participants,
+        maximal_number_of_participants=maximal_number_of_participants,
         release_timestamp=release_timestamp,
     )
 
+    return contract_options
+
+
+@pytest.fixture
+def deployed_contracts(web3, auction_options):
+
     deployed_contracts: DeployedAuctionContracts = deploy_auction_contracts(
-        web3=web3, auction_options=contract_options
+        web3=web3, auction_options=auction_options
     )
 
     return deployed_contracts
 
 
-def test_deploy_contracts(web3, release_timestamp):
-
-    start_price = 1
-    auction_duration = 2
-    number_of_participants = 3
-
-    contract_options = AuctionOptions(
-        start_price=start_price,
-        auction_duration=auction_duration,
-        number_of_participants=number_of_participants,
-        release_timestamp=release_timestamp,
-    )
+def test_deploy_contracts(web3, auction_options: AuctionOptions):
 
     deployed_contracts: DeployedAuctionContracts = deploy_auction_contracts(
-        web3=web3, auction_options=contract_options
+        web3=web3, auction_options=auction_options
     )
 
-    assert deployed_contracts.auction.functions.startPrice().call() == start_price
     assert (
-        deployed_contracts.auction.functions.auctionDurationInDays().call()
-        == auction_duration
+        deployed_contracts.auction.functions.startPrice().call()
+        == auction_options.start_price
     )
     assert (
-        deployed_contracts.auction.functions.numberOfParticipants().call()
-        == number_of_participants
+        deployed_contracts.auction.functions.auctionDurationInDays().call()
+        == auction_options.auction_duration
+    )
+    assert (
+        deployed_contracts.auction.functions.minimalNumberOfParticipants().call()
+        == auction_options.minimal_number_of_participants
+    )
+    assert (
+        deployed_contracts.auction.functions.maximalNumberOfParticipants().call()
+        == auction_options.maximal_number_of_participants
     )
 
     assert deployed_contracts.locker.functions.initialized().call() is False

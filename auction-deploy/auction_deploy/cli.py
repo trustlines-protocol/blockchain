@@ -126,9 +126,17 @@ def main():
     default=14,
 )
 @click.option(
-    "--participants",
-    "number_of_participants",
-    help="Number of participants necessary to finish the auction successfully",
+    "--min-participants",
+    "minimal_number_of_participants",
+    help="Number of participants necessary to be able to close the auction successfully",
+    type=int,
+    show_default=True,
+    default=50,
+)
+@click.option(
+    "--max-participants",
+    "maximal_number_of_participants",
+    help="Maximal number of participants for the auction",
     type=int,
     show_default=True,
     default=123,
@@ -149,7 +157,8 @@ def main():
 def deploy(
     start_price: int,
     auction_duration: int,
-    number_of_participants: int,
+    minimal_number_of_participants: int,
+    maximal_number_of_participants: int,
     release_timestamp: int,
     keystore: str,
     jsonrpc: str,
@@ -165,7 +174,8 @@ def deploy(
     auction_options = AuctionOptions(
         start_price * ETH_IN_WEI,
         auction_duration,
-        number_of_participants,
+        minimal_number_of_participants,
+        maximal_number_of_participants,
         release_timestamp,
     )
 
@@ -330,7 +340,12 @@ def status(auction_address, jsonrpc):
     # constants throughout auction
     duration_in_days = contracts.auction.functions.auctionDurationInDays().call()
     start_price_in_eth = contracts.auction.functions.startPrice().call() / ETH_IN_WEI
-    number_of_participants = contracts.auction.functions.numberOfParticipants().call()
+    minimal_number_of_participants = (
+        contracts.auction.functions.minimalNumberOfParticipants().call()
+    )
+    maximal_number_of_participants = (
+        contracts.auction.functions.maximalNumberOfParticipants().call()
+    )
     locker_address = contracts.locker.address
     slasher_address = contracts.slasher.address
     locker_initialized = contracts.locker.functions.initialized().call()
@@ -341,7 +356,7 @@ def status(auction_address, jsonrpc):
     auction_state = AuctionState(auction_state_value)
     start_time = contracts.auction.functions.startTime().call()
     close_time = contracts.auction.functions.closeTime().call()
-    closing_price = contracts.auction.functions.closingPrice().call()
+    last_bid_price = contracts.auction.functions.lastBidPrice().call()
     if auction_state == AuctionState.Started:
         current_price_in_eth = (
             contracts.auction.functions.currentPrice().call() / ETH_IN_WEI
@@ -353,7 +368,14 @@ def status(auction_address, jsonrpc):
     click.echo(
         "The starting price in eth is:           " + str(start_price_in_eth) + " eth"
     )
-    click.echo("The number of participants is:          " + str(number_of_participants))
+    click.echo(
+        "The minimal number of participants is:          "
+        + str(minimal_number_of_participants)
+    )
+    click.echo(
+        "The maximal number of participants is:          "
+        + str(maximal_number_of_participants)
+    )
     click.echo("The address of the locker contract is:  " + str(locker_address))
     click.echo("The address of the slasher contract is: " + str(slasher_address))
     click.echo("The locker initialized value is:        " + str(locker_initialized))
@@ -378,7 +400,7 @@ def status(auction_address, jsonrpc):
             + str(current_price_in_eth)
             + " eth"
         )
-    click.echo("The closing price is:                   " + str(closing_price))
+    click.echo("The last bid price is:                   " + str(last_bid_price))
 
 
 @main.command(short_help="Whitelists addresses for the auction")
