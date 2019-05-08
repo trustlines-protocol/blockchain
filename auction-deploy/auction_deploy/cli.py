@@ -16,6 +16,7 @@ from auction_deploy.core import (
     validate_and_format_address,
     InvalidAddressException,
     missing_whitelisted_addresses,
+    ZERO_ADDRESS,
 )
 
 # we need test_provider and test_json_rpc for running the tests in test_cli
@@ -347,10 +348,12 @@ def status(auction_address, jsonrpc):
         contracts.auction.functions.maximalNumberOfParticipants().call()
     )
     locker_address = contracts.locker.address
+
+    locker_initialized = contracts.locker.functions.initialized().call()
+    slasher_initialized = False
+    slasher_address = ZERO_ADDRESS
     if contracts.slasher is not None:
         slasher_address = contracts.slasher.address
-    locker_initialized = contracts.locker.functions.initialized().call()
-    if contracts.slasher is not None:
         slasher_initialized = contracts.slasher.functions.initialized().call()
 
     # variables
@@ -359,6 +362,7 @@ def status(auction_address, jsonrpc):
     start_time = contracts.auction.functions.startTime().call()
     close_time = contracts.auction.functions.closeTime().call()
     last_bid_price = contracts.auction.functions.lowestBidPrice().call()
+    current_price_in_eth = 0
     if auction_state == AuctionState.Started:
         current_price_in_eth = (
             contracts.auction.functions.currentPrice().call() / ETH_IN_WEI

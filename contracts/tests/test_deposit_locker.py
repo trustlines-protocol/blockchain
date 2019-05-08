@@ -9,7 +9,7 @@ from web3.datastructures import AttributeDict
 
 
 @pytest.fixture()
-def deposit_contract_on_longer_chain(
+def deposit_contract_released_deposits(
     chain_cleanup, deposit_locker_contract_with_deposits, web3, chain, release_timestamp
 ):
     """returns a deposit contract from which the deposits can be withdrawn"""
@@ -69,9 +69,9 @@ def test_owner_after_init(deposit_locker_contract):
     )
 
 
-def test_withdraw(deposit_contract_on_longer_chain, accounts, web3, deposit_amount):
+def test_withdraw(deposit_contract_released_deposits, accounts, web3, deposit_amount):
     """test whether we can withdraw after block 10"""
-    contract = deposit_contract_on_longer_chain
+    contract = deposit_contract_released_deposits
 
     pre_balance = web3.eth.getBalance(accounts[0])
     assert contract.functions.canWithdraw(accounts[0]).call()
@@ -134,9 +134,9 @@ def test_deposit_not_initialized(
 
 
 def test_event_withdraw(
-    deposit_contract_on_longer_chain, deposit_amount, validators, web3
+    deposit_contract_released_deposits, deposit_amount, validators, web3
 ):
-    contract = deposit_contract_on_longer_chain
+    contract = deposit_contract_released_deposits
 
     withdrawer = validators[0]
 
