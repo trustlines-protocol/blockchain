@@ -52,12 +52,14 @@ jsonrpc_option = click.option(
     default="http://127.0.0.1:8545",
     show_default=True,
     metavar="URL",
+    envvar="AUCTION_DEPLOY_JSONRPC",
 )
 keystore_option = click.option(
     "--keystore",
     help="Path to the encrypted keystore",
     type=click.Path(exists=True, dir_okay=False),
     default=None,
+    envvar="AUCTION_DEPLOY_KEYSTORE",
 )
 gas_option = click.option(
     "--gas", help="Gas of the transaction to be sent", type=int, default=None
@@ -76,6 +78,7 @@ auto_nonce_option = click.option(
     help="automatically determine the nonce of first transaction to be sent",
     default=False,
     is_flag=True,
+    envvar="AUCTION_DEPLOY_AUTO_NONCE",
 )
 
 
@@ -87,6 +90,7 @@ auction_address_option = click.option(
     required=True,
     callback=validate_address,
     metavar="ADDRESS",
+    envvar="AUCTION_DEPLOY_ADDRESS",
 )
 whitelist_file_option = click.option(
     "--file",
