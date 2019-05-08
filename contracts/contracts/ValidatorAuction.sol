@@ -142,18 +142,22 @@ contract ValidatorAuction is Ownable {
 
     function withdraw() public {
         require(auctionState == AuctionState.Ended || auctionState == AuctionState.Failed, "You cannot withdraw before the auction is ended or it failed.");
-        require(bids[msg.sender] > lastBidPrice, "The sender has nothing to withdraw.");
+        require(bids[msg.sender] >= lastBidPrice, "The sender has nothing to withdraw.");
 
-        uint closingPrice;
+        uint valueToWithdraw;
 
         if (auctionState == AuctionState.Ended) {
-            closingPrice = lastBidPrice;
+            valueToWithdraw = bids[msg.sender] - lastBidPrice;
+            assert(valueToWithdraw <= bids[msg.sender]);
+
+            bids[msg.sender] = lastBidPrice;
+        } else {
+            valueToWithdraw = bids[msg.sender];
+            assert(valueToWithdraw <= bids[msg.sender]);
+
+            bids[msg.sender] = 0;
         }
 
-        uint valueToWithdraw = bids[msg.sender] - closingPrice;
-        assert(valueToWithdraw <= bids[msg.sender]);
-
-        bids[msg.sender] = closingPrice;
         msg.sender.transfer(valueToWithdraw);
     }
 
