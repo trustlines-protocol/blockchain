@@ -157,7 +157,7 @@ contract ValidatorAuction is Ownable {
         msg.sender.transfer(valueToWithdraw);
     }
 
-    function endAuction() internal {
+    function endAuction() internal stateIs(AuctionState.Started) {
         auctionState = AuctionState.DepositPending;
         closeTime = now;
         emit AuctionEnded(closeTime, lastBidPrice, bidders.length);
