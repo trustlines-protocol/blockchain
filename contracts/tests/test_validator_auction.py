@@ -316,7 +316,7 @@ def test_cannot_withdraw_too_soon(started_validator_auction, accounts):
 
 
 @pytest.mark.slow
-def test_cannot_withdraw_twice(almost_filled_validator_auction, accounts, web3):
+def test_cannot_withdraw_twice(almost_filled_validator_auction, accounts):
 
     almost_filled_validator_auction.functions.bid().transact(
         {"from": accounts[1], "value": 1234}
@@ -370,6 +370,32 @@ def test_cannot_withdraw_overbid_not_bidder(almost_filled_validator_auction, acc
         almost_filled_validator_auction.functions.withdraw().transact(
             {"from": accounts[0], "gasPrice": 0}
         )
+
+
+@pytest.mark.slow
+def test_withdraw_final_bid_exact_price_failed_auction(
+    started_validator_auction, whitelist, chain, web3
+):
+    bidder = whitelist[2]
+    exact_bid_value = started_validator_auction.functions.currentPrice().call()
+
+    started_validator_auction.functions.bid().transact(
+        {"from": bidder, "value": exact_bid_value}
+    )
+
+    time_travel_to_end_of_auction(chain)
+
+    started_validator_auction.functions.closeAuction().transact()
+    assert_auction_state(started_validator_auction, AuctionState.Failed)
+
+    pre_balance = web3.eth.getBalance(bidder, "latest")
+
+    started_validator_auction.functions.withdraw().transact(
+        {"from": bidder, "gasPrice": 0}
+    )
+
+    post_balance = web3.eth.getBalance(bidder, "latest")
+    assert post_balance - pre_balance == exact_bid_value
 
 
 def test_event_bid_submitted(started_validator_auction, accounts, web3):
