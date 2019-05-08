@@ -6,8 +6,18 @@ import re
 from click.testing import CliRunner
 from eth_utils import to_checksum_address
 
-from auction_deploy.cli import main, test_provider, test_json_rpc, AuctionState
-from auction_deploy.core import get_deployed_auction_contracts, DeployedAuctionContracts
+from auction_deploy.cli import (
+    main,
+    test_provider,
+    test_json_rpc,
+    AuctionState,
+    AuctionOptions,
+)
+from auction_deploy.core import (
+    get_deployed_auction_contracts,
+    DeployedAuctionContracts,
+    deploy_auction_contracts,
+)
 
 
 @pytest.fixture
@@ -67,6 +77,29 @@ def whitelist_file(tmp_path, key_password, whitelist):
 def contracts(deployed_auction_address) -> DeployedAuctionContracts:
     """return the core.DeployedAuctionContracts object for the currently active auction"""
     return get_deployed_auction_contracts(test_json_rpc, deployed_auction_address)
+
+
+@pytest.fixture
+def contracts_not_initialized() -> DeployedAuctionContracts:
+    """return the three auction related contracts where locker and slasher are not initialized"""
+
+    start_price = 1
+    auction_duration = 2
+    number_of_participants = 3
+    release_timestamp = 200_000_000_000
+
+    contract_options = AuctionOptions(
+        start_price=start_price,
+        auction_duration=auction_duration,
+        number_of_participants=number_of_participants,
+        release_timestamp=release_timestamp,
+    )
+
+    contracts = deploy_auction_contracts(
+        web3=test_json_rpc, auction_options=contract_options
+    )
+
+    return contracts
 
 
 @pytest.fixture
@@ -226,6 +259,17 @@ def test_cli_auction_status(runner, deployed_auction_address):
     result = runner.invoke(
         main, args="status --jsonrpc test --address " + deployed_auction_address
     )
+    assert result.exit_code == 0
+
+
+def test_cli_auction_status_locker_not_init(runner, contracts_not_initialized):
+
+    result = runner.invoke(
+        main,
+        args="status --jsonrpc test --address "
+        + contracts_not_initialized.auction.address,
+    )
+
     assert result.exit_code == 0
 
 
