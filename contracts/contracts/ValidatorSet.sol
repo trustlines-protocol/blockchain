@@ -29,8 +29,8 @@ contract ValidatorSet {
     mapping(address => AddressStatus) status;
     bool public finalized;  // Was the last validator change finalized. Implies currentValidators == pendingValidators
     address public systemAddress = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
-    uint[] public blockNumbersOfFinalizedChanges;
-    mapping(uint => address[]) public finalizedValidatorSets;
+    uint[] public epochStartHeights;
+    mapping(uint => address[]) public epochStartToValidatorsMapping;
 
     modifier onlySystem() {
         require(
@@ -69,12 +69,12 @@ contract ValidatorSet {
         return true;
     }
 
-    function getLengthOfBlockNumbersOfFinalizedChanges() external view returns(uint) {
-        return blockNumbersOfFinalizedChanges.length;
+    function getLengthOfEpochStartHeights() external view returns(uint) {
+        return epochStartHeights.length;
     }
 
-    function getLengthOfFinalizedValidatorSet(uint _blockNumber) external view returns(uint) {
-        return finalizedValidatorSets[_blockNumber].length;
+    function getLengthOfEpochStartToValidatorsMapping(uint _blockNumber) external view returns(uint) {
+        return epochStartToValidatorsMapping[_blockNumber].length;
     }
 
     /**
@@ -137,8 +137,8 @@ contract ValidatorSet {
     function finalizeChange() public onlySystem {
         currentValidators = pendingValidators;
         finalized = true;
-        blockNumbersOfFinalizedChanges.push(block.number);
-        finalizedValidatorSets[block.number] = currentValidators;
+        epochStartHeights.push(block.number);
+        epochStartToValidatorsMapping[block.number] = currentValidators;
     }
 
     function removeValidator(address _validator) internal isFinalized returns (bool _success) {

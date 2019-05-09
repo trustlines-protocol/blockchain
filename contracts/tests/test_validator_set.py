@@ -142,11 +142,48 @@ def test_cannot_call_finalize_change(validator_set_contract_session, accounts):
         contract.functions.finalizeChange().transact({"from": accounts[0]})
 
 
-def test_finalize_change_update_history_data_correctly(
+def test_change_validator_set_without_finalizing_do_not_touch_history(
+    validator_set_contract_session, accounts
+):
+    assert (
+        validator_set_contract_session.functions.getLengthOfEpochStartHeights().call()
+        == 0
+    )
+
+    validator_set_contract_session.functions.testChangeValiatorSet(
+        accounts[:2]
+    ).transact()
+
+    assert (
+        validator_set_contract_session.functions.getLengthOfEpochStartHeights().call()
+        == 0
+    )
+
+
+def test_finalize_change_stores_new_epoch_height(
+    validator_set_contract_session, accounts, web3
+):
+    validator_set_contract_session.functions.testChangeValiatorSet(
+        accounts[:2]
+    ).transact()
+    validator_set_contract_session.functions.testFinalizeChange().transact()
+
+    assert (
+        validator_set_contract_session.functions.getLengthOfEpochStartHeights().call()
+        == 1
+    )
+
+    assert (
+        validator_set_contract_session.functions.epochStartHeights(0).call()
+        == web3.eth.blockNumber
+    )
+
+
+def test_finalize_change_stores_w_validator_set(
     validator_set_contract_session, accounts, web3
 ):
     assert (
-        validator_set_contract_session.functions.getLengthOfBlockNumbersOfFinalizedChanges().call()
+        validator_set_contract_session.functions.getLengthOfEpochStartHeights().call()
         == 0
     )
 
@@ -157,29 +194,27 @@ def test_finalize_change_update_history_data_correctly(
     validator_set_contract_session.functions.testFinalizeChange().transact()
 
     assert (
-        validator_set_contract_session.functions.getLengthOfBlockNumbersOfFinalizedChanges().call()
+        validator_set_contract_session.functions.getLengthOfEpochStartHeights().call()
         == 1
     )
 
-    block_number_of_finalized_change = web3.eth.blockNumber
+    epoch_start_height = web3.eth.blockNumber
 
     assert (
-        validator_set_contract_session.functions.blockNumbersOfFinalizedChanges(
-            0
-        ).call()
-        == block_number_of_finalized_change
+        validator_set_contract_session.functions.epochStartHeights(0).call()
+        == epoch_start_height
     )
 
-    finalized_validator_set_length = validator_set_contract_session.functions.getLengthOfFinalizedValidatorSet(
-        block_number_of_finalized_change
+    epoch_validator_set_length = validator_set_contract_session.functions.getLengthOfEpochStartToValidatorsMapping(
+        epoch_start_height
     ).call()
 
-    assert finalized_validator_set_length == len(new_validator_set)
+    assert epoch_validator_set_length == len(new_validator_set)
 
-    for i in range(0, finalized_validator_set_length):
+    for i in range(0, epoch_validator_set_length):
         assert (
-            validator_set_contract_session.functions.finalizedValidatorSets(
-                block_number_of_finalized_change, i
+            validator_set_contract_session.functions.epochStartToValidatorsMapping(
+                epoch_start_height, i
             ).call()
             == new_validator_set[i]
         )
