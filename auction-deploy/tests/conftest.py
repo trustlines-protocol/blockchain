@@ -1,3 +1,4 @@
+import os
 import json
 
 import pytest
@@ -9,6 +10,18 @@ from eth_keyfile import create_keyfile_json
 # Otherwise we can't whitelist enough addresses for the validator auction in one transaction
 assert eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT < 8 * 10 ** 6
 eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT = 8 * 10 ** 6
+
+
+def remove_click_options_environment_variables():
+    """remove the environment variables used by click options in the CLI.
+    Otherwise they will interfere with the tests
+    """
+    for env_var in list(os.environ.keys()):
+        if env_var.startswith("AUCTION_DEPLOY_"):
+            del os.environ[env_var]
+
+
+remove_click_options_environment_variables()
 
 
 def create_address_string(i: int):
