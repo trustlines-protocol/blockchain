@@ -7,7 +7,7 @@ setup(
     version="0.0.1",
     packages=find_packages(),
     package_data={"auction_deploy": ["contracts.json"]},
-    install_requires=["click"],
+    install_requires=["click", "web3", "contract-deploy-tools", "pendulum"],
     entry_points="""
     [console_scripts]
     auction-deploy=auction_deploy.cli:main
