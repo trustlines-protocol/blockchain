@@ -361,6 +361,14 @@ def close(
     )
 
 
+def format_timestamp(timestamp: int):
+    if timestamp:
+        date_string = pendulum.from_timestamp(timestamp).to_iso8601_string()
+        return f"{timestamp} ({date_string})"
+    else:
+        return f"{timestamp}"
+
+
 @main.command(
     short_help="Prints the values of variables necessary to monitor the auction."
 )
@@ -436,8 +444,12 @@ def status(auction_address, jsonrpc):
         + str(auction_state.name)
         + ")"
     )
-    click.echo("The start time is:                      " + str(start_time))
-    click.echo("The close time is:                      " + str(close_time))
+    click.echo(
+        "The start time is:                      " + format_timestamp(start_time)
+    )
+    click.echo(
+        "The close time is:                      " + format_timestamp(close_time)
+    )
     if auction_state == auction_state.Started:
         click.echo(
             "The current price is:                   "
