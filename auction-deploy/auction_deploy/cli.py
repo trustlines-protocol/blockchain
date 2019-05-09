@@ -1,6 +1,7 @@
 from enum import Enum
 
 import click
+import pendulum
 from web3 import Web3, EthereumTesterProvider, Account
 from deploy_tools.deploy import send_function_call_transaction
 
@@ -35,6 +36,17 @@ def validate_address(ctx, param, value):
     except InvalidAddressException as e:
         raise click.BadParameter(
             f"The address parameter is not recognized to be an address: {value}"
+        ) from e
+
+
+def validate_date(ctx, param, value):
+    if value is None:
+        return None
+    try:
+        return pendulum.parse(value)
+    except pendulum.parsing.exceptions.ParserError as e:
+        raise click.BadParameter(
+            f'The parameter "{value}" cannot be parsed as a date'
         ) from e
 
 
@@ -147,7 +159,16 @@ def main():
     "release_timestamp",
     help="The release timestamp of the deposit locker",
     type=int,
-    required=True,
+    required=False,
+)
+@click.option(
+    "--release-date",
+    "release_date",
+    help="The release date of the deposit locker",
+    type=str,
+    required=False,
+    metavar="DATE",
+    callback=validate_date,
 )
 @keystore_option
 @gas_option
@@ -161,6 +182,7 @@ def deploy(
     minimal_number_of_participants: int,
     maximal_number_of_participants: int,
     release_timestamp: int,
+    release_date: pendulum.DateTime,
     keystore: str,
     jsonrpc: str,
     gas: int,
@@ -168,6 +190,18 @@ def deploy(
     nonce: int,
     auto_nonce: bool,
 ) -> None:
+
+    if release_date is not None and release_timestamp is not None:
+        raise click.BadParameter(
+            f"Both --release-date and --release-timestamp have been specified"
+        )
+    if release_date is None and release_timestamp is None:
+        raise click.BadParameter(
+            f"Please specify a release date with --release-date or --release-timestamp"
+        )
+
+    if release_date is not None:
+        release_timestamp = int(release_date.timestamp())
 
     web3 = connect_to_json_rpc(jsonrpc)
     private_key = retrieve_private_key(keystore)
