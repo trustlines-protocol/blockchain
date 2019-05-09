@@ -132,6 +132,19 @@ def deposit_pending_auction(
     return contracts.auction
 
 
+def test_cli_release_date_option(runner):
+    deploy_result = runner.invoke(
+        main, args=f"deploy --release-date '2033-05-18 03:33:21' --jsonrpc test"
+    )
+    assert deploy_result.exception is None
+    assert deploy_result.exit_code == 0
+    auction_address = extract_auction_address(deploy_result.output)
+    contracts = get_deployed_auction_contracts(test_json_rpc, auction_address)
+    release_timestamp = contracts.locker.functions.releaseTimestamp().call()
+    # 2033-05-18 03:33:21 is timestamp 2000000001
+    assert release_timestamp == 2_000_000_001
+
+
 def test_cli_contract_parameters_set(runner):
 
     result = runner.invoke(
