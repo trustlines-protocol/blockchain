@@ -6,13 +6,7 @@ import re
 from click.testing import CliRunner
 from eth_utils import to_checksum_address
 
-from auction_deploy.cli import (
-    main,
-    test_provider,
-    test_json_rpc,
-    AuctionState,
-    AuctionOptions,
-)
+from auction_deploy.cli import main, test_provider, test_json_rpc, AuctionState
 from auction_deploy.core import (
     get_deployed_auction_contracts,
     DeployedAuctionContracts,
@@ -80,23 +74,11 @@ def contracts(deployed_auction_address) -> DeployedAuctionContracts:
 
 
 @pytest.fixture
-def contracts_not_initialized() -> DeployedAuctionContracts:
+def contracts_not_initialized(auction_options) -> DeployedAuctionContracts:
     """return the three auction related contracts where locker and slasher are not initialized"""
 
-    start_price = 1
-    auction_duration = 2
-    number_of_participants = 3
-    release_timestamp = 200_000_000_000
-
-    contract_options = AuctionOptions(
-        start_price=start_price,
-        auction_duration=auction_duration,
-        number_of_participants=number_of_participants,
-        release_timestamp=release_timestamp,
-    )
-
     contracts = deploy_auction_contracts(
-        web3=test_json_rpc, auction_options=contract_options
+        web3=test_json_rpc, auction_options=auction_options
     )
 
     return contracts

@@ -348,10 +348,9 @@ def status(auction_address, jsonrpc):
         contracts.auction.functions.maximalNumberOfParticipants().call()
     )
     locker_address = contracts.locker.address
-
     locker_initialized = contracts.locker.functions.initialized().call()
-    slasher_initialized = False
     slasher_address = ZERO_ADDRESS
+    slasher_initialized = False
     if contracts.slasher is not None:
         slasher_address = contracts.slasher.address
         slasher_initialized = contracts.slasher.functions.initialized().call()

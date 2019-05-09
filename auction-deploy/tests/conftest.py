@@ -5,10 +5,15 @@ import eth_tester
 from eth_utils import to_canonical_address
 from eth_keyfile import create_keyfile_json
 
+from auction_deploy.core import AuctionOptions
+
+
 # increase eth_tester's GAS_LIMIT
 # Otherwise we can't whitelist enough addresses for the validator auction in one transaction
 assert eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT < 8 * 10 ** 6
 eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT = 8 * 10 ** 6
+
+RELEASE_TIMESTAMP_OFFSET = 3600 * 24 * 180
 
 
 def create_address_string(i: int):
@@ -54,3 +59,28 @@ def private_key(account_keys):
 @pytest.fixture()
 def whitelist():
     return [to_canonical_address(create_address_string(i)) for i in range(30)]
+
+
+@pytest.fixture
+def release_timestamp(web3):
+    """release timestamp used for DepositLocker contract"""
+    now = web3.eth.getBlock("latest").timestamp
+    return now + RELEASE_TIMESTAMP_OFFSET
+
+
+@pytest.fixture
+def auction_options(release_timestamp):
+    start_price = 1
+    auction_duration = 2
+    minimal_number_of_participants = 3
+    maximal_number_of_participants = 4
+
+    contract_options = AuctionOptions(
+        start_price=start_price,
+        auction_duration=auction_duration,
+        minimal_number_of_participants=minimal_number_of_participants,
+        maximal_number_of_participants=maximal_number_of_participants,
+        release_timestamp=release_timestamp,
+    )
+
+    return contract_options
