@@ -391,6 +391,8 @@ def status(auction_address, jsonrpc):
     )
     locker_address = contracts.locker.address
     locker_initialized = contracts.locker.functions.initialized().call()
+    locker_release_timestamp = contracts.locker.functions.releaseTimestamp().call()
+
     slasher_address = ZERO_ADDRESS
     slasher_initialized = False
     if contracts.slasher is not None:
@@ -456,7 +458,11 @@ def status(auction_address, jsonrpc):
             + str(current_price_in_eth)
             + " eth"
         )
-    click.echo("The last bid price is:                   " + str(last_bid_price))
+    click.echo("The last bid price is:                  " + str(last_bid_price))
+    click.echo(
+        "Deposits will be locked until:          "
+        + format_timestamp(locker_release_timestamp)
+    )
 
 
 @main.command(short_help="Whitelists addresses for the auction")
