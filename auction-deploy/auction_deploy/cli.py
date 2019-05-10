@@ -46,7 +46,7 @@ def validate_date(ctx, param, value):
         return pendulum.parse(value)
     except pendulum.parsing.exceptions.ParserError as e:
         raise click.BadParameter(
-            f'The parameter "{value}" cannot be parsed as a date'
+            f'The parameter "{value}" cannot be parsed as a date. (Try e.g. "2020-09-28", "2020-09-28T13:56")'
         ) from e
 
 
@@ -164,7 +164,7 @@ def main():
 @click.option(
     "--release-date",
     "release_date",
-    help="The release date of the deposit locker",
+    help='The release date of the deposit locker (e.g. "2020-09-28", "2020-09-28T13:56")',
     type=str,
     required=False,
     metavar="DATE",
