@@ -142,6 +142,52 @@ def test_cannot_call_finalize_change(validator_set_contract_session, accounts):
         contract.functions.finalizeChange().transact({"from": accounts[0]})
 
 
+def test_change_validator_set_without_finalizing_do_not_touch_history(
+    validator_set_contract_session, accounts
+):
+    assert (
+        len(validator_set_contract_session.functions.getEpochStartHeights().call()) == 0
+    )
+
+    validator_set_contract_session.functions.testChangeValiatorSet(
+        accounts[:2]
+    ).transact()
+
+    assert (
+        len(validator_set_contract_session.functions.getEpochStartHeights().call()) == 0
+    )
+
+
+def test_finalize_change_stores_new_epoch_height(
+    validator_set_contract_session, accounts, web3
+):
+    validator_set_contract_session.functions.testChangeValiatorSet(
+        accounts[:2]
+    ).transact()
+    validator_set_contract_session.functions.testFinalizeChange().transact()
+
+    assert validator_set_contract_session.functions.getEpochStartHeights().call() == [
+        web3.eth.blockNumber
+    ]
+
+
+def test_finalize_change_stores_new_validator_set(
+    validator_set_contract_session, accounts, web3
+):
+    new_validator_set = accounts[:2]
+    validator_set_contract_session.functions.testChangeValiatorSet(
+        new_validator_set
+    ).transact()
+    validator_set_contract_session.functions.testFinalizeChange().transact()
+
+    assert (
+        validator_set_contract_session.functions.getValidators(
+            web3.eth.blockNumber
+        ).call()
+        == new_validator_set
+    )
+
+
 def test_cannot_call_initiate_change(
     validator_set_contract_session, accounts, validators
 ):
