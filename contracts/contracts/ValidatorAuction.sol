@@ -61,7 +61,7 @@ contract ValidatorAuction is Ownable {
         minimalNumberOfParticipants = _minimalNumberOfParticipants;
         depositLocker = _depositLocker;
 
-        lowestBidPrice = startPrice;
+        lowestBidPrice = ~uint(0);
 
         emit AuctionDeployed(startPrice, auctionDurationInDays, _minimalNumberOfParticipants, _maximalNumberOfParticipants);
         auctionState = AuctionState.Deployed;
