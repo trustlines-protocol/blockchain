@@ -18,9 +18,8 @@ TEST_PRICE = 100
 class AuctionState(Enum):
     Deployed = 0
     Started = 1
-    DepositPending = 2
-    Ended = 3
-    Failed = 4
+    Ended = 2
+    Failed = 3
 
 
 def assert_auction_state(validator_contract, expected_auction_state):
@@ -53,9 +52,21 @@ def deposit_pending_filled_validator_auction(almost_filled_validator_auction, ac
         {"from": accounts[1], "value": 100}
     )
 
-    assert_auction_state(almost_filled_validator_auction, AuctionState.DepositPending)
+    assert_auction_state(almost_filled_validator_auction, AuctionState.Ended)
 
     return almost_filled_validator_auction
+
+
+@pytest.fixture()
+def deposited_auction(deposit_pending_filled_validator_auction, accounts):
+    """A validator auction with maximal number of bidders after deposited"""
+    deposit_pending_filled_validator_auction.functions.depositBids().transact(
+        {"from": accounts[5]}
+    )
+
+    assert_auction_state(deposit_pending_filled_validator_auction, AuctionState.Ended)
+
+    return deposit_pending_filled_validator_auction
 
 
 @pytest.fixture()
@@ -68,7 +79,7 @@ def deposit_pending_almost_filled_validator_auction(
 
     almost_filled_validator_auction.functions.closeAuction().transact()
 
-    assert_auction_state(almost_filled_validator_auction, AuctionState.DepositPending)
+    assert_auction_state(almost_filled_validator_auction, AuctionState.Ended)
 
     return almost_filled_validator_auction
 
@@ -211,7 +222,7 @@ def test_enough_bidders_ends_auction(almost_filled_validator_auction, accounts):
         {"from": accounts[1], "value": TEST_PRICE}
     )
 
-    assert_auction_state(almost_filled_validator_auction, AuctionState.DepositPending)
+    assert_auction_state(almost_filled_validator_auction, AuctionState.Ended)
 
 
 @pytest.mark.slow
@@ -225,7 +236,7 @@ def test_end_auction_not_filled(almost_filled_validator_auction, accounts, chain
         {"from": accounts[1]}
     )
 
-    assert_auction_state(almost_filled_validator_auction, AuctionState.DepositPending)
+    assert_auction_state(almost_filled_validator_auction, AuctionState.Ended)
 
 
 @pytest.mark.slow
@@ -252,6 +263,27 @@ def test_send_bids_to_locker(
     assert post_balance == pre_balance - total_price
     assert web3.eth.getBalance(deposit_locker) == total_price
     assert_auction_state(deposit_pending_filled_validator_auction, AuctionState.Ended)
+
+
+@pytest.mark.slow
+def test_cannot_send_bids_to_locker_twice(
+    deposited_auction, accounts, web3, maximal_number_of_auction_participants
+):
+    deposit_locker = deposited_auction.functions.depositLocker().call()
+    total_price = (
+        maximal_number_of_auction_participants
+        * deposited_auction.functions.lowestBidPrice().call()
+    )
+    assert web3.eth.getBalance(deposit_locker) == total_price
+    pre_balance = web3.eth.getBalance(deposited_auction.address)
+
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        deposited_auction.functions.depositBids().transact({"from": accounts[5]})
+
+    post_balance = web3.eth.getBalance(deposited_auction.address)
+    assert post_balance == pre_balance
+    assert web3.eth.getBalance(deposit_locker) == total_price
+    assert_auction_state(deposited_auction, AuctionState.Ended)
 
 
 @pytest.mark.slow

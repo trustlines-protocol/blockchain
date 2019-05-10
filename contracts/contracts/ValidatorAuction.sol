@@ -20,6 +20,7 @@ contract ValidatorAuction is Ownable {
     uint public startTime;
     uint public closeTime;
     uint public lowestBidPrice;
+    bool public deposited = false;
 
     event BidSubmitted(address bidder, uint bidValue, uint slotPrice, uint timestamp);
     event AddressWhitelisted(address whitelistedAddress);
@@ -32,7 +33,6 @@ contract ValidatorAuction is Ownable {
     enum AuctionState{
         Deployed,
         Started,
-        DepositPending, /* all slots sold, someone needs to call depositBids */
         Ended,
         Failed
     }
@@ -107,8 +107,9 @@ contract ValidatorAuction is Ownable {
         emit AuctionStarted(now);
     }
 
-    function depositBids() public stateIs(AuctionState.DepositPending) {
-        auctionState = AuctionState.Ended;
+    function depositBids() public stateIs(AuctionState.Ended) {
+        require(! deposited);
+        deposited = true;
         depositLocker.deposit.value(lowestBidPrice * bidders.length)(lowestBidPrice);
     }
 
@@ -184,7 +185,7 @@ contract ValidatorAuction is Ownable {
     }
 
     function endAuction() internal stateIs(AuctionState.Started) {
-        auctionState = AuctionState.DepositPending;
+        auctionState = AuctionState.Ended;
         closeTime = now;
         emit AuctionEnded(closeTime, lowestBidPrice, bidders.length);
     }

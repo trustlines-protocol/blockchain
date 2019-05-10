@@ -54,9 +54,8 @@ def validate_date(ctx, param, value):
 class AuctionState(Enum):
     Deployed = 0
     Started = 1
-    DepositPending = 2
-    Ended = 3
-    Failed = 4
+    Ended = 2
+    Failed = 3
 
 
 jsonrpc_option = click.option(

@@ -128,7 +128,7 @@ def deposit_pending_auction(
         {"from": ether_owning_whitelist[1], "value": bid_value}
     )
 
-    ensure_auction_state(AuctionState.DepositPending)
+    ensure_auction_state(AuctionState.Ended)
     return contracts.auction
 
 
