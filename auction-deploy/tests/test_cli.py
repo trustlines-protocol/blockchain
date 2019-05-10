@@ -19,6 +19,15 @@ def runner():
     return CliRunner()
 
 
+def extract_auction_address(output):
+    """extract the auction address from 'deploy' output"""
+    match = re.search("^Auction address: (0x[0-9a-fA-F]{40})$", output, re.M)
+    if match:
+        return match[1]
+
+    raise ValueError(f"Could not find auction address in output: {repr(output)}")
+
+
 @pytest.fixture()
 def deployed_auction_address(runner):
     """Deploys an auction and return its address"""
@@ -31,14 +40,11 @@ def deployed_auction_address(runner):
         f" --min-participants {number_of_participants - 1}"
         f" --start-price {starting_price} --jsonrpc test",
     )
-
-    lines = deploy_result.output.split("\n")
-    for line in lines:
-        match = re.match("^Auction address: (0x[0-9a-fA-F]{40})$", line)
-        if match:
-            return match[1]
-
-    raise ValueError(f"Could not find auction address in output: {lines}")
+    if deploy_result.exception is not None:
+        raise RuntimeError(
+            "Error while trying to run auction-deploy"
+        ) from deploy_result.exception
+    return extract_auction_address(deploy_result.output)
 
 
 @pytest.fixture()
@@ -124,6 +130,19 @@ def deposit_pending_auction(
 
     ensure_auction_state(AuctionState.DepositPending)
     return contracts.auction
+
+
+def test_cli_release_date_option(runner):
+    deploy_result = runner.invoke(
+        main, args=f"deploy --release-date '2033-05-18 03:33:21' --jsonrpc test"
+    )
+    assert deploy_result.exception is None
+    assert deploy_result.exit_code == 0
+    auction_address = extract_auction_address(deploy_result.output)
+    contracts = get_deployed_auction_contracts(test_json_rpc, auction_address)
+    release_timestamp = contracts.locker.functions.releaseTimestamp().call()
+    # 2033-05-18 03:33:21 is timestamp 2000000001
+    assert release_timestamp == 2_000_000_001
 
 
 def test_cli_contract_parameters_set(runner):

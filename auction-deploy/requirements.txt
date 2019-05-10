@@ -1,7 +1,9 @@
 click
-setuptools_scm
-git+git://github.com/trustlines-protocol/contract-deploy-tools.git
 web3
+pendulum
+git+git://github.com/trustlines-protocol/contract-deploy-tools.git
+
+setuptools_scm
 pytest
 flake8
 black
