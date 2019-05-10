@@ -53,7 +53,10 @@ contract ValidatorAuction is Ownable {
         require(_auctionDurationInDays > 0, "Duration of auction must be greater than 0");
         require(_minimalNumberOfParticipants > 0, "Minimal number of participants must be greater than 0");
         require(_maximalNumberOfParticipants > 0, "Number of participants must be greater than 0");
-        require(_minimalNumberOfParticipants <= _maximalNumberOfParticipants, "The minimal number of participants must be smaller than the maximal number of participants.");
+        require(
+            _minimalNumberOfParticipants <= _maximalNumberOfParticipants,
+            "The minimal number of participants must be smaller than the maximal number of participants."
+        );
 
         startPrice = _startPriceInWei;
         auctionDurationInDays = _auctionDurationInDays;
@@ -129,6 +132,21 @@ contract ValidatorAuction is Ownable {
         }
     }
 
+    function withdraw() public {
+        require(
+            auctionState == AuctionState.Ended || auctionState == AuctionState.Failed,
+            "You cannot withdraw before the auction is ended or it failed."
+        );
+
+        if (auctionState == AuctionState.Ended) {
+            withdrawAfterAuctionEnded();
+        } else if (auctionState == AuctionState.Failed) {
+            withdrawAfterAuctionFailed();
+        } else {
+            assert(false); // Should be unreachable
+        }
+    }
+
     function currentPrice() public view stateIs(AuctionState.Started) returns (uint) {
         assert(now >= startTime);
         uint secondsSinceStart = (now - startTime);
@@ -142,16 +160,6 @@ contract ValidatorAuction is Ownable {
         uint decay = relativeAuctionTime ** 3 / decayDivisor;
         uint price = startPrice * (1 + relativeAuctionTime)/(1 + relativeAuctionTime + decay);
         return price;
-    }
-
-    function withdraw() public {
-        require(auctionState == AuctionState.Ended || auctionState == AuctionState.Failed, "You cannot withdraw before the auction is ended or it failed.");
-
-        if (auctionState == AuctionState.Ended) {
-            withdrawAfterAuctionEnded();
-        } else {
-            withdrawAfterAuctionFailed();
-        }
     }
 
     function withdrawAfterAuctionEnded() internal stateIs(AuctionState.Ended) {
