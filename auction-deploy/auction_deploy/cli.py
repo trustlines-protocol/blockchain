@@ -404,7 +404,7 @@ def status(auction_address, jsonrpc):
     auction_state = AuctionState(auction_state_value)
     start_time = contracts.auction.functions.startTime().call()
     close_time = contracts.auction.functions.closeTime().call()
-    last_bid_price = contracts.auction.functions.lowestBidPrice().call()
+    last_slot_price = contracts.auction.functions.lowestSlotPrice().call()
     current_price_in_eth = 0
     if auction_state == AuctionState.Started:
         current_price_in_eth = (
@@ -458,7 +458,7 @@ def status(auction_address, jsonrpc):
             + str(current_price_in_eth)
             + " eth"
         )
-    click.echo("The last bid price is:                  " + str(last_bid_price))
+    click.echo("The last slot price is:                  " + str(last_slot_price))
     click.echo(
         "Deposits will be locked until:          "
         + format_timestamp(locker_release_timestamp)

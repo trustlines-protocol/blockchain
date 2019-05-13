@@ -247,7 +247,7 @@ def test_send_bids_to_locker(
     post_balance = web3.eth.getBalance(deposit_pending_filled_validator_auction.address)
     total_price = (
         maximal_number_of_auction_participants
-        * deposit_pending_filled_validator_auction.functions.lowestBidPrice().call()
+        * deposit_pending_filled_validator_auction.functions.lowestSlotPrice().call()
     )
     assert post_balance == pre_balance - total_price
     assert web3.eth.getBalance(deposit_locker) == total_price
@@ -271,7 +271,7 @@ def test_send_bids_to_locker_almost_filled_auction(
     post_balance = web3.eth.getBalance(auction.address)
     total_price = (
         maximal_number_of_auction_participants - 1
-    ) * auction.functions.lowestBidPrice().call()
+    ) * auction.functions.lowestSlotPrice().call()
 
     assert post_balance == pre_balance - total_price
     assert web3.eth.getBalance(deposit_locker) == total_price
@@ -296,7 +296,7 @@ def test_withdraw_overbid(almost_filled_validator_auction, accounts, web3):
     almost_filled_validator_auction.functions.withdraw().transact(
         {"from": accounts[1], "gasPrice": 0}
     )
-    closing_price = almost_filled_validator_auction.functions.lowestBidPrice().call()
+    closing_price = almost_filled_validator_auction.functions.lowestSlotPrice().call()
 
     post_balance = web3.eth.getBalance(accounts[1], "latest")
 
@@ -495,7 +495,7 @@ def test_event_deposit_pending(almost_filled_validator_auction, accounts, web3):
     ).get_all_entries()[0]["args"]
 
     assert event["closeTime"] == close_time
-    assert event["lowestBidPrice"] == TEST_PRICE
+    assert event["lowestSlotPrice"] == TEST_PRICE
 
 
 @pytest.mark.slow
@@ -514,7 +514,7 @@ def test_event_auction_ended(almost_filled_validator_auction, accounts, web3):
     ).get_all_entries()[0]["args"]
 
     assert event["closeTime"] == close_time
-    assert event["lowestBidPrice"] == TEST_PRICE
+    assert event["lowestSlotPrice"] == TEST_PRICE
 
 
 def test_event_whitelist(no_whitelist_validator_auction_contract, whitelist, web3):
