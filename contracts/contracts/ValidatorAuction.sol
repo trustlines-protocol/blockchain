@@ -25,6 +25,7 @@ contract ValidatorAuction is Ownable {
     event AddressWhitelisted(address whitelistedAddress);
     event AuctionDeployed(uint startPrice, uint auctionDurationInDays, uint minimalNumberOfParticipants, uint maximalNumberOfParticipants);
     event AuctionStarted(uint startTime);
+    event AuctionDepositPending(uint closeTime, uint lowestBidPrice, uint totalParticipants);
     event AuctionEnded(uint closeTime, uint lowestBidPrice, uint totalParticipants);
     event AuctionFailed(uint closeTime, uint numberOfBidders);
 
@@ -94,7 +95,7 @@ contract ValidatorAuction is Ownable {
         emit BidSubmitted(msg.sender, msg.value, price, now);
 
         if (bidders.length == maximalNumberOfParticipants) {
-            endAuction();
+            transitionToDepositPending();
         }
     }
 
@@ -110,6 +111,7 @@ contract ValidatorAuction is Ownable {
     function depositBids() public stateIs(AuctionState.DepositPending) {
         auctionState = AuctionState.Ended;
         depositLocker.deposit.value(lowestBidPrice * bidders.length)(lowestBidPrice);
+        emit AuctionEnded(closeTime, lowestBidPrice, bidders.length);
     }
 
     function closeAuction() public stateIs(AuctionState.Started) {
@@ -117,11 +119,9 @@ contract ValidatorAuction is Ownable {
         assert(bidders.length < maximalNumberOfParticipants);
 
         if (bidders.length >= minimalNumberOfParticipants) {
-            endAuction();
+            transitionToDepositPending();
         } else {
-            auctionState = AuctionState.Failed;
-            closeTime = now;
-            emit AuctionFailed(closeTime, bidders.length);
+            transitionToAuctionFailed();
         }
     }
 
@@ -183,10 +183,16 @@ contract ValidatorAuction is Ownable {
         msg.sender.transfer(valueToWithdraw);
     }
 
-    function endAuction() internal stateIs(AuctionState.Started) {
+    function transitionToDepositPending() internal stateIs(AuctionState.Started) {
         auctionState = AuctionState.DepositPending;
         closeTime = now;
-        emit AuctionEnded(closeTime, lowestBidPrice, bidders.length);
+        emit AuctionDepositPending(closeTime, lowestBidPrice, bidders.length);
+    }
+
+    function transitionToAuctionFailed() internal stateIs(AuctionState.Started) {
+        auctionState = AuctionState.Failed;
+        closeTime = now;
+        emit AuctionFailed(closeTime, bidders.length);
     }
 
     function isSenderContract() internal view returns (bool isContract) {

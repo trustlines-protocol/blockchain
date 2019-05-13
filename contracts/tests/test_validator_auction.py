@@ -480,7 +480,7 @@ def test_event_auction_failed(started_validator_auction, accounts, chain, web3):
 
 
 @pytest.mark.slow
-def test_event_auction_ended(almost_filled_validator_auction, accounts, web3):
+def test_event_deposit_pending(almost_filled_validator_auction, accounts, web3):
 
     latest_block_number = web3.eth.blockNumber
 
@@ -489,6 +489,25 @@ def test_event_auction_ended(almost_filled_validator_auction, accounts, web3):
     )
 
     close_time = web3.eth.getBlock("latest").timestamp
+
+    event = almost_filled_validator_auction.events.AuctionDepositPending.createFilter(
+        fromBlock=latest_block_number
+    ).get_all_entries()[0]["args"]
+
+    assert event["closeTime"] == close_time
+    assert event["lowestBidPrice"] == TEST_PRICE
+
+
+@pytest.mark.slow
+def test_event_auction_ended(almost_filled_validator_auction, accounts, web3):
+
+    latest_block_number = web3.eth.blockNumber
+
+    almost_filled_validator_auction.functions.bid().transact(
+        {"from": accounts[1], "value": 234}
+    )
+    close_time = web3.eth.getBlock("latest").timestamp
+    almost_filled_validator_auction.functions.depositBids().transact()
 
     event = almost_filled_validator_auction.events.AuctionEnded.createFilter(
         fromBlock=latest_block_number
