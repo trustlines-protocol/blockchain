@@ -8,7 +8,7 @@ import "./EquivocationInspector.sol";
 contract ValidatorSlasher is Ownable {
 
     bool public initialized = false;
-    DepositLockerInterface depositContract;
+    DepositLockerInterface public depositContract;
 
     function() external {}
 

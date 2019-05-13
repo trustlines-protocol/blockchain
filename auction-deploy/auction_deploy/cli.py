@@ -393,6 +393,19 @@ def status(auction_address, jsonrpc):
     locker_initialized = contracts.locker.functions.initialized().call()
     locker_release_timestamp = contracts.locker.functions.releaseTimestamp().call()
 
+    locker_address_in_auction_contract = (
+        contracts.auction.functions.depositLocker().call()
+    )
+    auction_address_in_locker_contract = (
+        contracts.locker.functions.depositorsProxy().call()
+    )
+    slasher_address_in_locker_contract = contracts.locker.functions.slasher().call()
+    locker_address_in_slasher_contract = ZERO_ADDRESS
+    if contracts.slasher is not None:
+        locker_address_in_slasher_contract = (
+            contracts.slasher.functions.depositContract().call()
+        )
+
     slasher_address = ZERO_ADDRESS
     slasher_initialized = False
     if contracts.slasher is not None:
@@ -418,12 +431,10 @@ def status(auction_address, jsonrpc):
         "The starting price in eth is:           " + str(start_price_in_eth) + " eth"
     )
     click.echo(
-        "The minimal number of participants is:          "
-        + str(minimal_number_of_participants)
+        "The minimal number of participants is:  " + str(minimal_number_of_participants)
     )
     click.echo(
-        "The maximal number of participants is:          "
-        + str(maximal_number_of_participants)
+        "The maximal number of participants is:  " + str(maximal_number_of_participants)
     )
     click.echo("The address of the locker contract is:  " + str(locker_address))
     click.echo("The locker initialized value is:        " + str(locker_initialized))
@@ -433,7 +444,7 @@ def status(auction_address, jsonrpc):
             "The slasher initialized value is:       " + str(slasher_initialized)
         )
     else:
-        click.echo("The slasher contract cannot be found.")
+        click.secho("The slasher contract cannot be found.", fg="red")
 
     click.echo(
         "------------------------------------    ------------------------------------------"
@@ -463,6 +474,31 @@ def status(auction_address, jsonrpc):
         "Deposits will be locked until:          "
         + format_timestamp(locker_release_timestamp)
     )
+
+    click.echo(
+        "------------------------------------    ------------------------------------------"
+    )
+
+    if locker_address_in_auction_contract != locker_address:
+        click.secho(
+            "The locker address in the auction contract does not match to the locker address",
+            fg="red",
+        )
+    if auction_address_in_locker_contract != auction_address:
+        click.secho(
+            "The auction address in the locker contract does not match the auction address",
+            fg="red",
+        )
+    if slasher_address_in_locker_contract != slasher_address:
+        click.secho(
+            "The slasher address in the locker contract does not match the slasher address",
+            fg="red",
+        )
+    if locker_address_in_slasher_contract != locker_address:
+        click.secho(
+            "The locker address in the slasher contract does not match the slasher address",
+            fg="red",
+        )
 
 
 @main.command(short_help="Whitelists addresses for the auction")
