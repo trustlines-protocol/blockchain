@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.7;
 
 import "./lib/RLPReader.sol";
 import "./lib/ECDSA.sol";
@@ -24,8 +24,8 @@ library EquivocationInspector {
      * @param _signature  the signature the address should be recovered from
      */
     function getSignerAddress(
-        bytes _data,
-        bytes _signature
+        bytes memory _data,
+        bytes memory _signature
     )
         internal
         pure

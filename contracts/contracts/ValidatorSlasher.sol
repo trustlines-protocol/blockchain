@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.7;
 
 import "./lib/Ownable.sol";
 import "./DepositLockerInterface.sol";
@@ -37,10 +37,10 @@ contract ValidatorSlasher is Ownable {
      * @param _signatureTwo           the signature related to the second block
      */
     function reportMaliciousValidator(
-        bytes _rlpUnsignedHeaderOne,
-        bytes _signatureOne,
-        bytes _rlpUnsignedHeaderTwo,
-        bytes _signatureTwo
+        bytes calldata _rlpUnsignedHeaderOne,
+        bytes calldata _signatureOne,
+        bytes calldata _rlpUnsignedHeaderTwo,
+        bytes calldata _signatureTwo
     )
         external
     {
