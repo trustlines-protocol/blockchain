@@ -40,6 +40,11 @@ def find_network_address(url):
     return (match.group(1), int(match.group(2)))
 
 
+def node_last_contact_success(node):
+    last_contact = node.get("last_contact") or {}
+    return last_contact.get("success", 0)
+
+
 def main():
     if len(sys.argv) != 2:
         print("Usage: extract-bootnodes /path/to/nodes.json")
@@ -47,10 +52,10 @@ def main():
 
     nodes_json_path = sys.argv[1]
     nodes = read_nodes_json(nodes_json_path)
-    nodes = [node for node in nodes if node["last_contact"].get("success", 0)]
+    nodes = [node for node in nodes if node_last_contact_success(node) > 0]
 
     # sort them by last_contact time in case we later do not take all of the nodes
-    nodes.sort(key=lambda node: node["last_contact"].get("success", 0), reverse=True)
+    nodes.sort(key=node_last_contact_success, reverse=True)
 
     print(f"Trying to connect to {len(nodes)} possible nodes")
 
