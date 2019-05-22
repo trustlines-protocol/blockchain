@@ -23,7 +23,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-pragma solidity ^0.5.7;
+pragma solidity ^0.5.8;
 
 /**
  * @title Elliptic curve signature operations

@@ -1,4 +1,4 @@
-pragma solidity ^0.5.7;
+pragma solidity ^0.5.8;
 
 /*
   The sole purpose of this file is to be able to test the internal functions of the EquivocationInspector.
