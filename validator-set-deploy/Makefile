@@ -6,7 +6,7 @@ lint: install
 	$(VIRTUAL_ENV)/bin/mypy validator_set_deploy tests setup.py --ignore-missing-imports
 
 test: install
-	$(VIRTUAL_ENV)/bin/pytest tests
+	$(VIRTUAL_ENV)/bin/pytest -s tests
 
 compile: install-requirements
 	$(VIRTUAL_ENV)/bin/deploy-tools compile -d ../contracts/contracts

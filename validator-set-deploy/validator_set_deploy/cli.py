@@ -1,15 +1,17 @@
 import click
 from web3 import Web3, EthereumTesterProvider, Account
 
-from validator_set_deploy.core import decrypt_private_key, build_transaction_options
+from validator_set_deploy.core import (
+    decrypt_private_key,
+    build_transaction_options,
+    deploy_validator_set_contracts,
+)
 
 # we need test_provider and test_json_rpc for running the tests in test_cli
 # they need to persist between multiple calls to runner.invoke and are
 # therefore initialized on the module level.
 test_provider = EthereumTesterProvider()
 test_json_rpc = Web3(test_provider)
-
-ETH_IN_WEI = 10 ** 18
 
 jsonrpc_option = click.option(
     "--jsonrpc",
@@ -75,7 +77,11 @@ def deploy(
         gas=gas, gas_price=gas_price, nonce=nonce
     )
 
-    click.echo(transaction_options)
+    contracts = deploy_validator_set_contracts(
+        web3=web3, transaction_options=transaction_options, private_key=private_key
+    )
+
+    click.echo("ValidatorSet address: " + contracts.set.address)
 
 
 def connect_to_json_rpc(jsonrpc) -> Web3:
