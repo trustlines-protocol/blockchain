@@ -9,6 +9,7 @@ certifi==2019.3.9
 cffi==1.12.3
 cfgv==1.6.0
 chardet==3.0.4
+contracts-deploy-tools==0.3.0
 Click==7.0
 cryptography==2.6.1
 cytoolz==0.9.0.1
