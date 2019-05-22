@@ -1,38 +1,11 @@
-import json
-import pkg_resources
 from typing import Dict, NamedTuple
 
 from web3.contract import Contract
-from eth_keyfile import extract_key_from_keyfile
-from deploy_tools.deploy import deploy_compiled_contract
+from deploy_tools.deploy import deploy_compiled_contract, load_contracts_json
 
 
 class DeployedValidatorSetContracts(NamedTuple):
     set: Contract
-
-
-def load_contracts_json() -> Dict:
-    resource_package = __name__
-    json_string = pkg_resources.resource_string(resource_package, "contracts.json")
-    return json.loads(json_string)
-
-
-def decrypt_private_key(keystore_path: str, password: str) -> bytes:
-    return extract_key_from_keyfile(keystore_path, password.encode("utf-8"))
-
-
-def build_transaction_options(*, gas, gas_price, nonce):
-
-    transaction_options = {}
-
-    if gas is not None:
-        transaction_options["gas"] = gas
-    if gas_price is not None:
-        transaction_options["gasPrice"] = gas_price
-    if nonce is not None:
-        transaction_options["nonce"] = nonce
-
-    return transaction_options
 
 
 def deploy_validator_set_contracts(
