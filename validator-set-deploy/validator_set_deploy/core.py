@@ -10,7 +10,7 @@ from deploy_tools.deploy import (
 from eth_utils import is_address, to_checksum_address
 
 
-def deploy_validator_set_contracts(
+def deploy_validator_set_contract(
     *, web3, transaction_options: Dict = None, private_key=None
 ):
 
@@ -73,5 +73,5 @@ def validate_and_format_address(address):  # TODO: refactor this into deploy_too
         raise InvalidAddressException()
 
 
-class InvalidAddressException(Exception):
+class InvalidAddressException(Exception):  # TODO: refactor this into deploy_tools
     pass

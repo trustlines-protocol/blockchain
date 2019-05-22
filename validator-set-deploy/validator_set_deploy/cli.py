@@ -2,7 +2,7 @@ import click
 from web3 import Web3, EthereumTesterProvider
 
 from validator_set_deploy.core import (
-    deploy_validator_set_contracts,
+    deploy_validator_set_contract,
     initialize_validator_set_contract,
     read_addresses_in_csv,
 )
@@ -68,7 +68,7 @@ def deploy(
         gas=gas, gas_price=gas_price, nonce=nonce
     )
 
-    validator_set_contract = deploy_validator_set_contracts(
+    validator_set_contract = deploy_validator_set_contract(
         web3=web3, transaction_options=transaction_options, private_key=private_key
     )
     validators = read_addresses_in_csv(validators_file)
