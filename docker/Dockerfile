@@ -24,7 +24,7 @@ RUN mkdir -p $PARITY_HOME_DIR && \
 
 ## Get the build binaries from the previous image.
 ## (using environment variable from previous image not possible...)
-COPY --from=parity/parity:v2.1.11 /bin/parity $PARITY_BIN
+COPY --from=parity/parity:v2.4.6 /bin/parity $PARITY_BIN
 
 ## Configuring
 ### Network RPC WebSocket SecretStore IPFS
