@@ -23,7 +23,7 @@ contract ValidatorSet {
         bool isValidator;
     }
 
-    bool initiated = false;
+    bool public initialized = false;
     address[] currentValidators;
     address[] public pendingValidators;
     mapping(address => AddressStatus) status;
@@ -50,7 +50,7 @@ contract ValidatorSet {
 
     function init(address[] _validators) external returns (bool _success) {
         require(
-            !initiated,
+            !initialized,
             "Can not initate twice."
         );
 
@@ -63,7 +63,7 @@ contract ValidatorSet {
 
         currentValidators = _validators;
         finalized = true;
-        initiated = true;
+        initialized = true;
         return true;
     }
 
