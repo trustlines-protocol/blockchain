@@ -1,7 +1,11 @@
 import click
 from web3 import Web3, EthereumTesterProvider
 
-from validator_set_deploy.core import deploy_validator_set_contracts
+from validator_set_deploy.core import (
+    deploy_validator_set_contracts,
+    initialize_validator_set_contract,
+    read_addresses_in_csv,
+)
 
 from deploy_tools.cli import (
     jsonrpc_option,
@@ -32,13 +36,26 @@ def main():
     short_help="Deploys the validator set and initializes with the validator addresses."
 )
 @keystore_option
+@click.option(
+    "--validators",
+    "validators_file",
+    help="Path to the csv file containing the addresses of the validators",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+)
 @gas_option
 @gas_price_option
 @nonce_option
 @auto_nonce_option
 @jsonrpc_option
 def deploy(
-    keystore: str, jsonrpc: str, gas: int, gas_price: int, nonce: int, auto_nonce: bool
+    keystore: str,
+    validators_file: str,
+    jsonrpc: str,
+    gas: int,
+    gas_price: int,
+    nonce: int,
+    auto_nonce: bool,
 ) -> None:
 
     web3 = connect_to_json_rpc(jsonrpc)
@@ -51,8 +68,16 @@ def deploy(
         gas=gas, gas_price=gas_price, nonce=nonce
     )
 
-    contracts = deploy_validator_set_contracts(
+    validator_set_contract = deploy_validator_set_contracts(
         web3=web3, transaction_options=transaction_options, private_key=private_key
     )
+    validators = read_addresses_in_csv(validators_file)
+    initialize_validator_set_contract(
+        web3=web3,
+        transaction_options=transaction_options,
+        validator_set_contract=validator_set_contract,
+        validators=validators,
+        private_key=private_key,
+    )
 
-    click.echo("ValidatorSet address: " + contracts.set.address)
+    click.echo("ValidatorSet address: " + validator_set_contract.address)
