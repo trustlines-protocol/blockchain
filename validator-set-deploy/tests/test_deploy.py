@@ -18,11 +18,11 @@ def validator_set_contract(web3):
 
 def test_deploy_validator_set(web3):
 
-    validator_set_cotnract = deploy_validator_set_contract(web3=web3)
+    validator_set_contract = deploy_validator_set_contract(web3=web3)
 
     system_address = "0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE"
-    assert validator_set_cotnract.functions.systemAddress().call() == system_address
-    assert validator_set_cotnract.functions.initialized().call() is False
+    assert validator_set_contract.functions.systemAddress().call() == system_address
+    assert validator_set_contract.functions.initialized().call() is False
 
 
 def test_init_validator_set(validator_set_contract, validator_list, web3):
