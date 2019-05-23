@@ -45,6 +45,25 @@ commands:
           command: |
             echo 'export PATH=~/bin:~/repo/auction-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
             echo 'export VIRTUAL_ENV=~/repo/auction-venv' >> ${BASH_ENV}
+
+  create-validator-set-venv:
+    description: "Create validator-set venv"
+    steps:
+      - run:
+          name: Create python venv
+          command: |
+            python3 -m venv validator-set-venv
+            validator-set-venv/bin/pip install -c validator-set-deploy/constraints.txt pip wheel setuptools
+
+  config-validator-set-path:
+    description: "Set environment variables and change PATH for validator-set"
+    steps:
+      - run:
+          name: Configuring PATH
+          command: |
+            echo 'export PATH=~/bin:~/repo/validator-set-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
+            echo 'export VIRTUAL_ENV=~/repo/validator-set-venv' >> ${BASH_ENV}
+
 jobs:
   run-contracts-flake8:
     executor: ubuntu-builder
@@ -167,6 +186,7 @@ jobs:
           root: "~"
           paths:
             - repo
+
   run-auction-pytest:
     executor: ubuntu-builder
     steps:
@@ -177,6 +197,75 @@ jobs:
           name: Run pytest
           command: |
             cd auction-deploy
+            make test
+            cd ..
+
+  run-validator-set-flake8:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-validator-set-path
+      - run:
+          name: Run flake8
+          command: |
+            flake8 validator-set-deploy/tests validator-set-deploy/validator_set_deploy validator-set-deploy/setup.py
+
+  run-validator-set-mypy:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-validator-set-path
+      - run:
+          name: Run mypy
+          command: |
+            mypy --ignore-missing-imports validator-set-deploy/tests validator-set-deploy/validator_set_deploy validator-set-deploy/setup.py
+
+  run-validator-set-black:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-validator-set-path
+      - run:
+          name: Run black
+          command: |
+            black --check validator-set-deploy
+
+  install-validator-set:
+    executor: ubuntu-builder
+    steps:
+      - checkout
+      - config-validator-set-path
+      - restore_cache:
+          key: validator-set-venv-{{ checksum "validator-set-deploy/constraints.txt" }}-{{ checksum "validator-set-deploy/requirements.txt" }}
+      - create-validator-set-venv
+      - run:
+          name: Install requirements and validator-set deploy tool
+          command: |
+            cd validator-set-deploy
+            make install
+            cd ..
+      - save_cache:
+          key: validator-set-venv-{{ checksum "validator-set-deploy/constraints.txt" }}-{{ checksum "validator-set-deploy/requirements.txt" }}
+          paths:
+            - validator-set-venv
+      - persist_to_workspace:
+          root: "~"
+          paths:
+            - repo
+
+  run-validator-set-pytest:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-validator-set-path
+      - run:
+          name: Run pytest
+          command: |
+            cd validator-set-deploy
             make test
             cd ..
 
@@ -256,6 +345,19 @@ workflows:
       - run-auction-pytest:
           requires:
             - install-auction
+      - install-validator-set
+      - run-validator-set-flake8:
+          requires:
+            - install-validator-set
+      - run-validator-set-black:
+          requires:
+            - install-validator-set
+      - run-validator-set-mypy:
+          requires:
+            - install-validator-set
+      - run-validator-set-pytest:
+          requires:
+            - install-validator-set
       # building the docker image takes a long time. only do this on dedicated branches
       # At the moment I imagine builds being done the the pre-release branch first
       - build-docker-image:
