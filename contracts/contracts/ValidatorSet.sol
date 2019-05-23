@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.8;
 
 import "./EquivocationInspector.sol";
 
@@ -48,7 +48,7 @@ contract ValidatorSet {
         _;
     }
 
-    function init(address[] _validators) external {
+    function init(address[] calldata _validators) external {
         require(
             !initialized,
             "Can not initate twice."
@@ -66,11 +66,11 @@ contract ValidatorSet {
         initialized = true;
     }
 
-    function getEpochStartHeights() external view returns(uint[]) {
+    function getEpochStartHeights() external view returns(uint[] memory) {
         return epochStartHeights;
     }
 
-    function getValidators(uint _epochStart) external view returns(address[]) {
+    function getValidators(uint _epochStart) external view returns(address[] memory) {
         return epochValidators[_epochStart];
     }
 
@@ -89,10 +89,10 @@ contract ValidatorSet {
      * @param _signatureTwo           the signature related to the second block
      */
     function reportMaliciousValidator(
-        bytes _rlpUnsignedHeaderOne,
-        bytes _signatureOne,
-        bytes _rlpUnsignedHeaderTwo,
-        bytes _signatureTwo
+        bytes calldata _rlpUnsignedHeaderOne,
+        bytes calldata _signatureOne,
+        bytes calldata _rlpUnsignedHeaderTwo,
+        bytes calldata _signatureTwo
     )
         external
     {
@@ -121,7 +121,7 @@ contract ValidatorSet {
 
     // Get current validator set (last enacted or initial if no changes ever made)
     // do not modify this function, aura will likely bug
-    function getValidators() public view returns (address[] _validators) {
+    function getValidators() public view returns (address[] memory _validators) {
         _validators = currentValidators;
     }
 
@@ -154,9 +154,9 @@ contract ValidatorSet {
         initiateChange(pendingValidators);
     }
 
-    function initiateChange(address[] _newValidatorSet) internal {
+    function initiateChange(address[] memory _newValidatorSet) internal {
         finalized = false;
-        emit InitiateChange(block.blockhash(block.number-1), _newValidatorSet);
+        emit InitiateChange(blockhash(block.number-1), _newValidatorSet);
     }
 
 }

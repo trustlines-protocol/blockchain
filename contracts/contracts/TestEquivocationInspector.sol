@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.8;
 
 /*
   The sole purpose of this file is to be able to test the internal functions of the EquivocationInspector.
@@ -11,8 +11,8 @@ import "./EquivocationInspector.sol";
 contract TestEquivocationInspector {
 
     function testGetSignerAddress(
-        bytes _data,
-        bytes _signature
+        bytes memory _data,
+        bytes memory _signature
     )
         public
         pure

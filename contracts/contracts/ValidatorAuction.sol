@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.8;
 
 import "./lib/Ownable.sol";
 import "./DepositLocker.sol";
@@ -125,7 +125,7 @@ contract ValidatorAuction is Ownable {
         }
     }
 
-    function addToWhitelist(address[] addressesToWhitelist) public onlyOwner stateIs(AuctionState.Deployed) {
+    function addToWhitelist(address[] memory addressesToWhitelist) public onlyOwner stateIs(AuctionState.Deployed) {
         for (uint32 i = 0; i < addressesToWhitelist.length; i++) {
             whitelist[addressesToWhitelist[i]] = true;
             emit AddressWhitelisted(addressesToWhitelist[i]);
