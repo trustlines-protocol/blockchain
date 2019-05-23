@@ -10,8 +10,6 @@ import "./EquivocationInspector.sol";
 
 contract TestEquivocationInspector {
 
-    function() external {}
-
     function testGetSignerAddress(
         bytes _data,
         bytes _signature

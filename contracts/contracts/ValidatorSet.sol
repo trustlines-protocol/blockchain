@@ -48,8 +48,6 @@ contract ValidatorSet {
         _;
     }
 
-    function() external {}
-
     function init(address[] _validators) external returns (bool _success) {
         require(
             !initiated,
