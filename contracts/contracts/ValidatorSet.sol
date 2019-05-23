@@ -48,7 +48,7 @@ contract ValidatorSet {
         _;
     }
 
-    function init(address[] _validators) external returns (bool _success) {
+    function init(address[] _validators) external {
         require(
             !initialized,
             "Can not initate twice."
@@ -64,7 +64,6 @@ contract ValidatorSet {
         currentValidators = _validators;
         finalized = true;
         initialized = true;
-        return true;
     }
 
     function getEpochStartHeights() external view returns(uint[]) {
@@ -139,7 +138,7 @@ contract ValidatorSet {
         epochValidators[block.number] = currentValidators;
     }
 
-    function removeValidator(address _validator) internal isFinalized returns (bool _success) {
+    function removeValidator(address _validator) internal isFinalized {
         require(
             status[_validator].isValidator,
             "The given address does not belong to a validator."
@@ -153,7 +152,6 @@ contract ValidatorSet {
 
         delete status[_validator];
         initiateChange(pendingValidators);
-        return true;
     }
 
     function initiateChange(address[] _newValidatorSet) internal {
