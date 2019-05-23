@@ -76,7 +76,7 @@ contract ValidatorAuction is Ownable {
     }
 
     function bid() public payable stateIs(AuctionState.Started) {
-        assert(now > startTime);
+        require(now > startTime, "It is too early to bid.");
         require(now <= startTime + auctionDurationInDays * 1 days, "Auction has already ended.");
         uint slotPrice = currentPrice();
         require(msg.value >= slotPrice, "Not enough ether was provided for bidding.");
