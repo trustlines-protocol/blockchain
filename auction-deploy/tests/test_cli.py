@@ -61,7 +61,7 @@ def whitelisted_auction_address(runner, deployed_auction_address, whitelist_file
 
 
 @pytest.fixture()
-def whitelist_file(tmp_path, key_password, whitelist):
+def whitelist_file(tmp_path, whitelist):
     folder = tmp_path / "subfolder"
     folder.mkdir()
     file_path = folder / "whitelist.csv"

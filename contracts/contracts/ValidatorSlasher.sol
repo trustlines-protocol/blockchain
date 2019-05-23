@@ -12,13 +12,12 @@ contract ValidatorSlasher is Ownable {
 
     function() external {}
 
-    function init(address _depositContractAddress) external onlyOwner returns (bool _success) {
+    function init(address _depositContractAddress) external onlyOwner {
         require(! initialized, "The contract is already initialized.");
 
         depositContract = DepositLockerInterface(_depositContractAddress);
 
         initialized = true;
-        return true;
     }
 
     /**
