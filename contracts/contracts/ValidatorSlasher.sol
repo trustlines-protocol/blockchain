@@ -1,30 +1,23 @@
 pragma solidity ^0.4.25;
 
 import "./lib/Ownable.sol";
-import "./lib/it_set_lib.sol";
 import "./DepositLockerInterface.sol";
 import "./EquivocationInspector.sol";
 
 
 contract ValidatorSlasher is Ownable {
 
-    bool initialised = false;
-    using ItSet for ItSet.AddressSet;
-    ItSet.AddressSet internal validatorItSet;
-    DepositLockerInterface depositContract;
+    bool public initialized = false;
+    DepositLockerInterface public depositContract;
 
     function() external {}
 
-    function init(address[] _validators, address _depositContractAddress) external onlyOwner returns (bool _success) {
-        require(! initialised, "The contract is already initialised.");
+    function init(address _depositContractAddress) external onlyOwner returns (bool _success) {
+        require(! initialized, "The contract is already initialized.");
 
         depositContract = DepositLockerInterface(_depositContractAddress);
 
-        for (uint i = 0; i < _validators.length; i++) {
-            validatorItSet.insert(_validators[i]);
-        }
-
-        initialised = true;
+        initialized = true;
         return true;
     }
 
@@ -66,23 +59,6 @@ contract ValidatorSlasher is Ownable {
             _signatureOne
         );
 
-        require(
-            validatorItSet.contains(validator),
-            "The reported address is not a validator."
-        );
-
-        removeValidatorFromSet(validator);
         depositContract.slash(validator);
-    }
-
-    function getValidator(uint index) public view returns(address) {
-        return validatorItSet.list[index];
-    }
-
-    function removeValidatorFromSet(address _validator) internal returns (bool _success) {
-        assert(validatorItSet.contains(_validator));
-
-        validatorItSet.remove(_validator);
-        return true;
     }
 }

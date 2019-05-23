@@ -11,51 +11,68 @@ executors:
 # define some common commands
 # see https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21
 commands:
-  create-venv:
-    description: "Create venv"
+  create-contracts-venv:
+    description: "Create contracts venv"
     steps:
       - run:
           name: Create python venv
           command: |
-            python3 -m venv venv
-            venv/bin/pip install -c contracts/constraints.txt pip wheel setuptools
+            python3 -m venv contracts-venv
+            contracts-venv/bin/pip install -c contracts/constraints.txt pip wheel setuptools
 
-  config-path:
-    description: "set environment variables and change PATH"
+  config-contracts-path:
+    description: "Set environment variables and change PATH for contracts"
     steps:
     - run:
         name: Configuring PATH
         command: |
-          echo 'export PATH=~/bin:~/opt/node/bin:~/repo/venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
+          echo 'export PATH=~/bin:~/repo/contracts-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
 
+  create-auction-venv:
+    description: "Create auction venv"
+    steps:
+      - run:
+          name: Create python venv
+          command: |
+            python3 -m venv auction-venv
+            auction-venv/bin/pip install -c auction-deploy/constraints.txt pip wheel setuptools
+
+  config-auction-path:
+    description: "Set environment variables and change PATH for auction"
+    steps:
+      - run:
+          name: Configuring PATH
+          command: |
+            echo 'export PATH=~/bin:~/repo/auction-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
+            echo 'export VIRTUAL_ENV=~/repo/auction-venv' >> ${BASH_ENV}
 jobs:
-  run-flake8:
+  run-contracts-flake8:
     executor: ubuntu-builder
     steps:
       - attach_workspace:
           at: '~'
-      - config-path
+      - config-contracts-path
       - run:
           name: Run flake8
           command: |
             flake8 contracts/tests
 
-  run-black:
+  run-contracts-black:
     executor: ubuntu-builder
     steps:
       - attach_workspace:
           at: '~'
-      - config-path
+      - config-contracts-path
       - run:
           name: Run black
           command: |
             black --check contracts
 
-  run-solium:
+  run-contracts-solium:
     executor: ubuntu-builder
     steps:
       - checkout
-      - config-path
+      - config-contracts-path
       - run:
           name: Install ethlint (=solium)
           command: |
@@ -65,35 +82,103 @@ jobs:
           command: |
             cd contracts
             solium --dir contracts
-  install:
+  install-contracts:
     executor: ubuntu-builder
     steps:
       - checkout
-      - config-path
+      - config-contracts-path
       - restore_cache:
-          key: venv-{{ checksum "contracts/constraints.txt" }}-{{ checksum "contracts/requirements.txt" }}
-      - create-venv
+          key: contracts-venv-{{ checksum "contracts/constraints.txt" }}-{{ checksum "contracts/requirements.txt" }}
+      - create-contracts-venv
       - run:
           name: Install requirements
           command: |
             pip install -c contracts/constraints.txt -r contracts/requirements.txt
       - save_cache:
-          key: venv-{{ checksum "contracts/constraints.txt" }}-{{ checksum "contracts/requirements.txt" }}
+          key: contracts-venv-{{ checksum "contracts/constraints.txt" }}-{{ checksum "contracts/requirements.txt" }}
           paths:
-            - venv
+            - contracts-venv
       - persist_to_workspace:
           root: "~"
           paths:
             - repo
-  run-pytest:
+  run-contracts-pytest:
     executor: ubuntu-builder
     steps:
       - attach_workspace:
           at: '~'
-      - config-path
+      - config-contracts-path
       - run:
           name: Run pytest
           command: pytest contracts/tests
+
+  run-auction-flake8:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-auction-path
+      - run:
+          name: Run flake8
+          command: |
+            flake8 auction-deploy/tests auction-deploy/auction_deploy auction-deploy/setup.py
+
+  run-auction-mypy:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-auction-path
+      - run:
+          name: Run mypy
+          command: |
+            mypy --ignore-missing-imports auction-deploy/tests auction-deploy/auction_deploy auction-deploy/setup.py
+
+  run-auction-black:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-auction-path
+      - run:
+          name: Run black
+          command: |
+            black --check auction-deploy
+
+  install-auction:
+    executor: ubuntu-builder
+    steps:
+      - checkout
+      - config-auction-path
+      - restore_cache:
+          key: auction-venv-{{ checksum "auction-deploy/constraints.txt" }}-{{ checksum "auction-deploy/requirements.txt" }}
+      - create-auction-venv
+      - run:
+          name: Install requirements and auction deploy tool
+          command: |
+            cd auction-deploy
+            make install
+            cd ..
+      - save_cache:
+          key: auction-venv-{{ checksum "auction-deploy/constraints.txt" }}-{{ checksum "auction-deploy/requirements.txt" }}
+          paths:
+            - auction-venv
+      - persist_to_workspace:
+          root: "~"
+          paths:
+            - repo
+  run-auction-pytest:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-auction-path
+      - run:
+          name: Run pytest
+          command: |
+            cd auction-deploy
+            make test
+            cd ..
 
   build-docker-image:
     executor: ubuntu-builder
@@ -147,17 +232,30 @@ workflows:
   version: 2
   default:
     jobs:
-      - run-solium
-      - install
-      - run-flake8:
+      - run-contracts-solium
+      - install-contracts
+      - run-contracts-flake8:
           requires:
-            - install
-      - run-black:
+            - install-contracts
+      - run-contracts-black:
           requires:
-            - install
-      - run-pytest:
+            - install-contracts
+      - run-contracts-pytest:
           requires:
-            - install
+            - install-contracts
+      - install-auction
+      - run-auction-flake8:
+          requires:
+            - install-auction
+      - run-auction-black:
+          requires:
+            - install-auction
+      - run-auction-mypy:
+          requires:
+            - install-auction
+      - run-auction-pytest:
+          requires:
+            - install-auction
       # building the docker image takes a long time. only do this on dedicated branches
       # At the moment I imagine builds being done the the pre-release branch first
       - build-docker-image:
@@ -173,9 +271,9 @@ workflows:
                 - release
                 - pre-release
           requires:
-            - run-solium
-            - run-flake8
-            - install
-            - run-pytest
+            - run-contracts-solium
+            - run-contracts-flake8
+            - install-contracts
+            - run-contracts-pytest
             - build-docker-image
           context: docker-credentials

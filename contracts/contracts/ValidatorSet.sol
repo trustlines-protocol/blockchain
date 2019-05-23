@@ -29,6 +29,8 @@ contract ValidatorSet {
     mapping(address => AddressStatus) status;
     bool public finalized;  // Was the last validator change finalized. Implies currentValidators == pendingValidators
     address public systemAddress = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
+    uint[] epochStartHeights;
+    mapping(uint => address[]) epochValidators;
 
     modifier onlySystem() {
         require(
@@ -65,6 +67,14 @@ contract ValidatorSet {
         finalized = true;
         initiated = true;
         return true;
+    }
+
+    function getEpochStartHeights() external view returns(uint[]) {
+        return epochStartHeights;
+    }
+
+    function getValidators(uint _epochStart) external view returns(address[]) {
+        return epochValidators[_epochStart];
     }
 
     /**
@@ -127,6 +137,8 @@ contract ValidatorSet {
     function finalizeChange() public onlySystem {
         currentValidators = pendingValidators;
         finalized = true;
+        epochStartHeights.push(block.number);
+        epochValidators[block.number] = currentValidators;
     }
 
     function removeValidator(address _validator) internal isFinalized returns (bool _success) {

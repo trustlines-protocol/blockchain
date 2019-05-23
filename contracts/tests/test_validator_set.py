@@ -3,6 +3,7 @@
 import pytest
 import eth_tester.exceptions
 from web3.exceptions import MismatchedABI
+from .data_generation import make_block_header
 
 
 def test_get_validator(validator_set_contract_session, validators):
@@ -141,6 +142,52 @@ def test_cannot_call_finalize_change(validator_set_contract_session, accounts):
         contract.functions.finalizeChange().transact({"from": accounts[0]})
 
 
+def test_change_validator_set_without_finalizing_do_not_touch_history(
+    validator_set_contract_session, accounts
+):
+    assert (
+        len(validator_set_contract_session.functions.getEpochStartHeights().call()) == 0
+    )
+
+    validator_set_contract_session.functions.testChangeValiatorSet(
+        accounts[:2]
+    ).transact()
+
+    assert (
+        len(validator_set_contract_session.functions.getEpochStartHeights().call()) == 0
+    )
+
+
+def test_finalize_change_stores_new_epoch_height(
+    validator_set_contract_session, accounts, web3
+):
+    validator_set_contract_session.functions.testChangeValiatorSet(
+        accounts[:2]
+    ).transact()
+    validator_set_contract_session.functions.testFinalizeChange().transact()
+
+    assert validator_set_contract_session.functions.getEpochStartHeights().call() == [
+        web3.eth.blockNumber
+    ]
+
+
+def test_finalize_change_stores_new_validator_set(
+    validator_set_contract_session, accounts, web3
+):
+    new_validator_set = accounts[:2]
+    validator_set_contract_session.functions.testChangeValiatorSet(
+        new_validator_set
+    ).transact()
+    validator_set_contract_session.functions.testFinalizeChange().transact()
+
+    assert (
+        validator_set_contract_session.functions.getValidators(
+            web3.eth.blockNumber
+        ).call()
+        == new_validator_set
+    )
+
+
 def test_cannot_call_initiate_change(
     validator_set_contract_session, accounts, validators
 ):
@@ -152,18 +199,10 @@ def test_cannot_call_initiate_change(
 
 def test_report_validator_malicious_valdiator(
     validator_set_contract_session,
-    sign_two_equivocating_block_header,
     malicious_validator_address,
     malicious_validator_key,
     validators,
 ):
-
-    """Test a complete successful report of a malicious validator.
-
-    Since the issued blocks from the Koven test network have used the same address for the signing
-    the block as well as getting the reward, it is possible to compare the outcome of the recovery
-    with the content of the block header.
-    """
 
     # Approve that the malicious validator is active before reporting.
     assert (
@@ -171,15 +210,19 @@ def test_report_validator_malicious_valdiator(
         == malicious_validator_address
     )
 
-    two_signed_blocks_equivocated_by_malicious_validator = sign_two_equivocating_block_header(
-        malicious_validator_key
+    timestamp = 100
+    signed_block_header_one = make_block_header(
+        timestamp=timestamp, private_key=malicious_validator_key
+    )
+    signed_block_header_two = make_block_header(
+        timestamp=timestamp, private_key=malicious_validator_key
     )
 
     validator_set_contract_session.functions.reportMaliciousValidator(
-        two_signed_blocks_equivocated_by_malicious_validator[0].unsignedBlockHeader,
-        two_signed_blocks_equivocated_by_malicious_validator[0].signature,
-        two_signed_blocks_equivocated_by_malicious_validator[1].unsignedBlockHeader,
-        two_signed_blocks_equivocated_by_malicious_validator[1].signature,
+        signed_block_header_one.unsignedBlockHeader,
+        signed_block_header_one.signature,
+        signed_block_header_two.unsignedBlockHeader,
+        signed_block_header_two.signature,
     ).transact()
 
     assert (
@@ -197,9 +240,7 @@ def test_report_validator_malicious_valdiator(
 
 
 def test_report_validator_malicious_non_validator(
-    validator_set_contract_session,
-    sign_two_equivocating_block_header,
-    malicious_non_validator_key,
+    validator_set_contract_session, malicious_non_validator_key
 ):
 
     """Test a failing report of a malicious account.
@@ -208,18 +249,18 @@ def test_report_validator_malicious_non_validator(
     validator and can't be removed.
     """
 
-    two_signed_blocks_equivocated_by_malicious_non_validator = sign_two_equivocating_block_header(
-        malicious_non_validator_key
+    timestamp = 100
+    signed_block_header_one = make_block_header(
+        timestamp=timestamp, private_key=malicious_non_validator_key
+    )
+    signed_block_header_two = make_block_header(
+        timestamp=timestamp, private_key=malicious_non_validator_key
     )
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         validator_set_contract_session.functions.reportMaliciousValidator(
-            two_signed_blocks_equivocated_by_malicious_non_validator[
-                0
-            ].unsignedBlockHeader,
-            two_signed_blocks_equivocated_by_malicious_non_validator[0].signature,
-            two_signed_blocks_equivocated_by_malicious_non_validator[
-                1
-            ].unsignedBlockHeader,
-            two_signed_blocks_equivocated_by_malicious_non_validator[1].signature,
+            signed_block_header_one.unsignedBlockHeader,
+            signed_block_header_one.signature,
+            signed_block_header_two.unsignedBlockHeader,
+            signed_block_header_two.signature,
         ).transact()

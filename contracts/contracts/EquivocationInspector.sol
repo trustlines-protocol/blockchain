@@ -12,6 +12,8 @@ library EquivocationInspector {
     using RLPReader for RLPReader.RLPItem;
     using RLPReader for bytes;
 
+    uint constant STEP_DURATION = 5;
+
 
     /**
      * Get the signer address for a given signature and the related data.
@@ -39,7 +41,7 @@ library EquivocationInspector {
      * Equivocation is proven by:
      *    - two different blocks have been provided
      *    - both signatures have been issued by the same address
-     *    - the block height of both blocks is the same
+     *    - the step of both blocks is the same
      *
      * Block headers provided as arguments do not include their signature within.
      * By design this is expected to be the source that has been signed.
@@ -92,10 +94,13 @@ library EquivocationInspector {
             "The two blocks have been signed by different identities."
         );
 
-        // Equal block height rule.
+        // Equal block step rule.
+        uint stepOne = blockOne[11].toUint() / STEP_DURATION;
+        uint stepTwo = blockTwo[11].toUint() / STEP_DURATION;
+
         require(
-            blockOne[8].toUint() == blockTwo[8].toUint(),
-            "The two block have different heights."
+            stepOne == stepTwo,
+            "The two blocks have different steps."
         );
     }
 

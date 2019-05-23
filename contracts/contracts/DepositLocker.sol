@@ -3,60 +3,117 @@ pragma solidity ^0.4.25;
 import "./lib/Ownable.sol";
 import "./DepositLockerInterface.sol";
 
+/*
+  The DepositLocker contract locks the deposits for all of the winning
+  participants of the auction.
+
+  When the auction is running, the auction contract registers participants that
+  have successfully bid with the registerDepositor function. The DepositLocker
+  contracts keeps track of the number of participants and also keeps track if a
+  participant address can withdraw the deposit.
+
+  All of the participants have to pay the same eth amount when the auction ends.
+  The auction contract will deposit the sum of all amounts with a call to
+  deposit.
+
+*/
+
 
 contract DepositLocker is DepositLockerInterface, Ownable {
 
-    bool initialised = false;
-    address validatorSlasherAddress;
-    address auctionContractAddress;
-    uint public releaseBlockNumber;
-    mapping (address => uint) public deposits;
+    bool public initialized = false;
+    bool public deposited = false;
 
-    event Deposit(address depositOwner, uint value);
+    /* We maintain two special addresses:
+       - the slasher, that is allowed to call the slash function
+       - the depositorsProxy that registers depositors and deposits a value for
+         all of the registered depositors with the deposit function. In our case
+         this will be the auction contract.
+    */
+
+    address public slasher;
+    address public depositorsProxy;
+    uint public releaseTimestamp;
+
+    mapping (address => bool) public canWithdraw;
+    uint numberOfDepositors = 0;
+    uint valuePerDepositor;
+
+    event DepositorRegistered(address depositorAddress, uint numberOfDepositors);
+    event Deposit(uint totalValue, uint valuePerDepositor, uint numberOfDepositors);
     event Withdraw(address withdrawer, uint value);
-    event Slash(address validator, uint slashedValue);
+    event Slash(address slashedDepositor, uint slashedValue);
 
     modifier isInitialised() {
-        require(initialised, "The contract was not initiated.");
+        require(initialized, "The contract was not initialized.");
+        _;
+    }
+
+    modifier isDeposited() {
+        require(deposited, "no deposits yet");
+        _;
+    }
+
+    modifier isNotDeposited() {
+        require(!deposited, "already deposited");
+        _;
+    }
+
+    modifier onlyDepositorsProxy() {
+        require(msg.sender == depositorsProxy, "Only the depositorsProxy can call this function.");
         _;
     }
 
     function() external {}
 
-    function init(uint _releaseBlockNumber, address _validatorSlasherAddress) external onlyOwner returns (bool _success) {
-        require(! initialised, "The contract is already initialised.");
-        require(_releaseBlockNumber > block.number, "The release block number cannot be lower or equal to the current block number");
+    function init(uint _releaseTimestamp, address _slasher, address _depositorsProxy)
+        external onlyOwner returns (bool _success)
+    {
+        require(!initialized, "The contract is already initialised.");
+        require(_releaseTimestamp > now, "The release timestamp must be in the future");
 
-        releaseBlockNumber = _releaseBlockNumber;
-        validatorSlasherAddress = _validatorSlasherAddress;
-
-        initialised = true;
+        releaseTimestamp = _releaseTimestamp;
+        slasher = _slasher;
+        depositorsProxy = _depositorsProxy;
+        initialized = true;
         owner = address(0);
         return true;
     }
 
-    function deposit(address _sender) public payable isInitialised returns (bool _success) {
-        uint previousDeposit = deposits[_sender];
-        deposits[_sender] += msg.value;
-        require(previousDeposit <= deposits[_sender], "The value to be deposited overflows when added to the previous deposit.");
-        emit Deposit(_sender, msg.value);
+    function registerDepositor(address _depositor) public isInitialised isNotDeposited onlyDepositorsProxy returns (bool _success) {
+        require(canWithdraw[_depositor] == false, "can only register Depositor once");
+        canWithdraw[_depositor] = true;
+        numberOfDepositors += 1;
+        emit DepositorRegistered(_depositor, numberOfDepositors);
         return true;
     }
 
-    function withdraw() public isInitialised returns (bool _success) {
-        require(block.number >= releaseBlockNumber, "The deposit cannot be withdrawn yet.");
-        uint valueToSend = deposits[msg.sender];
-        deposits[msg.sender] = 0;
-        msg.sender.transfer(valueToSend);
-        emit Withdraw(msg.sender, valueToSend);
+    function deposit(uint _valuePerDepositor) public payable isInitialised isNotDeposited onlyDepositorsProxy returns (bool _success) {
+        require(numberOfDepositors>0, "no depositors");
+        require(_valuePerDepositor>0, "_valuePerDepositor must be positive");
+        require(msg.value == numberOfDepositors * _valuePerDepositor, "the deposit does not match the required value");
+        valuePerDepositor = _valuePerDepositor;
+        deposited = true;
+        emit Deposit(msg.value, valuePerDepositor, numberOfDepositors);
         return true;
     }
 
-    function slash(address _validator) public isInitialised returns (bool _success) {
-        require(msg.sender == validatorSlasherAddress, "Only the ValidatorSlasher contract can call this function.");
-        uint previousDeposit = deposits[_validator];
-        deposits[_validator] = 0;
-        emit Slash(_validator, previousDeposit);
+    function withdraw() public isInitialised isDeposited returns (bool _success) {
+        require(now >= releaseTimestamp, "The deposit cannot be withdrawn yet.");
+        require(canWithdraw[msg.sender], "cannot withdraw from sender");
+
+        canWithdraw[msg.sender] = false;
+        msg.sender.transfer(valuePerDepositor);
+        emit Withdraw(msg.sender, valuePerDepositor);
+        return true;
+    }
+
+    function slash(address _depositorToBeSlashed) public isInitialised isDeposited returns (bool _success) {
+        require(msg.sender == slasher, "Only the slasher can call this function.");
+        require(canWithdraw[_depositorToBeSlashed], "cannot slash address");
+        canWithdraw[_depositorToBeSlashed] = false;
+        address(0).transfer(valuePerDepositor);
+        emit Slash(_depositorToBeSlashed, valuePerDepositor);
         return true;
     }
 }
