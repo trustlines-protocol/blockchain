@@ -1,0 +1,3 @@
+[submodule "bridge/token-bridge"]
+	path = bridge/token-bridge
+	url = https://github.com/poanetwork/token-bridge
