@@ -27,6 +27,22 @@ def validators_file(tmp_path, validator_list):
 
 
 @pytest.fixture()
+def validators_file_missing_validators(tmp_path, validator_list):
+    file_path = tmp_path / "validators_missing.csv"
+
+    with file_path.open("w") as f:
+        writer = csv.writer(f)
+        writer.writerows(
+            [
+                [to_checksum_address(address)]
+                for address in validator_list[: len(validator_list) // 2]
+            ]
+        )
+
+    return file_path
+
+
+@pytest.fixture()
 def deployed_validator_contract_address(runner, validators_file):
 
     deploy_result = runner.invoke(
@@ -66,6 +82,20 @@ def test_check_validators(runner, deployed_validator_contract_address, validator
         main,
         args=f"check-validators --jsonrpc test --address {deployed_validator_contract_address}"
         f" --validators {validators_file}",
+    )
+
+    print(result.output)
+    assert result.exit_code == 0
+
+
+def test_check_missing_validators(
+    runner, deployed_validator_contract_address, validators_file_missing_validators
+):
+
+    result = runner.invoke(
+        main,
+        args=f"check-validators --jsonrpc test --address {deployed_validator_contract_address}"
+        f" --validators {validators_file_missing_validators}",
     )
 
     print(result.output)
