@@ -1,8 +1,6 @@
 pragma solidity ^0.4.24;
 
 import "./interfaces/IRewardByBlock.sol";
-import "./interfaces/IKeysManager.sol";
-import "./interfaces/IProxyStorage.sol";
 import "./eternal-storage/EternalStorage.sol";
 import "./libs/SafeMath.sol";
 
@@ -11,7 +9,6 @@ contract RewardByBlock is EternalStorage, IRewardByBlock {
     using SafeMath for uint256;
 
     bytes32 internal constant EXTRA_RECEIVERS = keccak256("extraReceivers");
-    bytes32 internal constant PROXY_STORAGE = keccak256("proxyStorage");
     bytes32 internal constant MINTED_TOTALLY = keccak256("mintedTotally");
 
     bytes32 internal constant BRIDGE_AMOUNT = "bridgeAmount";
@@ -73,14 +70,12 @@ contract RewardByBlock is EternalStorage, IRewardByBlock {
             return (new address[](0), new uint256[](0));
         }
 
-        require(_isMiningActive(miningKey));
-
         uint256 extraLength = extraReceiversLength();
 
         address[] memory receivers = new address[](extraLength.add(2));
         uint256[] memory rewards = new uint256[](receivers.length);
 
-        receivers[0] = _getPayoutByMining(miningKey);
+        receivers[0] = miningKey;
         rewards[0] = blockRewardAmount;
         receivers[1] = emissionFunds;
         rewards[1] = emissionFundsAmount;
@@ -179,10 +174,6 @@ contract RewardByBlock is EternalStorage, IRewardByBlock {
         ];
     }
 
-    function proxyStorage() public view returns(address) {
-        return addressStorage[PROXY_STORAGE];
-    }
-
     function _addExtraReceiver(address _receiver) private {
         addressArrayStorage[EXTRA_RECEIVERS].push(_receiver);
     }
@@ -196,18 +187,6 @@ contract RewardByBlock is EternalStorage, IRewardByBlock {
         addressArrayStorage[EXTRA_RECEIVERS].length = 0;
     }
 
-    function _getPayoutByMining(address _miningKey)
-        private
-        view
-        returns (address)
-    {
-        IKeysManager keysManager = IKeysManager(
-            IProxyStorage(proxyStorage()).getKeysManager()
-        );
-        address payoutKey = keysManager.getPayoutByMining(_miningKey);
-        return (payoutKey != address(0)) ? payoutKey : _miningKey;
-    }
-
     function _isBridgeContract(address _addr) private pure returns(bool) {
         address[bridgesAllowedLength] memory bridges = bridgesAllowed();
         
@@ -218,17 +197,6 @@ contract RewardByBlock is EternalStorage, IRewardByBlock {
         }
 
         return false;
-    }
-
-    function _isMiningActive(address _miningKey)
-        private
-        view
-        returns (bool)
-    {
-        IKeysManager keysManager = IKeysManager(
-            IProxyStorage(proxyStorage()).getKeysManager()
-        );
-        return keysManager.isMiningActive(_miningKey);
     }
 
     function _setBridgeAmount(uint256 _amount, address _bridge) private {
