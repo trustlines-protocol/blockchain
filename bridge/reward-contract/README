@@ -1,0 +1,6 @@
+Based on https://github.com/poanetwork/poa-network-consensus-contracts/ by poa.network
+
+Notable changes:
+
+- Code unrelated to the RewardByBlock contract has been removed
+- The RewardByBlock contract has been simplified and customized
