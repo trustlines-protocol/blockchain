@@ -24,7 +24,7 @@ contract RewardByBlock is EternalStorage, IRewardByBlock {
     // solhint-disable const-name-snakecase
     // These values must be changed before deploy
     uint256 public constant blockRewardAmount = 1 ether; 
-    uint256 public constant emissionFundsAmount = 1 ether;
+    uint256 public constant emissionFundsAmount = 0 ether;
     address public constant emissionFunds = 0x0000000000000000000000000000000000000000;
     uint256 public constant bridgesAllowedLength = 3;
     // solhint-enable const-name-snakecase
