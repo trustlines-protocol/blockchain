@@ -54,6 +54,13 @@ def initialize_validator_set_contract(
     )
 
 
+def get_validator_contract(*, web3, address):
+
+    validator_contract_abi = load_contracts_json(__name__)["ValidatorSet"]["abi"]
+
+    return web3.eth.contract(address=address, abi=validator_contract_abi)
+
+
 def read_addresses_in_csv(file_path: str):  # TODO: refactor this into deploy_tools
     with open(file_path) as f:
         reader = csv.reader(f)
