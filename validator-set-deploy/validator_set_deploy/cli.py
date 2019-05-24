@@ -137,3 +137,20 @@ def check_validators(validator_contract_address, validators_file, jsonrpc):
             f"The current validators of the contract are not matching the validators in the file {validators_file}",
             fg="red",
         )
+
+
+@main.command(short_help="Print the current validators")
+@validator_set_address_option
+@jsonrpc_option
+def print_validators(validator_contract_address, jsonrpc):
+
+    web3 = connect_to_json_rpc(jsonrpc)
+    validator_contract = get_validator_contract(
+        web3=web3, address=validator_contract_address
+    )
+    current_validators = validator_contract.functions.getValidators().call()
+
+    click.echo("The current validators are:")
+    click.echo()
+    for validator in current_validators:
+        click.echo(validator)

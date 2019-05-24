@@ -70,3 +70,14 @@ def test_check_validators(runner, deployed_validator_contract_address, validator
 
     print(result.output)
     assert result.exit_code == 0
+
+
+def test_print_validators(runner, deployed_validator_contract_address, validators_file):
+
+    result = runner.invoke(
+        main,
+        args=f"print-validators --jsonrpc test --address {deployed_validator_contract_address}",
+    )
+
+    print(result.output)
+    assert result.exit_code == 0
