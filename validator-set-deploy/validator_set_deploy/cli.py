@@ -121,14 +121,34 @@ def deploy(
 def check_validators(validator_contract_address, validators_file, jsonrpc):
 
     web3 = connect_to_json_rpc(jsonrpc)
-    validators = read_addresses_in_csv(validators_file)
+    validators_from_file = read_addresses_in_csv(validators_file)
 
     validator_contract = get_validator_contract(
         web3=web3, address=validator_contract_address
     )
     current_validators = validator_contract.functions.getValidators().call()
 
-    if validators == current_validators:
+    click.echo("The current validators are:")
+    for validator in current_validators:
+        if validator in validators_from_file:
+            click.echo(validator)
+        else:
+            click.secho(f"+{validator}", fg="green")
+
+    click.echo()
+    click.echo("The missing validators in the contract are:")
+    for validator in validators_from_file:
+        if validator not in current_validators:
+            click.secho(f"-{validator}", fg="red")
+
+    click.echo()
+    click.echo("Legend:")
+    click.echo("0xaddress: both in contract and in file")
+    click.secho("+0xaddress: in contract but not in csv file", fg="green")
+    click.secho("-0xaddress: in csv file but not in contract", fg="red")
+    click.echo()
+
+    if validators_from_file == current_validators:
         click.echo(
             f"The current validators of the contract are matching the validators in the file {validators_file}"
         )
@@ -139,7 +159,7 @@ def check_validators(validator_contract_address, validators_file, jsonrpc):
         )
 
 
-@main.command(short_help="Print the current validators")
+@main.command(short_help="Prints the current validators.")
 @validator_set_address_option
 @jsonrpc_option
 def print_validators(validator_contract_address, jsonrpc):
