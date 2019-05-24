@@ -26,7 +26,7 @@ contract RewardByBlock is EternalStorage, IRewardByBlock {
     uint256 public constant blockRewardAmount = 1 ether; 
     uint256 public constant emissionFundsAmount = 0 ether;
     address public constant emissionFunds = 0x0000000000000000000000000000000000000000;
-    uint256 public constant bridgesAllowedLength = 3;
+    uint256 public constant bridgesAllowedLength = 1;
     // solhint-enable const-name-snakecase
 
     event AddedReceiver(uint256 amount, address indexed receiver, address indexed bridge);
@@ -120,8 +120,6 @@ contract RewardByBlock is EternalStorage, IRewardByBlock {
         // These values must be changed before deploy
         return([
             address(0x0000000000000000000000000000000000000000),
-            address(0x0000000000000000000000000000000000000000),
-            address(0x0000000000000000000000000000000000000000)
         ]);
     }
 
