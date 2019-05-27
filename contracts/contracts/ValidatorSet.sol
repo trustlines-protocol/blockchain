@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.8;
 
 import "./EquivocationInspector.sol";
 
@@ -23,7 +23,7 @@ contract ValidatorSet {
         bool isValidator;
     }
 
-    bool initiated = false;
+    bool public initialized = false;
     address[] currentValidators;
     address[] public pendingValidators;
     mapping(address => AddressStatus) status;
@@ -48,11 +48,9 @@ contract ValidatorSet {
         _;
     }
 
-    function() external {}
-
-    function init(address[] _validators) external returns (bool _success) {
+    function init(address[] calldata _validators) external {
         require(
-            !initiated,
+            !initialized,
             "Can not initate twice."
         );
 
@@ -65,15 +63,14 @@ contract ValidatorSet {
 
         currentValidators = _validators;
         finalized = true;
-        initiated = true;
-        return true;
+        initialized = true;
     }
 
-    function getEpochStartHeights() external view returns(uint[]) {
+    function getEpochStartHeights() external view returns(uint[] memory) {
         return epochStartHeights;
     }
 
-    function getValidators(uint _epochStart) external view returns(address[]) {
+    function getValidators(uint _epochStart) external view returns(address[] memory) {
         return epochValidators[_epochStart];
     }
 
@@ -92,10 +89,10 @@ contract ValidatorSet {
      * @param _signatureTwo           the signature related to the second block
      */
     function reportMaliciousValidator(
-        bytes _rlpUnsignedHeaderOne,
-        bytes _signatureOne,
-        bytes _rlpUnsignedHeaderTwo,
-        bytes _signatureTwo
+        bytes calldata _rlpUnsignedHeaderOne,
+        bytes calldata _signatureOne,
+        bytes calldata _rlpUnsignedHeaderTwo,
+        bytes calldata _signatureTwo
     )
         external
     {
@@ -124,7 +121,7 @@ contract ValidatorSet {
 
     // Get current validator set (last enacted or initial if no changes ever made)
     // do not modify this function, aura will likely bug
-    function getValidators() public view returns (address[] _validators) {
+    function getValidators() public view returns (address[] memory _validators) {
         _validators = currentValidators;
     }
 
@@ -141,7 +138,7 @@ contract ValidatorSet {
         epochValidators[block.number] = currentValidators;
     }
 
-    function removeValidator(address _validator) internal isFinalized returns (bool _success) {
+    function removeValidator(address _validator) internal isFinalized {
         require(
             status[_validator].isValidator,
             "The given address does not belong to a validator."
@@ -155,12 +152,11 @@ contract ValidatorSet {
 
         delete status[_validator];
         initiateChange(pendingValidators);
-        return true;
     }
 
-    function initiateChange(address[] _newValidatorSet) internal {
+    function initiateChange(address[] memory _newValidatorSet) internal {
         finalized = false;
-        emit InitiateChange(block.blockhash(block.number-1), _newValidatorSet);
+        emit InitiateChange(blockhash(block.number-1), _newValidatorSet);
     }
 
 }

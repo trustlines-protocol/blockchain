@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.8;
 
 /*
   The sole purpose of this file is to be able to test the internal functions of the ValidatorSet
@@ -10,10 +10,8 @@ import "./ValidatorSet.sol";
 
 contract TestValidatorSet is ValidatorSet {
 
-    function() external {}
-
-    function testRemoveValidator(address _validator) public returns (bool _success) {
-        return removeValidator(_validator);
+    function testRemoveValidator(address _validator) public {
+        removeValidator(_validator);
     }
 
     /**
@@ -21,7 +19,7 @@ contract TestValidatorSet is ValidatorSet {
      *      without the need to report a validator, which is the only opportunity to
      *      change the set in the origin contract.
      */
-    function testChangeValiatorSet(address[] _newValidatorSet) public {
+    function testChangeValiatorSet(address[] memory _newValidatorSet) public {
         require(finalized, "Validator set change is already ongoing!");
         pendingValidators = _newValidatorSet;
         initiateChange(_newValidatorSet);

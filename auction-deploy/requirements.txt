@@ -1,7 +1,7 @@
 click
 web3
 pendulum
-git+git://github.com/trustlines-protocol/contract-deploy-tools.git
+contract-deploy-tools
 
 setuptools_scm
 pytest
