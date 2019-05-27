@@ -95,6 +95,7 @@ contract TrustlinesNetworkToken {
     function _approve(address owner, address spender, uint256 value) internal {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
+        require(value == 0 || allowed[owner][spender] == 0, "ERC20: approve only to or from 0 value");
 
         _allowances[owner][spender] = value;
         emit Approval(owner, spender, value);
