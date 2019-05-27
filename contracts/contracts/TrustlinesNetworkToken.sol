@@ -16,6 +16,9 @@ contract TrustlinesNetworkToken {
     mapping (address => uint256) private _balances;
     mapping (address => mapping (address => uint256)) private _allowances;
 
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+
     constructor (string memory name, string memory symbol, uint8 decimals, address preMintAddress, uint256 preMintAmount) public {
         _name = name;
         _symbol = symbol;
@@ -53,33 +56,22 @@ contract TrustlinesNetworkToken {
     }
 
     function approve(address spender, uint256 value) public returns (bool) {
+        require(value == 0 || _allowances[msg.sender][spender] == 0, "ERC20: approve only to or from 0 value");
         _approve(msg.sender, spender, value);
     }
 
     function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
         _transfer(sender, recipient, amount);
 
-        allowance = _allowances[sender][msg.sender];
-        updated_allowance = allowance.sub(amount);
+        uint allowance = _allowances[sender][msg.sender];
+        uint updatedAllowance = allowance.sub(amount);
         if (allowance < MAX_UINT) {
-            _approve(sender, msg.sender,updated_allowance);
+            _approve(sender, msg.sender, updatedAllowance);
         }
-    }
-
-    function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
-        _approve(msg.sender, spender, _allowances[msg.sender][spender].add(addedValue));
-    }
-
-    function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
-        _approve(msg.sender, spender, _allowances[msg.sender][spender].sub(subtractedValue));
     }
 
     function burn(uint256 amount) public {
         _burn(msg.sender, amount);
-    }
-
-    function burnFrom(address account, uint256 amount) public {
-        _burnFrom(account, amount);
     }
 
     function _mint(address account, uint256 amount) internal {
@@ -102,7 +94,6 @@ contract TrustlinesNetworkToken {
     function _approve(address owner, address spender, uint256 value) internal {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
-        require(value == 0 || allowed[owner][spender] == 0, "ERC20: approve only to or from 0 value");
 
         _allowances[owner][spender] = value;
         emit Approval(owner, spender, value);
@@ -114,11 +105,6 @@ contract TrustlinesNetworkToken {
         _totalSupply = _totalSupply.sub(value);
         _balances[account] = _balances[account].sub(value);
         emit Transfer(account, address(0), value);
-    }
-
-    function _burnFrom(address account, uint256 amount) internal {
-        _burn(account, amount);
-        _approve(account, msg.sender, _allowances[account][msg.sender].sub(amount));
     }
 }
 

@@ -319,3 +319,29 @@ def block_reward_amount(chain, web3):
     chain.mine_block()
     balance_after = web3.eth.getBalance(mining_reward_address)
     return balance_after - balance_before
+
+
+@pytest.fixture(scope="session")
+def tln_token_contract(deploy_contract, premint_token_address, premint_token_value):
+    token_name = "Trustlines Network Token"
+    token_symbol = "TLN"
+    token_decimal = 18
+    constructor_args = (
+        token_name,
+        token_symbol,
+        token_decimal,
+        premint_token_address,
+        premint_token_value,
+    )
+
+    return deploy_contract("TrustlinesNetworkToken", constructor_args=constructor_args)
+
+
+@pytest.fixture(scope="session")
+def premint_token_address(accounts):
+    return accounts[0]
+
+
+@pytest.fixture(scope="session")
+def premint_token_value():
+    return 132456
