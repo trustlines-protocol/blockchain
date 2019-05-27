@@ -4,8 +4,10 @@ import "./SafeMath.sol";
 
 
 contract TrustlinesNetworkToken {
+
     using SafeMath for uint256;
 
+    uint constant MAX_UINT = 2**256 - 1;
     string private _name;
     string private _symbol;
     uint8 private _decimals;
@@ -56,7 +58,12 @@ contract TrustlinesNetworkToken {
 
     function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
         _transfer(sender, recipient, amount);
-        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount));
+
+        allowance = _allowances[sender][msg.sender];
+        updated_allowance = allowance.sub(amount);
+        if (allowance < MAX_UINT) {
+            _approve(sender, msg.sender,updated_allowance);
+        }
     }
 
     function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
