@@ -1,16 +1,24 @@
 VIRTUAL_ENV ?= venv
 
-lint: install
+lint: install-requirements
 	$(VIRTUAL_ENV)/bin/flake8 bridge_deploy tests setup.py
 	$(VIRTUAL_ENV)/bin/black --check bridge_deploy tests setup.py
 	$(VIRTUAL_ENV)/bin/mypy bridge_deploy tests setup.py --ignore-missing-imports
 
-test: install
+format:
+	$(VIRTUAL_ENV)/bin/black bridge_deploy tests setup.py
+
+test: install-requirements
 	$(VIRTUAL_ENV)/bin/pytest tests
 
-compile: install-requirements
-	$(VIRTUAL_ENV)/bin/deploy-tools compile -d ../poa-bridge-contracts/contracts
-	# $(VIRTUAL_ENV)/bin/python scripts/pack_contracts.py build/contracts.json bridge_deploy/contracts.json
+compile: .installed .compiled
+
+SOL_FILES=$(shell find ../poa-bridge-contracts/contracts -type f -iname '*.sol')
+.compiled: ../poa-bridge-contracts/package.json $(SOL_FILES) $(VIRTUAL_ENV)
+	$(VIRTUAL_ENV)/bin/npm --prefix ../poa-bridge-contracts install && \
+	cd ../poa-bridge-contracts && \
+	./node_modules/.bin/truffle compile --all
+	@echo "This file controls for make if the contracts are up to date" > $@
 
 build: compile
 	$(VIRTUAL_ENV)/bin/python setup.py sdist
@@ -22,6 +30,8 @@ install: install-requirements compile
 
 .installed: constraints.txt requirements.txt $(VIRTUAL_ENV)
 	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -r requirements.txt
+	$(VIRTUAL_ENV)/bin/nodeenv --node=8.16.0 --prebuilt -p
+	git submodule update
 	@echo "This file controls for make if the requirements in your virtual env are up to date" > $@
 
 $(VIRTUAL_ENV):
