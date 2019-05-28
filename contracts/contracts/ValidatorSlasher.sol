@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.8;
 
 import "./lib/Ownable.sol";
 import "./DepositLockerInterface.sol";
@@ -12,13 +12,12 @@ contract ValidatorSlasher is Ownable {
 
     function() external {}
 
-    function init(address _depositContractAddress) external onlyOwner returns (bool _success) {
+    function init(address _depositContractAddress) external onlyOwner {
         require(! initialized, "The contract is already initialized.");
 
         depositContract = DepositLockerInterface(_depositContractAddress);
 
         initialized = true;
-        return true;
     }
 
     /**
@@ -37,10 +36,10 @@ contract ValidatorSlasher is Ownable {
      * @param _signatureTwo           the signature related to the second block
      */
     function reportMaliciousValidator(
-        bytes _rlpUnsignedHeaderOne,
-        bytes _signatureOne,
-        bytes _rlpUnsignedHeaderTwo,
-        bytes _signatureTwo
+        bytes calldata _rlpUnsignedHeaderOne,
+        bytes calldata _signatureOne,
+        bytes calldata _rlpUnsignedHeaderTwo,
+        bytes calldata _signatureTwo
     )
         external
     {

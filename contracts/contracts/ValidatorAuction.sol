@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.8;
 
 import "./lib/Ownable.sol";
 import "./DepositLocker.sol";
@@ -76,7 +76,7 @@ contract ValidatorAuction is Ownable {
     }
 
     function bid() public payable stateIs(AuctionState.Started) {
-        assert(now > startTime);
+        require(now > startTime, "It is too early to bid.");
         require(now <= startTime + auctionDurationInDays * 1 days, "Auction has already ended.");
         uint slotPrice = currentPrice();
         require(msg.value >= slotPrice, "Not enough ether was provided for bidding.");
@@ -125,7 +125,7 @@ contract ValidatorAuction is Ownable {
         }
     }
 
-    function addToWhitelist(address[] addressesToWhitelist) public onlyOwner stateIs(AuctionState.Deployed) {
+    function addToWhitelist(address[] memory addressesToWhitelist) public onlyOwner stateIs(AuctionState.Deployed) {
         for (uint32 i = 0; i < addressesToWhitelist.length; i++) {
             whitelist[addressesToWhitelist[i]] = true;
             emit AddressWhitelisted(addressesToWhitelist[i]);
