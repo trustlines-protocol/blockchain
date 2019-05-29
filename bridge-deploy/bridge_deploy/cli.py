@@ -15,6 +15,8 @@ from deploy_tools.cli import (
 )
 from deploy_tools.deploy import build_transaction_options
 
+from bridge_deploy.deploy_home import deploy_bridge_home_contract
+
 # we need test_provider and test_json_rpc for running the tests in test_cli
 # they need to persist between multiple calls to runner.invoke and are
 # therefore initialized on the module level.
@@ -53,7 +55,12 @@ def deploy_home(
 
     dir(transaction_options)
 
-    # TODO: Implement me
+    contracts = deploy_bridge_home_contract(
+        web3=web3, transaction_options=transaction_options, private_key=private_key
+    )
+
+    click.echo(f"HomeBridge Storage address: {contracts.home_bridge_storage.address}")
+    click.echo(f"HomeBridge address: {contracts.home_bridge.address}")
 
 
 @main.command(

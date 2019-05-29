@@ -9,7 +9,7 @@ format:
 	$(VIRTUAL_ENV)/bin/black bridge_deploy tests setup.py
 
 test: install-requirements
-	$(VIRTUAL_ENV)/bin/pytest tests
+	$(VIRTUAL_ENV)/bin/pytest -s tests
 
 compile: .installed .compiled
 
