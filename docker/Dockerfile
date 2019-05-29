@@ -22,9 +22,11 @@ RUN mkdir -p $PARITY_HOME_DIR && \
     ls -la $PARITY_HOME_DIR
 
 
-## Get the build binaries from the previous image.
-## (using environment variable from previous image not possible...)
-COPY --from=parity/parity:v2.4.6 /bin/parity $PARITY_BIN
+# Download parity executable, check that it's what we expect
+ADD https://releases.parity.io/ethereum/v2.1.11/x86_64-unknown-linux-gnu/parity $PARITY_BIN
+RUN echo f3255a22e561f708c139f406715409665eb2fa519ccaa56d270e543efbc975e7 $PARITY_BIN | sha256sum -c
+RUN chmod 755 $PARITY_BIN
+
 
 ## Configuring
 ### Network RPC WebSocket SecretStore IPFS
