@@ -1,0 +1,47 @@
+#! /usr/bin/perl -w
+
+# This program can be used to show the contents of a docker image The output of
+# two invocations of this program can be compared and if it doesn't differ, the
+# image will be the same (file modification times may differ however)
+
+# Example how to call it:
+#
+# show-docker-tree ubuntu:18.04
+
+use strict;
+use Fcntl ':mode';
+use POSIX;
+
+# When called with an argument, call docker .... perl -, with input redirected
+# from the script itself in order to run the script inside the docker container
+if ($#ARGV == 0) {
+    my $fd = POSIX::open("$0", O_RDONLY) or die "could not open perl script";
+    POSIX::dup2($fd, 0) or die "could not dup2";
+    POSIX::close($fd);
+    exec "docker", "run", "--rm", "-i", "--entrypoint", "", $ARGV[0], "perl", "-" or die "could not exec"
+}
+
+# These files are modified by docker, ignore them
+my %ignore_files = (
+    "/etc/hostname" => 1,
+    "/etc/hosts" => 1,
+    );
+
+my @files = sort split /\n/, `find / -xdev` or die "could not run find";
+foreach my $filename (@files) {
+    my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
+        $atime,$mtime,$ctime,$blksize,$blocks)
+        = lstat($filename) or die "could not stat $filename";
+    my $perm = sprintf("%o", S_IMODE($mode));
+    my $type = S_IFMT($mode);
+    my $digest = "----------------------------------------------------------------";
+    if (S_ISREG($mode)) {
+        $digest = (split / /, `sha256sum $filename`)[0];
+    }
+    my $target = "";
+    if (S_ISLNK($mode)) {
+        $target = readlink ($filename);
+    }
+
+    print("$perm\t$type\t$uid\t$gid\t$digest\t$filename\t$target\n") unless $ignore_files{$filename};
+}
