@@ -1,0 +1,37 @@
+version: '2.4'
+
+services:
+  node_main:
+    build:
+      context: ./e2e_tests
+      dockerfile: docker-parity
+      args:
+        chain_spec_path: ./node_config/main_chain_spec.json
+    container_name: node_main
+    command: >
+      --engine-signer 0x46ae357ba2f459cb04697837397ec90b47e48727
+    networks:
+      - net_node_main
+
+  node_side:
+    build:
+      context: ./e2e_tests
+      dockerfile: docker-parity
+      args:
+        chain_spec_path: ./node_config/side_chain_spec.json
+    container_name: node_side
+    command: >
+      --engine-signer 0x46ae357ba2f459cb04697837397ec90b47e48727
+    networks:
+      - net_node_side
+
+  bridge_request:
+    env_file: ./e2e_tests/env_override
+  bridge_collected:
+    env_file: ./e2e_tests/env_override
+  bridge_affirmation:
+    env_file: ./e2e_tests/env_override
+  bridge_senderhome:
+    env_file: ./e2e_tests/env_override
+  bridge_senderforeign:
+    env_file: ./e2e_tests/env_override
