@@ -7,7 +7,7 @@
 #
 #   docker build -f docker/Dockerfile -t tlbc-testnet-next .
 
-FROM ubuntu:18.04
+FROM ubuntu:18.04@sha256:f08638ec7ddc90065187e7eabdfac3c96e5ff0f6b2f1762cf31a4f49b53000a5
 
 ## Environment
 ENV HOME=/home/parity
