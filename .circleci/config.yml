@@ -64,6 +64,33 @@ commands:
             echo 'export PATH=~/bin:~/repo/validator-set-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
             echo 'export VIRTUAL_ENV=~/repo/validator-set-venv' >> ${BASH_ENV}
 
+  upload-docker-image:
+    description: "Deploy docker image"
+    steps:
+      - setup_remote_docker
+      - attach_workspace:
+          at: '~'
+      - run:
+          name: Load docker image
+          command: |
+            du -hc ~/images/*
+            docker load --input ~/images/$LOCAL_IMAGE.tar
+            docker image ls
+      - run:
+          name: Login to dockerhub
+          command: |
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+      - run:
+          name: Upload docker images
+          command: |
+            echo "Uploading to $DOCKER_REPO"
+
+            docker tag $LOCAL_IMAGE $DOCKER_REPO:$CIRCLE_BRANCH$CIRCLE_BUILD_NUM
+            docker push $DOCKER_REPO:$CIRCLE_BRANCH$CIRCLE_BUILD_NUM
+
+            docker tag $LOCAL_IMAGE $DOCKER_REPO:$CIRCLE_BRANCH
+            docker push $DOCKER_REPO:$CIRCLE_BRANCH
+
 jobs:
   run-contracts-flake8:
     executor: ubuntu-builder
@@ -291,14 +318,14 @@ jobs:
           paths:
             - images
 
-  deploy-docker-image:
+  compare-docker-image:
     executor: ubuntu-builder
     environment:
-      DOCKER_REPO: trustlines/tlbc-testnet-next
       LOCAL_IMAGE: tlbc-testnet-next
     working_directory: ~/repo
     steps:
       - setup_remote_docker
+      - checkout
       - attach_workspace:
           at: '~'
       - run:
@@ -306,13 +333,49 @@ jobs:
           command: |
             du -hc ~/images/*
             docker load --input ~/images/$LOCAL_IMAGE.tar
-            docker image ls
       - run:
-          name: Login to dockerhub
+          name: Fetch latest pre-release
           command: |
-            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+            docker pull trustlines/tlbc-testnet-next:pre-release
       - run:
-          name: Upload latest
+          name: Compute image tree summaries
+          command: |
+            .circleci/show-docker-tree trustlines/tlbc-testnet-next:pre-release >/tmp/tree-pre-release
+            .circleci/show-docker-tree $LOCAL_IMAGE >/tmp/tree-local
+      - run:
+          name: Compare image tree summaries
+          command: |
+            diff -s /tmp/tree-pre-release /tmp/tree-local || true
+
+  deploy-docker-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: tlbc-testnet-next
+    working_directory: ~/repo
+    steps:
+      - run:
+          name: set DOCKER_REPO
+          command: |
+            echo ': \"${DOCKER_REPO:=trustlines/tlbc-testnet-next}\"' >> ${BASH_ENV}
+          # this allows us to set DOCKER_REPO from circleci when building in a
+          # fork. makes testing easier.
+      - upload-docker-image
+
+  deploy-docker-release-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: tlbc-testnet-next
+    working_directory: ~/repo
+    steps:
+      - run:
+          name: set DOCKER_REPO
+          command: |
+            echo ': \"${DOCKER_REPO:=trustlines/tlbc-testnet}\"' >> ${BASH_ENV}
+          # this allows us to set DOCKER_REPO from circleci when building in a
+          # fork. makes testing easier.
+      - upload-docker-image
+      - run:
+          name: upload latest image
           command: |
             docker tag $LOCAL_IMAGE $DOCKER_REPO:latest
             docker push $DOCKER_REPO:latest
@@ -358,20 +421,14 @@ workflows:
       - run-validator-set-pytest:
           requires:
             - install-validator-set
-      # building the docker image takes a long time. only do this on dedicated branches
-      # At the moment I imagine builds being done the the pre-release branch first
-      - build-docker-image:
-          filters:
-            branches:
-              only:
-              - release
-              - pre-release
+
+      - build-docker-image
+
       - deploy-docker-image:
           filters:
             branches:
-              only:
+              ignore:
                 - release
-                - pre-release
           requires:
             - run-contracts-solium
             - run-contracts-flake8
@@ -379,3 +436,30 @@ workflows:
             - run-contracts-pytest
             - build-docker-image
           context: docker-credentials
+
+      - compare-docker-image:
+          requires:
+            - build-docker-image
+
+      - approve-the-release:
+          type: approval
+          filters:
+            branches:
+              only:
+                - release
+          requires:
+            - compare-docker-image
+
+      - deploy-docker-release-image:
+          filters:
+            branches:
+              only:
+                - release
+          requires:
+            - approve-the-release
+            - run-contracts-solium
+            - run-contracts-flake8
+            - install-contracts
+            - run-contracts-pytest
+            - build-docker-image
+          context: docker-release-credentials
