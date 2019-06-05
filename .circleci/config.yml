@@ -427,8 +427,9 @@ workflows:
       - deploy-docker-image:
           filters:
             branches:
-              ignore:
-                - release
+              only:
+                - master
+                - pre-release
           requires:
             - run-contracts-solium
             - run-contracts-flake8
