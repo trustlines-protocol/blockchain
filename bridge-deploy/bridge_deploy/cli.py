@@ -15,6 +15,7 @@ from deploy_tools.cli import (
 )
 from deploy_tools.deploy import build_transaction_options
 
+from bridge_deploy.core import (validate_and_format_address, InvalidAddressException, )
 from bridge_deploy.deploy_home import deploy_bridge_home_contract, initialize_bridge_home_contract
 
 # we need test_provider and test_json_rpc for running the tests in test_cli
@@ -23,6 +24,18 @@ from bridge_deploy.deploy_home import deploy_bridge_home_contract, initialize_br
 # --- Is this even necessary? The test_rpc is already defined in deploy tools
 # test_provider = EthereumTesterProvider()
 # test_json_rpc = Web3(test_provider)
+
+
+def validate_address(
+    ctx, param, value
+):  # TODO: potentially reformat this to deploy-tools? - Copypasta from validator-set-deploy. Refactoring might be a thing.
+    """This function must be at the top of click commands using it"""
+    try:
+        return validate_and_format_address(value)
+    except InvalidAddressException as e:
+        raise click.BadParameter(
+            f"The address parameter is not recognized to be an address: {value}"
+        ) from e
 
 
 @click.group()

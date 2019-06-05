@@ -12,7 +12,7 @@ def runner():
 
 def test_deploy_home(runner):
 
-    result = runner.invoke(main, args="deploy-home --jsonrpc test --gas 3142143")
+    result = runner.invoke(main, args="deploy-home --jsonrpc test --gas 3100000")
 
     print(result.output)
     assert result.exit_code == 0
