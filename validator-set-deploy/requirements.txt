@@ -1,7 +1,8 @@
 click
 web3
-git+git://github.com/trustlines-protocol/contract-deploy-tools.git
+contract-deploy-tools
 
+# --- development dependencies, i.e. dependencies not needed for running
 setuptools_scm
 pytest
 flake8
