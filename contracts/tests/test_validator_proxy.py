@@ -2,21 +2,6 @@ import pytest
 import eth_tester.exceptions
 
 
-@pytest.fixture()
-def validator_proxy_with_validators(
-    validator_proxy_contract, validator_proxy_owner, proxy_validators
-):
-    validator_proxy_contract.functions.updateValidators(proxy_validators).transact(
-        {"from": validator_proxy_owner}
-    )
-    return validator_proxy_contract
-
-
-@pytest.fixture(scope="session")
-def proxy_validators(accounts):
-    return accounts[:5]
-
-
 def test_update_validators(validator_proxy_contract, validator_proxy_owner, accounts):
     validators = accounts[:5]
     validator_proxy_contract.functions.updateValidators(validators).transact(
