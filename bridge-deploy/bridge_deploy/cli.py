@@ -15,8 +15,11 @@ from deploy_tools.cli import (
 )
 from deploy_tools.deploy import build_transaction_options
 
-from bridge_deploy.core import (validate_and_format_address, InvalidAddressException, )
-from bridge_deploy.deploy_home import deploy_bridge_home_contract, initialize_bridge_home_contract
+from bridge_deploy.core import validate_and_format_address, InvalidAddressException
+from bridge_deploy.deploy_home import (
+    deploy_bridge_home_contract,
+    initialize_bridge_home_contract,
+)
 
 # we need test_provider and test_json_rpc for running the tests in test_cli
 # they need to persist between multiple calls to runner.invoke and are
@@ -38,6 +41,18 @@ def validate_address(
         ) from e
 
 
+validator_contract_address_option = click.option(
+    "--address",
+    "validator_contract_address",
+    help='The address of the validator set contract, "0x" prefixed string',
+    type=str,
+    required=True,
+    callback=validate_address,
+    metavar="ADDRESS",
+    envvar="VALIDATOR_CONTRACT_ADDRESS",
+)
+
+
 @click.group()
 def main():
     pass
@@ -47,13 +62,20 @@ def main():
     short_help="Deploys the token bridge on the home network and initializes all contracts."
 )
 @keystore_option
+@validator_contract_address_option
 @gas_option
 @gas_price_option
 @nonce_option
 @auto_nonce_option
 @jsonrpc_option
 def deploy_home(
-    keystore: str, jsonrpc: str, gas: int, gas_price: int, nonce: int, auto_nonce: bool
+    keystore: str,
+    jsonrpc: str,
+    gas: int,
+    gas_price: int,
+    nonce: int,
+    auto_nonce: bool,
+    validator_contract_address,
 ) -> None:
 
     web3 = connect_to_json_rpc(jsonrpc)
@@ -79,7 +101,8 @@ def deploy_home(
         web3=web3,
         transaction_options=transaction_options,
         home_bridge_contract=deployment_result.home_bridge,
-        private_key=private_key
+        private_key=private_key,
+        validator_contract_address=validator_contract_address,
     )
 
 
