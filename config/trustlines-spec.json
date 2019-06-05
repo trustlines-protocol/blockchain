@@ -76,7 +76,7 @@
                             ]
                         },
                         "2717172": {
-                            "contract": "0x352B8FaC58c743FA2aaA086e20d0bF3789774d46"
+                            "safeContract": "0x352B8FaC58c743FA2aaA086e20d0bF3789774d46"
                         }
                     }
                 },
