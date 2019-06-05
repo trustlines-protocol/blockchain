@@ -1,6 +1,12 @@
 pragma solidity ^0.5.8;
 
 
+/**
+    This contract gives access to an up to date validator set on chain, that can be used by any other contracts.
+    Its validator set is to be updated by validators contracts when the system address calls finalizeChange().
+    This way, the `validators` array in this contract should remain correct throughout forks.
+*/
+
 contract ValidatorProxy {
 
     mapping (address => bool) public isValidator;
