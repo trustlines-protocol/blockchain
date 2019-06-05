@@ -8,7 +8,7 @@ lint: install-requirements
 format:
 	$(VIRTUAL_ENV)/bin/black bridge_deploy tests setup.py
 
-test: install-requirements
+test: install-requirements compile
 	$(VIRTUAL_ENV)/bin/pytest -s tests
 
 compile: .installed .compiled
