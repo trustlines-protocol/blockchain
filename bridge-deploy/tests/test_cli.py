@@ -12,12 +12,12 @@ def runner():
 
 def test_deploy_home(runner):
 
+    # TODO: Add actual working addresses and contracts
     result = runner.invoke(
         main,
-        args="deploy-home --jsonrpc test --address 0x0000000000000000000000000000000000000000",
+        args="deploy-home --jsonrpc test --validator-set-address 0x0000000000000000000000000000000000000000 --block-reward-address 0x0000000000000000000000000000000000000000 --owner-address 0x0000000000000000000000000000000000000000",
     )
 
-    print(result.output)
     assert result.exit_code == 0
 
 
@@ -25,7 +25,6 @@ def test_deploy_foreign(runner):
 
     result = runner.invoke(main, args="deploy-foreign --jsonrpc test")
 
-    print(result.output)
     assert result.exit_code == 0
 
 
@@ -33,7 +32,6 @@ def test_print_home(runner):
 
     result = runner.invoke(main, args="print-home --jsonrpc test")
 
-    print(result.output)
     assert result.exit_code == 0
 
 
@@ -41,5 +39,4 @@ def test_print_foreign(runner):
 
     result = runner.invoke(main, args="print-foreign --jsonrpc test")
 
-    print(result.output)
     assert result.exit_code == 0

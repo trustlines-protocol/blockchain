@@ -20,7 +20,7 @@ def load_contract(contract_name):
         return json.load(json_file)
 
 
-def deploy_bridge_home_contract(
+def deploy_home_bridge_contract(
     *, web3, transaction_options: Dict = None, private_key=None
 ):
 
@@ -77,39 +77,42 @@ def deploy_bridge_home_contract(
     return contracts
 
 
-def initialize_bridge_home_contract(
+def initialize_home_bridge_contract(
     *,
     web3,
     transaction_options: Dict = None,
     home_bridge_contract,
     validator_contract_address,
+    home_daily_limit,
+    home_max_per_tx,
+    home_min_per_tx,
+    home_gas_price,
+    required_block_confirmations,
+    block_reward_address,
+    foreign_daily_limit,
+    foreign_max_per_tx,
+    home_bridge_owner,
     private_key=None,
 ):
     if transaction_options is None:
         transaction_options = {}
 
-    # This fails with no result, but should work
-    # print(home_bridge_contract.functions.getBridgeInterfacesVersion().call())
-
     home_bridge_contract_initialize = home_bridge_contract.functions.initialize(
         validator_contract_address,
-        30000000000000000000000000,  # HOME_DAILY_LIMIT in WEI,
-        1500000000000000000000000,  # HOME_MAX_AMOUNT_PER_TX in WEI,
-        500000000000000000,  # HOME_MIN_AMOUNT_PER_TX in WEI,
-        1000000000,  # HOME_GAS_PRICE in WEI,
-        4,  # HOME_REQUIRED_BLOCK_CONFIRMATIONS,
-        "0x0000000000000000000000000000000000000000",  # BLOCK_REWARD_ADDRESS,
-        15000000000000000000000000,  # FOREIGN_DAILY_LIMIT,
-        750000000000000000000000,  # FOREIGN_MAX_AMOUNT_PER_TX,
-        "0x0000000000000000000000000000000000000000",  # HOME_BRIDGE_OWNER
+        home_daily_limit,  # 30000000000000000000000000,  # HOME_DAILY_LIMIT in WEI,
+        home_max_per_tx,  # 1500000000000000000000000,  # HOME_MAX_AMOUNT_PER_TX in WEI,
+        home_min_per_tx,  # 500000000000000000,  # HOME_MIN_AMOUNT_PER_TX in WEI,
+        home_gas_price,  # 1000000000,  # HOME_GAS_PRICE in WEI,
+        required_block_confirmations,  # 4,  # HOME_REQUIRED_BLOCK_CONFIRMATIONS,
+        block_reward_address,  # "0x0000000000000000000000000000000000000000",  # BLOCK_REWARD_ADDRESS,
+        foreign_daily_limit,  # 15000000000000000000000000,  # FOREIGN_DAILY_LIMIT,
+        foreign_max_per_tx,  # 750000000000000000000000,  # FOREIGN_MAX_AMOUNT_PER_TX,
+        home_bridge_owner,  # "0x0000000000000000000000000000000000000000",  # HOME_BRIDGE_OWNER
     )
-    r = send_function_call_transaction(
+    send_function_call_transaction(
         home_bridge_contract_initialize,
         web3=web3,
         transaction_options=transaction_options,
         private_key=private_key,
     )
     increase_transaction_options_nonce(transaction_options)
-
-    # The transaction status is "1", but it should fail, because the validator contract may not be address(0)
-    print(r)
