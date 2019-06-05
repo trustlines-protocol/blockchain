@@ -31,6 +31,7 @@ install: install-requirements compile
 .installed: constraints.txt requirements.txt $(VIRTUAL_ENV)
 	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -r requirements.txt
 	$(VIRTUAL_ENV)/bin/nodeenv --node=8.16.0 --prebuilt -p
+	git submodule init
 	git submodule update
 	@echo "This file controls for make if the requirements in your virtual env are up to date" > $@
 
