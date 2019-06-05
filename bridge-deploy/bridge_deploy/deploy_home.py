@@ -82,7 +82,8 @@ def initialize_bridge_home_contract(
     if transaction_options is None:
         transaction_options = {}
 
-    print(home_bridge_contract.functions.getBridgeInterfacesVersion().call())
+    # This fails with no result, but should work
+    # print(home_bridge_contract.functions.getBridgeInterfacesVersion().call())
 
     home_bridge_contract_initialize = home_bridge_contract.functions.initialize(
         '0x0000000000000000000000000000000000000000',  # Bridge Validators Contract - Must be a valid contract
@@ -104,4 +105,5 @@ def initialize_bridge_home_contract(
     )
     increase_transaction_options_nonce(transaction_options)
 
+    # The transaction status is "1", but it should fail, because the validator contract may not be address(0)
     print(r)
