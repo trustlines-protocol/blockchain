@@ -27,11 +27,16 @@ services:
 
   bridge_request:
     env_file: ./e2e_tests/env_override
+    restart: "no"
   bridge_collected:
     env_file: ./e2e_tests/env_override
+    restart: "no"
   bridge_affirmation:
     env_file: ./e2e_tests/env_override
+    restart: "no"
   bridge_senderhome:
     env_file: ./e2e_tests/env_override
+    restart: "no"
   bridge_senderforeign:
     env_file: ./e2e_tests/env_override
+    restart: "no"
