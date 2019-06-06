@@ -323,7 +323,7 @@ jobs:
       - run:
           name: Run flake8
           command: |
-            flake8 bridge-deploy/tests bridge-deploy/auction_deploy bridge-deploy/setup.py
+            flake8 bridge-deploy/tests bridge-deploy/bridge_deploy bridge-deploy/setup.py
 
   run-bridge-mypy:
     executor: ubuntu-builder
@@ -334,7 +334,7 @@ jobs:
       - run:
           name: Run mypy
           command: |
-            mypy --ignore-missing-imports bridge-deploy/tests bridge-deploy/auction_deploy bridge-deploy/setup.py
+            mypy --ignore-missing-imports bridge-deploy/tests bridge-deploy/bridge_deploy bridge-deploy/setup.py
 
   run-bridge-black:
     executor: ubuntu-builder

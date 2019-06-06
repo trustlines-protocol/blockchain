@@ -1,11 +1,5 @@
 import pytest
-
-from eth_utils import to_checksum_address
-
-from bridge_deploy.home import (
-    deploy_home_bridge_contract,
-    initialize_home_bridge_contract,
-)
+from bridge_deploy.home import deploy_home_bridge_contract
 
 
 @pytest.fixture

@@ -15,7 +15,13 @@ def test_deploy_home(runner):
     # TODO: Add actual working addresses and contracts
     result = runner.invoke(
         main,
-        args="deploy-home --jsonrpc test --validator-set-address 0x0000000000000000000000000000000000000000 --block-reward-address 0x0000000000000000000000000000000000000000 --owner-address 0x0000000000000000000000000000000000000000",
+        args=(
+            "deploy-home"
+            " --jsonrpc test "
+            " --validator-set-address 0x0000000000000000000000000000000000000000"
+            " --block-reward-address 0x0000000000000000000000000000000000000000"
+            " --owner-address 0x0000000000000000000000000000000000000000"
+        ),
     )
 
     assert result.exit_code == 0

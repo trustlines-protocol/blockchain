@@ -22,9 +22,10 @@ from bridge_deploy.home import (
 )
 
 
-def validate_address(
-    ctx, param, value
-):  # TODO: potentially reformat this to deploy-tools? - Copypasta from validator-set-deploy. Refactoring might be a thing.
+def validate_address(ctx, param, value):
+    # TODO:
+    # Potentially reformat this to deploy-tools? (Copypasta from validator-set-deploy)
+    # Refactoring might be a thing.
     """This function must be at the top of click commands using it"""
     try:
         return validate_and_format_address(value)
@@ -68,28 +69,28 @@ home_daily_limit_option = click.option(
     "--home-daily-limit",
     help="The daily transfer limit for the home bridge in WEI",
     type=int,
-    default=30000000000000000000000000,
+    default=30_000_000_000_000_000_000_000_000,
 )
 
 home_max_per_tx_option = click.option(
     "--home-max-per-tx",
     help="The maximum transfer limit for one transaction in WEI",
     type=int,
-    default=1500000000000000000000000,
+    default=1_500_000_000_000_000_000_000_000,
 )
 
 home_min_per_tx_option = click.option(
     "--home-min-per-tx",
     help="The minimum transfer limit for one transaction in WEI",
     type=int,
-    default=500000000000000000,
+    default=500_000_000_000_000_000,
 )
 
 home_gas_price_option = click.option(
     "--home-gas_price",
     help="The initial gas price on the home network in WEI",
     type=int,
-    default=1000000000,
+    default=1_000_000_000,
 )
 
 required_block_confirmations_option = click.option(
@@ -103,14 +104,14 @@ foreign_daily_limit_option = click.option(
     "--foreign-daily-limit",
     help="The daily transfer limit for the foreign bridge in WEI",
     type=int,
-    default=15000000000000000000000000,
+    default=15_000_000_000_000_000_000_000_000,
 )
 
 foreign_max_per_tx_option = click.option(
     "--foreign-max-per-tx",
     help="The maximum transfer limit for one transaction in WEI",
     type=int,
-    default=750000000000000000000000,
+    default=750_000_000_000_000_000_000_000,
 )
 
 
@@ -176,7 +177,7 @@ def deploy_home(
     click.echo(f"HomeBridge address: {deployment_result.home_bridge.address}")
     click.echo(f"  deployed at block #{deployment_result.home_bridge_block_number}")
 
-    init_result = initialize_home_bridge_contract(
+    initialize_home_bridge_contract(
         web3=web3,
         transaction_options=transaction_options,
         home_bridge_contract=deployment_result.home_bridge,
