@@ -79,7 +79,7 @@ commands:
       - run:
           name: Configuring PATH
           command: |
-            echo 'export PATH=~/bin:~/repo/bridge-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
+            echo 'export PATH=~/bin:~/repo/bridge-venv/bin:${PATH}' >> ${BASH_ENV}
             echo 'export VIRTUAL_ENV=~/repo/bridge-venv' >> ${BASH_ENV}
 
   upload-docker-image:
