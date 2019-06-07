@@ -54,6 +54,34 @@ def initialize_validator_set_contract(
     )
 
 
+def deploy_validator_proxy_contract(
+    *,
+    web3,
+    transaction_options: Dict = None,
+    private_key=None,
+    validator_contract_address,
+):
+
+    if transaction_options is None:
+        transaction_options = {}
+
+    compiled_contracts = load_contracts_json(__name__)
+
+    validator_proxy_abi = compiled_contracts["ValidatorProxy"]["abi"]
+    validator_proxy_bin = compiled_contracts["ValidatorProxy"]["bytecode"]
+
+    validator_proxy_contract: Contract = deploy_compiled_contract(
+        abi=validator_proxy_abi,
+        bytecode=validator_proxy_bin,
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
+        constructor_args=(validator_contract_address,),
+    )
+
+    return validator_proxy_contract
+
+
 def get_validator_contract(*, web3, address):
 
     validator_contract_abi = load_contracts_json(__name__)["ValidatorSet"]["abi"]

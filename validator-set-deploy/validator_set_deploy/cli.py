@@ -8,6 +8,7 @@ from validator_set_deploy.core import (
     validate_and_format_address,
     InvalidAddressException,
     get_validator_contract,
+    deploy_validator_proxy_contract,
 )
 
 from deploy_tools.cli import (
@@ -110,6 +111,47 @@ def deploy(
     )
 
     click.echo("ValidatorSet address: " + validator_set_contract.address)
+
+
+@main.command(
+    short_help="Deploys the validator proxy and initializes with the validator addresses "
+    "within the given validator set address."
+)
+@keystore_option
+@validator_set_address_option
+@gas_option
+@gas_price_option
+@nonce_option
+@auto_nonce_option
+@jsonrpc_option
+def deploy_proxy(
+    keystore: str,
+    validator_contract_address: str,
+    jsonrpc: str,
+    gas: int,
+    gas_price: int,
+    nonce: int,
+    auto_nonce: bool,
+) -> None:
+
+    web3 = connect_to_json_rpc(jsonrpc)
+    private_key = retrieve_private_key(keystore)
+
+    nonce = get_nonce(
+        web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
+    )
+    transaction_options = build_transaction_options(
+        gas=gas, gas_price=gas_price, nonce=nonce
+    )
+
+    validator_proxy_contract = deploy_validator_proxy_contract(
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
+        validator_contract_address=validator_contract_address,
+    )
+
+    click.echo("ValidatorProxy address: " + validator_proxy_contract.address)
 
 
 @main.command(
