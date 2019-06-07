@@ -1,7 +1,5 @@
 import click
 
-# from web3 import Web3, EthereumTesterProvider
-
 from deploy_tools.cli import (
     jsonrpc_option,
     keystore_option,
@@ -23,9 +21,6 @@ from bridge_deploy.home import (
 
 
 def validate_address(ctx, param, value):
-    # TODO:
-    # Potentially reformat this to deploy-tools? (Copypasta from validator-set-deploy)
-    # Refactoring might be a thing.
     """This function must be at the top of click commands using it"""
     try:
         return validate_and_format_address(value)
@@ -37,7 +32,10 @@ def validate_address(ctx, param, value):
 
 validator_set_address_option = click.option(
     "--validator-set-address",
-    help='The address of the validator set contract, "0x" prefixed string',
+    help=(
+        "The address of the bridge validator set contract or proxy contract "
+        'that implements IBridgeValidators, "0x" prefixed string'
+    ),
     type=str,
     required=True,
     callback=validate_address,
@@ -53,16 +51,6 @@ block_reward_address_option = click.option(
     callback=validate_address,
     metavar="BLOCK_REWARD_ADDRESS",
     envvar="BLOCK_REWARD_ADDRESS",
-)
-
-owner_address_option = click.option(
-    "--owner-address",
-    help='The address of the contract owner, "0x" prefixed string',
-    type=str,
-    required=True,
-    callback=validate_address,
-    metavar="OWNER_ADDRESS",
-    envvar="OWNER_ADDRESS",
 )
 
 home_daily_limit_option = click.option(
@@ -100,20 +88,6 @@ required_block_confirmations_option = click.option(
     default=4,
 )
 
-foreign_daily_limit_option = click.option(
-    "--foreign-daily-limit",
-    help="The daily transfer limit for the foreign bridge in WEI",
-    type=int,
-    default=15_000_000_000_000_000_000_000_000,
-)
-
-foreign_max_per_tx_option = click.option(
-    "--foreign-max-per-tx",
-    help="The maximum transfer limit for one transaction in WEI",
-    type=int,
-    default=750_000_000_000_000_000_000_000,
-)
-
 
 @click.group()
 def main():
@@ -131,9 +105,6 @@ def main():
 @home_gas_price_option
 @required_block_confirmations_option
 @block_reward_address_option
-@foreign_daily_limit_option
-@foreign_max_per_tx_option
-@owner_address_option
 @gas_option
 @gas_price_option
 @nonce_option
@@ -153,9 +124,6 @@ def deploy_home(
     home_gas_price,
     required_block_confirmations,
     block_reward_address,
-    foreign_daily_limit,
-    foreign_max_per_tx,
-    owner_address,
 ) -> None:
 
     web3 = connect_to_json_rpc(jsonrpc)
@@ -167,8 +135,6 @@ def deploy_home(
     transaction_options = build_transaction_options(
         gas=gas, gas_price=gas_price, nonce=nonce
     )
-
-    dir(transaction_options)
 
     deployment_result = deploy_home_bridge_contract(
         web3=web3, transaction_options=transaction_options, private_key=private_key
@@ -189,9 +155,6 @@ def deploy_home(
         home_gas_price=home_gas_price,
         required_block_confirmations=required_block_confirmations,
         block_reward_address=block_reward_address,
-        foreign_daily_limit=foreign_daily_limit,
-        foreign_max_per_tx=foreign_max_per_tx,
-        home_bridge_owner=owner_address,
     )
 
 
@@ -214,11 +177,9 @@ def deploy_foreign(
     nonce = get_nonce(
         web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
     )
-    transaction_options = build_transaction_options(
-        gas=gas, gas_price=gas_price, nonce=nonce
-    )
-
-    dir(transaction_options)
+    # transaction_options = build_transaction_options(
+    #     gas=gas, gas_price=gas_price, nonce=nonce
+    # )
 
     # TODO: Implement me
 
@@ -240,14 +201,11 @@ def print_home(
     nonce = get_nonce(
         web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
     )
-    transaction_options = build_transaction_options(
-        gas=gas, gas_price=gas_price, nonce=nonce
-    )
-
-    dir(transaction_options)
+    # transaction_options = build_transaction_options(
+    #     gas=gas, gas_price=gas_price, nonce=nonce
+    # )
 
     # TODO: Implement me - We should be able to get all required information from the bridge contract
-    #  See validator-set-deploy for address validation
 
 
 @main.command(
@@ -269,8 +227,8 @@ def print_foreign(
     nonce = get_nonce(
         web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
     )
-    transaction_options = build_transaction_options(
-        gas=gas, gas_price=gas_price, nonce=nonce
-    )
+    # transaction_options = build_transaction_options(
+    #     gas=gas, gas_price=gas_price, nonce=nonce
+    # )
 
-    dir(transaction_options)
+    # TODO: Implement me

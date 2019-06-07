@@ -1,5 +1,6 @@
 import json
 from typing import Dict, NamedTuple
+from web3 import Account
 from web3.contract import Contract
 from deploy_tools.deploy import (
     deploy_compiled_contract,
@@ -31,7 +32,7 @@ def deploy_home_bridge_contract(
 
     # Deploy home bridge proxy
     eternal_storage_proxy_src = load_contract("EternalStorageProxy")
-    home_bridge_storage_contract: Contract = deploy_compiled_contract(
+    home_bridge_storage_contract = deploy_compiled_contract(
         abi=eternal_storage_proxy_src["abi"],
         bytecode=eternal_storage_proxy_src["bytecode"],
         web3=web3,
@@ -42,7 +43,7 @@ def deploy_home_bridge_contract(
 
     # Deploy home bridge implementation
     home_bridge_src = load_contract("HomeBridgeErcToNative")
-    home_bridge_contract: Contract = deploy_compiled_contract(
+    home_bridge_contract = deploy_compiled_contract(
         abi=home_bridge_src["abi"],
         bytecode=home_bridge_src["bytecode"],
         web3=web3,
@@ -68,10 +69,6 @@ def deploy_home_bridge_contract(
         abi=home_bridge_src["abi"], address=home_bridge_storage_contract.address
     )
 
-    # TODO: Initialize bridge
-
-    # TODO: transfer ownership
-
     contracts = DeployedHomeBridgeResult(home_bridge_contract, latest_block.number)
 
     return contracts
@@ -89,9 +86,6 @@ def initialize_home_bridge_contract(
     home_gas_price,
     required_block_confirmations,
     block_reward_address,
-    foreign_daily_limit,
-    foreign_max_per_tx,
-    home_bridge_owner,
     private_key=None,
 ):
     if transaction_options is None:
@@ -105,9 +99,11 @@ def initialize_home_bridge_contract(
         home_gas_price,  # 1000000000,  # HOME_GAS_PRICE in WEI,
         required_block_confirmations,  # 4,  # HOME_REQUIRED_BLOCK_CONFIRMATIONS,
         block_reward_address,  # "0x0000000000000000000000000000000000000000",  # BLOCK_REWARD_ADDRESS,
-        foreign_daily_limit,  # 15000000000000000000000000,  # FOREIGN_DAILY_LIMIT,
-        foreign_max_per_tx,  # 750000000000000000000000,  # FOREIGN_MAX_AMOUNT_PER_TX,
-        home_bridge_owner,  # "0x0000000000000000000000000000000000000000",  # HOME_BRIDGE_OWNER
+        1,  # 15000000000000000000000000,  # FOREIGN_DAILY_LIMIT,
+        0,  # 750000000000000000000000,  # FOREIGN_MAX_AMOUNT_PER_TX,
+        Account.privateKeyToAccount(
+            private_key
+        ).address,  # "0x0000000000000000000000000000000000000000",  # HOME_BRIDGE_OWNER
     )
     send_function_call_transaction(
         home_bridge_contract_initialize,
@@ -116,3 +112,5 @@ def initialize_home_bridge_contract(
         private_key=private_key,
     )
     increase_transaction_options_nonce(transaction_options)
+
+    # TODO: transfer ownership

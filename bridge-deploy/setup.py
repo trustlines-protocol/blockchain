@@ -7,7 +7,7 @@ setup(
     version="0.0.1",
     packages=find_packages(),
     package_data={"bridge_deploy": ["contracts.json"]},
-    install_requires=["click", "web3", "contract-deploy-tools", "pendulum"],
+    install_requires=["click", "web3", "contract-deploy-tools"],
     entry_points="""
     [console_scripts]
     bridge-deploy=bridge_deploy.cli:main
