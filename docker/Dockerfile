@@ -7,7 +7,7 @@
 #
 #   docker build -f docker/Dockerfile -t tlbc-testnet-next .
 
-FROM ubuntu:18.04
+FROM ubuntu:18.04@sha256:f08638ec7ddc90065187e7eabdfac3c96e5ff0f6b2f1762cf31a4f49b53000a5
 
 ## Environment
 ENV HOME=/home/parity
@@ -23,8 +23,8 @@ RUN mkdir -p $PARITY_HOME_DIR && \
 
 
 # Download parity executable, check that it's what we expect
-ADD https://releases.parity.io/ethereum/v2.1.11/x86_64-unknown-linux-gnu/parity $PARITY_BIN
-RUN echo f3255a22e561f708c139f406715409665eb2fa519ccaa56d270e543efbc975e7 $PARITY_BIN | sha256sum -c
+ADD https://releases.parity.io/ethereum/v2.3.6/x86_64-unknown-linux-gnu/parity $PARITY_BIN
+RUN echo a99f7ba6bc90dd128acea7cc2c730279c6da6783ffcae521d6fe4ff8c3eee0d9 $PARITY_BIN | sha256sum -c
 RUN chmod 755 $PARITY_BIN
 
 
@@ -43,7 +43,6 @@ RUN chmod +x $PARITY_WRAPPER_SCRIPT
 ### Shorthand links
 RUN ln -s $PARITY_HOME_DIR /config && \
     ln -s $PARITY_DATA_DIR /data
-
 
 # Start
 ENTRYPOINT ["/home/parity/parity_wrapper.sh"]
