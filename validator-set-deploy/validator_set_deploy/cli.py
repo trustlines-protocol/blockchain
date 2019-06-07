@@ -4,9 +4,6 @@ from web3 import Web3, EthereumTesterProvider
 from validator_set_deploy.core import (
     deploy_validator_set_contract,
     initialize_validator_set_contract,
-    read_addresses_in_csv,
-    validate_and_format_address,
-    InvalidAddressException,
     get_validator_contract,
     deploy_validator_proxy_contract,
 )
@@ -23,6 +20,11 @@ from deploy_tools.cli import (
     get_nonce,
 )
 from deploy_tools.deploy import build_transaction_options
+from deploy_tools.files import (
+    read_addresses_in_csv,
+    validate_and_format_address,
+    InvalidAddressException,
+)
 
 # we need test_provider and test_json_rpc for running the tests in test_cli
 # they need to persist between multiple calls to runner.invoke and are
