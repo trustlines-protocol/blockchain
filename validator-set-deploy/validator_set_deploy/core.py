@@ -1,5 +1,4 @@
 from typing import Dict
-import csv
 
 from web3.contract import Contract
 from deploy_tools.deploy import (
@@ -7,7 +6,6 @@ from deploy_tools.deploy import (
     load_contracts_json,
     send_function_call_transaction,
 )
-from eth_utils import is_address, to_checksum_address
 
 
 def deploy_validator_set_contract(
@@ -87,26 +85,3 @@ def get_validator_contract(*, web3, address):
     validator_contract_abi = load_contracts_json(__name__)["ValidatorSet"]["abi"]
 
     return web3.eth.contract(address=address, abi=validator_contract_abi)
-
-
-def read_addresses_in_csv(file_path: str):  # TODO: refactor this into deploy_tools
-    with open(file_path) as f:
-        reader = csv.reader(f)
-        addresses = []
-        for line in reader:
-            address = validate_and_format_address(line[0])
-            addresses.append(address)
-        return addresses
-
-
-def validate_and_format_address(address):  # TODO: refactor this into deploy_tools
-    """Validates the address and formats it into the internal format
-    Will raise `InvalidAddressException, if the address is invalid"""
-    if is_address(address):
-        return to_checksum_address(address)
-    else:
-        raise InvalidAddressException()
-
-
-class InvalidAddressException(Exception):  # TODO: refactor this into deploy_tools
-    pass
