@@ -76,6 +76,17 @@ def test_deploy(runner, validators_file):
     assert result.exit_code == 0
 
 
+def test_deploy_proxy(runner, deployed_validator_contract_address):
+
+    result = runner.invoke(
+        main,
+        args=f"deploy-proxy --jsonrpc test --address {deployed_validator_contract_address}",
+    )
+
+    print(result.output)
+    assert result.exit_code == 0
+
+
 def test_check_validators(runner, deployed_validator_contract_address, validators_file):
 
     result = runner.invoke(
