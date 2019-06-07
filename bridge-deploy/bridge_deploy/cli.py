@@ -15,6 +15,7 @@ from deploy_tools.deploy import build_transaction_options
 from deploy_tools.files import validate_and_format_address, InvalidAddressException
 
 from bridge_deploy.home import (
+    deploy_home_block_reward_contract,
     deploy_home_bridge_contract,
     initialize_home_bridge_contract,
 )
@@ -92,6 +93,34 @@ required_block_confirmations_option = click.option(
 @click.group()
 def main():
     pass
+
+
+@main.command(short_help="Deploys the block reward contract on the home network.")
+@keystore_option
+@gas_option
+@gas_price_option
+@nonce_option
+@auto_nonce_option
+@jsonrpc_option
+def deploy_reward(
+    keystore: str, jsonrpc: str, gas: int, gas_price: int, nonce: int, auto_nonce: bool
+) -> None:
+
+    web3 = connect_to_json_rpc(jsonrpc)
+    private_key = retrieve_private_key(keystore)
+
+    nonce = get_nonce(
+        web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
+    )
+    transaction_options = build_transaction_options(
+        gas=gas, gas_price=gas_price, nonce=nonce
+    )
+
+    reward_contract = deploy_home_block_reward_contract(
+        web3=web3, transaction_options=transaction_options, private_key=private_key
+    )
+
+    click.echo(f"BlockRewardContract address: {reward_contract.address}")
 
 
 @main.command(

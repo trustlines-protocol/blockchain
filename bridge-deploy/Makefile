@@ -13,8 +13,10 @@ test: install-requirements compile
 
 compile: .installed .compiled
 
-SOL_FILES=$(shell find ../poa-bridge-contracts/contracts -type f -iname '*.sol')
-.compiled: ../poa-bridge-contracts/package.json $(SOL_FILES) $(VIRTUAL_ENV)
+POA_SOL_FILES=$(shell find ../poa-bridge-contracts/contracts -type f -iname '*.sol')
+REWARD_SOL_FILES=$(shell find ../bridge/reward-contract/contracts -type f -iname '*.sol')
+.compiled: ../poa-bridge-contracts/package.json $(POA_SOL_FILES) $(REWARD_SOL_FILES) $(VIRTUAL_ENV)
+	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d ../bridge/reward-contract/contracts
 	$(VIRTUAL_ENV)/bin/npm --prefix ../poa-bridge-contracts install && \
 	cd ../poa-bridge-contracts && \
 	./node_modules/.bin/truffle compile --all

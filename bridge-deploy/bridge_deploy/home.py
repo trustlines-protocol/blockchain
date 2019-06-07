@@ -13,11 +13,37 @@ class DeployedHomeBridgeResult(NamedTuple):
     home_bridge_block_number: int
 
 
-def load_contract(contract_name):
+def load_poa_contract(contract_name):
     with open(
         f"../poa-bridge-contracts/build/contracts/{contract_name}.json"
     ) as json_file:
         return json.load(json_file)
+
+
+def load_build_contract(contract_name, path="./build/", file_name="contracts"):
+    with open(f"{path}{file_name}.json") as json_file:
+        contract_data = json.load(json_file)
+        return contract_data[contract_name]
+
+
+def deploy_home_block_reward_contract(
+    *, web3, transaction_options: Dict = None, private_key=None
+):
+    if transaction_options is None:
+        transaction_options = {}
+
+    block_reward_src = load_build_contract("RewardByBlock")
+
+    block_reward_contract = deploy_compiled_contract(
+        abi=block_reward_src["abi"],
+        bytecode=block_reward_src["bytecode"],
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
+    )
+    increase_transaction_options_nonce(transaction_options)
+
+    return block_reward_contract
 
 
 def deploy_home_bridge_contract(
@@ -30,7 +56,7 @@ def deploy_home_bridge_contract(
     latest_block = web3.eth.getBlock("latest")
 
     # Deploy home bridge proxy
-    eternal_storage_proxy_src = load_contract("EternalStorageProxy")
+    eternal_storage_proxy_src = load_poa_contract("EternalStorageProxy")
     home_bridge_storage_contract = deploy_compiled_contract(
         abi=eternal_storage_proxy_src["abi"],
         bytecode=eternal_storage_proxy_src["bytecode"],
@@ -41,7 +67,7 @@ def deploy_home_bridge_contract(
     increase_transaction_options_nonce(transaction_options)
 
     # Deploy home bridge implementation
-    home_bridge_src = load_contract("HomeBridgeErcToNative")
+    home_bridge_src = load_poa_contract("HomeBridgeErcToNative")
     home_bridge_contract = deploy_compiled_contract(
         abi=home_bridge_src["abi"],
         bytecode=home_bridge_src["bytecode"],
