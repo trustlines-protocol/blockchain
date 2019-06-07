@@ -9,7 +9,7 @@ test: install
 	$(VIRTUAL_ENV)/bin/pytest tests
 
 compile: install-requirements
-	$(VIRTUAL_ENV)/bin/deploy-tools compile -d ../contracts/contracts
+	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d ../contracts/contracts
 	$(VIRTUAL_ENV)/bin/python scripts/pack_contracts.py build/contracts.json auction_deploy/contracts.json
 
 build: compile
