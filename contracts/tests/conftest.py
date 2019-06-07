@@ -345,3 +345,64 @@ def premint_token_address(accounts):
 @pytest.fixture(scope="session")
 def premint_token_value():
     return 132456
+
+
+@pytest.fixture(scope="session")
+def validator_proxy_contract(deploy_contract, web3, validator_proxy_owner):
+    contract = deploy_contract(
+        "TestValidatorProxy", constructor_args=(validator_proxy_owner,)
+    )
+
+    assert contract.functions.systemAddress().call() == validator_proxy_owner
+
+    return contract
+
+
+@pytest.fixture()
+def validator_proxy_with_validators(
+    validator_proxy_contract, validator_proxy_owner, proxy_validators
+):
+    validator_proxy_contract.functions.updateValidators(proxy_validators).transact(
+        {"from": validator_proxy_owner}
+    )
+    return validator_proxy_contract
+
+
+@pytest.fixture(scope="session")
+def proxy_validators(accounts):
+    return accounts[:5]
+
+
+@pytest.fixture(scope="session")
+def validator_proxy_owner(accounts):
+    return accounts[0]
+
+
+@pytest.fixture(scope="session")
+def bridge_validators_contract(
+    deploy_contract,
+    web3,
+    validator_proxy_contract,
+    bridge_required_signatures_divisor,
+    bridge_required_signatures_multiplier,
+):
+    contract = deploy_contract(
+        "BridgeValidators",
+        constructor_args=(
+            validator_proxy_contract.address,
+            bridge_required_signatures_divisor,
+            bridge_required_signatures_multiplier,
+        ),
+    )
+
+    return contract
+
+
+@pytest.fixture(scope="session")
+def bridge_required_signatures_divisor():
+    return 2
+
+
+@pytest.fixture(scope="session")
+def bridge_required_signatures_multiplier():
+    return 1
