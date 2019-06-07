@@ -33,8 +33,8 @@ def validate_address(ctx, param, value):
 validator_set_address_option = click.option(
     "--validator-set-address",
     help=(
-        "The address of the bridge validator set contract or proxy contract "
-        'that implements IBridgeValidators, "0x" prefixed string'
+        "The address of the bridge validator set contract or proxy contract"
+        ' that implements IBridgeValidators, "0x" prefixed string'
     ),
     type=str,
     required=True,

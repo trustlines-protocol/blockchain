@@ -18,9 +18,8 @@ def test_deploy_home(runner):
         args=(
             "deploy-home"
             " --jsonrpc test "
-            " --validator-set-address 0x0000000000000000000000000000000000000000"
-            " --block-reward-address 0x0000000000000000000000000000000000000000"
-            " --owner-address 0x0000000000000000000000000000000000000000"
+            " --validator-set-address 0x0000000000000000000000000000000000000002"
+            " --block-reward-address 0x0000000000000000000000000000000000000002"
         ),
     )
 

@@ -1,6 +1,5 @@
 import json
 from typing import Dict, NamedTuple
-from web3 import Account
 from web3.contract import Contract
 from deploy_tools.deploy import (
     deploy_compiled_contract,
@@ -93,17 +92,15 @@ def initialize_home_bridge_contract(
 
     home_bridge_contract_initialize = home_bridge_contract.functions.initialize(
         validator_contract_address,
-        home_daily_limit,  # 30000000000000000000000000,  # HOME_DAILY_LIMIT in WEI,
-        home_max_per_tx,  # 1500000000000000000000000,  # HOME_MAX_AMOUNT_PER_TX in WEI,
-        home_min_per_tx,  # 500000000000000000,  # HOME_MIN_AMOUNT_PER_TX in WEI,
-        home_gas_price,  # 1000000000,  # HOME_GAS_PRICE in WEI,
-        required_block_confirmations,  # 4,  # HOME_REQUIRED_BLOCK_CONFIRMATIONS,
-        block_reward_address,  # "0x0000000000000000000000000000000000000000",  # BLOCK_REWARD_ADDRESS,
-        1,  # 15000000000000000000000000,  # FOREIGN_DAILY_LIMIT,
-        0,  # 750000000000000000000000,  # FOREIGN_MAX_AMOUNT_PER_TX,
-        Account.privateKeyToAccount(
-            private_key
-        ).address,  # "0x0000000000000000000000000000000000000000",  # HOME_BRIDGE_OWNER
+        home_daily_limit,
+        home_max_per_tx,
+        home_min_per_tx,
+        home_gas_price,
+        required_block_confirmations,
+        block_reward_address,
+        1,  # FOREIGN_DAILY_LIMIT,
+        0,  # FOREIGN_MAX_AMOUNT_PER_TX,
+        "0x0000000000000000000000000000000000000001",  # OWNER
     )
     send_function_call_transaction(
         home_bridge_contract_initialize,
@@ -113,4 +110,24 @@ def initialize_home_bridge_contract(
     )
     increase_transaction_options_nonce(transaction_options)
 
-    # TODO: transfer ownership
+    home_bridge_contract_set_execution_daily_limit = home_bridge_contract.functions.setExecutionDailyLimit(
+        0
+    )
+    send_function_call_transaction(
+        home_bridge_contract_set_execution_daily_limit,
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
+    )
+    increase_transaction_options_nonce(transaction_options)
+
+    home_bridge_contract_transfer_proxy_ownership = home_bridge_contract.functions.transferProxyOwnership(
+        "0x0000000000000000000000000000000000000001"
+    )
+    send_function_call_transaction(
+        home_bridge_contract_transfer_proxy_ownership,
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
+    )
+    increase_transaction_options_nonce(transaction_options)
