@@ -1,5 +1,7 @@
 pragma solidity ^0.5.8;
 
+import "./ValidatorSet.sol";
+
 
 /**
     This contract gives access to an up to date validator set on chain, that can be used by any other contracts.
@@ -12,6 +14,11 @@ contract ValidatorProxy {
     mapping (address => bool) public isValidator;
     address public systemAddress = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
     address[] public validators;
+
+    constructor(ValidatorSet validatorSet) public {
+        require(validatorSet.finalized(), "The given validatorSet to initialize the validators is not finalized.");
+        validators = validatorSet.getValidators();
+    }
 
     function updateValidators(address[] memory newValidators) public {
         require(tx.origin == systemAddress, "Only the system address can be responsible for the call of this function.");  // solium-disable-line security/no-tx-origin
