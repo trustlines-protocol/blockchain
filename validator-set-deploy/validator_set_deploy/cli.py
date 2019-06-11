@@ -35,7 +35,7 @@ test_json_rpc = Web3(test_provider)
 
 def validate_address(
     ctx, param, value
-):  # TODO: potentially reformat this to deploy-tools?
+):  # TODO: take this from deploy_tools once new version is available
     """This function must be at the top of click commands using it"""
     try:
         return validate_and_format_address(value)
@@ -120,7 +120,13 @@ def deploy(
     "within the given validator set address."
 )
 @keystore_option
-@validator_set_address_option
+@click.option(
+    "--validators",
+    "validators_file",
+    help="Path to the csv file containing the addresses of the validators",
+    type=click.Path(),
+    required=False,
+)
 @gas_option
 @gas_price_option
 @nonce_option
@@ -128,7 +134,7 @@ def deploy(
 @jsonrpc_option
 def deploy_proxy(
     keystore: str,
-    validator_contract_address: str,
+    validators_file: str,
     jsonrpc: str,
     gas: int,
     gas_price: int,
@@ -138,6 +144,10 @@ def deploy_proxy(
 
     web3 = connect_to_json_rpc(jsonrpc)
     private_key = retrieve_private_key(keystore)
+
+    validators: list = []
+    if validators_file:
+        validators = read_addresses_in_csv(validators_file)
 
     nonce = get_nonce(
         web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
@@ -150,7 +160,7 @@ def deploy_proxy(
         web3=web3,
         transaction_options=transaction_options,
         private_key=private_key,
-        validator_contract_address=validator_contract_address,
+        validators=validators,
     )
 
     click.echo("ValidatorProxy address: " + validator_proxy_contract.address)
