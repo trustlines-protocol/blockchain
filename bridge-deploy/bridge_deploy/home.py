@@ -32,7 +32,7 @@ def deploy_home_block_reward_contract(
     if transaction_options is None:
         transaction_options = {}
 
-    block_reward_src = load_build_contract("RewardByBlock")
+    block_reward_src = load_build_contract("RewardByBlock", file_name="reward")
 
     block_reward_contract = deploy_compiled_contract(
         abi=block_reward_src["abi"],
@@ -44,6 +44,37 @@ def deploy_home_block_reward_contract(
     increase_transaction_options_nonce(transaction_options)
 
     return block_reward_contract
+
+
+def deploy_home_bridge_validators_contract(
+    *,
+    web3,
+    transaction_options: Dict = None,
+    validator_proxy,
+    required_signatures_divisor,
+    required_signatures_multiplier,
+    private_key=None,
+):
+    if transaction_options is None:
+        transaction_options = {}
+
+    bridge_validators_src = load_build_contract("BridgeValidators")
+
+    bridge_validators_contract = deploy_compiled_contract(
+        abi=bridge_validators_src["abi"],
+        bytecode=bridge_validators_src["bytecode"],
+        constructor_args=(
+            validator_proxy,
+            required_signatures_divisor,
+            required_signatures_multiplier,
+        ),
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
+    )
+    increase_transaction_options_nonce(transaction_options)
+
+    return bridge_validators_contract
 
 
 def deploy_home_bridge_contract(

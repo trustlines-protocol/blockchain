@@ -17,6 +17,20 @@ def test_deploy_reward(runner):
     assert result.exit_code == 0
 
 
+def test_deploy_bridge_validators(runner):
+
+    result = runner.invoke(
+        main,
+        args=(
+            "deploy-validators"
+            " --jsonrpc test"
+            " --validator-proxy-address 0x0000000000000000000000000000000000000000"
+        ),
+    )
+
+    assert result.exit_code == 0
+
+
 def test_deploy_home(runner):
 
     # TODO: Add actual working addresses and contracts

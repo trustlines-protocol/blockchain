@@ -16,6 +16,7 @@ from deploy_tools.files import validate_and_format_address, InvalidAddressExcept
 
 from bridge_deploy.home import (
     deploy_home_block_reward_contract,
+    deploy_home_bridge_validators_contract,
     deploy_home_bridge_contract,
     initialize_home_bridge_contract,
 )
@@ -89,6 +90,31 @@ required_block_confirmations_option = click.option(
     default=4,
 )
 
+validator_proxy_address_option = click.option(
+    "--validator-proxy-address",
+    help=(
+        "The address of the bridge validator set contract or proxy contract"
+        ' that implements IBridgeValidators, "0x" prefixed string'
+    ),
+    type=str,
+    required=True,
+    callback=validate_address,
+)
+
+required_signatures_divisor_option = click.option(
+    "--required-signatures-divisor",
+    help="The number to divide the total amount of validators by",
+    type=int,
+    default=2,
+)
+
+required_signatures_multiplier_option = click.option(
+    "--required-signatures-multiplier",
+    help="The number to multiply the total amount of validators with",
+    type=int,
+    default=1,
+)
+
 
 @click.group()
 def main():
@@ -121,6 +147,52 @@ def deploy_reward(
     )
 
     click.echo(f"BlockRewardContract address: {reward_contract.address}")
+
+
+@main.command(short_help="Deploys the bridge validators proxy on the home network.")
+@keystore_option
+@gas_option
+@gas_price_option
+@nonce_option
+@auto_nonce_option
+@validator_proxy_address_option
+@required_signatures_divisor_option
+@required_signatures_multiplier_option
+@jsonrpc_option
+def deploy_validators(
+    keystore: str,
+    jsonrpc: str,
+    gas: int,
+    gas_price: int,
+    nonce: int,
+    auto_nonce: bool,
+    validator_proxy_address,
+    required_signatures_divisor,
+    required_signatures_multiplier,
+) -> None:
+
+    web3 = connect_to_json_rpc(jsonrpc)
+    private_key = retrieve_private_key(keystore)
+
+    nonce = get_nonce(
+        web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
+    )
+    transaction_options = build_transaction_options(
+        gas=gas, gas_price=gas_price, nonce=nonce
+    )
+
+    bridge_validators_contract = deploy_home_bridge_validators_contract(
+        web3=web3,
+        transaction_options=transaction_options,
+        validator_proxy=validator_proxy_address,
+        required_signatures_divisor=required_signatures_divisor,
+        required_signatures_multiplier=required_signatures_multiplier,
+        private_key=private_key,
+    )
+
+    click.echo(
+        f"BridgeValidatorsContract address: {bridge_validators_contract.address}"
+    )
 
 
 @main.command(

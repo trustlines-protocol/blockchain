@@ -1,6 +1,7 @@
 import pytest
 from bridge_deploy.home import (
     deploy_home_block_reward_contract,
+    deploy_home_bridge_validators_contract,
     deploy_home_bridge_contract,
     initialize_home_bridge_contract,
 )
@@ -10,6 +11,17 @@ from bridge_deploy.home import (
 def block_reward_contract(web3):
     reward_contract = deploy_home_block_reward_contract(web3=web3)
     return reward_contract
+
+
+@pytest.fixture
+def home_bridge_validators_contract(web3):
+    home_bridge_validators_contract = deploy_home_bridge_validators_contract(
+        web3=web3,
+        validator_proxy="0x0000000000000000000000000000000000000000",
+        required_signatures_divisor=1,
+        required_signatures_multiplier=1,
+    )
+    return home_bridge_validators_contract
 
 
 @pytest.fixture
@@ -27,6 +39,21 @@ def test_deploy_home_block_reward_contract(web3):
     ]
 
 
+def test_deploy_home_bridge_validators_contract(web3):
+
+    home_bridge_validators_contract = deploy_home_bridge_validators_contract(
+        web3=web3,
+        validator_proxy="0x0000000000000000000000000000000000000000",
+        required_signatures_divisor=1,
+        required_signatures_multiplier=1,
+    )
+
+    assert (
+        home_bridge_validators_contract.functions.owner().call()
+        == "0x0000000000000000000000000000000000000000"
+    )
+
+
 def test_deploy_home_bridge_contract(web3):
 
     deployment_result = deploy_home_bridge_contract(web3=web3)
@@ -40,12 +67,12 @@ def test_deploy_home_bridge_contract(web3):
 
 
 def test_initialize_home_bridge_contract(
-    home_bridge_contract, block_reward_contract, web3
+    home_bridge_contract, home_bridge_validators_contract, block_reward_contract, web3
 ):
     initialize_home_bridge_contract(
         web3=web3,
         home_bridge_contract=home_bridge_contract,
-        validator_contract_address="0x0000000000000000000000000000000000000002",
+        validator_contract_address=home_bridge_validators_contract.address,
         home_daily_limit=30000000000000000000000000,
         home_max_per_tx=1500000000000000000000000,
         home_min_per_tx=500000000000000000,
