@@ -21,7 +21,9 @@ from bridge_deploy.home import (
     initialize_home_bridge_contract,
 )
 
-from decimal import Decimal, InvalidOperation
+from decimal import InvalidOperation
+
+# from decimal import Decimal
 
 WEI_PER_ETH = 10 ** 18
 
