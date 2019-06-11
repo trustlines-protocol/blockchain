@@ -37,7 +37,7 @@ def initialize_validator_set_contract(
     transaction_options=None,
     validator_set_contract,
     validators,
-    private_key=None,
+    private_key=None
 ) -> None:
     if transaction_options is None:
         transaction_options = {}
@@ -53,11 +53,7 @@ def initialize_validator_set_contract(
 
 
 def deploy_validator_proxy_contract(
-    *,
-    web3,
-    transaction_options: Dict = None,
-    private_key=None,
-    validator_contract_address,
+    *, web3, transaction_options: Dict = None, private_key=None, validators
 ):
 
     if transaction_options is None:
@@ -74,7 +70,7 @@ def deploy_validator_proxy_contract(
         web3=web3,
         transaction_options=transaction_options,
         private_key=private_key,
-        constructor_args=(validator_contract_address,),
+        constructor_args=(validators,),
     )
 
     return validator_proxy_contract

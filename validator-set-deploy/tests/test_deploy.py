@@ -66,11 +66,15 @@ def test_init_validator_set(validator_set_contract, validator_list, web3):
     )
 
 
-def test_deploy_proxy(web3, initialized_validator_set_contract):
+def test_deploy_proxy(web3, accounts):
 
-    proxy_contract = deploy_validator_proxy_contract(
-        web3=web3, validator_contract_address=initialized_validator_set_contract.address
-    )
+    proxy_contract = deploy_validator_proxy_contract(web3=web3, validators=accounts)
 
-    validators = initialized_validator_set_contract.functions.getValidators().call()
-    assert proxy_contract.functions.getValidators().call() == validators
+    assert proxy_contract.functions.getValidators().call() == accounts
+
+
+def test_deploy_proxy_no_validators(web3):
+
+    proxy_contract = deploy_validator_proxy_contract(web3=web3, validators=[])
+
+    assert proxy_contract.functions.getValidators().call() == []
