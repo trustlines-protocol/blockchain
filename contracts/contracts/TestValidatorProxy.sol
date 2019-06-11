@@ -5,7 +5,7 @@ import "./ValidatorProxy.sol";
 
 contract TestValidatorProxy is ValidatorProxy {
 
-    constructor (address _systemAddress) public {
+    constructor (address[] memory _validators, address _systemAddress) ValidatorProxy(_validators) public {
         systemAddress = _systemAddress;
     }
 }

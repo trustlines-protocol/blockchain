@@ -348,9 +348,9 @@ def premint_token_value():
 
 
 @pytest.fixture(scope="session")
-def validator_proxy_contract(deploy_contract, web3, validator_proxy_owner):
+def validator_proxy_contract(deploy_contract, web3, validator_proxy_owner, accounts):
     contract = deploy_contract(
-        "TestValidatorProxy", constructor_args=(validator_proxy_owner,)
+        "TestValidatorProxy", constructor_args=([], validator_proxy_owner)
     )
 
     assert contract.functions.systemAddress().call() == validator_proxy_owner
