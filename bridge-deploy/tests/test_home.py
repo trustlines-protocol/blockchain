@@ -1,34 +1,9 @@
-import pytest
 from bridge_deploy.home import (
     deploy_home_block_reward_contract,
     deploy_home_bridge_validators_contract,
     deploy_home_bridge_contract,
     initialize_home_bridge_contract,
 )
-
-
-@pytest.fixture
-def block_reward_contract(web3):
-    reward_contract = deploy_home_block_reward_contract(web3=web3)
-    return reward_contract
-
-
-@pytest.fixture
-def home_bridge_validators_contract(web3):
-    home_bridge_validators_contract = deploy_home_bridge_validators_contract(
-        web3=web3,
-        validator_proxy="0x0000000000000000000000000000000000000000",
-        required_signatures_divisor=1,
-        required_signatures_multiplier=1,
-    )
-    return home_bridge_validators_contract
-
-
-@pytest.fixture
-def home_bridge_contract(web3):
-    deployment_result = deploy_home_bridge_contract(web3=web3)
-    home_bridge_contract = deployment_result.home_bridge
-    return home_bridge_contract
 
 
 def test_deploy_home_block_reward_contract(web3):

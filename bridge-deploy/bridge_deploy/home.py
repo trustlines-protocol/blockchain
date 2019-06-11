@@ -159,6 +159,7 @@ def initialize_home_bridge_contract(
         0,  # FOREIGN_MAX_AMOUNT_PER_TX,
         "0x0000000000000000000000000000000000000001",  # OWNER
     )
+
     send_function_call_transaction(
         home_bridge_contract_initialize,
         web3=web3,
@@ -167,24 +168,24 @@ def initialize_home_bridge_contract(
     )
     increase_transaction_options_nonce(transaction_options)
 
-    home_bridge_contract_set_execution_daily_limit = home_bridge_contract.functions.setExecutionDailyLimit(
-        0
-    )
-    send_function_call_transaction(
-        home_bridge_contract_set_execution_daily_limit,
-        web3=web3,
-        transaction_options=transaction_options,
-        private_key=private_key,
-    )
-    increase_transaction_options_nonce(transaction_options)
+    # home_bridge_contract_set_execution_daily_limit = home_bridge_contract.functions.setExecutionDailyLimit(
+    #     0
+    # )
+    # send_function_call_transaction(
+    #     home_bridge_contract_set_execution_daily_limit,
+    #     web3=web3,
+    #     transaction_options=transaction_options,
+    #     private_key=private_key,
+    # )
+    # increase_transaction_options_nonce(transaction_options)
 
-    home_bridge_contract_transfer_proxy_ownership = home_bridge_contract.functions.transferProxyOwnership(
-        "0x0000000000000000000000000000000000000001"
-    )
-    send_function_call_transaction(
-        home_bridge_contract_transfer_proxy_ownership,
-        web3=web3,
-        transaction_options=transaction_options,
-        private_key=private_key,
-    )
-    increase_transaction_options_nonce(transaction_options)
+    # home_bridge_contract_transfer_proxy_ownership = home_bridge_contract.functions.transferProxyOwnership(
+    #     "0x0000000000000000000000000000000000000001"
+    # )
+    # send_function_call_transaction(
+    #     home_bridge_contract_transfer_proxy_ownership,
+    #     web3=web3,
+    #     transaction_options=transaction_options,
+    #     private_key=private_key,
+    # )
+    # increase_transaction_options_nonce(transaction_options)
