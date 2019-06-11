@@ -15,9 +15,8 @@ contract ValidatorProxy {
     address public systemAddress = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
     address[] public validators;
 
-    constructor(ValidatorSet validatorSet) public {
-        require(validatorSet.finalized(), "The given validatorSet to initialize the validators is not finalized.");
-        validators = validatorSet.getValidators();
+    constructor(address[] memory _validators) public {
+        validators = _validators;
     }
 
     function updateValidators(address[] memory newValidators) public {
