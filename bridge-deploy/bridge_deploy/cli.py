@@ -21,6 +21,10 @@ from bridge_deploy.home import (
     initialize_home_bridge_contract,
 )
 
+from decimal import Decimal, InvalidOperation
+
+WEI_PER_ETH = 10 ** 18
+
 
 def validate_address(ctx, param, value):
     """This function must be at the top of click commands using it"""
@@ -30,6 +34,21 @@ def validate_address(ctx, param, value):
         raise click.BadParameter(
             f"The address parameter is not recognized to be an address: {value}"
         ) from e
+
+
+def validate_eth_amount(ctx, param, value):
+    try:
+        # TODO: This should be Decimal(value), but that introduces noise in the lower decimals
+        eth_decimal = round(value, 18)
+    except InvalidOperation:
+        raise click.BadParameter(f"{value} is not a valid decimal number")
+    else:
+        wei_amount = eth_decimal * WEI_PER_ETH
+
+    if int(wei_amount) != wei_amount:
+        raise click.BadParameter(f"{value} contains fractional Wei component")
+
+    return int(wei_amount)
 
 
 validator_set_address_option = click.option(
@@ -57,23 +76,26 @@ block_reward_address_option = click.option(
 
 home_daily_limit_option = click.option(
     "--home-daily-limit",
-    help="The daily transfer limit for the home bridge in WEI",
-    type=int,
-    default=30_000_000_000_000_000_000_000_000,
+    help="The daily transfer limit for the home bridge in ETH",
+    type=float,
+    default=10000,
+    callback=validate_eth_amount,
 )
 
 home_max_per_tx_option = click.option(
     "--home-max-per-tx",
-    help="The maximum transfer limit for one transaction in WEI",
-    type=int,
-    default=1_500_000_000_000_000_000_000_000,
+    help="The maximum transfer limit for one transaction in ETH",
+    type=float,
+    default=5000,
+    callback=validate_eth_amount,
 )
 
 home_min_per_tx_option = click.option(
     "--home-min-per-tx",
-    help="The minimum transfer limit for one transaction in WEI",
-    type=int,
-    default=500_000_000_000_000_000,
+    help="The minimum transfer limit for one transaction in ETH",
+    type=float,
+    default=0.005,
+    callback=validate_eth_amount,
 )
 
 home_gas_price_option = click.option(
