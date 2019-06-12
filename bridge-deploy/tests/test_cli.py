@@ -31,19 +31,22 @@ def test_deploy_bridge_validators(runner):
     assert result.exit_code == 0
 
 
-# def test_deploy_home(runner, home_bridge_contract, home_bridge_validators_contract):
-#
-#     result = runner.invoke(
-#         main,
-#         args=(
-#             "deploy-home"
-#             " --jsonrpc test "
-#             f" --validator-set-address {home_bridge_contract.address}"
-#             f" --block-reward-address {home_bridge_validators_contract.address}"
-#         ),
-#     )
-#
-#     assert result.exit_code == 0
+def test_deploy_home(
+    runner, chain, block_reward_contract, home_bridge_validators_contract
+):
+
+    result = runner.invoke(
+        main,
+        args=(
+            "deploy-home"
+            " --jsonrpc test "
+            f" --validator-set-address {home_bridge_validators_contract.address}"
+            f" --block-reward-address {block_reward_contract.address}"
+            f" --owner-address {chain.get_accounts()[0]}"
+        ),
+    )
+
+    assert result.exit_code == 0
 
 
 def test_deploy_foreign(runner):

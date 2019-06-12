@@ -30,7 +30,16 @@ def home_bridge_validators_contract(web3):
 
 
 @pytest.fixture
-def home_bridge_contract(web3):
+def home_bridge_deployment_result(web3):
     deployment_result = deploy_home_bridge_contract(web3=web3)
-    home_bridge_contract = deployment_result.home_bridge
-    return home_bridge_contract
+    return deployment_result
+
+
+@pytest.fixture
+def home_bridge_contract(home_bridge_deployment_result):
+    return home_bridge_deployment_result.home_bridge
+
+
+@pytest.fixture
+def home_bridge_proxy_contract(home_bridge_deployment_result):
+    return home_bridge_deployment_result.home_bridge_proxy

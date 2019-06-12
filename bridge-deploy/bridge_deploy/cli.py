@@ -111,6 +111,14 @@ required_block_confirmations_option = click.option(
     default=4,
 )
 
+owner_address_option = click.option(
+    "--owner-address",
+    help="The address of the (temporary) bridge owner. This is normally derrived from the private key.",
+    type=str,
+    required=True,
+    callback=validate_address,
+)
+
 validator_proxy_address_option = click.option(
     "--validator-proxy-address",
     help=(
@@ -227,6 +235,7 @@ def deploy_validators(
 @home_gas_price_option
 @required_block_confirmations_option
 @block_reward_address_option
+@owner_address_option
 @gas_option
 @gas_price_option
 @nonce_option
@@ -246,6 +255,7 @@ def deploy_home(
     home_gas_price,
     required_block_confirmations,
     block_reward_address,
+    owner_address,
 ) -> None:
 
     web3 = connect_to_json_rpc(jsonrpc)
@@ -269,7 +279,7 @@ def deploy_home(
         web3=web3,
         transaction_options=transaction_options,
         home_bridge_contract=deployment_result.home_bridge,
-        private_key=private_key,
+        home_bridge_proxy_contract=deployment_result.home_bridge_proxy,
         validator_contract_address=validator_set_address,
         home_daily_limit=home_daily_limit,
         home_max_per_tx=home_max_per_tx,
@@ -277,6 +287,8 @@ def deploy_home(
         home_gas_price=home_gas_price,
         required_block_confirmations=required_block_confirmations,
         block_reward_address=block_reward_address,
+        owner_address=owner_address,
+        private_key=private_key,
     )
 
 

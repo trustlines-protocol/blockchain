@@ -6,6 +6,11 @@ from bridge_deploy.home import (
 )
 
 
+DUMMY_PRIVATE_KEY = (
+    "0fe15822e1e481af027ae3b23a2a053401c76881e66cdb26dc0265d97c766c33"
+)  # 0x6d705788A2B4B7439e7311700065Bdf0881Fc0Bc
+
+
 def test_deploy_home_block_reward_contract(web3):
     reward_contract = deploy_home_block_reward_contract(web3=web3)
 
@@ -42,11 +47,19 @@ def test_deploy_home_bridge_contract(web3):
 
 
 def test_initialize_home_bridge_contract(
-    home_bridge_contract, home_bridge_validators_contract, block_reward_contract, web3
+    home_bridge_contract,
+    home_bridge_proxy_contract,
+    home_bridge_validators_contract,
+    block_reward_contract,
+    web3,
+    chain,
 ):
     initialize_home_bridge_contract(
         web3=web3,
+        # Inject the owner address, as we don't know the private key
+        owner_address=chain.get_accounts()[0],
         home_bridge_contract=home_bridge_contract,
+        home_bridge_proxy_contract=home_bridge_proxy_contract,
         validator_contract_address=home_bridge_validators_contract.address,
         home_daily_limit=30000000000000000000000000,
         home_max_per_tx=1500000000000000000000000,

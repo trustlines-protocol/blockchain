@@ -1,6 +1,7 @@
 import json
 from typing import Dict, NamedTuple
 from web3.contract import Contract
+from web3.eth import Account
 from deploy_tools.deploy import (
     deploy_compiled_contract,
     increase_transaction_options_nonce,
@@ -10,6 +11,7 @@ from deploy_tools.deploy import (
 
 class DeployedHomeBridgeResult(NamedTuple):
     home_bridge: Contract
+    home_bridge_proxy: Contract
     home_bridge_block_number: int
 
 
@@ -125,7 +127,9 @@ def deploy_home_bridge_contract(
         abi=home_bridge_src["abi"], address=home_bridge_storage_contract.address
     )
 
-    contracts = DeployedHomeBridgeResult(home_bridge_contract, latest_block.number)
+    contracts = DeployedHomeBridgeResult(
+        home_bridge_contract, home_bridge_storage_contract, latest_block.number
+    )
 
     return contracts
 
@@ -135,6 +139,7 @@ def initialize_home_bridge_contract(
     web3,
     transaction_options: Dict = None,
     home_bridge_contract,
+    home_bridge_proxy_contract,
     validator_contract_address,
     home_daily_limit,
     home_max_per_tx,
@@ -142,10 +147,15 @@ def initialize_home_bridge_contract(
     home_gas_price,
     required_block_confirmations,
     block_reward_address,
+    owner_address=None,
     private_key=None,
 ):
     if transaction_options is None:
         transaction_options = {}
+
+    if owner_address is None:
+        if private_key is not None:
+            owner_address = Account.privateKeyToAccount(private_key)
 
     home_bridge_contract_initialize = home_bridge_contract.functions.initialize(
         validator_contract_address,
@@ -157,7 +167,7 @@ def initialize_home_bridge_contract(
         block_reward_address,
         1,  # FOREIGN_DAILY_LIMIT,
         0,  # FOREIGN_MAX_AMOUNT_PER_TX,
-        "0x0000000000000000000000000000000000000001",  # OWNER
+        owner_address,  # OWNER
     )
 
     send_function_call_transaction(
@@ -168,24 +178,24 @@ def initialize_home_bridge_contract(
     )
     increase_transaction_options_nonce(transaction_options)
 
-    # home_bridge_contract_set_execution_daily_limit = home_bridge_contract.functions.setExecutionDailyLimit(
-    #     0
-    # )
-    # send_function_call_transaction(
-    #     home_bridge_contract_set_execution_daily_limit,
-    #     web3=web3,
-    #     transaction_options=transaction_options,
-    #     private_key=private_key,
-    # )
-    # increase_transaction_options_nonce(transaction_options)
+    home_bridge_contract_set_execution_daily_limit = home_bridge_contract.functions.setExecutionDailyLimit(
+        0
+    )
+    send_function_call_transaction(
+        home_bridge_contract_set_execution_daily_limit,
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
+    )
+    increase_transaction_options_nonce(transaction_options)
 
-    # home_bridge_contract_transfer_proxy_ownership = home_bridge_contract.functions.transferProxyOwnership(
-    #     "0x0000000000000000000000000000000000000001"
-    # )
-    # send_function_call_transaction(
-    #     home_bridge_contract_transfer_proxy_ownership,
-    #     web3=web3,
-    #     transaction_options=transaction_options,
-    #     private_key=private_key,
-    # )
-    # increase_transaction_options_nonce(transaction_options)
+    home_bridge_proxy_contract_transfer_proxy_ownership = home_bridge_proxy_contract.functions.transferProxyOwnership(
+        "0x0000000000000000000000000000000000000001"
+    )
+    send_function_call_transaction(
+        home_bridge_proxy_contract_transfer_proxy_ownership,
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
+    )
+    increase_transaction_options_nonce(transaction_options)
