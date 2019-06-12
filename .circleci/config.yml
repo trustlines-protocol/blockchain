@@ -64,6 +64,24 @@ commands:
             echo 'export PATH=~/bin:~/repo/validator-set-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
             echo 'export VIRTUAL_ENV=~/repo/validator-set-venv' >> ${BASH_ENV}
 
+  create-bridge-venv:
+    description: "Create bridge venv"
+    steps:
+      - run:
+          name: Create python venv
+          command: |
+            python3 -m venv bridge-venv
+            bridge-venv/bin/pip install -c bridge-deploy/constraints.txt pip wheel setuptools
+
+  config-bridge-path:
+    description: "Set environment variables and change PATH for bridge"
+    steps:
+      - run:
+          name: Configuring PATH
+          command: |
+            echo 'export PATH=~/bin:~/repo/bridge-venv/bin:${PATH}' >> ${BASH_ENV}
+            echo 'export VIRTUAL_ENV=~/repo/bridge-venv' >> ${BASH_ENV}
+
   upload-docker-image:
     description: "Deploy docker image"
     steps:
@@ -296,6 +314,75 @@ jobs:
             make test
             cd ..
 
+  run-bridge-flake8:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-bridge-path
+      - run:
+          name: Run flake8
+          command: |
+            flake8 bridge-deploy/tests bridge-deploy/bridge_deploy bridge-deploy/setup.py
+
+  run-bridge-mypy:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-bridge-path
+      - run:
+          name: Run mypy
+          command: |
+            mypy --ignore-missing-imports bridge-deploy/tests bridge-deploy/bridge_deploy bridge-deploy/setup.py
+
+  run-bridge-black:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-bridge-path
+      - run:
+          name: Run black
+          command: |
+            black --check bridge-deploy
+
+  install-bridge:
+    executor: ubuntu-builder
+    steps:
+      - checkout
+      - config-bridge-path
+      - restore_cache:
+          key: bridge-venv-{{ checksum "bridge-deploy/constraints.txt" }}-{{ checksum "bridge-deploy/requirements.txt" }}
+      - create-bridge-venv
+      - run:
+          name: Install requirements and bridge deploy tool
+          command: |
+            cd bridge-deploy
+            make install
+            cd ..
+      - save_cache:
+          key: bridge-venv-{{ checksum "bridge-deploy/constraints.txt" }}-{{ checksum "bridge-deploy/requirements.txt" }}
+          paths:
+            - bridge-venv
+      - persist_to_workspace:
+          root: "~"
+          paths:
+            - repo
+
+  run-bridge-pytest:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-bridge-path
+      - run:
+          name: Run pytest
+          command: |
+            cd bridge-deploy
+            make test
+            cd ..
+
   build-docker-image:
     executor: ubuntu-builder
     environment:
@@ -421,6 +508,20 @@ workflows:
       - run-validator-set-pytest:
           requires:
             - install-validator-set
+
+      - install-bridge
+      - run-bridge-flake8:
+          requires:
+            - install-bridge
+      - run-bridge-black:
+          requires:
+            - install-bridge
+      - run-bridge-mypy:
+          requires:
+            - install-bridge
+      - run-bridge-pytest:
+          requires:
+            - install-bridge
 
       - build-docker-image
 

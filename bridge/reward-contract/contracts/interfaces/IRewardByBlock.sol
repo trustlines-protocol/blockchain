@@ -1,8 +1,8 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.8;
 
 
 interface IRewardByBlock {
     // Produce rewards for the given benefactors, with corresponding reward codes.
     // Only callable by `SYSTEM_ADDRESS`
-    function reward(address[], uint16[]) external returns (address[], uint256[]);
+    function reward(address[] calldata, uint16[] calldata) external returns (address[] memory, uint256[] memory);
 }

@@ -1,0 +1,11 @@
+click
+web3
+contract-deploy-tools
+
+setuptools_scm
+pytest
+flake8
+black
+mypy
+pre-commit
+nodeenv

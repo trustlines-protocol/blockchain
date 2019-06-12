@@ -110,3 +110,4 @@ contracts.json
 
 # controlling makefile
 .installed
+.compiled
