@@ -21,9 +21,7 @@ from bridge_deploy.home import (
     initialize_home_bridge_contract,
 )
 
-from decimal import InvalidOperation
-
-# from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 WEI_PER_ETH = 10 ** 18
 
@@ -40,8 +38,7 @@ def validate_address(ctx, param, value):
 
 def validate_eth_amount(ctx, param, value):
     try:
-        # TODO: This should be Decimal(value), but that introduces noise in the lower decimals
-        eth_decimal = round(value, 18)
+        eth_decimal = Decimal(value)
     except InvalidOperation:
         raise click.BadParameter(f"{value} is not a valid decimal number")
     else:
@@ -79,24 +76,24 @@ block_reward_address_option = click.option(
 home_daily_limit_option = click.option(
     "--home-daily-limit",
     help="The daily transfer limit for the home bridge in ETH",
-    type=float,
-    default=10000,
+    type=str,
+    default="10000",
     callback=validate_eth_amount,
 )
 
 home_max_per_tx_option = click.option(
     "--home-max-per-tx",
     help="The maximum transfer limit for one transaction in ETH",
-    type=float,
-    default=5000,
+    type=str,
+    default="5000",
     callback=validate_eth_amount,
 )
 
 home_min_per_tx_option = click.option(
     "--home-min-per-tx",
     help="The minimum transfer limit for one transaction in ETH",
-    type=float,
-    default=0.005,
+    type=str,
+    default="0.005",
     callback=validate_eth_amount,
 )
 
