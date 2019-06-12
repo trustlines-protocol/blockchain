@@ -233,7 +233,7 @@ These are the steps to run a node as a simple user.
 Independently of whether you created an account or not, you can start a node to sync with the trustlines chain with the following command:
 
 ```sh
-parity --chain trustlines-spec.json -d user_node --auto-update=none --no-download --network-id=4874
+parity --chain trustlines-spec.json -d user_node --auto-update=none --no-download
 ```
 
 #### Setup For Validators Using Only CLI
@@ -243,13 +243,13 @@ These are the steps to run a node as a validator, make sure you are a validator 
 If you just created an account following the "Creating an account" section and stored your password in the file "password.pwd", you can start a node with the following command, replacing [address] with your address given during account creation:
 
 ```sh
-parity --chain trustlines-spec.json -d validator_node --auto-update=none --no-download --password=password.pwd --max-peers=100 --network-id=4874 --author=[address] --engine-signer=[address] --force-sealing --reseal-on-txs=none --min-gas-price="1" --tx-queue-per-sender=100
+parity --chain trustlines-spec.json -d validator_node --auto-update=none --no-download --password=password.pwd --max-peers=100 --author=[address] --engine-signer=[address] --force-sealing --reseal-on-txs=none --min-gas-price="1" --tx-queue-per-sender=100
 ```
 
 Otherwise, you need to adjust some parameters. You need to provide the path to your private key in "--keys-path=[path]", the path to your password protecting this key in "--password=[path]" as well as your address in "--author=[address]" and "--engine-signer=[address]"
 
 ```sh
-parity --chain trustlines-spec.json -d validator_node --auto-update=none --no-download --keys-path=[path/to/keys] --password=[path/to/password] --max-peers=100 --network-id=4874 --author=[address] --engine-signer=[address] --force-sealing --reseal-on-txs=none --min-gas-price="1" --tx-queue-per-sender=100
+parity --chain trustlines-spec.json -d validator_node --auto-update=none --no-download --keys-path=[path/to/keys] --password=[path/to/password] --max-peers=100 --author=[address] --engine-signer=[address] --force-sealing --reseal-on-txs=none --min-gas-price="1" --tx-queue-per-sender=100
 ```
 
 ---
