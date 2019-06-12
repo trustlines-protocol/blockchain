@@ -4,10 +4,8 @@ from web3 import Web3, EthereumTesterProvider
 from validator_set_deploy.core import (
     deploy_validator_set_contract,
     initialize_validator_set_contract,
-    read_addresses_in_csv,
-    validate_and_format_address,
-    InvalidAddressException,
     get_validator_contract,
+    deploy_validator_proxy_contract,
 )
 
 from deploy_tools.cli import (
@@ -22,6 +20,11 @@ from deploy_tools.cli import (
     get_nonce,
 )
 from deploy_tools.deploy import build_transaction_options
+from deploy_tools.files import (
+    read_addresses_in_csv,
+    validate_and_format_address,
+    InvalidAddressException,
+)
 
 # we need test_provider and test_json_rpc for running the tests in test_cli
 # they need to persist between multiple calls to runner.invoke and are
@@ -32,7 +35,7 @@ test_json_rpc = Web3(test_provider)
 
 def validate_address(
     ctx, param, value
-):  # TODO: potentially reformat this to deploy-tools?
+):  # TODO: take this from deploy_tools once new version is available
     """This function must be at the top of click commands using it"""
     try:
         return validate_and_format_address(value)
@@ -110,6 +113,57 @@ def deploy(
     )
 
     click.echo("ValidatorSet address: " + validator_set_contract.address)
+
+
+@main.command(
+    short_help="Deploys the validator proxy and initializes with the validator addresses "
+    "within the given validator set address."
+)
+@keystore_option
+@click.option(
+    "--validators",
+    "validators_file",
+    help="Path to the csv file containing the addresses of the validators",
+    type=click.Path(),
+    required=False,
+)
+@gas_option
+@gas_price_option
+@nonce_option
+@auto_nonce_option
+@jsonrpc_option
+def deploy_proxy(
+    keystore: str,
+    validators_file: str,
+    jsonrpc: str,
+    gas: int,
+    gas_price: int,
+    nonce: int,
+    auto_nonce: bool,
+) -> None:
+
+    web3 = connect_to_json_rpc(jsonrpc)
+    private_key = retrieve_private_key(keystore)
+
+    validators: list = []
+    if validators_file:
+        validators = read_addresses_in_csv(validators_file)
+
+    nonce = get_nonce(
+        web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
+    )
+    transaction_options = build_transaction_options(
+        gas=gas, gas_price=gas_price, nonce=nonce
+    )
+
+    validator_proxy_contract = deploy_validator_proxy_contract(
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
+        validators=validators,
+    )
+
+    click.echo("ValidatorProxy address: " + validator_proxy_contract.address)
 
 
 @main.command(

@@ -10,5 +10,3 @@ no_download = true
 
 [network]
 port = 30300
-# Network ID of the chain will be overridden to: 4874
-id = 4874
