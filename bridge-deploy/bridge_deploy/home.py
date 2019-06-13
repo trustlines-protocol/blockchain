@@ -1,4 +1,3 @@
-import json
 from typing import Dict, NamedTuple
 from web3.contract import Contract
 from web3.eth import Account
@@ -8,24 +7,13 @@ from deploy_tools.deploy import (
     send_function_call_transaction,
 )
 
+from bridge_deploy.utils import load_poa_contract, load_build_contract
+
 
 class DeployedHomeBridgeResult(NamedTuple):
     home_bridge: Contract
     home_bridge_proxy: Contract
     home_bridge_block_number: int
-
-
-def load_poa_contract(contract_name):
-    with open(
-        f"../poa-bridge-contracts/build/contracts/{contract_name}.json"
-    ) as json_file:
-        return json.load(json_file)
-
-
-def load_build_contract(contract_name, path="./build/", file_name="contracts"):
-    with open(f"{path}{file_name}.json") as json_file:
-        contract_data = json.load(json_file)
-        return contract_data[contract_name]
 
 
 def deploy_home_block_reward_contract(

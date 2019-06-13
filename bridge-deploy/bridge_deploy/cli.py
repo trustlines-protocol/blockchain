@@ -21,6 +21,8 @@ from bridge_deploy.home import (
     initialize_home_bridge_contract,
 )
 
+from bridge_deploy.foreign import deploy_foreign_bridge_contract
+
 from decimal import Decimal, InvalidOperation
 
 WEI_PER_ETH = 10 ** 18
@@ -311,11 +313,16 @@ def deploy_foreign(
     nonce = get_nonce(
         web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
     )
-    # transaction_options = build_transaction_options(
-    #     gas=gas, gas_price=gas_price, nonce=nonce
-    # )
+    transaction_options = build_transaction_options(
+        gas=gas, gas_price=gas_price, nonce=nonce
+    )
 
-    # TODO: Implement me
+    deployment_result = deploy_foreign_bridge_contract(
+        web3=web3, transaction_options=transaction_options, private_key=private_key
+    )
+
+    click.echo(f"ForeignBridge address: {deployment_result.foreign_bridge.address}")
+    click.echo(f"  deployed at block #{deployment_result.foreign_bridge_block_number}")
 
 
 @main.command(short_help="Print all information on the latest home bridge deployment.")
