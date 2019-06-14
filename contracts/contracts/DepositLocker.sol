@@ -89,8 +89,11 @@ contract DepositLocker is DepositLockerInterface, Ownable {
     function deposit(uint _valuePerDepositor) public payable isInitialised isNotDeposited onlyDepositorsProxy {
         require(numberOfDepositors>0, "no depositors");
         require(_valuePerDepositor>0, "_valuePerDepositor must be positive");
-        require(_valuePerDepositor < 2 ** 128, "_valuePerDepositor must be lower than 2 ** 128 to prevent overflow");
-        require(msg.value == numberOfDepositors * _valuePerDepositor, "the deposit does not match the required value");
+
+        uint depositAmount = numberOfDepositors * _valuePerDepositor;
+        require(_valuePerDepositor == depositAmount / numberOfDepositors, "Overflow in depositAmount calculation");
+        require(msg.value == depositAmount, "the deposit does not match the required value");
+
         valuePerDepositor = _valuePerDepositor;
         deposited = true;
         emit Deposit(msg.value, valuePerDepositor, numberOfDepositors);
