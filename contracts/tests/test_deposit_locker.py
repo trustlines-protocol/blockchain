@@ -337,6 +337,17 @@ def test_deposit_unequal_amount(testenv):
         testenv.deposit(100, total_deposit + 1)
 
 
+def test_deposit_overflow_throws(testenv):
+    """total amount should not overflow"""
+    testenv.register_all_depositors()
+    # Create amount that will overflow
+    per_depositor = (100 + 2 ** 256) // len(testenv.depositors)
+    total_deposit = (per_depositor * len(testenv.depositors)) % 2 ** 256
+
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        testenv.deposit(per_depositor, total_deposit)
+
+
 def test_zero_deposit_throws(testenv):
     """deposit must be positive"""
     testenv.register_all_depositors()

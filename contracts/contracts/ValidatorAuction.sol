@@ -52,11 +52,17 @@ contract ValidatorAuction is Ownable {
     ) public
     {
         require(_auctionDurationInDays > 0, "Duration of auction must be greater than 0");
+        require(_auctionDurationInDays < 100 * 365, "Duration of auction must be less than 100 years");
         require(_minimalNumberOfParticipants > 0, "Minimal number of participants must be greater than 0");
         require(_maximalNumberOfParticipants > 0, "Number of participants must be greater than 0");
         require(
             _minimalNumberOfParticipants <= _maximalNumberOfParticipants,
             "The minimal number of participants must be smaller than the maximal number of participants."
+        );
+        require(
+            // To prevent overflows
+            _startPriceInWei < 10 ** 30,
+            "The start price is too big."
         );
 
         startPrice = _startPriceInWei;
@@ -154,6 +160,8 @@ contract ValidatorAuction is Ownable {
     }
 
     function priceAtElapsedTime(uint secondsSinceStart) public view returns (uint) {
+        // To prevent overflows
+        require(secondsSinceStart < 100 * 365 days, "Times longer than 100 years are not supported.");
         uint msSinceStart = 1000 * secondsSinceStart;
         uint relativeAuctionTime = msSinceStart / auctionDurationInDays;
         uint decayDivisor = 746571428571;
