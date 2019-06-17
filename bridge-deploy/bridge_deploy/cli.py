@@ -317,12 +317,12 @@ def deploy_foreign(
         gas=gas, gas_price=gas_price, nonce=nonce
     )
 
-    deployment_result = deploy_foreign_bridge_contract(
+    foreign_bridge_contract = deploy_foreign_bridge_contract(
         web3=web3, transaction_options=transaction_options, private_key=private_key
     )
 
-    click.echo(f"ForeignBridge address: {deployment_result.foreign_bridge.address}")
-    click.echo(f"  deployed at block #{deployment_result.foreign_bridge_block_number}")
+    click.echo(f"ForeignBridge address: {foreign_bridge_contract.address}")
+    click.echo(f"  deployed at block #{web3.eth.blockNumber}")
 
 
 @main.command(short_help="Print all information on the latest home bridge deployment.")
