@@ -2,6 +2,7 @@
 
 - [Run Local Peer](#run-local-peer)
   - [Quickstart](#quickstart)
+  - [System Time](#system-time)
   - [With Docker](#with-docker)
     - [Pre-Requisites](#pre-requisites)
     - [Usage](#Usage)
@@ -15,6 +16,7 @@
     - [Creating An Account](#creating-an-account)
     - [Setup For Users Using Only CLI](#setup-for-users-using-only-cli)
     - [Setup For Validators Using Only CLI](#setup-for-validators-using-only-cli)
+- [Backups](#backups)
 - [Development](#development)
   - [Build Own Image](#build-own-image)
   - [Upload Image](#upload-image)
@@ -38,6 +40,14 @@ $ wget -O quickstart.sh https://github.com/trustlines-protocol/blockchain/raw/ma
 
 Follow the instructions to insert your password. If you want to restart the node or want to make sure it runs on the most recent version, just
 rerun the script.
+
+---
+
+### System Time
+
+Due to the way the block validation works and is synchronized, it is essential to make sure your host system has the correct time configuration. On recent Ubuntu systems, for example, this should already be the case. You can check the settings on such systems using ```timedatectl```.
+
+On other operating systems you should check if your time is synchronized with an [NTP server](https://www.pool.ntp.org/).
 
 ---
 
