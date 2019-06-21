@@ -8,8 +8,8 @@ services:
       args:
         chain_spec_path: ./node_config/main_chain_spec.json
     container_name: node_main
-    command: >
-      --engine-signer 0x46ae357ba2f459cb04697837397ec90b47e48727
+    ports:
+      - 8544:8545
     networks:
       - net_node_main
 
@@ -20,8 +20,8 @@ services:
       args:
         chain_spec_path: ./node_config/side_chain_spec.json
     container_name: node_side
-    command: >
-      --engine-signer 0x46ae357ba2f459cb04697837397ec90b47e48727
+    ports:
+      - 8545:8545
     networks:
       - net_node_side
 
