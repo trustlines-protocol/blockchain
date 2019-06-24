@@ -1,12 +1,12 @@
 pragma solidity ^0.5.8;
 
-import "./lib/Ownable.sol";
+import "../lib/Ownable.sol";
 import "./DepositLocker.sol";
 
 
 contract ValidatorAuction is Ownable {
 
-    // Auction constants set on deployment
+    // auction constants set on deployment
     uint public auctionDurationInDays;
     uint public startPrice;
     uint public minimalNumberOfParticipants;

@@ -1,7 +1,7 @@
 pragma solidity ^0.5.8;
 
-import "./lib/RLPReader.sol";
-import "./lib/ECDSA.sol";
+import "../lib/RLPReader.sol";
+import "../lib/ECDSA.sol";
 
 
 /**

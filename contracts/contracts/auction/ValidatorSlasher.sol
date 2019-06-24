@@ -1,8 +1,8 @@
 pragma solidity ^0.5.8;
 
-import "./lib/Ownable.sol";
+import "../lib/Ownable.sol";
 import "./DepositLockerInterface.sol";
-import "./EquivocationInspector.sol";
+import "../equivocation-inspector/EquivocationInspector.sol";
 
 
 contract ValidatorSlasher is Ownable {
