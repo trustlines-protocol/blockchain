@@ -1,6 +1,6 @@
 pragma solidity ^0.5.8;
 
-import "./EquivocationInspector.sol";
+import "../equivocation-inspector/EquivocationInspector.sol";
 
 
 contract ValidatorSet {

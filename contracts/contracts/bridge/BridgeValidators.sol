@@ -1,7 +1,7 @@
 pragma solidity ^0.5.8;
 
-import "./lib/IBridgeValidators.sol";
-import "./ValidatorProxy.sol";
+import "../lib/IBridgeValidators.sol";
+import "../tlc-validator/ValidatorProxy.sol";
 
 
 contract BridgeValidators is IBridgeValidators {
