@@ -53,7 +53,7 @@ commands:
           name: Create python venv
           command: |
             python3 -m venv validator-set-venv
-            validator-set-venv/bin/pip install -c validator-set-deploy/constraints.txt pip wheel setuptools
+            validator-set-venv/bin/pip install -c tools/validator-set-deploy/constraints.txt pip wheel setuptools
 
   config-validator-set-path:
     description: "Set environment variables and change PATH for validator-set"
@@ -254,7 +254,7 @@ jobs:
       - run:
           name: Run flake8
           command: |
-            flake8 validator-set-deploy/tests validator-set-deploy/validator_set_deploy validator-set-deploy/setup.py
+            flake8 tools/validator-set-deploy/tests tools/validator-set-deploy/validator_set_deploy tools/validator-set-deploy/setup.py
 
   run-validator-set-mypy:
     executor: ubuntu-builder
@@ -265,7 +265,7 @@ jobs:
       - run:
           name: Run mypy
           command: |
-            mypy --ignore-missing-imports validator-set-deploy/tests validator-set-deploy/validator_set_deploy validator-set-deploy/setup.py
+            mypy --ignore-missing-imports tools/validator-set-deploy/tests tools/validator-set-deploy/validator_set_deploy tools/validator-set-deploy/setup.py
 
   run-validator-set-black:
     executor: ubuntu-builder
@@ -276,7 +276,7 @@ jobs:
       - run:
           name: Run black
           command: |
-            black --check validator-set-deploy
+            black --check tools/validator-set-deploy
 
   install-validator-set:
     executor: ubuntu-builder
@@ -284,16 +284,16 @@ jobs:
       - checkout
       - config-validator-set-path
       - restore_cache:
-          key: validator-set-venv-{{ checksum "validator-set-deploy/constraints.txt" }}-{{ checksum "validator-set-deploy/requirements.txt" }}
+          key: validator-set-venv-{{ checksum "tools/validator-set-deploy/constraints.txt" }}-{{ checksum "tools/validator-set-deploy/requirements.txt" }}
       - create-validator-set-venv
       - run:
           name: Install requirements and validator-set deploy tool
           command: |
-            cd validator-set-deploy
+            cd tools/validator-set-deploy
             make install
-            cd ..
+            cd ../..
       - save_cache:
-          key: validator-set-venv-{{ checksum "validator-set-deploy/constraints.txt" }}-{{ checksum "validator-set-deploy/requirements.txt" }}
+          key: validator-set-venv-{{ checksum "tools/validator-set-deploy/constraints.txt" }}-{{ checksum "tools/validator-set-deploy/requirements.txt" }}
           paths:
             - validator-set-venv
       - persist_to_workspace:
@@ -310,9 +310,9 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            cd validator-set-deploy
+            cd tools/validator-set-deploy
             make test
-            cd ..
+            cd ../..
 
   run-bridge-flake8:
     executor: ubuntu-builder
