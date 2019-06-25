@@ -13,14 +13,14 @@ test: install-requirements compile
 
 compile: .installed .compiled
 
-POA_SOL_FILES=$(shell find ../poa-bridge-contracts/contracts -type f -iname '*.sol')
+POA_SOL_FILES=$(shell find ../submodules/poa-bridge-contracts/contracts -type f -iname '*.sol')
 REWARD_SOL_FILES=$(shell find ../bridge/reward-contract/contracts -type f -iname '*.sol')
 CONTRACT_SOL_FILES=$(shell find ../contracts/contracts -type f -iname '*.sol')
-.compiled: ../poa-bridge-contracts/package.json $(POA_SOL_FILES) $(REWARD_SOL_FILES) $(CONTRACT_SOL_FILES) $(VIRTUAL_ENV)
+.compiled: ../submodules/poa-bridge-contracts/package.json $(POA_SOL_FILES) $(REWARD_SOL_FILES) $(CONTRACT_SOL_FILES) $(VIRTUAL_ENV)
 	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d ../bridge/reward-contract/contracts -o build/reward.json
 	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d ../contracts/contracts -o build/contracts.json
-	$(VIRTUAL_ENV)/bin/npm --prefix ../poa-bridge-contracts install && \
-	cd ../poa-bridge-contracts && \
+	$(VIRTUAL_ENV)/bin/npm --prefix ../submodules/poa-bridge-contracts install && \
+	cd ../submodules/poa-bridge-contracts && \
 	./node_modules/.bin/truffle compile --all
 	@echo "This file controls for make if the contracts are up to date" > $@
 
