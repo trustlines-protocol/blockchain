@@ -35,7 +35,7 @@ commands:
           name: Create python venv
           command: |
             python3 -m venv auction-venv
-            auction-venv/bin/pip install -c auction-deploy/constraints.txt pip wheel setuptools
+            auction-venv/bin/pip install -c tools/auction-deploy/constraints.txt pip wheel setuptools
 
   config-auction-path:
     description: "Set environment variables and change PATH for auction"
@@ -185,7 +185,7 @@ jobs:
       - run:
           name: Run flake8
           command: |
-            flake8 auction-deploy/tests auction-deploy/auction_deploy auction-deploy/setup.py
+            flake8 tools/auction-deploy/tests tools/auction-deploy/auction_deploy tools/auction-deploy/setup.py
 
   run-auction-mypy:
     executor: ubuntu-builder
@@ -196,7 +196,7 @@ jobs:
       - run:
           name: Run mypy
           command: |
-            mypy --ignore-missing-imports auction-deploy/tests auction-deploy/auction_deploy auction-deploy/setup.py
+            mypy --ignore-missing-imports tools/auction-deploy/tests tools/auction-deploy/auction_deploy tools/auction-deploy/setup.py
 
   run-auction-black:
     executor: ubuntu-builder
@@ -207,7 +207,7 @@ jobs:
       - run:
           name: Run black
           command: |
-            black --check auction-deploy
+            black --check tools/auction-deploy
 
   install-auction:
     executor: ubuntu-builder
@@ -215,16 +215,16 @@ jobs:
       - checkout
       - config-auction-path
       - restore_cache:
-          key: auction-venv-{{ checksum "auction-deploy/constraints.txt" }}-{{ checksum "auction-deploy/requirements.txt" }}
+          key: auction-venv-{{ checksum "tools/auction-deploy/constraints.txt" }}-{{ checksum "tools/auction-deploy/requirements.txt" }}
       - create-auction-venv
       - run:
           name: Install requirements and auction deploy tool
           command: |
-            cd auction-deploy
+            cd tools/auction-deploy
             make install
             cd ..
       - save_cache:
-          key: auction-venv-{{ checksum "auction-deploy/constraints.txt" }}-{{ checksum "auction-deploy/requirements.txt" }}
+          key: auction-venv-{{ checksum "tools/auction-deploy/constraints.txt" }}-{{ checksum "tools/auction-deploy/requirements.txt" }}
           paths:
             - auction-venv
       - persist_to_workspace:
@@ -241,7 +241,7 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            cd auction-deploy
+            cd tools/auction-deploy
             make test
             cd ..
 
