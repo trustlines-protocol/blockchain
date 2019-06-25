@@ -71,7 +71,7 @@ commands:
           name: Create python venv
           command: |
             python3 -m venv bridge-venv
-            bridge-venv/bin/pip install -c bridge-deploy/constraints.txt pip wheel setuptools
+            bridge-venv/bin/pip install -c tools/bridge-deploy/constraints.txt pip wheel setuptools
 
   config-bridge-path:
     description: "Set environment variables and change PATH for bridge"
@@ -323,7 +323,7 @@ jobs:
       - run:
           name: Run flake8
           command: |
-            flake8 bridge-deploy/tests bridge-deploy/bridge_deploy bridge-deploy/setup.py
+            flake8 tools/bridge-deploy/tests tools/bridge-deploy/bridge_deploy tools/bridge-deploy/setup.py
 
   run-bridge-mypy:
     executor: ubuntu-builder
@@ -334,7 +334,7 @@ jobs:
       - run:
           name: Run mypy
           command: |
-            mypy --ignore-missing-imports bridge-deploy/tests bridge-deploy/bridge_deploy bridge-deploy/setup.py
+            mypy --ignore-missing-imports tools/bridge-deploy/tests tools/bridge-deploy/bridge_deploy tools/bridge-deploy/setup.py
 
   run-bridge-black:
     executor: ubuntu-builder
@@ -345,7 +345,7 @@ jobs:
       - run:
           name: Run black
           command: |
-            black --check bridge-deploy
+            black --check tools/bridge-deploy
 
   install-bridge:
     executor: ubuntu-builder
@@ -353,16 +353,16 @@ jobs:
       - checkout
       - config-bridge-path
       - restore_cache:
-          key: bridge-venv-{{ checksum "bridge-deploy/constraints.txt" }}-{{ checksum "bridge-deploy/requirements.txt" }}
+          key: bridge-venv-{{ checksum "tools/bridge-deploy/constraints.txt" }}-{{ checksum "tools/bridge-deploy/requirements.txt" }}
       - create-bridge-venv
       - run:
           name: Install requirements and bridge deploy tool
           command: |
-            cd bridge-deploy
+            cd tools/bridge-deploy
             make install
-            cd ..
+            cd ../..
       - save_cache:
-          key: bridge-venv-{{ checksum "bridge-deploy/constraints.txt" }}-{{ checksum "bridge-deploy/requirements.txt" }}
+          key: bridge-venv-{{ checksum "tools/bridge-deploy/constraints.txt" }}-{{ checksum "tools/bridge-deploy/requirements.txt" }}
           paths:
             - bridge-venv
       - persist_to_workspace:
@@ -379,9 +379,9 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            cd bridge-deploy
+            cd tools/bridge-deploy
             make test
-            cd ..
+            cd ../..
 
   build-docker-image:
     executor: ubuntu-builder
