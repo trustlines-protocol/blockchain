@@ -119,7 +119,7 @@ jobs:
             venv/bin/flake8 --exclude venv .
 
 
-  run-contracts-solium:
+  solium-contracts:
     executor: ubuntu-builder
     steps:
       - checkout
@@ -157,7 +157,7 @@ jobs:
           root: "~"
           paths:
             - repo
-  run-contracts-pytest:
+  pytest-contracts:
     executor: ubuntu-builder
     steps:
       - attach_workspace:
@@ -167,7 +167,7 @@ jobs:
           name: Run pytest
           command: pytest contracts/tests
 
-  run-auction-mypy:
+  mypy-auction:
     executor: ubuntu-builder
     steps:
       - attach_workspace:
@@ -203,7 +203,7 @@ jobs:
           paths:
             - repo
 
-  run-auction-pytest:
+  pytest-auction:
     executor: ubuntu-builder
     steps:
       - attach_workspace:
@@ -216,7 +216,7 @@ jobs:
             make test
             cd ..
 
-  run-validator-set-mypy:
+  mypy-validator-set:
     executor: ubuntu-builder
     steps:
       - attach_workspace:
@@ -250,7 +250,7 @@ jobs:
           paths:
             - repo
 
-  run-validator-set-pytest:
+  pytest-validator-set:
     executor: ubuntu-builder
     steps:
       - attach_workspace:
@@ -263,7 +263,7 @@ jobs:
             make test
             cd ../..
 
-  run-bridge-mypy:
+  mypy-bridge:
     executor: ubuntu-builder
     steps:
       - attach_workspace:
@@ -297,7 +297,7 @@ jobs:
           paths:
             - repo
 
-  run-bridge-pytest:
+  pytest-bridge:
     executor: ubuntu-builder
     steps:
       - attach_workspace:
@@ -400,31 +400,31 @@ workflows:
     jobs:
       - run-black
       - run-flake8
-      - run-contracts-solium
+      - solium-contracts
       - install-contracts
-      - run-contracts-pytest:
+      - pytest-contracts:
           requires:
             - install-contracts
       - install-auction
-      - run-auction-mypy:
+      - mypy-auction:
           requires:
             - install-auction
-      - run-auction-pytest:
+      - pytest-auction:
           requires:
             - install-auction
       - install-validator-set
-      - run-validator-set-mypy:
+      - mypy-validator-set:
           requires:
             - install-validator-set
-      - run-validator-set-pytest:
+      - pytest-validator-set:
           requires:
             - install-validator-set
 
       - install-bridge
-      - run-bridge-mypy:
+      - mypy-bridge:
           requires:
             - install-bridge
-      - run-bridge-pytest:
+      - pytest-bridge:
           requires:
             - install-bridge
 
@@ -437,11 +437,11 @@ workflows:
                 - master
                 - pre-release
           requires:
-            - run-contracts-solium
+            - solium-contracts
             - run-black
             - run-flake8
             - install-contracts
-            - run-contracts-pytest
+            - pytest-contracts
             - build-docker-image
           context: docker-credentials
 
@@ -465,10 +465,10 @@ workflows:
                 - release
           requires:
             - approve-the-release
-            - run-contracts-solium
+            - solium-contracts
             - run-black
             - run-flake8
             - install-contracts
-            - run-contracts-pytest
+            - pytest-contracts
             - build-docker-image
           context: docker-release-credentials
