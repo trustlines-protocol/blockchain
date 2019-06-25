@@ -1,4 +1,6 @@
-VIRTUAL_ENV ?= venv
+TOP_LEVEL=$(shell cd ../..; pwd)
+VIRTUAL_ENV ?= $(TOP_LEVEL)/venv
+CONTRACTS_DIRECTORY=$(TOP_LEVEL)/contracts/contracts
 
 lint: install-requirements
 	$(VIRTUAL_ENV)/bin/flake8 bridge_deploy tests setup.py
@@ -13,14 +15,14 @@ test: install-requirements compile
 
 compile: .installed .compiled
 
-POA_SOL_FILES=$(shell find ../submodules/poa-bridge-contracts/contracts -type f -iname '*.sol')
-REWARD_SOL_FILES=$(shell find ../bridge/reward-contract/contracts -type f -iname '*.sol')
-CONTRACT_SOL_FILES=$(shell find ../contracts/contracts -type f -iname '*.sol')
-.compiled: ../submodules/poa-bridge-contracts/package.json $(POA_SOL_FILES) $(REWARD_SOL_FILES) $(CONTRACT_SOL_FILES) $(VIRTUAL_ENV)
-	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d ../bridge/reward-contract/contracts -o build/reward.json
-	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d ../contracts/contracts -o build/contracts.json
-	$(VIRTUAL_ENV)/bin/npm --prefix ../submodules/poa-bridge-contracts install && \
-	cd ../submodules/poa-bridge-contracts && \
+POA_SOL_FILES=$(shell find $(TOP_LEVEL)/submodules/poa-bridge-contracts/contracts -type f -iname '*.sol')
+REWARD_SOL_FILES=$(shell find $(TOP_LEVEL)/bridge/reward-contract/contracts -type f -iname '*.sol')
+CONTRACT_SOL_FILES=$(shell find $(CONTRACTS_DIRECTORY) -type f -iname '*.sol')
+.compiled: $(TOP_LEVEL)/submodules/poa-bridge-contracts/package.json $(POA_SOL_FILES) $(REWARD_SOL_FILES) $(CONTRACT_SOL_FILES) $(VIRTUAL_ENV)
+	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d $(TOP_LEVEL)/bridge/reward-contract/contracts -o build/reward.json
+	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d $(CONTRACTS_DIRECTORY) -o build/contracts.json
+	$(VIRTUAL_ENV)/bin/npm --prefix $(TOP_LEVEL)/submodules/poa-bridge-contracts install && \
+	cd $(TOP_LEVEL)/submodules/poa-bridge-contracts && \
 	./node_modules/.bin/truffle compile --all
 	@echo "This file controls for make if the contracts are up to date" > $@
 
