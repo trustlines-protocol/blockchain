@@ -1,4 +1,6 @@
-VIRTUAL_ENV ?= venv
+TOP_LEVEL=$(shell cd ../..; pwd)
+VIRTUAL_ENV ?= $(TOP_LEVEL)/venv
+CONTRACTS_DIRECTORY=$(TOP_LEVEL)/contracts/contracts
 
 lint: install
 	$(VIRTUAL_ENV)/bin/flake8 validator_set_deploy tests setup.py
@@ -9,7 +11,7 @@ test: install
 	$(VIRTUAL_ENV)/bin/pytest tests
 
 compile: install-requirements
-	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d ../contracts/contracts
+	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d $(CONTRACTS_DIRECTORY)
 	$(VIRTUAL_ENV)/bin/python scripts/pack_contracts.py build/contracts.json validator_set_deploy/contracts.json
 
 build: compile
