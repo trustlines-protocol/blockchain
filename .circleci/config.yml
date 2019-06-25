@@ -11,15 +11,6 @@ executors:
 # define some common commands
 # see https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21
 commands:
-  create-contracts-venv:
-    description: "Create contracts venv"
-    steps:
-      - run:
-          name: Create python venv
-          command: |
-            python3 -m venv contracts-venv
-            contracts-venv/bin/pip install -c contracts/constraints.txt pip wheel setuptools
-
   config-contracts-path:
     description: "Set environment variables and change PATH for contracts"
     steps:
@@ -27,15 +18,16 @@ commands:
         name: Configuring PATH
         command: |
           echo 'export PATH=~/bin:~/repo/contracts-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
+          echo 'export VIRTUAL_ENV=~/repo/contracts-venv' >> ${BASH_ENV}
 
-  create-auction-venv:
-    description: "Create auction venv"
+  create-venv:
+    description: "Create venv"
     steps:
       - run:
-          name: Create python venv
+          name: Create python virtualenv
           command: |
-            python3 -m venv auction-venv
-            auction-venv/bin/pip install -c tools/auction-deploy/constraints.txt pip wheel setuptools
+            make setup-venv
+            pip install -c constraints.txt pip wheel setuptools
 
   config-auction-path:
     description: "Set environment variables and change PATH for auction"
@@ -46,15 +38,6 @@ commands:
             echo 'export PATH=~/bin:~/repo/auction-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
             echo 'export VIRTUAL_ENV=~/repo/auction-venv' >> ${BASH_ENV}
 
-  create-validator-set-venv:
-    description: "Create validator-set venv"
-    steps:
-      - run:
-          name: Create python venv
-          command: |
-            python3 -m venv validator-set-venv
-            validator-set-venv/bin/pip install -c tools/validator-set-deploy/constraints.txt pip wheel setuptools
-
   config-validator-set-path:
     description: "Set environment variables and change PATH for validator-set"
     steps:
@@ -63,15 +46,6 @@ commands:
           command: |
             echo 'export PATH=~/bin:~/repo/validator-set-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
             echo 'export VIRTUAL_ENV=~/repo/validator-set-venv' >> ${BASH_ENV}
-
-  create-bridge-venv:
-    description: "Create bridge venv"
-    steps:
-      - run:
-          name: Create python venv
-          command: |
-            python3 -m venv bridge-venv
-            bridge-venv/bin/pip install -c tools/bridge-deploy/constraints.txt pip wheel setuptools
 
   config-bridge-path:
     description: "Set environment variables and change PATH for bridge"
@@ -110,27 +84,40 @@ commands:
             docker push $DOCKER_REPO:$CIRCLE_BRANCH
 
 jobs:
-  run-contracts-flake8:
+  run-black:
     executor: ubuntu-builder
     steps:
-      - attach_workspace:
-          at: '~'
-      - config-contracts-path
+      - checkout
       - run:
-          name: Run flake8
+          name: Create python virtualenv
           command: |
-            flake8 contracts/tests
-
-  run-contracts-black:
-    executor: ubuntu-builder
-    steps:
-      - attach_workspace:
-          at: '~'
-      - config-contracts-path
+            make setup-venv
+      - run:
+          name: Install black
+          command: |
+            venv/bin/pip install -c constraints.txt black
       - run:
           name: Run black
           command: |
-            black --check contracts
+            venv/bin/black --exclude venv --check .
+
+  run-flake8:
+    executor: ubuntu-builder
+    steps:
+      - checkout
+      - run:
+          name: Create python virtualenv
+          command: |
+            make setup-venv
+      - run:
+          name: Install flake8
+          command: |
+            venv/bin/pip install -c constraints.txt flake8 pep8-naming
+      - run:
+          name: Run flake8
+          command: |
+            venv/bin/flake8 --exclude venv .
+
 
   run-contracts-solium:
     executor: ubuntu-builder
@@ -153,15 +140,19 @@ jobs:
       - config-contracts-path
       - restore_cache:
           key: contracts-venv-{{ checksum "contracts/constraints.txt" }}-{{ checksum "contracts/requirements.txt" }}
-      - create-contracts-venv
+      - create-venv
       - run:
           name: Install requirements
           command: |
-            pip install -c contracts/constraints.txt -r contracts/requirements.txt
+            make -C contracts install-requirements
       - save_cache:
           key: contracts-venv-{{ checksum "contracts/constraints.txt" }}-{{ checksum "contracts/requirements.txt" }}
           paths:
             - contracts-venv
+      - run:
+          name: Install contracts
+          command: |
+            make -C contracts install
       - persist_to_workspace:
           root: "~"
           paths:
@@ -176,17 +167,6 @@ jobs:
           name: Run pytest
           command: pytest contracts/tests
 
-  run-auction-flake8:
-    executor: ubuntu-builder
-    steps:
-      - attach_workspace:
-          at: '~'
-      - config-auction-path
-      - run:
-          name: Run flake8
-          command: |
-            flake8 tools/auction-deploy/tests tools/auction-deploy/auction_deploy tools/auction-deploy/setup.py
-
   run-auction-mypy:
     executor: ubuntu-builder
     steps:
@@ -198,17 +178,6 @@ jobs:
           command: |
             mypy --ignore-missing-imports tools/auction-deploy/tests tools/auction-deploy/auction_deploy tools/auction-deploy/setup.py
 
-  run-auction-black:
-    executor: ubuntu-builder
-    steps:
-      - attach_workspace:
-          at: '~'
-      - config-auction-path
-      - run:
-          name: Run black
-          command: |
-            black --check tools/auction-deploy
-
   install-auction:
     executor: ubuntu-builder
     steps:
@@ -216,17 +185,19 @@ jobs:
       - config-auction-path
       - restore_cache:
           key: auction-venv-{{ checksum "tools/auction-deploy/constraints.txt" }}-{{ checksum "tools/auction-deploy/requirements.txt" }}
-      - create-auction-venv
+      - create-venv
       - run:
-          name: Install requirements and auction deploy tool
+          name: Install requirements
           command: |
-            cd tools/auction-deploy
-            make install
-            cd ..
+            make -C tools/auction-deploy install-requirements
       - save_cache:
           key: auction-venv-{{ checksum "tools/auction-deploy/constraints.txt" }}-{{ checksum "tools/auction-deploy/requirements.txt" }}
           paths:
             - auction-venv
+      - run:
+          name: Install auction-deploy
+          command: |
+            make -C tools/auction-deploy install
       - persist_to_workspace:
           root: "~"
           paths:
@@ -245,17 +216,6 @@ jobs:
             make test
             cd ..
 
-  run-validator-set-flake8:
-    executor: ubuntu-builder
-    steps:
-      - attach_workspace:
-          at: '~'
-      - config-validator-set-path
-      - run:
-          name: Run flake8
-          command: |
-            flake8 tools/validator-set-deploy/tests tools/validator-set-deploy/validator_set_deploy tools/validator-set-deploy/setup.py
-
   run-validator-set-mypy:
     executor: ubuntu-builder
     steps:
@@ -267,17 +227,6 @@ jobs:
           command: |
             mypy --ignore-missing-imports tools/validator-set-deploy/tests tools/validator-set-deploy/validator_set_deploy tools/validator-set-deploy/setup.py
 
-  run-validator-set-black:
-    executor: ubuntu-builder
-    steps:
-      - attach_workspace:
-          at: '~'
-      - config-validator-set-path
-      - run:
-          name: Run black
-          command: |
-            black --check tools/validator-set-deploy
-
   install-validator-set:
     executor: ubuntu-builder
     steps:
@@ -285,7 +234,7 @@ jobs:
       - config-validator-set-path
       - restore_cache:
           key: validator-set-venv-{{ checksum "tools/validator-set-deploy/constraints.txt" }}-{{ checksum "tools/validator-set-deploy/requirements.txt" }}
-      - create-validator-set-venv
+      - create-venv
       - run:
           name: Install requirements and validator-set deploy tool
           command: |
@@ -314,17 +263,6 @@ jobs:
             make test
             cd ../..
 
-  run-bridge-flake8:
-    executor: ubuntu-builder
-    steps:
-      - attach_workspace:
-          at: '~'
-      - config-bridge-path
-      - run:
-          name: Run flake8
-          command: |
-            flake8 tools/bridge-deploy/tests tools/bridge-deploy/bridge_deploy tools/bridge-deploy/setup.py
-
   run-bridge-mypy:
     executor: ubuntu-builder
     steps:
@@ -336,17 +274,6 @@ jobs:
           command: |
             mypy --ignore-missing-imports tools/bridge-deploy/tests tools/bridge-deploy/bridge_deploy tools/bridge-deploy/setup.py
 
-  run-bridge-black:
-    executor: ubuntu-builder
-    steps:
-      - attach_workspace:
-          at: '~'
-      - config-bridge-path
-      - run:
-          name: Run black
-          command: |
-            black --check tools/bridge-deploy
-
   install-bridge:
     executor: ubuntu-builder
     steps:
@@ -354,7 +281,7 @@ jobs:
       - config-bridge-path
       - restore_cache:
           key: bridge-venv-{{ checksum "tools/bridge-deploy/constraints.txt" }}-{{ checksum "tools/bridge-deploy/requirements.txt" }}
-      - create-bridge-venv
+      - create-venv
       - run:
           name: Install requirements and bridge deploy tool
           command: |
@@ -471,24 +398,14 @@ workflows:
   version: 2
   default:
     jobs:
+      - run-black
+      - run-flake8
       - run-contracts-solium
       - install-contracts
-      - run-contracts-flake8:
-          requires:
-            - install-contracts
-      - run-contracts-black:
-          requires:
-            - install-contracts
       - run-contracts-pytest:
           requires:
             - install-contracts
       - install-auction
-      - run-auction-flake8:
-          requires:
-            - install-auction
-      - run-auction-black:
-          requires:
-            - install-auction
       - run-auction-mypy:
           requires:
             - install-auction
@@ -496,12 +413,6 @@ workflows:
           requires:
             - install-auction
       - install-validator-set
-      - run-validator-set-flake8:
-          requires:
-            - install-validator-set
-      - run-validator-set-black:
-          requires:
-            - install-validator-set
       - run-validator-set-mypy:
           requires:
             - install-validator-set
@@ -510,12 +421,6 @@ workflows:
             - install-validator-set
 
       - install-bridge
-      - run-bridge-flake8:
-          requires:
-            - install-bridge
-      - run-bridge-black:
-          requires:
-            - install-bridge
       - run-bridge-mypy:
           requires:
             - install-bridge
@@ -533,7 +438,8 @@ workflows:
                 - pre-release
           requires:
             - run-contracts-solium
-            - run-contracts-flake8
+            - run-black
+            - run-flake8
             - install-contracts
             - run-contracts-pytest
             - build-docker-image
@@ -560,7 +466,8 @@ workflows:
           requires:
             - approve-the-release
             - run-contracts-solium
-            - run-contracts-flake8
+            - run-black
+            - run-flake8
             - install-contracts
             - run-contracts-pytest
             - build-docker-image
