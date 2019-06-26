@@ -98,10 +98,17 @@ def validators(accounts, malicious_validator_address):
 
 
 @pytest.fixture(scope="session")
-def validator_set_contract_session(deploy_contract, validators, web3):
-    deployed_test_validator_set = deploy_contract("TestValidatorSet")
+def validator_set_contract_session(
+    deploy_contract, validator_proxy_contract, validators, system_address, web3
+):
+    deployed_test_validator_set = deploy_contract(
+        "TestValidatorSet", constructor_args=(system_address,)
+    )
     initialized_test_validator_set = initialize_validator_set(
-        deployed_test_validator_set, validators, web3=web3
+        deployed_test_validator_set,
+        validators,
+        validator_proxy_contract.address,
+        web3=web3,
     )
 
     return initialized_test_validator_set
@@ -348,22 +355,22 @@ def premint_token_value():
 
 
 @pytest.fixture(scope="session")
-def validator_proxy_contract(deploy_contract, web3, validator_proxy_owner, accounts):
+def validator_proxy_contract(deploy_contract, web3, system_address, accounts):
     contract = deploy_contract(
-        "TestValidatorProxy", constructor_args=([], validator_proxy_owner)
+        "TestValidatorProxy", constructor_args=([], system_address)
     )
 
-    assert contract.functions.systemAddress().call() == validator_proxy_owner
+    assert contract.functions.systemAddress().call() == system_address
 
     return contract
 
 
 @pytest.fixture()
 def validator_proxy_with_validators(
-    validator_proxy_contract, validator_proxy_owner, proxy_validators
+    validator_proxy_contract, system_address, proxy_validators
 ):
     validator_proxy_contract.functions.updateValidators(proxy_validators).transact(
-        {"from": validator_proxy_owner}
+        {"from": system_address}
     )
     return validator_proxy_contract
 
@@ -374,7 +381,7 @@ def proxy_validators(accounts):
 
 
 @pytest.fixture(scope="session")
-def validator_proxy_owner(accounts):
+def system_address(accounts):
     return accounts[0]
 
 

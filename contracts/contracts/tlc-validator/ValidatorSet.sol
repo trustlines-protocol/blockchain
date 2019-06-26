@@ -1,6 +1,7 @@
 pragma solidity ^0.5.8;
 
 import "../equivocation-inspector/EquivocationInspector.sol";
+import "./ValidatorProxy.sol";
 
 
 contract ValidatorSet {
@@ -29,6 +30,7 @@ contract ValidatorSet {
     mapping(address => AddressStatus) status;
     bool public finalized;  // Was the last validator change finalized. Implies currentValidators == pendingValidators
     address public systemAddress = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
+    ValidatorProxy public validatorProxy;
     uint[] epochStartHeights;
     mapping(uint => address[]) epochValidators;
 
@@ -48,13 +50,14 @@ contract ValidatorSet {
         _;
     }
 
-    function init(address[] calldata _validators) external {
+    function init(address[] calldata _validators, ValidatorProxy _validatorProxy) external {
         require(
             !initialized,
-            "Can not initate twice."
+            "Can not initialize twice."
         );
 
         pendingValidators = _validators;
+        validatorProxy = _validatorProxy;
 
         for (uint i = 0; i < _validators.length; i++) {
             status[_validators[i]].isValidator = true;
@@ -136,6 +139,7 @@ contract ValidatorSet {
         finalized = true;
         epochStartHeights.push(block.number);
         epochValidators[block.number] = currentValidators;
+        validatorProxy.updateValidators(currentValidators);
     }
 
     function removeValidator(address _validator) internal isFinalized {
