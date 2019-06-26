@@ -16,10 +16,8 @@ test: install-requirements compile
 compile: .installed .compiled
 
 POA_SOL_FILES=$(shell find $(TOP_LEVEL)/submodules/poa-bridge-contracts/contracts -type f -iname '*.sol')
-REWARD_SOL_FILES=$(shell find $(TOP_LEVEL)/bridge/reward-contract/contracts -type f -iname '*.sol')
 CONTRACT_SOL_FILES=$(shell find $(CONTRACTS_DIRECTORY) -type f -iname '*.sol')
 .compiled: $(TOP_LEVEL)/submodules/poa-bridge-contracts/package.json $(POA_SOL_FILES) $(REWARD_SOL_FILES) $(CONTRACT_SOL_FILES) $(VIRTUAL_ENV)
-	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d $(TOP_LEVEL)/bridge/reward-contract/contracts -o build/reward.json
 	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d $(CONTRACTS_DIRECTORY) -o build/contracts.json
 	$(VIRTUAL_ENV)/bin/npm --prefix $(TOP_LEVEL)/submodules/poa-bridge-contracts install && \
 	cd $(TOP_LEVEL)/submodules/poa-bridge-contracts && \
