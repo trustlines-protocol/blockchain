@@ -2,7 +2,7 @@ TOP_LEVEL=$(shell cd ..; pwd)
 VIRTUAL_ENV ?= $(TOP_LEVEL)/venv
 CONTRACTS_DIRECTORY=$(TOP_LEVEL)/contracts/contracts
 
-lint: install
+lint: install-requirements
 	$(VIRTUAL_ENV)/bin/flake8 tests
 	$(VIRTUAL_ENV)/bin/black --check tests
 
