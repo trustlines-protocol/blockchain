@@ -22,7 +22,7 @@ def deploy_home_block_reward_contract(
     if transaction_options is None:
         transaction_options = {}
 
-    block_reward_src = load_build_contract("RewardByBlock", file_name="reward")
+    block_reward_src = load_build_contract("RewardByBlock")
 
     block_reward_contract = deploy_compiled_contract(
         abi=block_reward_src["abi"],
