@@ -1,11 +1,4 @@
 click
 web3
 contract-deploy-tools
-
-# --- development dependencies, i.e. dependencies not needed for running
-setuptools_scm
-pytest
-flake8
-black
-mypy
-pre-commit
+-r ../../requirements-dev.txt

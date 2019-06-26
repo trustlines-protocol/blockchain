@@ -1,0 +1,16 @@
+black
+flake8
+mypy
+pep8-naming
+pre-commit
+pytest
+setuptools_scm
+
+# The following three dependencies are missing because ethpm has a
+# dependency on web3[tester]. This is a hacky workaround. For details
+# visit:
+# https://github.com/trustlines-protocol/contract-deploy-tools/pull/38#issuecomment-499412276
+
+py-geth
+eth-tester[py-evm]
+pytest-ethereum
