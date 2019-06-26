@@ -10,6 +10,10 @@ import "./ValidatorSet.sol";
 
 contract TestValidatorSet is ValidatorSet {
 
+    constructor (address _systemAddress) public {
+        systemAddress = _systemAddress;
+    }
+
     function testRemoveValidator(address _validator) public {
         removeValidator(_validator);
     }
@@ -35,5 +39,4 @@ contract TestValidatorSet is ValidatorSet {
         finalizeChange();
         systemAddress = originSystemAddress;
     }
-
 }

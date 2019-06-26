@@ -15,9 +15,9 @@ def test_init_already_initialized(validator_set_contract_session, accounts):
     """verifies that we cannot call the init function twice"""
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        validator_set_contract_session.functions.init([accounts[0]]).transact(
-            {"from": accounts[0]}
-        )
+        validator_set_contract_session.functions.init(
+            [accounts[0]], accounts[0]
+        ).transact({"from": accounts[0]})
 
 
 def test_remove_validator1(validator_set_contract_session, validators, accounts):
@@ -139,7 +139,7 @@ def test_cannot_call_finalize_change(validator_set_contract_session, accounts):
     contract = validator_set_contract_session
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        contract.functions.finalizeChange().transact({"from": accounts[0]})
+        contract.functions.finalizeChange().transact({"from": accounts[1]})
 
 
 def test_change_validator_set_without_finalizing_do_not_touch_history(
@@ -264,3 +264,16 @@ def test_report_validator_malicious_non_validator(
             signed_block_header_two.unsignedBlockHeader,
             signed_block_header_two.signature,
         ).transact()
+
+
+def test_changing_validator_set_updates_proxy(
+    validator_set_contract_session, validator_proxy_contract, validators, system_address
+):
+    assert validator_proxy_contract.functions.getValidators().call() == []
+    validator_set_contract_session.functions.testChangeValiatorSet(validators).transact(
+        {"from": system_address}
+    )
+    validator_set_contract_session.functions.finalizeChange().transact(
+        {"from": system_address}
+    )
+    assert validator_proxy_contract.functions.getValidators().call() == validators
