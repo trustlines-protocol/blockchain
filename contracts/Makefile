@@ -1,26 +1,22 @@
-TOP_LEVEL=$(shell cd ../..; pwd)
+TOP_LEVEL=$(shell cd ..; pwd)
 VIRTUAL_ENV ?= $(TOP_LEVEL)/venv
 CONTRACTS_DIRECTORY=$(TOP_LEVEL)/contracts/contracts
 
-lint: install
-	$(VIRTUAL_ENV)/bin/flake8 auction_deploy tests setup.py
-	$(VIRTUAL_ENV)/bin/black --check auction_deploy tests setup.py
-	$(VIRTUAL_ENV)/bin/mypy auction_deploy tests setup.py --ignore-missing-imports
+lint: install-requirements
+	$(VIRTUAL_ENV)/bin/flake8 tests
+	$(VIRTUAL_ENV)/bin/black --check tests
 
 test: install
 	$(VIRTUAL_ENV)/bin/pytest tests
 
 compile: install-requirements
-	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d $(CONTRACTS_DIRECTORY)
-	$(VIRTUAL_ENV)/bin/python scripts/pack_contracts.py build/contracts.json auction_deploy/contracts.json
+	$(VIRTUAL_ENV)/bin/deploy-tools compile -d $(CONTRACTS_DIRECTORY)
 
 build: compile
-	$(VIRTUAL_ENV)/bin/python setup.py sdist
 
 install-requirements: .installed
 
 install: install-requirements compile
-	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -e .
 
 .installed: constraints.txt requirements.txt $(VIRTUAL_ENV)
 	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt pip wheel setuptools
@@ -32,6 +28,6 @@ $(VIRTUAL_ENV):
 
 clean:
 	rm -rf build .tox .mypy_cache .pytest_cache */__pycache__ *.egg-info
-	rm -f .installed auction_deploy/contracts.json
+	rm -f .installed
 
 .PHONY: install install-requirements test lint compile build clean

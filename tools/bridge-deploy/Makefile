@@ -44,4 +44,9 @@ install: install-requirements compile
 $(VIRTUAL_ENV):
 	python3 -m venv $@
 
-.PHONY: install install-requirements test lint compile build format
+clean:
+	rm -rf build .tox .mypy_cache .pytest_cache */__pycache__ *.egg-info
+	rm -f .installed .compiled
+	git submodule deinit --all -f
+
+.PHONY: install install-requirements test lint compile build format clean
