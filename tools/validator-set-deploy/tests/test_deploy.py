@@ -8,6 +8,8 @@ from validator_set_deploy.core import (
     deploy_validator_proxy_contract,
 )
 
+ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+
 
 @pytest.fixture
 def validator_set_contract(web3):
@@ -53,6 +55,7 @@ def test_init_validator_set(validator_set_contract, validator_list, web3):
         web3=web3,
         validator_set_contract=validator_set_contract,
         validators=validator_list,
+        validator_proxy_address=ZERO_ADDRESS,
     )
 
     checksummed_validator_list = [

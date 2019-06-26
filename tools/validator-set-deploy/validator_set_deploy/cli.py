@@ -75,6 +75,16 @@ def main():
 )
 @keystore_option
 @validator_file_option
+@click.option(
+    "--address",
+    "validator_proxy_address",
+    help='The address of the validator proxy contract, "0x" prefixed string',
+    type=str,
+    required=True,
+    callback=validate_address,
+    metavar="ADDRESS",
+    envvar="VALIDATOR_PROXY_ADDRESS",
+)
 @gas_option
 @gas_price_option
 @nonce_option
@@ -83,6 +93,7 @@ def main():
 def deploy(
     keystore: str,
     validators_file: str,
+    validator_proxy_address: str,
     jsonrpc: str,
     gas: int,
     gas_price: int,
@@ -109,6 +120,7 @@ def deploy(
         transaction_options=transaction_options,
         validator_set_contract=validator_set_contract,
         validators=validators,
+        validator_proxy_address=validator_proxy_address,
         private_key=private_key,
     )
 

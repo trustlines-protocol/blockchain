@@ -37,12 +37,15 @@ def initialize_validator_set_contract(
     transaction_options=None,
     validator_set_contract,
     validators,
+    validator_proxy_address,
     private_key=None
 ) -> None:
     if transaction_options is None:
         transaction_options = {}
 
-    validator_init = validator_set_contract.functions.init(validators)
+    validator_init = validator_set_contract.functions.init(
+        validators, validator_proxy_address
+    )
 
     send_function_call_transaction(
         validator_init,

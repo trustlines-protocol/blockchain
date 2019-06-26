@@ -7,6 +7,8 @@ from eth_utils import to_checksum_address
 
 from validator_set_deploy.cli import main
 
+ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+
 
 @pytest.fixture
 def runner():
@@ -46,7 +48,8 @@ def validators_file_missing_validators(tmp_path, validator_list):
 def deployed_validator_contract_address(runner, validators_file):
 
     deploy_result = runner.invoke(
-        main, args=f"deploy --jsonrpc test --validators {validators_file}"
+        main,
+        args=f"deploy --jsonrpc test --validators {validators_file} --address {ZERO_ADDRESS}",
     )
 
     if deploy_result.exception is not None:
@@ -69,7 +72,8 @@ def extract_validator_contract_address(output):
 def test_deploy(runner, validators_file):
 
     result = runner.invoke(
-        main, args=f"deploy --jsonrpc test --validators {validators_file}"
+        main,
+        args=f"deploy --jsonrpc test --validators {validators_file} --address {ZERO_ADDRESS}",
     )
 
     print(result.output)
@@ -86,7 +90,7 @@ def test_deploy_proxy(runner, validators_file):
     assert result.exit_code == 0
 
 
-def test_deploy_proxy_no_validators(runner, validators_file):
+def test_deploy_proxy_no_validators(runner):
 
     result = runner.invoke(main, args=f"deploy-proxy --jsonrpc test")
 
@@ -120,7 +124,7 @@ def test_check_missing_validators(
     assert result.exit_code == 0
 
 
-def test_print_validators(runner, deployed_validator_contract_address, validators_file):
+def test_print_validators(runner, deployed_validator_contract_address):
 
     result = runner.invoke(
         main,
