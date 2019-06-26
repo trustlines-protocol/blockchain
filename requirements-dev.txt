@@ -1,0 +1,7 @@
+black
+flake8
+mypy
+pep8-naming
+pre-commit
+pytest
+setuptools_scm
