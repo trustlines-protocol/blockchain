@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import json
 
 from eth_account import Account
