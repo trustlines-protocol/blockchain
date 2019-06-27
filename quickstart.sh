@@ -1,4 +1,5 @@
 #!/bin/bash
+# -*- sh-basic-offset: 2; -*-
 
 set -e
 
