@@ -20,11 +20,14 @@ contract RewardByBlock is EternalStorage, IRewardByBlock {
 
     // solhint-disable const-name-snakecase
     // These values must be changed before deploy
-    uint256 public constant blockRewardAmount = 1 ether;
     uint256 public constant emissionFundsAmount = 0 ether;
     address public constant emissionFunds = 0x0000000000000000000000000000000000000000;
     uint256 public constant bridgesAllowedLength = 1;
     // solhint-enable const-name-snakecase
+
+    bool public initialized = false;
+    uint256 public blockRewardAmount;
+    address public homeBridgeAddress;
 
     event AddedReceiver(uint256 amount, address indexed receiver, address indexed bridge);
     event Rewarded(address[] receivers, uint256[] rewards);
@@ -39,10 +42,20 @@ contract RewardByBlock is EternalStorage, IRewardByBlock {
         _;
     }
 
+    function initialize(uint256 _blockRewardAmount, address _homeBridgeAddress) external {
+      require(!initialized, "Can not be initiated twice!");
+      require (_homeBridgeAddress != address(0), "Bridge can not be the zero address!");
+
+      blockRewardAmount = _blockRewardAmount;
+      homeBridgeAddress = _homeBridgeAddress;
+      initialized = true;
+    }
+
     function addExtraReceiver(uint256 _amount, address _receiver)
         external
         onlyBridgeContract
     {
+        require(initialized);
         require(_amount != 0);
         require(_receiver != address(0));
         uint256 oldAmount = extraReceiverAmount(_receiver);
@@ -111,10 +124,10 @@ contract RewardByBlock is EternalStorage, IRewardByBlock {
         return (receivers, rewards);
     }
 
-    function bridgesAllowed() public pure returns(address[bridgesAllowedLength] memory) {
+    function bridgesAllowed() public view returns(address[bridgesAllowedLength] memory) {
         // These values must be changed before deploy
         address[bridgesAllowedLength] memory result;
-        result[0] = address(0x0000000000000000000000000000000000000000);
+        result[0] = homeBridgeAddress;
         return(result);
     }
 
@@ -187,7 +200,7 @@ contract RewardByBlock is EternalStorage, IRewardByBlock {
         addressArrayStorage[EXTRA_RECEIVERS].length = 0;
     }
 
-    function _isBridgeContract(address _addr) private pure returns(bool) {
+    function _isBridgeContract(address _addr) private view returns(bool) {
         address[bridgesAllowedLength] memory bridges = bridgesAllowed();
 
         for (uint256 i = 0; i < bridges.length; i++) {
