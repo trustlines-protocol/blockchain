@@ -33,11 +33,11 @@ contract ValidatorProxy {
         validators = newValidators;
     }
 
-    function numberOfValidators() public returns(uint) {
+    function numberOfValidators() public view returns(uint) {
         return validators.length;
     }
 
-    function getValidators() public returns(address[] memory) {
+    function getValidators() public view returns(address[] memory) {
         return validators;
     }
 }
