@@ -3,6 +3,8 @@ from collections import namedtuple
 import pytest
 import eth_tester
 
+from eth_utils import to_checksum_address
+
 from .deploy_util import (
     initialize_validator_set,
     initialize_test_validator_slasher,
@@ -22,8 +24,9 @@ RELEASE_TIMESTAMP_OFFSET = 3600 * 24 * 180
 # Fix the indexes used to get addresses from the test chain.
 # Mind the difference between count and index.
 HONEST_VALIDATOR_COUNT = 2
-MALICIOUS_VALIDATOR_INDEX = HONEST_VALIDATOR_COUNT
-MALICIOUS_NON_VALIDATOR_INDEX = MALICIOUS_VALIDATOR_INDEX + 1
+MALICIOUS_VALIDATOR_INDEX, MALICIOUS_NON_VALIDATOR_INDEX, BRIDGE_ADDRESS_INDEX = range(
+    HONEST_VALIDATOR_COUNT, HONEST_VALIDATOR_COUNT + 3
+)
 
 AUCTION_DURATION_IN_DAYS = 14
 AUCTION_START_PRICE = 10000 * 10 ** 18
@@ -413,3 +416,22 @@ def bridge_required_signatures_divisor():
 @pytest.fixture(scope="session")
 def bridge_required_signatures_multiplier():
     return 1
+
+
+@pytest.fixture(scope="session")
+def emission_address():
+    return to_checksum_address(b"\x00" * 20)
+
+
+@pytest.fixture(scope="session")
+def bridge_address(accounts):
+    return accounts[BRIDGE_ADDRESS_INDEX]
+
+
+@pytest.fixture(scope="session")
+def reward_contract(deploy_contract, system_address, bridge_address):
+    deployed_contract = deploy_contract(
+        "TestRewardByBlock", constructor_args=(system_address, bridge_address)
+    )
+
+    return deployed_contract

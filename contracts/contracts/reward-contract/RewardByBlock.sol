@@ -25,6 +25,9 @@ contract RewardByBlock is EternalStorage, IRewardByBlock {
     uint256 public constant bridgesAllowedLength = 1;
     // solhint-enable const-name-snakecase
 
+    // Added to facilitate testing
+    address public systemAddress = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
+
     bool public initialized = false;
     uint256 public blockRewardAmount;
     address public homeBridgeAddress;
@@ -38,7 +41,7 @@ contract RewardByBlock is EternalStorage, IRewardByBlock {
     }
 
     modifier onlySystem {
-        require(msg.sender == 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE);
+        require(msg.sender == systemAddress);
         _;
     }
 
