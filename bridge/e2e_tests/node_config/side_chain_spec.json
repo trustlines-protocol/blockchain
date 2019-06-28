@@ -12,7 +12,9 @@
                             ]
                         }
                     }
-                }
+                },
+                "blockRewardContractAddress": "0x4eE4611378b6951f0133Ed655483d0a24C9B4700",
+                "blockRewardContractTransition": "70"
             }
         }
     },
