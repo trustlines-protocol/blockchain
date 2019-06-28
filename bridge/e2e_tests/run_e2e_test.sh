@@ -196,5 +196,39 @@ done
 
 printf '\n'
 
+echo "===> Test a bridge transfer from foreign to home chain"
+
+# Check balance before
+homeNativeBalanceBefore=$(
+  convertHexToDecOfJsonRpcResponse "$(
+    curl --silent --data \
+      "{\"method\":\"eth_getBalance\",\"params\":[\"$VALIDATOR_ADDRESS\"],\"id\":1,\"jsonrpc\":\"2.0\"}" \
+      -H "Content-Type: application/json" -X POST $NODE_SIDE_RPC_ADDRESS
+  )"
+)
+echo "Balance on home chain before: $homeNativeBalanceBefore"
+
+echo "Transfer token to foreign bridge...."
+deploy-tools transact --jsonrpc $NODE_MAIN_RPC_ADDRESS --contracts-dir "$CONTRACT_DIRECTORY" \
+  --contract-address "$token_contract_address" TrustlinesNetworkToken transfer \
+  "$foreign_bridge_contract_address" $PREMINTED_TOKEN_AMOUNT
+
+echo "Wait for required block confirmations and collecting signatures..."
+sleep 60
+
+homeNativeBalanceAfter=$(
+  convertHexToDecOfJsonRpcResponse "$(
+    curl --silent --data \
+      "{\"method\":\"eth_getBalance\",\"params\":[\"$VALIDATOR_ADDRESS\"],\"id\":1,\"jsonrpc\":\"2.0\"}" \
+      -H "Content-Type: application/json" -X POST $NODE_SIDE_RPC_ADDRESS
+  )"
+)
+echo "Balance on home chain after: $homeNativeBalanceAfter"
+
+if [[ $homeNativeBalanceAfter -le $homeNativeBalanceBefore ]]; then
+  echo "Balance has not increased by transfer!"
+  exit 1
+fi
+
 echo "===> Shutting down"
 exit 0
