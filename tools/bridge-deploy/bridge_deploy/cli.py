@@ -16,6 +16,7 @@ from deploy_tools.files import validate_and_format_address, InvalidAddressExcept
 
 from bridge_deploy.home import (
     deploy_home_block_reward_contract,
+    initialize_home_block_reward_contract,
     deploy_home_bridge_validators_contract,
     deploy_home_bridge_contract,
     initialize_home_bridge_contract,
@@ -52,27 +53,14 @@ def validate_eth_amount(ctx, param, value):
     return int(wei_amount)
 
 
-validator_set_address_option = click.option(
-    "--validator-set-address",
-    help=(
-        "The address of the bridge validator set contract or proxy contract"
-        ' that implements IBridgeValidators, "0x" prefixed string'
-    ),
+bridge_validators_address_option = click.option(
+    "--bridge-validators-address",
+    help="The address of the BridgeValidators contract ('0x' prefixed string).",
     type=str,
     required=True,
     callback=validate_address,
     metavar="VALIDATOR_SET_ADDRESS",
     envvar="VALIDATOR_SET_ADDRESS",
-)
-
-block_reward_address_option = click.option(
-    "--block-reward-address",
-    help='The address of the block reward contract, "0x" prefixed string',
-    type=str,
-    required=True,
-    callback=validate_address,
-    metavar="BLOCK_REWARD_ADDRESS",
-    envvar="BLOCK_REWARD_ADDRESS",
 )
 
 home_daily_limit_option = click.option(
@@ -123,10 +111,7 @@ owner_address_option = click.option(
 
 validator_proxy_address_option = click.option(
     "--validator-proxy-address",
-    help=(
-        "The address of the bridge validator set contract or proxy contract"
-        ' that implements IBridgeValidators, "0x" prefixed string'
-    ),
+    help=("The address of the ValidatorProxy contract ('0x' prefixed string)."),
     type=str,
     required=True,
     callback=validate_address,
@@ -146,38 +131,17 @@ required_signatures_multiplier_option = click.option(
     default=1,
 )
 
+block_reward_amount_option = click.option(
+    "--block-reward-amount",
+    help="The amount of Wei as reward for new blocks.",
+    type=int,
+    default=1_000_000_000_000_000_000,  # 1 ether
+)
+
 
 @click.group()
 def main():
     pass
-
-
-@main.command(short_help="Deploys the block reward contract on the home network.")
-@keystore_option
-@gas_option
-@gas_price_option
-@nonce_option
-@auto_nonce_option
-@jsonrpc_option
-def deploy_reward(
-    keystore: str, jsonrpc: str, gas: int, gas_price: int, nonce: int, auto_nonce: bool
-) -> None:
-
-    web3 = connect_to_json_rpc(jsonrpc)
-    private_key = retrieve_private_key(keystore)
-
-    nonce = get_nonce(
-        web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
-    )
-    transaction_options = build_transaction_options(
-        gas=gas, gas_price=gas_price, nonce=nonce
-    )
-
-    reward_contract = deploy_home_block_reward_contract(
-        web3=web3, transaction_options=transaction_options, private_key=private_key
-    )
-
-    click.echo(f"BlockRewardContract address: {reward_contract.address}")
 
 
 @main.command(short_help="Deploys the bridge validators proxy on the home network.")
@@ -227,22 +191,25 @@ def deploy_validators(
 
 
 @main.command(
-    short_help="Deploys the token bridge on the home network and initializes all contracts."
+    short_help=(
+        "Deploys the token bridge on the home network and initializes all contracts. This does also"
+        "include the block reward contract, which must be bidirectional initialized with the home bridge."
+    )
 )
 @keystore_option
-@validator_set_address_option
+@bridge_validators_address_option
 @home_daily_limit_option
 @home_max_per_tx_option
 @home_min_per_tx_option
 @home_gas_price_option
 @required_block_confirmations_option
-@block_reward_address_option
 @owner_address_option
 @gas_option
 @gas_price_option
 @nonce_option
 @auto_nonce_option
 @jsonrpc_option
+@block_reward_amount_option
 def deploy_home(
     keystore: str,
     jsonrpc: str,
@@ -250,14 +217,14 @@ def deploy_home(
     gas_price: int,
     nonce: int,
     auto_nonce: bool,
-    validator_set_address,
+    bridge_validators_address,
     home_daily_limit,
     home_max_per_tx,
     home_min_per_tx,
     home_gas_price,
     required_block_confirmations,
-    block_reward_address,
     owner_address,
+    block_reward_amount,
 ) -> None:
 
     web3 = connect_to_json_rpc(jsonrpc)
@@ -270,25 +237,40 @@ def deploy_home(
         gas=gas, gas_price=gas_price, nonce=nonce
     )
 
-    deployment_result = deploy_home_bridge_contract(
+    block_reward_contract = deploy_home_block_reward_contract(
         web3=web3, transaction_options=transaction_options, private_key=private_key
     )
 
-    click.echo(f"HomeBridge address: {deployment_result.home_bridge.address}")
-    click.echo(f"  deployed at block #{deployment_result.home_bridge_block_number}")
+    click.echo(f"BlockRewardContract address: {block_reward_contract.address}")
+
+    home_bridge_contract = deploy_home_bridge_contract(
+        web3=web3, transaction_options=transaction_options, private_key=private_key
+    )
+
+    click.echo(
+        f"HomeBridge address: {home_bridge_contract.address} "
+        f"deployed at block #{web3.eth.blockNumber}"
+    )
+
+    initialize_home_block_reward_contract(
+        web3=web3,
+        transaction_options=transaction_options,
+        block_reward_contract=block_reward_contract,
+        home_bridge_contract_address=home_bridge_contract.address,
+        block_reward_amount=block_reward_amount,
+    )
 
     initialize_home_bridge_contract(
         web3=web3,
         transaction_options=transaction_options,
-        home_bridge_contract=deployment_result.home_bridge,
-        home_bridge_proxy_contract=deployment_result.home_bridge_proxy,
-        validator_contract_address=validator_set_address,
+        home_bridge_contract=home_bridge_contract,
+        validator_contract_address=bridge_validators_address,
         home_daily_limit=home_daily_limit,
         home_max_per_tx=home_max_per_tx,
         home_min_per_tx=home_min_per_tx,
         home_gas_price=home_gas_price,
         required_block_confirmations=required_block_confirmations,
-        block_reward_address=block_reward_address,
+        block_reward_address=block_reward_contract.address,
         owner_address=owner_address,
         private_key=private_key,
     )
