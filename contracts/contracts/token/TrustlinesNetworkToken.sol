@@ -63,9 +63,9 @@ contract TrustlinesNetworkToken {
     function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
         _transfer(sender, recipient, amount);
 
-        uint allowance = _allowances[sender][msg.sender];
-        uint updatedAllowance = allowance.sub(amount);
-        if (allowance < MAX_UINT) {
+        uint _allowance = _allowances[sender][msg.sender];
+        uint updatedAllowance = _allowance.sub(amount);
+        if (_allowance < MAX_UINT) {
             _approve(sender, msg.sender, updatedAllowance);
         }
     }
