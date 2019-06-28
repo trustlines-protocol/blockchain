@@ -12,11 +12,7 @@ DUMMY_PRIVATE_KEY = (
 
 
 def test_deploy_home_block_reward_contract(web3):
-    reward_contract = deploy_home_block_reward_contract(web3=web3)
-
-    assert reward_contract.functions.bridgesAllowed().call() == [
-        "0x0000000000000000000000000000000000000000"
-    ]
+    deploy_home_block_reward_contract(web3=web3)
 
 
 def test_deploy_home_bridge_validators_contract(web3):
