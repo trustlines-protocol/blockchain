@@ -6,8 +6,10 @@ set -e
 # Variables
 DOCKER_IMAGE_PARITY="trustlines/tlbc-testnet"
 DOCKER_IMAGE_WATCHTOWER="v2tec/watchtower"
+DOCKER_IMAGE_RESTORE_KEYFILE="cducrest/restore-keyfile"
 DOCKER_CONTAINER_PARITY="trustlines-testnet"
 DOCKER_CONTAINER_WATCHTOWER="watchtower-testnet"
+DOCKER_CONTAINER_RESTORE_KEYFILE="restore-keyfile"
 
 PERMISSION_PREFIX=""
 BASE_DIR=$(pwd)/trustlines
@@ -150,7 +152,7 @@ function extractAddressFromKeyfile() {
   fi
 }
 
-function importKey() {
+function importKeyfile() {
   local keyfile=$1
   ADDRESS=$(extractAddressFromKeyfile $keyfile)
 
@@ -186,6 +188,43 @@ EOF
   storeAddress
 }
 
+function restorePrivateKey() {
+  local private_key=$1
+
+  readPassword
+
+  # Check if container is already running.
+  if [[ $($PERMISSION_PREFIX docker ps) == *"$DOCKER_CONTAINER_RESTORE_KEYFILE"* ]] ; then
+    printmsg <<EOF
+The restore keyfile container is already running, stopping it..."
+EOF
+    $PERMISSION_PREFIX docker stop $DOCKER_CONTAINER_RESTORE_KEYFILE
+  fi
+  # Check if the container does already exist and restart it.
+  if [[ $($PERMISSION_PREFIX docker ps -a) == *"$DOCKER_CONTAINER_RESTORE_KEYFILE"* ]] ; then
+    printmsg <<EOF
+The restore keyfile container already exists, deleting it..."
+EOF
+    $PERMISSION_PREFIX docker rm $DOCKER_CONTAINER_RESTORE_KEYFILE
+  fi
+  # Pull and start the container
+  printmsg <<EOF
+Starting the restore keyfile client.
+EOF
+  $PERMISSION_PREFIX docker run \
+    --rm \
+    --name $DOCKER_CONTAINER_RESTORE_KEYFILE \
+    --volume $CONFIG_DIR:/restore-keyfile/output \
+    --env PRIV_KEY=$private_key \
+    --env PASSWD=$PASSWORD \
+    $DOCKER_IMAGE_RESTORE_KEYFILE
+
+    local keyfile=$(echo $CONFIG_DIR)/account-key.json
+    ADDRESS=$(extractAddressFromKeyfile $keyfile)
+    storePassword
+    storeAddress
+}
+
 function askYesOrNo() {
   while true; do
     read -p "$1 ([y]es or [n]o): "
@@ -216,7 +255,7 @@ EOF
   printmsg <<EOF
 
 A validator node will need a private key. This script can either
-import an existing json keyfile or it can create a new key.
+import an existing json keyfile, import an existing private key, or it can create a new key.
 
 EOF
 
@@ -224,7 +263,7 @@ EOF
     yes)
       local keyfile=$(pwd)/account-key.json
       if test -e $keyfile; then
-        importKey $keyfile
+        importKeyfile $keyfile
       else
         printmsg <<EOF
 
@@ -240,7 +279,15 @@ EOF
       fi
       ;;
     *)
-      generateNewAccount
+      case $(askYesOrNo "Do you want to import an existing private key?") in
+        yes)
+        read -p "Priavate key: " PRIVATE_KEY
+        restorePrivateKey $PRIVATE_KEY
+        ;;
+        *)
+        generateNewAccount
+        ;;
+      esac
       ;;
   esac
 }
@@ -248,6 +295,7 @@ EOF
 function pullDockerImages() {
   $PERMISSION_PREFIX docker pull $DOCKER_IMAGE_PARITY
   $PERMISSION_PREFIX docker pull $DOCKER_IMAGE_WATCHTOWER
+  $PERMISSION_PREFIX docker pull $DOCKER_IMAGE_RESTORE_KEYFILE
 }
 
 

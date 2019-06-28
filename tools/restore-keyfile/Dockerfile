@@ -10,7 +10,7 @@ WORKDIR /restore-keyfile
 RUN pip install -r requirements.txt -c constraints.txt
 
 VOLUME /output
-CMD ./restore_keyfile.py $PRIV_KEY $PASSWD output/keyfile.json
+CMD ./restore_keyfile.py $PRIV_KEY $PASSWD output/account-key.json
 
 
 # docker run --rm -v path_to_existing_dir:/restore-keyfile/output --env PRIV_KEY=priv_key --env PASSWD=password restore-keyfile
