@@ -1,0 +1,18 @@
+[parity]
+chain = "/home/parity/.local/share/io.parity.ethereum/chain_spec.json"
+auto_update = "none"
+no_download = true
+
+[account]
+unlock = ["0x46ae357ba2f459cb04697837397ec90b47e48727"]
+password = ["/home/parity/.local/share/io.parity.ethereum/password"]
+
+[mining]
+engine_signer = "0x46ae357ba2f459cb04697837397ec90b47e48727"
+force_sealing = true
+
+[rpc]
+port = 8545
+disable = false
+interface = "all"
+apis = ["web3", "eth", "pubsub", "net", "parity", "parity_pubsub", "traces", "rpc", "shh", "shh_pubsub"]
