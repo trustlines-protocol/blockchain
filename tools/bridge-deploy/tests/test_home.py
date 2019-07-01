@@ -1,5 +1,6 @@
 from bridge_deploy.home import (
     deploy_home_block_reward_contract,
+    initialize_home_block_reward_contract,
     deploy_home_bridge_validators_contract,
     deploy_home_bridge_contract,
     initialize_home_bridge_contract,
@@ -13,6 +14,35 @@ DUMMY_PRIVATE_KEY = (
 
 def test_deploy_home_block_reward_contract(web3):
     deploy_home_block_reward_contract(web3=web3)
+
+
+def test_initialize_home_block_reward_contract(
+    block_reward_contract, home_bridge_contract, web3, chain
+):
+    assert not block_reward_contract.functions.initialized().call()
+
+    block_reward_amount = 1
+
+    initialize_home_block_reward_contract(
+        web3=web3,
+        block_reward_contract=block_reward_contract,
+        home_bridge_contract_address=home_bridge_contract.address,
+        block_reward_amount=block_reward_amount,
+    )
+
+    assert block_reward_contract.functions.initialized().call()
+    assert (
+        block_reward_contract.functions.blockRewardAmount().call()
+        == block_reward_amount
+    )
+    assert (
+        block_reward_contract.functions.homeBridgeAddress().call()
+        == home_bridge_contract.address
+    )
+
+    assert block_reward_contract.functions.bridgesAllowed().call() == [
+        home_bridge_contract.address
+    ]
 
 
 def test_deploy_home_bridge_validators_contract(web3):
@@ -32,8 +62,7 @@ def test_deploy_home_bridge_validators_contract(web3):
 
 def test_deploy_home_bridge_contract(web3):
 
-    deployment_result = deploy_home_bridge_contract(web3=web3)
-    home_bridge_contract = deployment_result.home_bridge
+    home_bridge_contract = deploy_home_bridge_contract(web3=web3)
 
     assert home_bridge_contract.functions.getBridgeInterfacesVersion().call() == [
         2,
@@ -44,7 +73,6 @@ def test_deploy_home_bridge_contract(web3):
 
 def test_initialize_home_bridge_contract(
     home_bridge_contract,
-    home_bridge_proxy_contract,
     home_bridge_validators_contract,
     block_reward_contract,
     web3,
@@ -55,7 +83,6 @@ def test_initialize_home_bridge_contract(
         # Inject the owner address, as we don't know the private key
         owner_address=chain.get_accounts()[0],
         home_bridge_contract=home_bridge_contract,
-        home_bridge_proxy_contract=home_bridge_proxy_contract,
         validator_contract_address=home_bridge_validators_contract.address,
         home_daily_limit=30000000000000000000000000,
         home_max_per_tx=1500000000000000000000000,
