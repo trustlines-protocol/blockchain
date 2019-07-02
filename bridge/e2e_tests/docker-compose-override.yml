@@ -5,9 +5,9 @@ services:
     build:
       context: ./e2e_tests
       dockerfile: docker-parity
-      args:
-        chain_spec_path: ./node_config/main_chain_spec.json
     container_name: node_main
+    volumes:
+      - ${PWD}/node_config/main_chain_spec.json:/home/parity/.local/share/io.parity.ethereum/chain_spec.json
     ports:
       - 8544:8545
     networks:
@@ -17,9 +17,9 @@ services:
     build:
       context: ./e2e_tests
       dockerfile: docker-parity
-      args:
-        chain_spec_path: ./node_config/side_chain_spec.json
     container_name: node_side
+    volumes:
+      - ${PWD}/node_config/side_chain_spec.json:/home/parity/.local/share/io.parity.ethereum/chain_spec.json
     ports:
       - 8545:8545
     networks:
