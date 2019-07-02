@@ -167,6 +167,29 @@ jobs:
           name: Run pytest
           command: pytest contracts/tests
 
+  test-quickstart:
+    executor: ubuntu-builder
+    steps:
+      - checkout
+      - restore_cache:
+          key: quickstart-venv-{{ checksum "tools/quickstart/constraints.txt" }}-{{ checksum "tools/quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
+      - run:
+          name: Install requirements
+          command: |
+            make -C tools/quickstart install-requirements
+      - save_cache:
+          key: quickstart-venv-{{ checksum "tools/quickstart/constraints.txt" }}-{{ checksum "tools/quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
+          paths:
+            - venv
+      - run:
+          name: Install tools/quickstart
+          command: |
+            make -C tools/quickstart install
+      - run:
+          name: Run tests
+          command: |
+            make -C tools/quickstart test
+
   mypy-auction:
     executor: ubuntu-builder
     steps:
@@ -468,7 +491,7 @@ workflows:
 
       - build-docker-image
       - build-quickstart-image
-
+      - test-quickstart
       - deploy-docker-image:
           filters:
             branches:
@@ -491,6 +514,7 @@ workflows:
                 - master
                 - pre-release
           requires:
+            - test-quickstart
             - build-quickstart-image
             - run-black
             - run-flake8
