@@ -4,8 +4,10 @@
 set -e
 
 # Variables
-DOCKER_IMAGE_PARITY="trustlines/tlbc-testnet"
+: "${DOCKER_IMAGE_PARITY:=trustlines/tlbc-testnet}"
 DOCKER_IMAGE_WATCHTOWER="v2tec/watchtower"
+: "${DOCKER_IMAGE_QUICKSTART:=trustlines/quickstart:master0}"
+
 DOCKER_CONTAINER_PARITY="trustlines-testnet"
 DOCKER_CONTAINER_WATCHTOWER="watchtower-testnet"
 
@@ -150,7 +152,7 @@ function extractAddressFromKeyfile() {
   fi
 }
 
-function importKey() {
+function importKeyfile() {
   local keyfile=$1
   ADDRESS=$(extractAddressFromKeyfile $keyfile)
 
@@ -174,16 +176,19 @@ Please enter the password for the keyfile.
 
 EOF
 
-  readPassword
-
-  $PERMISSION_PREFIX docker run \
-                     --interactive --rm \
-                     --volume $CONFIG_DIR:/config/custom \
+  $PERMISSION_PREFIX docker run --rm -it \
+                     --volume $CONFIG_DIR:/config/ \
                      --volume $keyfile:/tmp/account-key.json \
-                     $DOCKER_IMAGE_PARITY \
-                     --parity-args account import /tmp/account-key.json
-  storePassword
-  storeAddress
+                     $DOCKER_IMAGE_QUICKSTART \
+                     qs-import-keystore-file /config/pass.pwd /config/address /config/keys/Trustlines/account.json /tmp/account-key.json
+}
+
+function importPrivateKey() {
+  # Pull and start the container
+  $PERMISSION_PREFIX docker run --rm -it\
+                     --volume $CONFIG_DIR:/config  \
+                     $DOCKER_IMAGE_QUICKSTART \
+                     qs-import-private-key /config/pass.pwd /config/address /config/keys/Trustlines/account.json
 }
 
 function askYesOrNo() {
@@ -216,15 +221,15 @@ EOF
   printmsg <<EOF
 
 A validator node will need a private key. This script can either
-import an existing json keyfile or it can create a new key.
+import an existing json keyfile, import an existing private key, or it
+can create a new key.
 
 EOF
 
-  case $(askYesOrNo "Do you want to import an existing keyfile?") in
-    yes)
+  if [ $(askYesOrNo "Do you want to import an existing keyfile?") = "yes" ]; then
       local keyfile=$(pwd)/account-key.json
       if test -e $keyfile; then
-        importKey $keyfile
+        importKeyfile $keyfile
       else
         printmsg <<EOF
 
@@ -238,16 +243,26 @@ automatically import the account from this keyfile.
 EOF
         exit 0
       fi
-      ;;
-    *)
-      generateNewAccount
-      ;;
-  esac
+  elif [ $(askYesOrNo "Do you want to import an existing private key?") = "yes" ]; then
+    importPrivateKey
+  else
+    generateNewAccount
+  fi
 }
 
 function pullDockerImages() {
-  $PERMISSION_PREFIX docker pull $DOCKER_IMAGE_PARITY
-  $PERMISSION_PREFIX docker pull $DOCKER_IMAGE_WATCHTOWER
+  for img in $DOCKER_IMAGE_PARITY $DOCKER_IMAGE_WATCHTOWER $DOCKER_IMAGE_QUICKSTART ; do
+    case $img in
+      */*)
+
+        $PERMISSION_PREFIX docker pull $img
+        ;;
+
+      *) # do not pull local images used for testing
+        echo "===> not pulling $img"
+        ;;
+      esac
+  done
 }
 
 
