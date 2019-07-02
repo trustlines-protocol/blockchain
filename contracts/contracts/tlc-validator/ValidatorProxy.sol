@@ -17,6 +17,10 @@ contract ValidatorProxy {
 
     constructor(address[] memory _validators) public {
         validators = _validators;
+
+        for (uint i = 0; i < _validators.length; i++) {
+            isValidator[_validators[i]] = true;
+        }
     }
 
     function updateValidators(address[] memory newValidators) public {
