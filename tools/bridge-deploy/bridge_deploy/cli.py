@@ -63,27 +63,19 @@ bridge_validators_address_option = click.option(
     envvar="VALIDATOR_SET_ADDRESS",
 )
 
-home_daily_limit_option = click.option(
-    "--home-daily-limit",
+daily_limit_option = click.option(
+    "--daily-limit",
     help="The daily transfer limit for the home bridge in ETH",
     type=str,
     default="10000",
     callback=validate_eth_amount,
 )
 
-home_max_per_tx_option = click.option(
-    "--home-max-per-tx",
+max_per_tx_option = click.option(
+    "--max-per-tx",
     help="The maximum transfer limit for one transaction in ETH",
     type=str,
     default="5000",
-    callback=validate_eth_amount,
-)
-
-home_min_per_tx_option = click.option(
-    "--home-min-per-tx",
-    help="The minimum transfer limit for one transaction in ETH",
-    type=str,
-    default="0.005",
     callback=validate_eth_amount,
 )
 
@@ -198,9 +190,8 @@ def deploy_validators(
 )
 @keystore_option
 @bridge_validators_address_option
-@home_daily_limit_option
-@home_max_per_tx_option
-@home_min_per_tx_option
+@daily_limit_option
+@max_per_tx_option
 @home_gas_price_option
 @required_block_confirmations_option
 @owner_address_option
@@ -218,9 +209,8 @@ def deploy_home(
     nonce: int,
     auto_nonce: bool,
     bridge_validators_address,
-    home_daily_limit,
-    home_max_per_tx,
-    home_min_per_tx,
+    daily_limit,
+    max_per_tx,
     home_gas_price,
     required_block_confirmations,
     owner_address,
@@ -265,9 +255,8 @@ def deploy_home(
         transaction_options=transaction_options,
         home_bridge_contract=home_bridge_contract,
         validator_contract_address=bridge_validators_address,
-        home_daily_limit=home_daily_limit,
-        home_max_per_tx=home_max_per_tx,
-        home_min_per_tx=home_min_per_tx,
+        daily_limit=daily_limit,
+        max_per_tx=max_per_tx,
         home_gas_price=home_gas_price,
         required_block_confirmations=required_block_confirmations,
         block_reward_address=block_reward_contract.address,

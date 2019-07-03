@@ -157,9 +157,8 @@ def initialize_home_bridge_contract(
     transaction_options: Dict = None,
     home_bridge_contract,
     validator_contract_address,
-    home_daily_limit,
-    home_max_per_tx,
-    home_min_per_tx,
+    daily_limit,
+    max_per_tx,
     home_gas_price,
     required_block_confirmations,
     block_reward_address,
@@ -175,14 +174,14 @@ def initialize_home_bridge_contract(
 
     home_bridge_contract_initialize = home_bridge_contract.functions.initialize(
         validator_contract_address,
-        home_daily_limit,
-        home_max_per_tx,
-        home_min_per_tx,
+        3,  # DAILY LIMIT
+        2,  # MAX
+        1,  # MIN
         home_gas_price,
         required_block_confirmations,
         block_reward_address,
-        1,  # FOREIGN_DAILY_LIMIT,
-        0,  # FOREIGN_MAX_AMOUNT_PER_TX,
+        daily_limit,  # FOREIGN_DAILY_LIMIT,
+        max_per_tx,  # FOREIGN_MAX_AMOUNT_PER_TX,
         owner_address,  # OWNER
     )
 
@@ -194,11 +193,11 @@ def initialize_home_bridge_contract(
     )
     increase_transaction_options_nonce(transaction_options)
 
-    home_bridge_contract_set_execution_daily_limit = home_bridge_contract.functions.setExecutionDailyLimit(
+    home_bridge_contract_set_daily_limit = home_bridge_contract.functions.setDailyLimit(
         0
     )
     send_function_call_transaction(
-        home_bridge_contract_set_execution_daily_limit,
+        home_bridge_contract_set_daily_limit,
         web3=web3,
         transaction_options=transaction_options,
         private_key=private_key,
