@@ -11,8 +11,8 @@ VALIDATOR_SET_CSV_FILE="$E2E_DIRECTORY/validator_list.csv"
 ENVIRONMENT_VARIABLES_FILE="$E2E_DIRECTORY/env_override"
 SIDE_CHAIN_SPEC_FILE="$E2E_DIRECTORY/node_config/side_chain_spec.json"
 VIRTUAL_ENV="$BASE_DIRECTORY/venv"
-PREMINTED_TOKEN_AMOUNT=10000
-TRANSFER_TOKEN_AMOUNT=1
+PREMINTED_TOKEN_AMOUNT="10000000000000000000000"
+TRANSFER_TOKEN_AMOUNT="1000000000000000000"
 NODE_SIDE_RPC_ADDRESS="http://127.0.0.1:8545"
 NODE_MAIN_RPC_ADDRESS="http://127.0.0.1:8544"
 
@@ -121,6 +121,11 @@ $DOCKER_COMPOSE_COMMAND up -d node_side node_main
 echo "===> Wait for the chains to start up"
 sleep 10
 
+response=$(curl --silent --data \
+  "{\"method\":\"eth_getBalance\",\"params\":[\"$VALIDATOR_ADDRESS\"],\"id\":1,\"jsonrpc\":\"2.0\"}" \
+  -H "Content-Type: application/json" -X POST $NODE_SIDE_RPC_ADDRESS)
+echo "Current Balance: $(convertHexToDecOfJsonRpcResponse \"$response\")"
+
 echo "===> Deploy validator set proxy contract (with validator set)"
 validator_set_proxy_contract_address=$(executeAndParseHexAddress "validator-set-deploy deploy-proxy \
   --jsonrpc $NODE_SIDE_RPC_ADDRESS --validators $VALIDATOR_SET_CSV_FILE")
@@ -160,7 +165,7 @@ deploy-tools call --jsonrpc $NODE_SIDE_RPC_ADDRESS --contracts-dir "$CONTRACT_DI
 
 echo "===> Deploy home bridge contracts"
 
-# Use block reward by zero to be able comparing the validators balance for the
+# Use block reward of 0 wei to be able comparing the validators balance for the
 # later bridge transfer. Before the reward contract, this is already zero.
 deploy_home_result=$(bridge-deploy deploy-home --jsonrpc $NODE_SIDE_RPC_ADDRESS \
 --bridge-validators-address $home_bridge_validators_contract_address \
@@ -175,10 +180,6 @@ home_bridge_contract_address=$(parseLastHexAddress "$deploy_home_result")
 
 echo "BlockReward contract address: $block_reward_contract_address"
 echo "HomeBridge contract address: $home_bridge_contract_address"
-
-echo "===> Check allowed bridges"
-deploy-tools call --jsonrpc $NODE_SIDE_RPC_ADDRESS --contracts-dir "$CONTRACT_DIRECTORY" \
-  --contract-address $block_reward_contract_address RewardByBlock bridgesAllowed
 
 echo "===> Deploy token contract"
 
@@ -269,14 +270,12 @@ printf '.\n'
 echo "===> Test a bridge transfer from foreign to home chain"
 
 # Check balance before
-homeNativeBalanceBefore=$(
-  convertHexToDecOfJsonRpcResponse "$(
-    curl --silent --data \
-      "{\"method\":\"eth_getBalance\",\"params\":[\"$VALIDATOR_ADDRESS\"],\"id\":1,\"jsonrpc\":\"2.0\"}" \
-      -H "Content-Type: application/json" -X POST $NODE_SIDE_RPC_ADDRESS
-  )"
-)
+response=$(curl --silent --data \
+  "{\"method\":\"eth_getBalance\",\"params\":[\"$VALIDATOR_ADDRESS\"],\"id\":1,\"jsonrpc\":\"2.0\"}" \
+  -H "Content-Type: application/json" -X POST $NODE_SIDE_RPC_ADDRESS)
+homeNativeBalanceBefore=$(convertHexToDecOfJsonRpcResponse "$response")
 echo "Balance on home chain before: $homeNativeBalanceBefore"
+
 
 echo "===> Transfer token to foreign bridge"
 
@@ -300,24 +299,25 @@ while [[ $bridgeSenderLog != *"Finished processing msg"* ]]; do
   sleep 5
 done
 
-homeNativeBalanceAfter=$(
-  convertHexToDecOfJsonRpcResponse "$(
-    curl --silent --data \
-      "{\"method\":\"eth_getBalance\",\"params\":[\"$VALIDATOR_ADDRESS\"],\"id\":1,\"jsonrpc\":\"2.0\"}" \
-      -H "Content-Type: application/json" -X POST $NODE_SIDE_RPC_ADDRESS
-  )"
-)
-echo "Balance on home chain after: $homeNativeBalanceAfter"
+sleep 10
 
-echo "WAIT FOREVER AND SEND TOKEN FROM TIME TO TIME"
-while true; do
-  sleep 15
-  deploy-tools transact --jsonrpc $NODE_MAIN_RPC_ADDRESS --contracts-dir "$CONTRACT_DIRECTORY" \
-    --contract-address "$token_contract_address" TrustlinesNetworkToken transfer \
-    "$foreign_bridge_contract_address" $TRANSFER_TOKEN_AMOUNT \
-    --gas 7000000 \
-    --gas-price 10
-done
+echo "===> RewardContract Stats"
+
+echo "blockRewardAmount: $(deploy-tools call --jsonrpc $NODE_SIDE_RPC_ADDRESS --contracts-dir "$CONTRACT_DIRECTORY" \
+  --contract-address $block_reward_contract_address RewardByBlock blockRewardAmount)"
+
+echo "mintedForAccount: $(deploy-tools call --jsonrpc $NODE_SIDE_RPC_ADDRESS --contracts-dir "$CONTRACT_DIRECTORY" \
+  --contract-address $block_reward_contract_address RewardByBlock mintedForAccount $VALIDATOR_ADDRESS)"
+
+echo "mintedTotally: $(deploy-tools call --jsonrpc $NODE_SIDE_RPC_ADDRESS --contracts-dir "$CONTRACT_DIRECTORY" \
+  --contract-address $block_reward_contract_address RewardByBlock mintedTotally)"
+
+
+response=$(curl --silent --data \
+  "{\"method\":\"eth_getBalance\",\"params\":[\"$VALIDATOR_ADDRESS\"],\"id\":1,\"jsonrpc\":\"2.0\"}" \
+  -H "Content-Type: application/json" -X POST $NODE_SIDE_RPC_ADDRESS)
+homeNativeBalanceAfter=$(convertHexToDecOfJsonRpcResponse "$response")
+echo "Balance on home chain after: $homeNativeBalanceAfter"
 
 
 if [[ $homeNativeBalanceAfter -le $homeNativeBalanceBefore ]]; then
