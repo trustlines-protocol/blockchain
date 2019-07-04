@@ -5,8 +5,8 @@ lint: install
 	$(VIRTUAL_ENV)/bin/flake8 quickstart setup.py
 	$(VIRTUAL_ENV)/bin/black --check quickstart setup.py
 
-test:
-	@echo "We don't have any tests for the quickstart folder."
+test: install
+	$(VIRTUAL_ENV)/bin/pytest tests
 
 install-requirements: .installed
 

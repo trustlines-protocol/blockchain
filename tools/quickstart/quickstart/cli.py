@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """import private key or keystore file as parity account"""
 
 import sys
@@ -33,6 +31,10 @@ class TrustlinesFiles:
             f.write(account.address)
 
 
+def is_wrong_password_error(err):
+    return type(err) is ValueError and str(err) == "MAC mismatch"
+
+
 def import_keystore_file(trustline_files, keystore_input_file):
     keyfile_dict = json.loads(open(keystore_input_file, "rb").read())
 
@@ -41,9 +43,12 @@ def import_keystore_file(trustline_files, keystore_input_file):
         try:
             account = Account.from_key(Account.decrypt(keyfile_dict, password))
             break
-        except ValueError:
-            click.echo("The password you entered is wrong. Please try again.")
-
+        except Exception as err:
+            if is_wrong_password_error(err):
+                click.echo("The password you entered is wrong. Please try again.")
+            else:
+                click.echo(f"Error: malformed keystore file: {repr(err)}")
+                sys.exit(1)
     trustline_files.store(account, password)
     sys.exit(0)
 
