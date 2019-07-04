@@ -429,9 +429,16 @@ def bridge_address(accounts):
 
 
 @pytest.fixture(scope="session")
-def reward_contract(deploy_contract, system_address, bridge_address):
+def block_reward():
+    # block reward of 1 eth
+    return 1 * 10 ** 18
+
+
+@pytest.fixture(scope="session")
+def reward_contract(deploy_contract, system_address, bridge_address, block_reward):
     deployed_contract = deploy_contract(
-        "TestRewardByBlock", constructor_args=(system_address, bridge_address)
+        "TestRewardByBlock",
+        constructor_args=(system_address, bridge_address, block_reward),
     )
 
     return deployed_contract
