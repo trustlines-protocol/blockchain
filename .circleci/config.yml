@@ -167,6 +167,29 @@ jobs:
           name: Run pytest
           command: pytest contracts/tests
 
+  test-quickstart:
+    executor: ubuntu-builder
+    steps:
+      - checkout
+      - restore_cache:
+          key: quickstart-venv-{{ checksum "tools/quickstart/constraints.txt" }}-{{ checksum "tools/quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
+      - run:
+          name: Install requirements
+          command: |
+            make -C tools/quickstart install-requirements
+      - save_cache:
+          key: quickstart-venv-{{ checksum "tools/quickstart/constraints.txt" }}-{{ checksum "tools/quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
+          paths:
+            - venv
+      - run:
+          name: Install tools/quickstart
+          command: |
+            make -C tools/quickstart install
+      - run:
+          name: Run tests
+          command: |
+            make -C tools/quickstart test
+
   mypy-auction:
     executor: ubuntu-builder
     steps:
@@ -310,6 +333,44 @@ jobs:
             make test
             cd ../..
 
+  build-quickstart-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: quickstart
+    steps:
+      - setup_remote_docker
+      - checkout
+      - run:
+          name: Build quickstart image
+          command: |
+            make -C tools/quickstart build-docker-image
+      - run:
+          name: Save quickstart image
+          command: |
+            mkdir -p ~/images
+            docker save --output ~/images/$LOCAL_IMAGE.tar $LOCAL_IMAGE
+            du -hc ~/images
+      - persist_to_workspace:
+          root: "~"
+          paths:
+            - images
+
+  deploy-quickstart-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: quickstart
+    working_directory: ~/repo
+    steps:
+      - run:
+          name: set DOCKER_REPO
+          command: |
+            echo ': \"${DOCKER_REPO:=trustlines/quickstart}\"' >> ${BASH_ENV}
+          # this allows us to set DOCKER_REPO from circleci when building in a
+          # fork. makes testing easier.
+
+      - upload-docker-image
+
+
   build-docker-image:
     executor: ubuntu-builder
     environment:
@@ -429,7 +490,8 @@ workflows:
             - install-bridge
 
       - build-docker-image
-
+      - build-quickstart-image
+      - test-quickstart
       - deploy-docker-image:
           filters:
             branches:
@@ -443,6 +505,19 @@ workflows:
             - install-contracts
             - pytest-contracts
             - build-docker-image
+          context: docker-credentials
+
+      - deploy-quickstart-image:
+          filters:
+            branches:
+              only:
+                - master
+                - pre-release
+          requires:
+            - test-quickstart
+            - build-quickstart-image
+            - run-black
+            - run-flake8
           context: docker-credentials
 
       - compare-docker-image:

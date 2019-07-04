@@ -1,6 +1,6 @@
 VIRTUAL_ENV ?= $(shell pwd)/venv
 
-SUBDIRS = tools/auction-deploy tools/bridge-deploy tools/validator-set-deploy contracts
+SUBDIRS = tools/auction-deploy tools/bridge-deploy tools/validator-set-deploy tools/quickstart contracts
 
 .PHONY: help
 help:
