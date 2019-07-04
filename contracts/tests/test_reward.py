@@ -1,20 +1,23 @@
 import pytest
 
-from eth_utils import to_wei
-
 from eth_tester.exceptions import TransactionFailed
 
 
-def test_validator_is_rewarded_1_eth(
-    reward_contract, system_address, emission_address, validators
+def test_validator_is_rewarded_correct_amount(
+    reward_contract, system_address, emission_address, validators, block_reward
 ):
     assert reward_contract.functions.reward([validators[0]], [0]).call(
         {"from": system_address}
-    ) == [[validators[0], emission_address], [to_wei(1, "ether"), 0]]
+    ) == [[validators[0], emission_address], [block_reward, 0]]
 
 
 def test_bridge_is_rewarded_requested_amount(
-    reward_contract, system_address, bridge_address, emission_address, validators
+    reward_contract,
+    system_address,
+    bridge_address,
+    emission_address,
+    validators,
+    block_reward,
 ):
     for amount in [50, 100]:
         reward_contract.functions.addExtraReceiver(amount, bridge_address).transact(
@@ -22,14 +25,16 @@ def test_bridge_is_rewarded_requested_amount(
         )
     assert reward_contract.functions.reward([validators[0]], [0]).call(
         {"from": system_address}
-    ) == [
-        [validators[0], emission_address, bridge_address],
-        [to_wei(1, "ether"), 0, 150],
-    ]
+    ) == [[validators[0], emission_address, bridge_address], [block_reward, 0, 150]]
 
 
 def test_bridge_reward_is_reset_on_reward(
-    reward_contract, system_address, emission_address, bridge_address, validators
+    reward_contract,
+    system_address,
+    emission_address,
+    bridge_address,
+    validators,
+    block_reward,
 ):
     reward_contract.functions.addExtraReceiver(100, bridge_address).transact(
         {"from": bridge_address}
@@ -39,7 +44,7 @@ def test_bridge_reward_is_reset_on_reward(
     )
     assert reward_contract.functions.reward([validators[0]], [0]).call(
         {"from": system_address}
-    ) == [[validators[0], emission_address], [to_wei(1, "ether"), 0]]
+    ) == [[validators[0], emission_address], [block_reward, 0]]
 
 
 def test_only_system_can_reward(reward_contract, malicious_validator_address):

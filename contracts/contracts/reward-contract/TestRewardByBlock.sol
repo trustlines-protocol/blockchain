@@ -6,9 +6,12 @@ import "./RewardByBlock.sol";
 
 contract TestRewardByBlock is RewardByBlock {
 
-    constructor (address _systemAddress, address _bridgeAddress) public {
+    constructor (address _systemAddress, address _bridgeAddress, uint blockReward) public {
         systemAddress = _systemAddress;
-        bridgeAddress = _bridgeAddress;
+
+        blockRewardAmount = blockReward;
+        homeBridgeAddress = _bridgeAddress;
+        initialized = true;
     }
 
 }
