@@ -49,8 +49,8 @@ function preexec() {
 }
 
 # Enable for debug output
-# set -o functrace # run DEBUG trap in subshells
-# trap preexec DEBUG
+set -o functrace # run DEBUG trap in subshells
+trap preexec DEBUG
 
 function cleanup() {
   cwd=$(pwd)
