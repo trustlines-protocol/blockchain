@@ -6,7 +6,7 @@ set -e
 # Variables
 : "${DOCKER_IMAGE_PARITY:=trustlines/tlbc-testnet}"
 DOCKER_IMAGE_WATCHTOWER="v2tec/watchtower"
-: "${DOCKER_IMAGE_QUICKSTART:=trustlines/quickstart:master0}"
+: "${DOCKER_IMAGE_QUICKSTART:=trustlines/quickstart:master3734}"
 
 DOCKER_CONTAINER_PARITY="trustlines-testnet"
 DOCKER_CONTAINER_WATCHTOWER="watchtower-testnet"
