@@ -129,7 +129,7 @@ def deploy(
 
 @main.command(
     short_help="Deploys the validator proxy and initializes with the validator addresses "
-    "within the given validator set address."
+    "within the given validator csv file."
 )
 @keystore_option
 @click.option(
