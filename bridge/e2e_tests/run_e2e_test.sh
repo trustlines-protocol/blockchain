@@ -58,7 +58,9 @@ function cleanup() {
   $DOCKER_COMPOSE_COMMAND down -v
   $DOCKER_COMPOSE_COMMAND rm -v
   cd "$cwd"
-  rm -rf "$BRIDGE_DATA_DIRECTORY" # TODO: directory is permissioned (why?)
+  # we need root rights to delete some of the files
+  docker run -v "$BRIDGE_DATA_DIRECTORY":/data --rm ubuntu:18.04 bash -c 'rm -rf /data/*'
+  rm -rf "$BRIDGE_DATA_DIRECTORY"
 }
 
 trap "cleanup" EXIT
