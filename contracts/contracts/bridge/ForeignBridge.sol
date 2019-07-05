@@ -2,6 +2,6 @@ pragma solidity ^0.5.8;
 
 contract ForeignBridge {
 
-  uint public requiredBlockConfirmations = 8;
+    uint public requiredBlockConfirmations = 8;
 
 }
