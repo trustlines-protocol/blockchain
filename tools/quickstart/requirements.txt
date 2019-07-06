@@ -1,0 +1,4 @@
+eth_account
+click
+# development dependencies
+-r ../../requirements-dev.txt
