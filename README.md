@@ -2,6 +2,7 @@
 
 - [Run Local Peer](#run-local-peer)
   - [Quickstart](#quickstart)
+  - [System Time](#system-time)
   - [With Docker](#with-docker)
     - [Pre-Requisites](#pre-requisites)
     - [Usage](#Usage)
@@ -15,6 +16,7 @@
     - [Creating An Account](#creating-an-account)
     - [Setup For Users Using Only CLI](#setup-for-users-using-only-cli)
     - [Setup For Validators Using Only CLI](#setup-for-validators-using-only-cli)
+- [Backups](#backups)
 - [Development](#development)
   - [Build Own Image](#build-own-image)
   - [Upload Image](#upload-image)
@@ -38,6 +40,14 @@ $ wget -O quickstart.sh https://github.com/trustlines-protocol/blockchain/raw/ma
 
 Follow the instructions to insert your password. If you want to restart the node or want to make sure it runs on the most recent version, just
 rerun the script.
+
+---
+
+### System Time
+
+Due to the way the block validation works and is synchronized, it is essential to make sure your host system has the correct time configuration. On recent Ubuntu systems, for example, this should already be the case. You can check the settings on such systems using ```timedatectl```.
+
+On other operating systems you should check if your time is synchronized with an [NTP server](https://www.pool.ntp.org/).
 
 ---
 
@@ -233,7 +243,7 @@ These are the steps to run a node as a simple user.
 Independently of whether you created an account or not, you can start a node to sync with the trustlines chain with the following command:
 
 ```sh
-parity --chain trustlines-spec.json -d user_node --auto-update=none --no-download --network-id=4874
+parity --chain trustlines-spec.json -d user_node --auto-update=none --no-download
 ```
 
 #### Setup For Validators Using Only CLI
@@ -243,13 +253,13 @@ These are the steps to run a node as a validator, make sure you are a validator 
 If you just created an account following the "Creating an account" section and stored your password in the file "password.pwd", you can start a node with the following command, replacing [address] with your address given during account creation:
 
 ```sh
-parity --chain trustlines-spec.json -d validator_node --auto-update=none --no-download --password=password.pwd --max-peers=100 --network-id=4874 --author=[address] --engine-signer=[address] --force-sealing --reseal-on-txs=none --min-gas-price="1" --tx-queue-per-sender=100
+parity --chain trustlines-spec.json -d validator_node --auto-update=none --no-download --password=password.pwd --max-peers=100 --author=[address] --engine-signer=[address] --force-sealing --reseal-on-txs=none --min-gas-price="1" --tx-queue-per-sender=100
 ```
 
 Otherwise, you need to adjust some parameters. You need to provide the path to your private key in "--keys-path=[path]", the path to your password protecting this key in "--password=[path]" as well as your address in "--author=[address]" and "--engine-signer=[address]"
 
 ```sh
-parity --chain trustlines-spec.json -d validator_node --auto-update=none --no-download --keys-path=[path/to/keys] --password=[path/to/password] --max-peers=100 --network-id=4874 --author=[address] --engine-signer=[address] --force-sealing --reseal-on-txs=none --min-gas-price="1" --tx-queue-per-sender=100
+parity --chain trustlines-spec.json -d validator_node --auto-update=none --no-download --keys-path=[path/to/keys] --password=[path/to/password] --max-peers=100 --author=[address] --engine-signer=[address] --force-sealing --reseal-on-txs=none --min-gas-price="1" --tx-queue-per-sender=100
 ```
 
 ---

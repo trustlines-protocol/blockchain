@@ -17,8 +17,6 @@ password = ["path/to/password"]
 port = 30300
 # Parity will maintain at most 100 peers.
 max_peers = 100
-# Network ID of the chain will be overridden to: 4874
-id = 4874
 
 [mining]
 # Account address to receive reward when block is mined.

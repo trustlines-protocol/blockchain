@@ -2,19 +2,19 @@ import pytest
 import eth_tester.exceptions
 
 
-def test_update_validators(validator_proxy_contract, validator_proxy_owner, accounts):
+def test_update_validators(validator_proxy_contract, system_address, accounts):
     validators = accounts[:5]
     validator_proxy_contract.functions.updateValidators(validators).transact(
-        {"from": validator_proxy_owner}
+        {"from": system_address}
     )
 
 
 def test_update_validators_not_system(
-    validator_proxy_contract, validator_proxy_owner, accounts
+    validator_proxy_contract, system_address, accounts
 ):
     validators = accounts[:5]
     sender = accounts[4]
-    assert sender != validator_proxy_owner
+    assert sender != system_address
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         validator_proxy_contract.functions.updateValidators(validators).transact(
             {"from": sender}

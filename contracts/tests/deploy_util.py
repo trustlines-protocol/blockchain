@@ -1,10 +1,12 @@
 from deploy_tools.deploy import wait_for_successful_transaction_receipt
 
 
-def initialize_validator_set(test_validator_set_contract, validators, web3):
-    txid = test_validator_set_contract.functions.init(validators).transact(
-        {"from": web3.eth.defaultAccount}
-    )
+def initialize_validator_set(
+    test_validator_set_contract, validators, validator_proxy_address, web3
+):
+    txid = test_validator_set_contract.functions.init(
+        validators, validator_proxy_address
+    ).transact({"from": web3.eth.defaultAccount})
     wait_for_successful_transaction_receipt(web3, txid)
     return test_validator_set_contract
 

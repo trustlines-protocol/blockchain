@@ -1,0 +1,5 @@
+click
+web3
+pendulum
+contract-deploy-tools
+-r ../../requirements-dev.txt

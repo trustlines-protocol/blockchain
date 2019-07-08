@@ -77,6 +77,9 @@
                         },
                         "2717172": {
                             "safeContract": "0x352B8FaC58c743FA2aaA086e20d0bF3789774d46"
+                        },
+                        "3180813": {
+                            "safeContract": "0x7562F6FBFD211cE9896839b5062d2bA16b839e8C"
                         }
                     }
                 },
@@ -89,7 +92,7 @@
         "gasLimitBoundDivisor": "0x400",
         "maximumExtraDataSize": "0x20",
         "minGasLimit": "0xF4240",
-        "networkID": "0x4874",
+        "networkID": "0x130A",
         "chainID": "0x4874",
         "eip155Transition": 0,
         "validateChainIdTransition": 0,
@@ -101,7 +104,6 @@
         "eip160Transition": "0x0",
         "eip161abcTransition": "0x0",
         "eip161dTransition": "0x0",
-        "eip98Transition": "0x7fffffffffffff",
         "eip145Transition": "0x2B08BA",
         "eip1014Transition": "0x2B08BA",
         "eip1052Transition": "0x2B08BA",
