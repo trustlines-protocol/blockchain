@@ -348,7 +348,7 @@ EOF
 
   printmsg <<EOF
 
-Parity node as started and is running in background!
+The Parity client has started and is running in background!
 
 EOF
 }
