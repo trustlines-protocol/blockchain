@@ -1,5 +1,7 @@
 import pytest
 
+from eth_tester.exceptions import TransactionFailed
+
 
 @pytest.fixture()
 def foreign_bridge_with_token_balance(
@@ -40,3 +42,11 @@ def test_burn_token(foreign_bridge_with_token_balance, tln_token_contract):
 def test_burn_token_with_zero_balance(foreign_bridge_with_token_balance):
     foreign_bridge_with_token_balance.functions.burn().transact()
     foreign_bridge_with_token_balance.functions.burn().transact()
+
+
+def test_deploy_with_zero_token_address_fails(deploy_contract):
+    with pytest.raises(TransactionFailed):
+        deploy_contract(
+            "ForeignBridge",
+            constructor_args=("0x0000000000000000000000000000000000000000",),
+        )
