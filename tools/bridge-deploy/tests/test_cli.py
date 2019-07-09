@@ -61,7 +61,7 @@ def test_deploy_foreign(runner):
 
     result = runner.invoke(
         main,
-        args="deploy-foreign --jsonrpc test --token-address 0x0000000000000000000000000000000000000000",
+        args="deploy-foreign --jsonrpc test --token-address 0x5757957701948584cc2A8293857D89b19De44f0F",
     )
 
     assert result.exit_code == 0

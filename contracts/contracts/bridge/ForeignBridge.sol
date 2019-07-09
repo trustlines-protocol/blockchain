@@ -9,6 +9,11 @@ contract ForeignBridge {
     TrustlinesNetworkToken public trustlinesNetworkToken;
 
     constructor(TrustlinesNetworkToken _trustlinesNetworkToken) public {
+        require(
+            address(_trustlinesNetworkToken) != address(0),
+            "Token contract can not be on the zero address!"
+        );
+
         trustlinesNetworkToken = _trustlinesNetworkToken;
     }
 
