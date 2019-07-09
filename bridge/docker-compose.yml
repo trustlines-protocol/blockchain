@@ -7,6 +7,8 @@ services:
     hostname: rabbit
     image: rabbitmq:3
     networks:
+      - net_node_main
+      - net_node_side
       - net_rabbit_bridge_request
       - net_rabbit_bridge_collected
       - net_rabbit_bridge_affirmation
@@ -21,6 +23,8 @@ services:
     hostname: redis
     image: redis:4
     networks:
+      - net_node_main
+      - net_node_side
       - net_db_bridge_request
       - net_db_bridge_collected
       - net_db_bridge_affirmation
@@ -40,6 +44,8 @@ services:
     restart: unless-stopped
     entrypoint: npm run watcher:signature-request
     networks:
+      - net_node_main
+      - net_node_side
       - net_db_bridge_request
       - net_rabbit_bridge_request
   bridge_collected:
@@ -54,6 +60,8 @@ services:
     restart: unless-stopped
     entrypoint: npm run watcher:collected-signatures
     networks:
+      - net_node_main
+      - net_node_side
       - net_db_bridge_collected
       - net_rabbit_bridge_collected
   bridge_affirmation:
@@ -68,6 +76,8 @@ services:
     restart: unless-stopped
     entrypoint: npm run watcher:affirmation-request
     networks:
+      - net_node_main
+      - net_node_side
       - net_db_bridge_affirmation
       - net_rabbit_bridge_affirmation
   bridge_senderhome:
@@ -82,6 +92,8 @@ services:
     restart: unless-stopped
     entrypoint: npm run sender:home
     networks:
+      - net_node_main
+      - net_node_side
       - net_db_bridge_senderhome
       - net_rabbit_bridge_senderhome
   bridge_senderforeign:
@@ -96,10 +108,16 @@ services:
     restart: unless-stopped
     entrypoint: npm run sender:foreign
     networks:
+      - net_node_main
+      - net_node_side
       - net_db_bridge_senderforeign
       - net_rabbit_bridge_senderforeign
 
 networks:
+  net_node_main:
+    driver: bridge
+  net_node_side:
+    driver: bridge
   net_db_bridge_request:
     driver: bridge
   net_db_bridge_collected:

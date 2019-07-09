@@ -17,7 +17,7 @@ compile: .installed .compiled
 
 POA_SOL_FILES=$(shell find $(TOP_LEVEL)/submodules/poa-bridge-contracts/contracts -type f -iname '*.sol')
 CONTRACT_SOL_FILES=$(shell find $(CONTRACTS_DIRECTORY) -type f -iname '*.sol')
-.compiled: $(TOP_LEVEL)/submodules/poa-bridge-contracts/package.json $(POA_SOL_FILES) $(REWARD_SOL_FILES) $(CONTRACT_SOL_FILES) $(VIRTUAL_ENV)
+.compiled: $(TOP_LEVEL)/submodules/poa-bridge-contracts/package.json $(POA_SOL_FILES) $(CONTRACT_SOL_FILES) $(VIRTUAL_ENV)
 	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d $(CONTRACTS_DIRECTORY) -o build/contracts.json
 	$(VIRTUAL_ENV)/bin/npm --prefix $(TOP_LEVEL)/submodules/poa-bridge-contracts install && \
 	cd $(TOP_LEVEL)/submodules/poa-bridge-contracts && \
@@ -33,6 +33,7 @@ install: install-requirements compile
 	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -e .
 
 .installed: constraints.txt requirements.txt $(VIRTUAL_ENV)
+	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt pip wheel setuptools
 	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -r requirements.txt
 	$(VIRTUAL_ENV)/bin/nodeenv --node=8.16.0 --prebuilt -p
 	git submodule init

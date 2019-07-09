@@ -1,0 +1,42 @@
+version: '2.4'
+
+services:
+  node_main:
+    build:
+      context: ./e2e_tests
+      dockerfile: docker-parity
+    container_name: node_main
+    volumes:
+      - ${PWD}/node_config/main_chain_spec.json:/home/parity/.local/share/io.parity.ethereum/chain_spec.json
+    ports:
+      - 8544:8545
+    networks:
+      - net_node_main
+
+  node_side:
+    build:
+      context: ./e2e_tests
+      dockerfile: docker-parity
+    container_name: node_side
+    volumes:
+      - ${PWD}/node_config/side_chain_spec.json:/home/parity/.local/share/io.parity.ethereum/chain_spec.json
+    ports:
+      - 8545:8545
+    networks:
+      - net_node_side
+
+  bridge_request:
+    env_file: ./e2e_tests/env_override
+    restart: 'no'
+  bridge_collected:
+    env_file: ./e2e_tests/env_override
+    restart: 'no'
+  bridge_affirmation:
+    env_file: ./e2e_tests/env_override
+    restart: 'no'
+  bridge_senderhome:
+    env_file: ./e2e_tests/env_override
+    restart: 'no'
+  bridge_senderforeign:
+    env_file: ./e2e_tests/env_override
+    restart: 'no'

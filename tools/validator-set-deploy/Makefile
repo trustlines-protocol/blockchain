@@ -23,6 +23,7 @@ install: install-requirements compile
 	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -e .
 
 .installed: constraints.txt requirements.txt $(VIRTUAL_ENV)
+	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt pip wheel setuptools
 	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -r requirements.txt
 	@echo "This file controls for make if the requirements in your virtual env are up to date" > $@
 
