@@ -378,6 +378,13 @@ def validator_proxy_with_validators(
     return validator_proxy_contract
 
 
+@pytest.fixture()
+def foreign_bridge_contract(deploy_contract, tln_token_contract):
+    return deploy_contract(
+        "ForeignBridge", constructor_args=(tln_token_contract.address,)
+    )
+
+
 @pytest.fixture(scope="session")
 def proxy_validators(accounts):
     return accounts[:5]
