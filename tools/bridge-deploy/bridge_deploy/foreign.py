@@ -6,7 +6,7 @@ from bridge_deploy.utils import load_build_contract
 
 
 def deploy_foreign_bridge_contract(
-    *, web3, transaction_options: Dict = None, private_key=None
+    *, token_contract_address, web3, transaction_options: Dict = None, private_key=None
 ) -> Contract:
 
     if transaction_options is None:
@@ -17,6 +17,7 @@ def deploy_foreign_bridge_contract(
     return deploy_compiled_contract(
         abi=foreign_bridge_src["abi"],
         bytecode=foreign_bridge_src["bytecode"],
+        constructor_args=(token_contract_address,),
         web3=web3,
         transaction_options=transaction_options,
         private_key=private_key,

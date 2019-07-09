@@ -59,7 +59,10 @@ def test_deploy_home_custom_block_reward_amount(
 
 def test_deploy_foreign(runner):
 
-    result = runner.invoke(main, args="deploy-foreign --jsonrpc test")
+    result = runner.invoke(
+        main,
+        args="deploy-foreign --jsonrpc test --token-address 0x0000000000000000000000000000000000000000",
+    )
 
     assert result.exit_code == 0
 
