@@ -130,6 +130,14 @@ block_reward_amount_option = click.option(
     default=1_000_000_000_000_000_000,  # 1 ether
 )
 
+token_address_option = click.option(
+    "--token-address",
+    help=("The address of the TrustlinesNetworkToken contract ('0x' prefixed string)."),
+    type=str,
+    required=True,
+    callback=validate_address,
+)
+
 
 @click.group()
 def main():
@@ -274,8 +282,15 @@ def deploy_home(
 @nonce_option
 @auto_nonce_option
 @jsonrpc_option
+@token_address_option
 def deploy_foreign(
-    keystore: str, jsonrpc: str, gas: int, gas_price: int, nonce: int, auto_nonce: bool
+    keystore: str,
+    jsonrpc: str,
+    gas: int,
+    gas_price: int,
+    nonce: int,
+    auto_nonce: bool,
+    token_address,
 ) -> None:
 
     web3 = connect_to_json_rpc(jsonrpc)
@@ -289,7 +304,10 @@ def deploy_foreign(
     )
 
     foreign_bridge_contract = deploy_foreign_bridge_contract(
-        web3=web3, transaction_options=transaction_options, private_key=private_key
+        token_contract_address=token_address,
+        web3=web3,
+        transaction_options=transaction_options,
+        private_key=private_key,
     )
 
     click.echo(f"ForeignBridge address: {foreign_bridge_contract.address}")
