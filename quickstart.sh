@@ -272,21 +272,7 @@ function pullDockerImages() {
 # It checks if the container is already running and do nothing, is stopped and restart it or create a new one.
 #
 function startWatchtower {
-  # Check if container is already running.
-  if [[ $(${PERMISSION_PREFIX} docker ps) == *"${DOCKER_CONTAINER_WATCHTOWER}"* ]] ; then
-    printmsg <<EOF
-The Watchtower client is already running as container, stopping it..."
-EOF
-    ${PERMISSION_PREFIX} docker stop ${DOCKER_CONTAINER_WATCHTOWER}
-  fi
-  # Check if the container does already exist and restart it.
-  if [[ $(${PERMISSION_PREFIX} docker ps -a) == *"${DOCKER_CONTAINER_WATCHTOWER}"* ]] ; then
-    printmsg <<EOF
-The Watchtower container already exists, deleting it..."
-EOF
-    ${PERMISSION_PREFIX} docker rm ${DOCKER_CONTAINER_WATCHTOWER}
-  fi
-  # Pull and start the container
+  stopAndRemoveContainer ${DOCKER_CONTAINER_WATCHTOWER}
   printmsg <<EOF
 Starting the Watchtower client.
 EOF
@@ -298,29 +284,34 @@ EOF
 }
 
 
+function stopAndRemoveContainer() {
+  local container
+  container=$1
+
+  # Check if container is already running.
+  if [[ $(${PERMISSION_PREFIX} docker ps) == *"${container}"* ]] ; then
+    printmsg <<EOF
+The docker container ${container} is already running. Stopping it.
+EOF
+    ${PERMISSION_PREFIX} docker stop ${container}
+  fi
+
+  # Check if the container does already exist and restart it.
+  if [[ $(${PERMISSION_PREFIX} docker ps -a) == *"${container}"* ]] ; then
+    printmsg <<EOF
+The docker container ${container} already exists, deleting it...
+EOF
+    ${PERMISSION_PREFIX} docker rm ${container}
+  fi
+}
+
 # Start of the validator Parity node within its Docker container.
 # It checks if the container is already running and do nothing, is stopped and restart it or create a new one.
 # This reads in the stored address first.
 # The whole container setup plus arguments will be handled automatically.
 #
 function startNode {
-  # Check if container is already running.
-  if [[ $(${PERMISSION_PREFIX} docker ps) == *"${DOCKER_CONTAINER_PARITY}"* ]] ; then
-    printmsg <<EOF
-The Parity client is already running as container with name '${DOCKER_CONTAINER_PARITY}', stopping it...
-EOF
-    ${PERMISSION_PREFIX} docker stop ${DOCKER_CONTAINER_PARITY}
-  fi
-
-  # Check if the container does already exist and restart it.
-  if [[ $(${PERMISSION_PREFIX} docker ps -a) == *"${DOCKER_CONTAINER_PARITY}"* ]] ; then
-    printmsg <<EOF
-The Parity container already exists, deleting it...
-EOF
-    ${PERMISSION_PREFIX} docker rm ${DOCKER_CONTAINER_PARITY}
-  fi
-
-
+  stopAndRemoveContainer ${DOCKER_CONTAINER_PARITY}
   # Create and start a new container.
   printmsg <<EOF
 
