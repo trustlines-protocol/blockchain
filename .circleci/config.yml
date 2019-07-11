@@ -3,7 +3,7 @@ version: 2.1
 executors:
   ubuntu-builder:
     docker:
-      - image: trustlines/builder:master21
+      - image: trustlines/builder:master24
         environment:
           - SOLC_VERSION=v0.5.8
     working_directory: ~/repo
@@ -84,6 +84,15 @@ commands:
             docker push $DOCKER_REPO:$CIRCLE_BRANCH
 
 jobs:
+  run-shellcheck:
+    executor: ubuntu-builder
+    steps:
+      - checkout
+      - run:
+          name: Shellcheck the quickstart script
+          command: |
+            shellcheck quickstart.sh
+
   run-black:
     executor: ubuntu-builder
     steps:
@@ -459,6 +468,7 @@ workflows:
   version: 2
   default:
     jobs:
+      - run-shellcheck
       - run-black
       - run-flake8
       - solium-contracts
@@ -500,6 +510,7 @@ workflows:
                 - pre-release
           requires:
             - solium-contracts
+            - run-shellcheck
             - run-black
             - run-flake8
             - install-contracts
@@ -516,6 +527,7 @@ workflows:
           requires:
             - test-quickstart
             - build-quickstart-image
+            - run-shellcheck
             - run-black
             - run-flake8
           context: docker-credentials
@@ -541,6 +553,7 @@ workflows:
           requires:
             - approve-the-release
             - solium-contracts
+            - run-shellcheck
             - run-black
             - run-flake8
             - install-contracts
