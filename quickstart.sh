@@ -297,7 +297,7 @@ function stopAndRemoveContainer() {
     printmsg <<EOF
 The docker container ${container} is already running. Stopping it.
 EOF
-    ${PERMISSION_PREFIX} docker stop ${container}
+    ${PERMISSION_PREFIX} docker stop "${container}"
   fi
 
   # Check if the container does already exist and restart it.
@@ -305,7 +305,7 @@ EOF
     printmsg <<EOF
 The docker container ${container} already exists, deleting it...
 EOF
-    ${PERMISSION_PREFIX} docker rm ${container}
+    ${PERMISSION_PREFIX} docker rm "${container}"
   fi
 }
 
@@ -395,7 +395,7 @@ EOF
   done
 
   read -r -p "Instance name: " instance_name
-  cat >${NETSTATS_ENV_FILE} <<EOF
+  cat >"${NETSTATS_ENV_FILE}" <<EOF
 WS_USER=${username}
 WS_PASSWORD=${password}
 INSTANCE_NAME=${instance_name}
@@ -408,7 +408,7 @@ function startNetstats() {
   printmsg <<EOF
 Starting netstats container...
 EOF
-  ${PERMISSION_PREFIX} docker run --network ${DOCKER_NETWORK} --name ${DOCKER_CONTAINER_NETSTATS} -d --restart=always --env-file ${NETSTATS_ENV_FILE} -e RPC_HOST=${DOCKER_CONTAINER_PARITY} ${DOCKER_IMAGE_NETSTATS}
+  ${PERMISSION_PREFIX} docker run --network ${DOCKER_NETWORK} --name ${DOCKER_CONTAINER_NETSTATS} -d --restart=always --env-file "${NETSTATS_ENV_FILE}" -e RPC_HOST=${DOCKER_CONTAINER_PARITY} ${DOCKER_IMAGE_NETSTATS}
 }
 
 
