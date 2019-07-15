@@ -1,5 +1,10 @@
 #!/bin/bash
 # -*- sh-basic-offset: 2; -*-
+#
+# Please format this file with shfmt from https://github.com/mvdan/sh/releases
+# by running the following command:
+#
+# shfmt -i 2 -w quickstart.sh
 
 set -e
 
@@ -38,9 +43,9 @@ function printmsg() {
 # This includes the check for commands, permissions and the environment.
 # The checks can close the process with an error message or set additional options.
 #
-function sanityChecks {
+function sanityChecks() {
   # Check if Docker is ready to use.
-  if ! command -v docker >/dev/null ; then
+  if ! command -v docker >/dev/null; then
     printmsg <<EOF
 
 ERROR
@@ -53,24 +58,24 @@ EOF
   fi
 
   # Check if user is part of the docker group.
-  if [[ $(getent group docker) != *"${USER}"* ]] ; then
+  if [[ $(getent group docker) != *"${USER}"* ]]; then
     # Request the user for root permissions for specific commands.
     PERMISSION_PREFIX="sudo"
   fi
 }
 
-function readPassword {
-  local PASSWORD2;
+function readPassword() {
+  local PASSWORD2
   while true; do
     read -r -s -p "Password: " PASSWORD
     echo
     if [[ -z ${PASSWORD} ]]; then
-      echo "Password must not be empty.";
+      echo "Password must not be empty."
       continue
     fi
     read -r -s -p "Password (again): " PASSWORD2
     echo
-    if [[ "${PASSWORD}" = "${PASSWORD2}" ]]; then
+    if [[ "${PASSWORD}" == "${PASSWORD2}" ]]; then
       return 0
     fi
     echo "Passwords do not match, please try again"
@@ -114,23 +119,23 @@ EOF
 
   readPassword
 
-  ADDRESS=$(yes "${PASSWORD}" | \
-              ${PERMISSION_PREFIX} docker run \
-                                 --interactive --rm \
-                                 --volume "${CONFIG_DIR}:/config/custom" \
-                                 ${DOCKER_IMAGE_PARITY} \
-                                 --parity-args account new |\
-              grep -E -o "0x[0-9a-fA-F]{40}")
+  ADDRESS=$(yes "${PASSWORD}" |
+    ${PERMISSION_PREFIX} docker run \
+      --interactive --rm \
+      --volume "${CONFIG_DIR}:/config/custom" \
+      ${DOCKER_IMAGE_PARITY} \
+      --parity-args account new |
+    grep -E -o "0x[0-9a-fA-F]{40}")
   storePassword
   storeAddress
 }
 
 function storePassword() {
-  echo "${PASSWORD}" > "${PASSWORD_FILE}"
+  echo "${PASSWORD}" >"${PASSWORD_FILE}"
 }
 
 function storeAddress() {
-  if [[ -z ${ADDRESS} ]] ; then
+  if [[ -z ${ADDRESS} ]]; then
     cat <<EOF
 
 ERROR
@@ -141,7 +146,7 @@ EOF
     exit 1
   fi
 
-  echo "${ADDRESS}" > "${ADDRESS_FILE}"
+  echo "${ADDRESS}" >"${ADDRESS_FILE}"
   printmsg <<EOF
 
 Your validator address is ${ADDRESS}
@@ -151,7 +156,7 @@ EOF
 
 function extractAddressFromKeyfile() {
   local address
-  address=$(grep -E -o '"address":[ \t]*"([a-zA-Z0-9]{40})"' "$1" |grep -E -o '[a-zA-Z0-9]{40}')
+  address=$(grep -E -o '"address":[ \t]*"([a-zA-Z0-9]{40})"' "$1" | grep -E -o '[a-zA-Z0-9]{40}')
   if [[ -n "${address}" ]]; then
     echo -n "0x${address}"
   fi
@@ -182,27 +187,33 @@ Please enter the password for the keyfile.
 EOF
 
   ${PERMISSION_PREFIX} docker run --rm -it \
-                     --volume "${CONFIG_DIR}:/config/" \
-                     --volume "${keyfile}:/tmp/account-key.json" \
-                     ${DOCKER_IMAGE_QUICKSTART} \
-                     qs-import-keystore-file /config/pass.pwd /config/address /config/keys/Trustlines/account.json /tmp/account-key.json
+    --volume "${CONFIG_DIR}:/config/" \
+    --volume "${keyfile}:/tmp/account-key.json" \
+    ${DOCKER_IMAGE_QUICKSTART} \
+    qs-import-keystore-file /config/pass.pwd /config/address /config/keys/Trustlines/account.json /tmp/account-key.json
 }
 
 function importPrivateKey() {
   # Pull and start the container
-  ${PERMISSION_PREFIX} docker run --rm -it\
-                     --volume "${CONFIG_DIR}:/config"  \
-                     ${DOCKER_IMAGE_QUICKSTART} \
-                     qs-import-private-key /config/pass.pwd /config/address /config/keys/Trustlines/account.json
+  ${PERMISSION_PREFIX} docker run --rm -it \
+    --volume "${CONFIG_DIR}:/config" \
+    ${DOCKER_IMAGE_QUICKSTART} \
+    qs-import-private-key /config/pass.pwd /config/address /config/keys/Trustlines/account.json
 }
 
 function askYesOrNo() {
   while true; do
     read -r -p "$1 ([y]es or [n]o): "
     case $(echo "${REPLY}" | tr '[:upper:]' '[:lower:]') in
-      y|yes) echo "yes"; break ;;
-      n|no) echo "no"; break;;
-      *) continue ;;
+    y | yes)
+      echo "yes"
+      break
+      ;;
+    n | no)
+      echo "no"
+      break
+      ;;
+    *) continue ;;
     esac
   done
 }
@@ -231,7 +242,7 @@ can create a new key.
 
 EOF
 
-  if [[ "$(askYesOrNo 'Do you want to import an existing keyfile?')" = "yes" ]]; then
+  if [[ "$(askYesOrNo 'Do you want to import an existing keyfile?')" == "yes" ]]; then
     local keyfile
     keyfile=$(pwd)/account-key.json
     if [[ -f "${keyfile}" ]]; then
@@ -247,9 +258,9 @@ If you have done that, please run this script again. It will
 automatically import the account from this keyfile.
 
 EOF
-        exit 0
-      fi
-  elif [[ "$(askYesOrNo 'Do you want to import an existing private key?')" = "yes" ]]; then
+      exit 0
+    fi
+  elif [[ "$(askYesOrNo 'Do you want to import an existing private key?')" == "yes" ]]; then
     importPrivateKey
   else
     generateNewAccount
@@ -259,23 +270,22 @@ EOF
 function pullDockerImages() {
   for img in "${DOCKER_IMAGE_PARITY}" "${DOCKER_IMAGE_WATCHTOWER}" "${DOCKER_IMAGE_QUICKSTART}" "${DOCKER_IMAGE_NETSTATS}"; do
     case ${img} in
-      */*)
+    */*)
 
-        ${PERMISSION_PREFIX} docker pull "${img}"
-        ;;
+      ${PERMISSION_PREFIX} docker pull "${img}"
+      ;;
 
-      *) # do not pull local images used for testing
-        echo "===> not pulling ${img}"
-        ;;
-      esac
+    *) # do not pull local images used for testing
+      echo "===> not pulling ${img}"
+      ;;
+    esac
   done
 }
-
 
 # Start the Watchtower within its Docker container.
 # It checks if the container is already running and do nothing, is stopped and restart it or create a new one.
 #
-function startWatchtower {
+function startWatchtower() {
   stopAndRemoveContainer ${DOCKER_CONTAINER_WATCHTOWER}
   printmsg <<EOF
 Starting the Watchtower client.
@@ -287,13 +297,12 @@ EOF
     ${DOCKER_IMAGE_WATCHTOWER}
 }
 
-
 function stopAndRemoveContainer() {
   local container
   container=$1
 
   # Check if container is already running.
-  if [[ $(${PERMISSION_PREFIX} docker ps) == *"${container}"* ]] ; then
+  if [[ $(${PERMISSION_PREFIX} docker ps) == *"${container}"* ]]; then
     printmsg <<EOF
 The docker container ${container} is already running. Stopping it.
 EOF
@@ -301,7 +310,7 @@ EOF
   fi
 
   # Check if the container does already exist and restart it.
-  if [[ $(${PERMISSION_PREFIX} docker ps -a) == *"${container}"* ]] ; then
+  if [[ $(${PERMISSION_PREFIX} docker ps -a) == *"${container}"* ]]; then
     printmsg <<EOF
 The docker container ${container} already exists, deleting it...
 EOF
@@ -314,7 +323,7 @@ EOF
 # This reads in the stored address first.
 # The whole container setup plus arguments will be handled automatically.
 #
-function startNode {
+function startNode() {
   stopAndRemoveContainer ${DOCKER_CONTAINER_PARITY}
   # Create and start a new container.
   printmsg <<EOF
@@ -356,7 +365,7 @@ function checkCredentials() {
   url=$1
   credentials=$2
   http_code=$(curl --silent -o /dev/null -u "${credentials}" "${url}" -w '%{http_code}')
-  if [[ ${http_code} = "200" ]]; then
+  if [[ ${http_code} == "200" ]]; then
     return 0
   else
     return 1
@@ -373,7 +382,7 @@ running at
 You will need credentials to do that.
 
 EOF
-  if [[ "$(askYesOrNo 'Did you already receive credentials and want to setup the netstats client?')" = "no" ]]; then
+  if [[ "$(askYesOrNo 'Did you already receive credentials and want to setup the netstats client?')" == "no" ]]; then
     return 0
   fi
   while true; do
@@ -381,7 +390,7 @@ EOF
     local password
     read -r -p "Username: " username
     read -s -r -p "Password: " password
-    if checkCredentials https://laikanetstats.trustlines.foundation/check/ "${username}:${password}" ; then
+    if checkCredentials https://laikanetstats.trustlines.foundation/check/ "${username}:${password}"; then
       printmsg <<EOF
 The provided credentials do work.
 EOF
@@ -415,8 +424,6 @@ EOF
   ${PERMISSION_PREFIX} docker run --network ${DOCKER_NETWORK} --name ${DOCKER_CONTAINER_NETSTATS} -d --restart=always --env-file "${NETSTATS_ENV_FILE}" -e RPC_HOST=${DOCKER_CONTAINER_PARITY} ${DOCKER_IMAGE_NETSTATS}
 }
 
-
-
 function main() {
 
   sanityChecks
@@ -436,7 +443,7 @@ EOF
     setupAccountInteractive
   fi
 
-  if  [[ ! -f ${NETSTATS_ENV_FILE} ]]; then
+  if [[ ! -f ${NETSTATS_ENV_FILE} ]]; then
     setupNetstatsInteractive
   fi
 
@@ -447,6 +454,5 @@ EOF
     startNetstats
   fi
 }
-
 
 main "$@"
