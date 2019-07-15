@@ -4,12 +4,16 @@
 set -e
 
 # Variables
+DOCKER_NETWORK=trustlines-network
+
 : "${DOCKER_IMAGE_PARITY:=trustlines/tlbc-testnet}"
 DOCKER_IMAGE_WATCHTOWER="v2tec/watchtower"
 : "${DOCKER_IMAGE_QUICKSTART:=trustlines/quickstart:master3734}"
+: "${DOCKER_IMAGE_NETSTATS:=trustlines/netstats-client:master}"
 
 DOCKER_CONTAINER_PARITY="trustlines-testnet"
 DOCKER_CONTAINER_WATCHTOWER="watchtower-testnet"
+DOCKER_CONTAINER_NETSTATS="netstats"
 
 PERMISSION_PREFIX=""
 BASE_DIR=$(pwd)/trustlines
@@ -20,7 +24,7 @@ PASSWORD_FILE=${CONFIG_DIR}/pass.pwd
 PASSWORD=""
 ADDRESS_FILE=${CONFIG_DIR}/address
 ADDRESS=""
-
+NETSTATS_ENV_FILE=${BASE_DIR}/netstats-env
 
 GREEN='\033[0;32m'
 RESET='\033[0m'
@@ -253,7 +257,7 @@ EOF
 }
 
 function pullDockerImages() {
-  for img in "${DOCKER_IMAGE_PARITY}" "${DOCKER_IMAGE_WATCHTOWER}" "${DOCKER_IMAGE_QUICKSTART}" ; do
+  for img in "${DOCKER_IMAGE_PARITY}" "${DOCKER_IMAGE_WATCHTOWER}" "${DOCKER_IMAGE_QUICKSTART}" "${DOCKER_IMAGE_NETSTATS}"; do
     case ${img} in
       */*)
 
@@ -272,21 +276,7 @@ function pullDockerImages() {
 # It checks if the container is already running and do nothing, is stopped and restart it or create a new one.
 #
 function startWatchtower {
-  # Check if container is already running.
-  if [[ $(${PERMISSION_PREFIX} docker ps) == *"${DOCKER_CONTAINER_WATCHTOWER}"* ]] ; then
-    printmsg <<EOF
-The Watchtower client is already running as container, stopping it..."
-EOF
-    ${PERMISSION_PREFIX} docker stop ${DOCKER_CONTAINER_WATCHTOWER}
-  fi
-  # Check if the container does already exist and restart it.
-  if [[ $(${PERMISSION_PREFIX} docker ps -a) == *"${DOCKER_CONTAINER_WATCHTOWER}"* ]] ; then
-    printmsg <<EOF
-The Watchtower container already exists, deleting it..."
-EOF
-    ${PERMISSION_PREFIX} docker rm ${DOCKER_CONTAINER_WATCHTOWER}
-  fi
-  # Pull and start the container
+  stopAndRemoveContainer ${DOCKER_CONTAINER_WATCHTOWER}
   printmsg <<EOF
 Starting the Watchtower client.
 EOF
@@ -298,29 +288,34 @@ EOF
 }
 
 
+function stopAndRemoveContainer() {
+  local container
+  container=$1
+
+  # Check if container is already running.
+  if [[ $(${PERMISSION_PREFIX} docker ps) == *"${container}"* ]] ; then
+    printmsg <<EOF
+The docker container ${container} is already running. Stopping it.
+EOF
+    ${PERMISSION_PREFIX} docker stop "${container}"
+  fi
+
+  # Check if the container does already exist and restart it.
+  if [[ $(${PERMISSION_PREFIX} docker ps -a) == *"${container}"* ]] ; then
+    printmsg <<EOF
+The docker container ${container} already exists, deleting it...
+EOF
+    ${PERMISSION_PREFIX} docker rm "${container}"
+  fi
+}
+
 # Start of the validator Parity node within its Docker container.
 # It checks if the container is already running and do nothing, is stopped and restart it or create a new one.
 # This reads in the stored address first.
 # The whole container setup plus arguments will be handled automatically.
 #
 function startNode {
-  # Check if container is already running.
-  if [[ $(${PERMISSION_PREFIX} docker ps) == *"${DOCKER_CONTAINER_PARITY}"* ]] ; then
-    printmsg <<EOF
-The Parity client is already running as container with name '${DOCKER_CONTAINER_PARITY}', stopping it...
-EOF
-    ${PERMISSION_PREFIX} docker stop ${DOCKER_CONTAINER_PARITY}
-  fi
-
-  # Check if the container does already exist and restart it.
-  if [[ $(${PERMISSION_PREFIX} docker ps -a) == *"${DOCKER_CONTAINER_PARITY}"* ]] ; then
-    printmsg <<EOF
-The Parity container already exists, deleting it...
-EOF
-    ${PERMISSION_PREFIX} docker rm ${DOCKER_CONTAINER_PARITY}
-  fi
-
-
+  stopAndRemoveContainer ${DOCKER_CONTAINER_PARITY}
   # Create and start a new container.
   printmsg <<EOF
 
@@ -334,6 +329,7 @@ EOF
 
   ## Start Parity container with all necessary arguments.
   ${PERMISSION_PREFIX} docker run \
+    --network ${DOCKER_NETWORK} \
     --detach \
     --name "${DOCKER_CONTAINER_PARITY}" \
     --volume "${DATABASE_DIR}:/data" \
@@ -352,6 +348,69 @@ The Parity client has started and is running in background!
 
 EOF
 }
+
+function checkCredentials() {
+  local url
+  local credentials
+  local http_code
+  url=$1
+  credentials=$2
+  http_code=$(curl --silent -o /dev/null -u "${credentials}" "${url}" -w '%{http_code}')
+  if [[ ${http_code} = "200" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+function setupNetstatsInteractive() {
+  printmsg <<EOF
+We can setup a netstats client that reports to the netstats server
+running at
+
+  https://laikanetstats.trustlines.foundation/
+
+You will need credentials to do that.
+
+EOF
+  if [[ "$(askYesOrNo 'Did you already receive credentials and want to setup the netstats client?')" = "no" ]]; then
+    return 0
+  fi
+  while true; do
+    local username
+    local password
+    read -r -p "Username: " username
+    read -s -r -p "Password: " password
+    if checkCredentials https://laikanetstats.trustlines.foundation/check/ "${username}:${password}" ; then
+      printmsg <<EOF
+The provided credentials do work. Please enter an instance name
+now. You are free to choose any name you like.
+EOF
+      break
+    else
+      printmsg <<EOF
+The provided credentials do not work. Please try to enter them again.
+EOF
+    fi
+  done
+
+  read -r -p "Instance name: " instance_name
+  cat >"${NETSTATS_ENV_FILE}" <<EOF
+WS_USER=${username}
+WS_PASSWORD=${password}
+INSTANCE_NAME=${instance_name}
+# HIDE_VALIDATOR_STATUS=false
+EOF
+}
+
+function startNetstats() {
+  stopAndRemoveContainer ${DOCKER_CONTAINER_NETSTATS}
+  printmsg <<EOF
+Starting netstats container...
+EOF
+  ${PERMISSION_PREFIX} docker run --network ${DOCKER_NETWORK} --name ${DOCKER_CONTAINER_NETSTATS} -d --restart=always --env-file "${NETSTATS_ENV_FILE}" -e RPC_HOST=${DOCKER_CONTAINER_PARITY} ${DOCKER_IMAGE_NETSTATS}
+}
+
 
 
 function main() {
@@ -373,8 +432,16 @@ EOF
     setupAccountInteractive
   fi
 
+  if  [[ ! -e ${NETSTATS_ENV_FILE} ]]; then
+    setupNetstatsInteractive
+  fi
+
+  docker network create --driver bridge ${DOCKER_NETWORK} 2>/dev/null || true
   startWatchtower
   startNode
+  if [[ -e ${NETSTATS_ENV_FILE} ]]; then
+    startNetstats
+  fi
 }
 
 
