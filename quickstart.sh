@@ -383,8 +383,7 @@ EOF
     read -s -r -p "Password: " password
     if checkCredentials https://laikanetstats.trustlines.foundation/check/ "${username}:${password}" ; then
       printmsg <<EOF
-The provided credentials do work. Please enter an instance name
-now. You are free to choose any name you like.
+The provided credentials do work.
 EOF
       break
     else
@@ -393,6 +392,11 @@ The provided credentials do not work. Please try to enter them again.
 EOF
     fi
   done
+
+  printmsg <<EOF
+Please enter an instance name now. You are free to choose any name you
+like.
+EOF
 
   read -r -p "Instance name: " instance_name
   cat >"${NETSTATS_ENV_FILE}" <<EOF
