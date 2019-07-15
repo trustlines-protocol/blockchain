@@ -89,7 +89,7 @@ EOF
     exit 1
   fi
 
-  if [[ -e ${PASSWORD_FILE} ]]; then
+  if [[ -f ${PASSWORD_FILE} ]]; then
     printmsg <<EOF
 ERROR
 
@@ -234,7 +234,7 @@ EOF
   if [[ "$(askYesOrNo 'Do you want to import an existing keyfile?')" = "yes" ]]; then
     local keyfile
     keyfile=$(pwd)/account-key.json
-    if [[ -e "${keyfile}" ]]; then
+    if [[ -f "${keyfile}" ]]; then
       importKeyfile "${keyfile}"
     else
       printmsg <<EOF
@@ -417,7 +417,7 @@ function main() {
 
   sanityChecks
 
-  if [[ -e "${ADDRESS_FILE}" ]]; then
+  if [[ -f "${ADDRESS_FILE}" ]]; then
     printmsg <<EOF
 
 You already have a setup for a validator node.
@@ -432,14 +432,14 @@ EOF
     setupAccountInteractive
   fi
 
-  if  [[ ! -e ${NETSTATS_ENV_FILE} ]]; then
+  if  [[ ! -f ${NETSTATS_ENV_FILE} ]]; then
     setupNetstatsInteractive
   fi
 
   docker network create --driver bridge ${DOCKER_NETWORK} 2>/dev/null || true
   startWatchtower
   startNode
-  if [[ -e ${NETSTATS_ENV_FILE} ]]; then
+  if [[ -f ${NETSTATS_ENV_FILE} ]]; then
     startNetstats
   fi
 }
