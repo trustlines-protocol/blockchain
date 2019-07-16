@@ -1,5 +1,0 @@
-FROM parity/parity:v2.5.2-beta
-
-COPY --chown=parity ./node_config/shared_config.toml /home/parity/.local/share/io.parity.ethereum/config.toml
-COPY --chown=parity ./node_config/shared_key.json /home/parity/.local/share/io.parity.ethereum/keys/key.json
-COPY --chown=parity ./node_config/shared_password /home/parity/.local/share/io.parity.ethereum/password
