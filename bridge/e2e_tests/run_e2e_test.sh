@@ -78,13 +78,13 @@ function executeAndParseHexAddress() {
   parseLastHexAddress "$output"
 }
 
-function parseLastHexAddress {
+function parseLastHexAddress() {
   sanitizedString=${1//[$'\t\r\n']/ }
   hexAddressWithPostfix=${sanitizedString##*0x}
   echo "0x${hexAddressWithPostfix%% *}"
 }
 
-function parseFirstHexAddress {
+function parseFirstHexAddress() {
   sanitizedString=${1//[$'\t\r\n']/ }
   hexAddressWithPostfix=${sanitizedString#*0x}
   echo "0x${hexAddressWithPostfix%% *}"
@@ -170,12 +170,12 @@ echo "===> Deploy home bridge contracts"
 # Use block reward of 0 wei to be able comparing the validators balance for the
 # later bridge transfer. Before the reward contract, this is already zero.
 deploy_home_result=$(bridge-deploy deploy-home --jsonrpc $NODE_SIDE_RPC_ADDRESS \
---bridge-validators-address $home_bridge_validators_contract_address \
---required-block-confirmations 1 \
---owner-address $VALIDATOR_ADDRESS \
---block-reward-amount 0 \
---gas 7000000 \
---gas-price 10)
+  --bridge-validators-address $home_bridge_validators_contract_address \
+  --required-block-confirmations 1 \
+  --owner-address $VALIDATOR_ADDRESS \
+  --block-reward-amount 0 \
+  --gas 7000000 \
+  --gas-price 10)
 
 block_reward_contract_address=$(parseFirstHexAddress "$deploy_home_result")
 home_bridge_contract_address=$(parseLastHexAddress "$deploy_home_result")
@@ -278,7 +278,6 @@ response=$(curl --silent --data \
 homeNativeBalanceBefore=$(convertHexToDecOfJsonRpcResponse "$response")
 echo "Balance on home chain before: $homeNativeBalanceBefore"
 
-
 echo "===> Transfer token to foreign bridge"
 
 deploy-tools transact --jsonrpc $NODE_MAIN_RPC_ADDRESS --contracts-dir "$CONTRACT_DIRECTORY" \
@@ -314,13 +313,11 @@ echo "mintedForAccount: $(deploy-tools call --jsonrpc $NODE_SIDE_RPC_ADDRESS --c
 echo "mintedTotally: $(deploy-tools call --jsonrpc $NODE_SIDE_RPC_ADDRESS --contracts-dir "$CONTRACT_DIRECTORY" \
   --contract-address $block_reward_contract_address RewardByBlock mintedTotally)"
 
-
 response=$(curl --silent --data \
   "{\"method\":\"eth_getBalance\",\"params\":[\"$VALIDATOR_ADDRESS\"],\"id\":1,\"jsonrpc\":\"2.0\"}" \
   -H "Content-Type: application/json" -X POST $NODE_SIDE_RPC_ADDRESS)
 homeNativeBalanceAfter=$(convertHexToDecOfJsonRpcResponse "$response")
 echo "Balance on home chain after: $homeNativeBalanceAfter"
-
 
 if [[ $homeNativeBalanceAfter -le $homeNativeBalanceBefore ]]; then
   echo "Balance has not increased by transfer!"
