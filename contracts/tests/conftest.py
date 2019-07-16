@@ -391,3 +391,21 @@ def proxy_validators(accounts):
 @pytest.fixture(scope="session")
 def system_address(accounts):
     return accounts[0]
+
+
+@pytest.fixture()
+def home_bridge_contract(deploy_contract, validator_proxy_with_validators, chain):
+    """ deploy a HomeBridge contract connected to the
+    validator_proxy_with_validators contract"""
+
+    contract = deploy_contract(
+        "HomeBridge", constructor_args=(validator_proxy_with_validators.address,)
+    )
+
+    account_0 = chain.get_accounts()[0]
+
+    chain.send_transaction(
+        {"from": account_0, "to": contract.address, "gas": 100000, "value": 1_000_000}
+    )
+
+    return contract
