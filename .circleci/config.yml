@@ -3,7 +3,7 @@ version: 2.1
 executors:
   ubuntu-builder:
     docker:
-      - image: trustlines/builder:master24
+      - image: trustlines/builder:master25
         environment:
           - SOLC_VERSION=v0.5.8
     working_directory: ~/repo
@@ -84,6 +84,56 @@ commands:
             docker push $DOCKER_REPO:$CIRCLE_BRANCH
 
 jobs:
+  pre-commit-checks:
+    executor: ubuntu-builder
+    steps:
+      - checkout
+      - run:
+          name: Configuring PATH
+          command: |
+            echo 'export PATH=~/bin:~/repo/venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
+      - run:
+          name: Create python virtualenv
+          command: |
+            make setup-venv
+            pip install -c constraints.txt pip wheel setuptools
+      - run:
+          name: Install pre-commit
+          command: |
+            pip install -c constraints.txt pre-commit
+      - run:
+          name: Run shfmt
+          command: |
+            pre-commit run -a shfmt
+      - run:
+          name: Check for large files
+          command: |
+            pre-commit run -a check-added-large-files
+      - run:
+          name: Check byte order mark
+          command: |
+            pre-commit run -a check-byte-order-marker
+      - run:
+          name: Check merge conflict
+          command: |
+            pre-commit run -a check-merge-conflict
+      - run:
+          name: Check json files
+          command: |
+            pre-commit run -a check-json
+      - run:
+          name: Check yaml files
+          command: |
+            pre-commit run -a check-yaml
+      - run:
+          name: Run end-of-file-fixer
+          command: |
+            pre-commit run -a end-of-file-fixer
+      - run:
+          name: Run trailing-whitespace fixer
+          command: |
+            pre-commit run -a trailing-whitespace
+
   run-shellcheck:
     executor: ubuntu-builder
     steps:
@@ -469,6 +519,7 @@ workflows:
   default:
     jobs:
       - run-shellcheck
+      - pre-commit-checks
       - run-black
       - run-flake8
       - solium-contracts
@@ -510,6 +561,7 @@ workflows:
                 - pre-release
           requires:
             - solium-contracts
+            - pre-commit-checks
             - run-shellcheck
             - run-black
             - run-flake8
@@ -527,6 +579,7 @@ workflows:
           requires:
             - test-quickstart
             - build-quickstart-image
+            - pre-commit-checks
             - run-shellcheck
             - run-black
             - run-flake8
@@ -553,6 +606,7 @@ workflows:
           requires:
             - approve-the-release
             - solium-contracts
+            - pre-commit-checks
             - run-shellcheck
             - run-black
             - run-flake8
