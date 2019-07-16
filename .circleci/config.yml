@@ -106,6 +106,10 @@ jobs:
           command: |
             pre-commit run -a shfmt
       - run:
+          name: Run shellcheck
+          command: |
+            pre-commit run -a shellcheck
+      - run:
           name: Check for large files
           command: |
             pre-commit run -a check-added-large-files
@@ -133,15 +137,6 @@ jobs:
           name: Run trailing-whitespace fixer
           command: |
             pre-commit run -a trailing-whitespace
-
-  run-shellcheck:
-    executor: ubuntu-builder
-    steps:
-      - checkout
-      - run:
-          name: Shellcheck the quickstart script
-          command: |
-            shellcheck quickstart.sh
 
   run-black:
     executor: ubuntu-builder
@@ -518,7 +513,6 @@ workflows:
   version: 2
   default:
     jobs:
-      - run-shellcheck
       - pre-commit-checks
       - run-black
       - run-flake8
@@ -562,7 +556,6 @@ workflows:
           requires:
             - solium-contracts
             - pre-commit-checks
-            - run-shellcheck
             - run-black
             - run-flake8
             - install-contracts
@@ -580,7 +573,6 @@ workflows:
             - test-quickstart
             - build-quickstart-image
             - pre-commit-checks
-            - run-shellcheck
             - run-black
             - run-flake8
           context: docker-credentials
@@ -607,7 +599,6 @@ workflows:
             - approve-the-release
             - solium-contracts
             - pre-commit-checks
-            - run-shellcheck
             - run-black
             - run-flake8
             - install-contracts
