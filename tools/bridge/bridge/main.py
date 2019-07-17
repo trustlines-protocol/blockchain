@@ -1,5 +1,5 @@
 import click
-import toml
+from toml.decoder import TomlDecodeError
 
 from bridge.config import load_config
 
@@ -16,7 +16,7 @@ from bridge.config import load_config
 def main(config_path: str) -> None:
     try:
         config = load_config(config_path)
-    except toml.decoder.TomlDecodeError as decode_error:
+    except TomlDecodeError as decode_error:
         raise click.UsageError(f"Invalid config file: {decode_error}") from decode_error
     except ValueError as value_error:
         raise click.UsageError(f"Invalid config file: {value_error}") from value_error

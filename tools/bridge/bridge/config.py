@@ -5,14 +5,14 @@ import toml
 from eth_utils.toolz import merge
 
 
-def validate_rpc_url(url: Any) -> str:
+def validate_rpc_url(url: Any) -> None:
     if not isinstance(url, str):
         raise ValueError(f"{url} is not a valid RPC url")
 
 
 REQUIRED_CONFIG_ENTRIES = ["home_rpc_url", "foreign_rpc_url"]
 
-OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS = {}
+OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {}
 
 CONFIG_ENTRY_VALIDATORS = {
     "home_rpc_url": validate_rpc_url,
