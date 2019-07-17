@@ -1,0 +1,5 @@
+Click
+eth-utils
+toml
+# --- development dependencies, i.e. dependencies not needed for running
+pytest
