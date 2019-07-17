@@ -2,9 +2,7 @@ pragma solidity ^0.5.8;
 
 import "../token/TrustlinesNetworkToken.sol";
 
-
 contract ForeignBridge {
-
     uint public requiredBlockConfirmations = 8;
     TrustlinesNetworkToken public trustlinesNetworkToken;
 

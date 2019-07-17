@@ -7,9 +7,7 @@ pragma solidity ^0.5.8;
 
 import "./RLPReader.sol";
 
-
 contract TestRLPReader {
-
     function() external {}
 
     function testToRlpItem(bytes memory _rlpEncodedItem)
@@ -67,9 +65,9 @@ contract TestRLPReader {
     }
 
     function testGetItemUint(uint index, bytes memory _rlpEncodedItem)
-    public
-    pure
-    returns (uint)
+        public
+        pure
+        returns (uint)
     {
         RLPReader.RLPItem memory rlpItem = RLPReader.toRlpItem(_rlpEncodedItem);
         return RLPReader.toUint(RLPReader.toList(rlpItem)[index]);

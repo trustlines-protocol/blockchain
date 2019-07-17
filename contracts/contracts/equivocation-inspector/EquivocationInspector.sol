@@ -3,17 +3,14 @@ pragma solidity ^0.5.8;
 import "../lib/RLPReader.sol";
 import "../lib/ECDSA.sol";
 
-
 /**
  * Utilities to verify equivocating behavior of validators.
  */
 library EquivocationInspector {
-
     using RLPReader for RLPReader.RLPItem;
     using RLPReader for bytes;
 
     uint constant STEP_DURATION = 5;
-
 
     /**
      * Get the signer address for a given signature and the related data.
@@ -23,10 +20,7 @@ library EquivocationInspector {
      * @param _data       the data the signature is for
      * @param _signature  the signature the address should be recovered from
      */
-    function getSignerAddress(
-        bytes memory _data,
-        bytes memory _signature
-    )
+    function getSignerAddress(bytes memory _data, bytes memory _signature)
         internal
         pure
         returns (address)
@@ -61,10 +55,7 @@ library EquivocationInspector {
         bytes memory _signatureOne,
         bytes memory _rlpUnsignedHeaderTwo,
         bytes memory _signatureTwo
-    )
-        internal
-        pure
-    {
+    ) internal pure {
         // Make sure two different blocks have been provided.
         bytes32 hashOne = keccak256(_rlpUnsignedHeaderOne);
         bytes32 hashTwo = keccak256(_rlpUnsignedHeaderTwo);
@@ -77,8 +68,12 @@ library EquivocationInspector {
 
         // Parse the RLP encoded block header list.
         // Note that this can fail here, if the block header has no list format.
-        RLPReader.RLPItem[] memory blockOne = _rlpUnsignedHeaderOne.toRlpItem().toList();
-        RLPReader.RLPItem[] memory blockTwo = _rlpUnsignedHeaderTwo.toRlpItem().toList();
+        RLPReader.RLPItem[] memory blockOne = _rlpUnsignedHeaderOne
+            .toRlpItem()
+            .toList();
+        RLPReader.RLPItem[] memory blockTwo = _rlpUnsignedHeaderTwo
+            .toRlpItem()
+            .toList();
 
         // Header length rule.
         // Keep it open ended, since they could contain a list of empty messages for finality.
@@ -90,7 +85,7 @@ library EquivocationInspector {
         // Equal signer rule.
         require(
             getSignerAddress(_rlpUnsignedHeaderOne, _signatureOne) ==
-            getSignerAddress(_rlpUnsignedHeaderTwo, _signatureTwo),
+                getSignerAddress(_rlpUnsignedHeaderTwo, _signatureTwo),
             "The two blocks have been signed by different identities."
         );
 
@@ -98,10 +93,7 @@ library EquivocationInspector {
         uint stepOne = blockOne[11].toUint() / STEP_DURATION;
         uint stepTwo = blockTwo[11].toUint() / STEP_DURATION;
 
-        require(
-            stepOne == stepTwo,
-            "The two blocks have different steps."
-        );
+        require(stepOne == stepTwo, "The two blocks have different steps.");
     }
 
 }
