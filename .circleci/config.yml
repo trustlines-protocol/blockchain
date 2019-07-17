@@ -592,13 +592,21 @@ workflows:
           requires:
             - install-validator-set
 
-      - install-bridge
-      - mypy-bridge:
+      - install-bridge-deploy
+      - mypy-bridge-deploy:
           requires:
-            - install-bridge
-      - pytest-bridge:
+            - install-bridge-deploy
+      - pytest-bridge-deploy:
           requires:
-            - install-bridge
+            - install-bridge-deploy
+
+      - install-bridge-validator
+      - mypy-bridge-validator:
+          requires:
+            - install-bridge-validator
+      - pytest-bridge-validator:
+          requires:
+            - install-bridge-validator
 
       - build-docker-image
       - build-quickstart-image
