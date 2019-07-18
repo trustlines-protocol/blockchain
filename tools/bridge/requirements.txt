@@ -1,4 +1,5 @@
 Click
 eth-utils
+gevent
 toml
 -r ../../requirements-dev.txt
