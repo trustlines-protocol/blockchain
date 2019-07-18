@@ -306,7 +306,7 @@ $ docker push trustlines/tlbc-testnet:latest
 First, download and install the solidity compiler solc into bin for compiling the
 contracts. You can follow the [official installation documentation](https://solidity.readthedocs.io/en/v0.4.24/installing-solidity.html) or type the following recommand command:
 
-``curl -L -o $HOME/bin/solc https://github.com/ethereum/solidity/releases/download/v0.4.25/solc-static-linux && chmod +x $HOME/bin/solc``
+``curl -L -o $HOME/bin/solc https://github.com/ethereum/solidity/releases/download/v0.5.8/solc-static-linux && chmod +x $HOME/bin/solc``
 
 To start developing, you should change directory to the contracts directory ``cd contracts``.
 Then, install the development dependencies into a venv
