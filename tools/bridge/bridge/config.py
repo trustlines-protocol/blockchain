@@ -10,13 +10,24 @@ def validate_rpc_url(url: Any) -> None:
         raise ValueError(f"{url} is not a valid RPC url")
 
 
+def validate_positive_float(number: Any) -> float:
+    if not isinstance(number, (int, float)):
+        raise ValueError(f"{number} is neither integer nor float")
+    if number <= 0:
+        raise ValueError(f"{number} must be positive")
+    return float(number)
+
+
 REQUIRED_CONFIG_ENTRIES = ["home_rpc_url", "foreign_rpc_url"]
 
-OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {}
+OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
+    "transfer_event_poll_interval": 5
+}
 
 CONFIG_ENTRY_VALIDATORS = {
     "home_rpc_url": validate_rpc_url,
     "foreign_rpc_url": validate_rpc_url,
+    "transfer_event_poll_interval": validate_positive_float,
 }
 
 assert all(key in CONFIG_ENTRY_VALIDATORS for key in REQUIRED_CONFIG_ENTRIES)
