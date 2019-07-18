@@ -8,12 +8,14 @@ def confirm(home_bridge_contract):
     """call confirmTransfer on the home_bridge_contract with less boilerplate"""
 
     class Confirm:
+        transfer_hash = "0x" + b"     transfer-hash              ".hex()
         tx_hash = "0x" + b"     tx-hash                    ".hex()
         amount = 20000
         recipient = "0xFCB047cCD297048b6F31fbb2fef14001FefFa0f3"
 
         def __call__(self):
             return home_bridge_contract.functions.confirmTransfer(
+                transferHash=self.transfer_hash,
                 transactionHash=self.tx_hash,
                 amount=self.amount,
                 recipient=self.recipient,
@@ -21,6 +23,7 @@ def confirm(home_bridge_contract):
 
         def assert_event_matches(self, event):
             print("checking event", event)
+            assert event.args.transferHash.hex() == self.transfer_hash[2:]
             assert event.args.transactionHash.hex() == self.tx_hash[2:]
             assert event.args.amount == self.amount
             assert event.args.recipient == self.recipient
