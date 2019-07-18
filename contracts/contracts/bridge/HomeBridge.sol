@@ -22,10 +22,6 @@ contract HomeBridge {
         validatorProxy = _proxy;
     }
 
-    /* We need the fallback function only for the tests at the
-       moment. This will be removed later */
-    function() external payable {}
-
     function confirmTransfer(bytes32 transferHash, bytes32 transactionHash, uint256 amount, address payable recipient) public {
         require(validatorProxy.isValidator(msg.sender), "must be validator to confirm transfers");
         require(recipient != address(0), "recipient must not be the zero address!");

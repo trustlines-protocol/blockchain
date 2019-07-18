@@ -399,7 +399,7 @@ def home_bridge_contract(deploy_contract, validator_proxy_with_validators, chain
     validator_proxy_with_validators contract"""
 
     contract = deploy_contract(
-        "HomeBridge", constructor_args=(validator_proxy_with_validators.address,)
+        "TestHomeBridge", constructor_args=(validator_proxy_with_validators.address,)
     )
 
     account_0 = chain.get_accounts()[0]
