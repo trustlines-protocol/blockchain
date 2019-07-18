@@ -63,7 +63,7 @@ contract HomeBridge {
         returns (bool)
     {
         require(!transferState[transferStateId].isCompleted, "transfer already completed");
-        require(!transferState[transferStateId].isConfirmedByValidator[validator], "transfer already confirmed");
+        require(!transferState[transferStateId].isConfirmedByValidator[validator], "transfer already confirmed by validator");
 
         transferState[transferStateId].isConfirmedByValidator[validator] = true;
         transferState[transferStateId].confirmingValidators.push(validator);
