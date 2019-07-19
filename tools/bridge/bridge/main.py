@@ -50,7 +50,6 @@ def main(config_path: str) -> None:
             f"0x000000000000000000000000{config['foreign_bridge_contract_address'][2:]}",
         ],
         event_queue=transfer_event_queue,
-        event_fetch_limit=950,
         max_reorg_depth=config["foreign_chain_max_reorg_depth"],
     )
 

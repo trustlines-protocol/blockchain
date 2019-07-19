@@ -15,7 +15,7 @@ class EventFetcher:
         contract_address: str,
         event_signature_hash: HexBytes,
         event_argument_filter: List,
-        event_fetch_limit: int,
+        event_fetch_limit: int = 950,
         event_queue: Queue,
         max_reorg_depth: int,
     ):

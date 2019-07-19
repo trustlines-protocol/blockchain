@@ -21,18 +21,12 @@ def foreign_chain_max_reorg_depth():
 
 
 @pytest.fixture
-def event_fetch_limit():
-    return 25
-
-
-@pytest.fixture
 def transfer_event_fetcher(
     w3_foreign,
     token_contract,
     transfer_event_signature_hash,
     transfer_event_argument_filter,
     transfer_event_queue,
-    event_fetch_limit,
     foreign_chain_max_reorg_depth,
 ):
     return EventFetcher(
@@ -40,7 +34,6 @@ def transfer_event_fetcher(
         contract_address=token_contract.address,
         event_signature_hash=transfer_event_signature_hash,
         event_argument_filter=transfer_event_argument_filter,
-        event_fetch_limit=event_fetch_limit,
         event_queue=transfer_event_queue,
         max_reorg_depth=foreign_chain_max_reorg_depth,
     )
@@ -68,7 +61,6 @@ def test_instantiate_event_fetcher_with_non_existing_contract(
     w3_foreign,
     transfer_event_signature_hash,
     transfer_event_argument_filter,
-    event_fetch_limit,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
 ):
@@ -78,7 +70,6 @@ def test_instantiate_event_fetcher_with_non_existing_contract(
             contract_address="0x0000000000000000000000000000000000000000",
             event_signature_hash=transfer_event_signature_hash,
             event_argument_filter=transfer_event_argument_filter,
-            event_fetch_limit=event_fetch_limit,
             event_queue=transfer_event_queue,
             max_reorg_depth=foreign_chain_max_reorg_depth,
         )
@@ -88,7 +79,6 @@ def test_instantiate_event_fetcher_with_not_existing_event_signature(
     w3_foreign,
     token_contract,
     transfer_event_argument_filter,
-    event_fetch_limit,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
 ):
@@ -98,7 +88,6 @@ def test_instantiate_event_fetcher_with_not_existing_event_signature(
             contract_address=token_contract.address,
             event_signature_hash=Web3.keccak(text="NonExistingEvent(bytes)"),
             event_argument_filter=transfer_event_argument_filter,
-            event_fetch_limit=event_fetch_limit,
             event_queue=transfer_event_queue,
             max_reorg_depth=foreign_chain_max_reorg_depth,
         )
@@ -129,7 +118,6 @@ def test_instantiate_event_fetcher_with_negative_max_reorg_depth(
     token_contract,
     transfer_event_signature_hash,
     transfer_event_argument_filter,
-    event_fetch_limit,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
 ):
@@ -139,7 +127,6 @@ def test_instantiate_event_fetcher_with_negative_max_reorg_depth(
             contract_address=token_contract.address,
             event_signature_hash=transfer_event_signature_hash,
             event_argument_filter=transfer_event_argument_filter,
-            event_fetch_limit=event_fetch_limit,
             event_queue=transfer_event_queue,
             max_reorg_depth=-1,
         )
@@ -225,18 +212,19 @@ def test_fetch_events_not_seen(
     assert transfer_event_queue.qsize() == 1
 
 
-def test_fetch_events_not_seen_handle_log_limit_exact_multiplicate(
+def test_fetch_events_not_seen_handle_event_limit_exact_multiplicate(
     transfer_event_fetcher,
     w3_foreign,
     tester_foreign,
-    event_fetch_limit,
     transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
     foreign_chain_max_reorg_depth,
 ):
     assert transfer_event_queue.empty()
 
-    transfer_count = event_fetch_limit * 2
+    reduced_event_fetch_limit = 25
+    transfer_event_fetcher.event_fetch_limit = reduced_event_fetch_limit
+    transfer_count = reduced_event_fetch_limit * 2
 
     for i in range(transfer_count):
         transfer_tokens_to_foreign_bridge()
@@ -247,17 +235,18 @@ def test_fetch_events_not_seen_handle_log_limit_exact_multiplicate(
     assert transfer_event_queue.qsize() == transfer_count
 
 
-def test_fetch_events_not_seen_handle_log_limit_not_exact_multiplicate(
+def test_fetch_events_not_seen_handle_event_limit_not_exact_multiplicate(
     transfer_event_fetcher,
     tester_foreign,
-    event_fetch_limit,
     transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
     foreign_chain_max_reorg_depth,
 ):
     assert transfer_event_queue.empty()
 
-    transfer_count = event_fetch_limit + 1
+    reduced_event_fetch_limit = 25
+    transfer_event_fetcher.event_fetch_limit = reduced_event_fetch_limit
+    transfer_count = reduced_event_fetch_limit + 1
 
     for i in range(transfer_count):
         transfer_tokens_to_foreign_bridge()
