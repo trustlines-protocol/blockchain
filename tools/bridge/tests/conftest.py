@@ -34,12 +34,12 @@ def token_transfer_event_queue():
     return Queue()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def premint_token_address(accounts):
     return accounts[0]
 
 
-@pytest.fixture()
+@pytest.fixture
 def deploy_contract_on_chain(contract_assets):
     def deploy(
         web3: Web3, contract_identifier: str, *, constructor_args=()

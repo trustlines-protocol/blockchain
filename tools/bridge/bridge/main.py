@@ -47,7 +47,7 @@ def main(config_path: str) -> None:
         token_contract_address=config["token_contract_address"],
         foreign_bridge_contract_address=config["foreign_bridge_contract_address"],
         max_reorg_depth=config["max_reorg_depth"],
-        event_filter_fetch_limit=config["event_filter_fetch_limit"],
+        transfer_event_fetch_limit=config["transfer_event_fetch_limit"],
     )
 
     try:

@@ -29,7 +29,7 @@ class TransferFetcher:
         token_contract_address: str,
         foreign_bridge_contract_address: str,
         max_reorg_depth: int,
-        event_filter_fetch_limit: int,
+        transfer_event_fetch_limit: int,
     ):
         token_contract_code = w3_foreign.eth.getCode(token_contract_address)
 
@@ -63,7 +63,7 @@ class TransferFetcher:
         )
         self._foreign_bridge_contract_address = foreign_bridge_contract_address
         self._max_reorg_depth = max_reorg_depth
-        self._event_filter_fetch_limit = event_filter_fetch_limit
+        self._transfer_event_fetch_limit = transfer_event_fetch_limit
         self._last_fetched_block_number = (
             -1
         )  # Fetching starts always one block after the last one.
@@ -114,10 +114,10 @@ class TransferFetcher:
         for from_block_number in range(
             self._last_fetched_block_number + 1,
             head_block_number + 1,
-            self._event_filter_fetch_limit,
+            self._transfer_event_fetch_limit,
         ):
             to_block_number = min(
-                from_block_number + self._event_filter_fetch_limit - 1,
+                from_block_number + self._transfer_event_fetch_limit - 1,
                 head_block_number,
             )
 
