@@ -55,10 +55,10 @@ def main(config_path: str) -> None:
     )
 
     try:
-        transfer_event_fetcher = Greenlet.spawn(
+        transfer_event_fetcher_greenlet = Greenlet.spawn(
             transfer_event_fetcher.fetch_events, config["transfer_event_poll_interval"]
         )
 
-        gevent.joinall([transfer_event_fetcher])
+        gevent.joinall([transfer_event_fetcher_greenlet])
     finally:
-        transfer_event_fetcher.kill()
+        transfer_event_fetcher_greenlet.kill()
