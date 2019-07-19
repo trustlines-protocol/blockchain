@@ -58,6 +58,6 @@ def main(config_path: str) -> None:
             transfer_event_fetcher.fetch_events, config["transfer_event_poll_interval"]
         )
 
-        gevent.joinall([transfer_event_fetcher_greenlet])
+        gevent.joinall([transfer_event_fetcher_greenlet], raise_error=True)
     finally:
         transfer_event_fetcher_greenlet.kill()
