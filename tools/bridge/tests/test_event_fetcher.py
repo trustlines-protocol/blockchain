@@ -7,8 +7,8 @@ from bridge.event_fetcher import EventFetcher
 
 
 @pytest.fixture
-def transfer_event_signature_hash():
-    return Web3.keccak(text="Transfer(address,address,uint256)")
+def transfer_event_signature():
+    return "Transfer(address,address,uint256)"
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ def foreign_chain_max_reorg_depth():
 def transfer_event_fetcher(
     w3_foreign,
     token_contract,
-    transfer_event_signature_hash,
+    transfer_event_signature,
     transfer_event_argument_filter,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
@@ -33,7 +33,7 @@ def transfer_event_fetcher(
     return EventFetcher(
         web3=w3_foreign,
         contract_address=token_contract.address,
-        event_signature_hash=transfer_event_signature_hash,
+        event_signature=transfer_event_signature,
         event_argument_filter=transfer_event_argument_filter,
         event_queue=transfer_event_queue,
         max_reorg_depth=foreign_chain_max_reorg_depth,
@@ -60,7 +60,7 @@ def transfer_tokens_to_foreign_bridge(foreign_bridge_contract, transfer_tokens_t
 
 def test_instantiate_event_fetcher_with_non_existing_contract(
     w3_foreign,
-    transfer_event_signature_hash,
+    transfer_event_signature,
     transfer_event_argument_filter,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
@@ -69,7 +69,7 @@ def test_instantiate_event_fetcher_with_non_existing_contract(
         return EventFetcher(
             web3=w3_foreign,
             contract_address="0x0000000000000000000000000000000000000000",
-            event_signature_hash=transfer_event_signature_hash,
+            event_signature=transfer_event_signature,
             event_argument_filter=transfer_event_argument_filter,
             event_queue=transfer_event_queue,
             max_reorg_depth=foreign_chain_max_reorg_depth,
@@ -87,7 +87,7 @@ def test_instantiate_event_fetcher_with_not_existing_event_signature(
         return EventFetcher(
             web3=w3_foreign,
             contract_address=token_contract.address,
-            event_signature_hash=Web3.keccak(text="NonExistingEvent(bytes)"),
+            event_signature="NonExistingEvent(bytes)",
             event_argument_filter=transfer_event_argument_filter,
             event_queue=transfer_event_queue,
             max_reorg_depth=foreign_chain_max_reorg_depth,
@@ -97,7 +97,7 @@ def test_instantiate_event_fetcher_with_not_existing_event_signature(
 def test_instantiate_event_fetcher_with_negative_event_fetch_limit(
     w3_foreign,
     token_contract,
-    transfer_event_signature_hash,
+    transfer_event_signature,
     transfer_event_argument_filter,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
@@ -106,7 +106,7 @@ def test_instantiate_event_fetcher_with_negative_event_fetch_limit(
         return EventFetcher(
             web3=w3_foreign,
             contract_address=token_contract.address,
-            event_signature_hash=transfer_event_signature_hash,
+            event_signature=transfer_event_signature,
             event_argument_filter=transfer_event_argument_filter,
             event_fetch_limit=-1,
             event_queue=transfer_event_queue,
@@ -117,7 +117,7 @@ def test_instantiate_event_fetcher_with_negative_event_fetch_limit(
 def test_instantiate_event_fetcher_with_negative_max_reorg_depth(
     w3_foreign,
     token_contract,
-    transfer_event_signature_hash,
+    transfer_event_signature,
     transfer_event_argument_filter,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
@@ -126,7 +126,7 @@ def test_instantiate_event_fetcher_with_negative_max_reorg_depth(
         return EventFetcher(
             web3=w3_foreign,
             contract_address=token_contract.address,
-            event_signature_hash=transfer_event_signature_hash,
+            event_signature=transfer_event_signature,
             event_argument_filter=transfer_event_argument_filter,
             event_queue=transfer_event_queue,
             max_reorg_depth=-1,
@@ -136,7 +136,7 @@ def test_instantiate_event_fetcher_with_negative_max_reorg_depth(
 def test_fetch_events_in_range(
     transfer_event_fetcher,
     w3_foreign,
-    transfer_event_signature_hash,
+    transfer_event_signature,
     transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
 ):
@@ -146,7 +146,9 @@ def test_fetch_events_in_range(
     transfer_event_fetcher.fetch_events_in_range(0, w3_foreign.eth.blockNumber)
 
     assert transfer_event_queue.qsize() == 1
-    assert transfer_event_queue.get()["topics"][0] == transfer_event_signature_hash
+    assert transfer_event_queue.get()["topics"][0] == Web3.keccak(
+        text=transfer_event_signature
+    )
 
 
 def test_fetch_events_in_range_fix_invalid_bounds(

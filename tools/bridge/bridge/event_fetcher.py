@@ -4,7 +4,6 @@ import gevent
 from typing import List
 from gevent.queue import Queue
 from web3 import Web3
-from hexbytes import HexBytes
 
 
 class EventFetcher:
@@ -13,7 +12,7 @@ class EventFetcher:
         *,
         web3: Web3,
         contract_address: str,
-        event_signature_hash: HexBytes,
+        event_signature: str,
         event_argument_filter: List,
         event_fetch_limit: int = 950,
         event_queue: Queue,
@@ -26,6 +25,8 @@ class EventFetcher:
                 f"The given contract address {contract_address} does not point to a contract!"
             )
 
+        event_signature_hash = Web3.keccak(text=event_signature)
+
         if event_signature_hash not in contract_code:
             raise ValueError(
                 f"The contract at the given address {contract_address}"
@@ -36,7 +37,7 @@ class EventFetcher:
         assert max_reorg_depth > 0
 
         self.logger = logging.getLogger(
-            f"bridge.event_fetcher.{contract_address}.{event_signature_hash}"
+            f"bridge.event_fetcher.{contract_address}.{event_signature}"
         )
 
         self.web3 = web3
