@@ -30,7 +30,7 @@ def w3_home(tester_home):
 
 
 @pytest.fixture
-def token_transfer_event_queue():
+def transfer_event_queue():
     return Queue()
 
 
