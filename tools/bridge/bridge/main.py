@@ -14,7 +14,7 @@ from toml.decoder import TomlDecodeError
 from web3 import Web3, HTTPProvider
 
 from bridge.config import load_config
-from bridge.transfer_fetcher import TransferFetcher
+from bridge.event_fetcher import EventFetcher
 
 
 @click.command()
@@ -41,19 +41,22 @@ def main(config_path: str) -> None:
 
     transfer_event_queue = Queue()
 
-    transfer_fetcher = TransferFetcher(
-        queue=transfer_event_queue,
-        w3_foreign=w3_foreign,
-        token_contract_address=config["token_contract_address"],
-        foreign_bridge_contract_address=config["foreign_bridge_contract_address"],
-        foreign_chain_max_reorg_depth=config["foreign_chain_max_reorg_depth"],
-        transfer_event_fetch_limit=950,
+    transfer_event_fetcher = EventFetcher(
+        web3=w3_foreign,
+        contract_address=config["token_contract_address"],
+        event_signature_hash=Web3.keccak(text="Transfer(address,address,uint256)"),
+        event_argument_filter=[
+            None,
+            f"0x000000000000000000000000{config['foreign_bridge_contract_address'][2:]}",
+        ],
+        event_queue=transfer_event_queue,
+        event_fetch_limit=950,
+        max_reorg_depth=config["foreign_chain_max_reorg_depth"],
     )
 
     try:
         transfer_event_fetcher = Greenlet.spawn(
-            transfer_fetcher.fetch_token_transfer_events,
-            config["transfer_event_poll_interval"],
+            transfer_event_fetcher.fetch_events, config["transfer_event_poll_interval"]
         )
 
         gevent.joinall([transfer_event_fetcher])
