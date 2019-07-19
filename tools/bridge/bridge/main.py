@@ -44,7 +44,7 @@ def main(config_path: str) -> None:
     transfer_event_fetcher = EventFetcher(
         web3=w3_foreign,
         contract_address=config["token_contract_address"],
-        event_signature_hash=Web3.keccak(text="Transfer(address,address,uint256)"),
+        event_signature="Transfer(address,address,uint256)",
         event_argument_filter=[
             None,
             f"0x000000000000000000000000{config['foreign_bridge_contract_address'][2:]}",
