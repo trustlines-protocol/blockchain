@@ -115,9 +115,7 @@ def test_fetch_token_transfer_events_in_range(
     assert token_transfer_event_queue.empty()
 
     transfer_tokens_to_foreign_bridge()
-    transfer_fetcher._fetch_token_transfer_events_in_range(
-        0, w3_foreign.eth.blockNumber
-    )
+    transfer_fetcher.fetch_token_transfer_events_in_range(0, w3_foreign.eth.blockNumber)
 
     assert token_transfer_event_queue.qsize() == 1
     assert token_transfer_event_queue.get()["topics"][0] == Web3.keccak(
@@ -134,7 +132,7 @@ def test_fetch_token_transfer_events_in_range_fix_invalid_bounds(
     assert token_transfer_event_queue.empty()
 
     transfer_tokens_to_foreign_bridge()
-    transfer_fetcher._fetch_token_transfer_events_in_range(
+    transfer_fetcher.fetch_token_transfer_events_in_range(
         -1, w3_foreign.eth.blockNumber + 1
     )
 
@@ -147,9 +145,7 @@ def test_fetch_token_transfer_events_in_range_ignore_transfers_not_to_bridge(
     assert token_transfer_event_queue.empty()
 
     transfer_tokens_to("0xbB1046b0Fe450aA48DEafF6Fa474AdBf972840dD")
-    transfer_fetcher._fetch_token_transfer_events_in_range(
-        0, w3_foreign.eth.blockNumber
-    )
+    transfer_fetcher.fetch_token_transfer_events_in_range(0, w3_foreign.eth.blockNumber)
 
     assert token_transfer_event_queue.empty()
 
@@ -158,7 +154,7 @@ def test_fetch_token_transfer_events_in_range_invalid_range(
     transfer_fetcher, token_transfer_event_queue, transfer_tokens_to, w3_foreign
 ):
     with pytest.raises(AssertionError):
-        transfer_fetcher._fetch_token_transfer_events_in_range(1, 0)
+        transfer_fetcher.fetch_token_transfer_events_in_range(1, 0)
 
 
 def test_fetch_token_transfer_events_not_seen_ignore_reorg_depth_blocks(
@@ -174,7 +170,7 @@ def test_fetch_token_transfer_events_not_seen_ignore_reorg_depth_blocks(
 
     assert w3_foreign.eth.blockNumber < foreign_chain_max_reorg_depth
 
-    transfer_fetcher._fetch_token_transfer_events_not_seen()
+    transfer_fetcher.fetch_token_transfer_events_not_seen()
 
     assert token_transfer_event_queue.empty()
 
@@ -190,7 +186,7 @@ def test_fetch_token_transfer_events_not_seen(
 
     transfer_tokens_to_foreign_bridge()
     tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
-    transfer_fetcher._fetch_token_transfer_events_not_seen()
+    transfer_fetcher.fetch_token_transfer_events_not_seen()
 
     assert token_transfer_event_queue.qsize() == 1
 
@@ -212,7 +208,7 @@ def test_fetch_token_transfer_events_not_seen_handle_log_limit_exact_multiplicat
         transfer_tokens_to_foreign_bridge()
 
     tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
-    transfer_fetcher._fetch_token_transfer_events_not_seen()
+    transfer_fetcher.fetch_token_transfer_events_not_seen()
 
     assert token_transfer_event_queue.qsize() == transfer_count
 
@@ -233,7 +229,7 @@ def test_fetch_token_transfer_events_not_seen_handle_log_limit_not_exact_multipl
         transfer_tokens_to_foreign_bridge()
 
     tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
-    transfer_fetcher._fetch_token_transfer_events_not_seen()
+    transfer_fetcher.fetch_token_transfer_events_not_seen()
 
     assert token_transfer_event_queue.qsize() == transfer_count
 
