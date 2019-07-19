@@ -3,11 +3,20 @@ from typing import Any, Dict
 import toml
 
 from eth_utils.toolz import merge
+from web3 import Web3
 
 
 def validate_rpc_url(url: Any) -> None:
     if not isinstance(url, str):
         raise ValueError(f"{url} is not a valid RPC url")
+
+
+def validate_positive_integer(number: Any) -> float:
+    if not isinstance(number, int):
+        raise ValueError(f"{number} is not an integer")
+    if number <= 0:
+        raise ValueError(f"{number} must be positive")
+    return int(number)
 
 
 def validate_positive_float(number: Any) -> float:
@@ -18,15 +27,34 @@ def validate_positive_float(number: Any) -> float:
     return float(number)
 
 
-REQUIRED_CONFIG_ENTRIES = ["home_rpc_url", "foreign_rpc_url"]
+def validate_checksum_address(address: Any) -> None:
+    if not Web3.isAddress(address):
+        raise ValueError(f"{address} is not a valid Ethereum address")
+
+    if not Web3.isChecksumAddress(address):
+        raise ValueError(f"{address} is not a valid Ethereum checksum address")
+
+
+REQUIRED_CONFIG_ENTRIES = [
+    "home_rpc_url",
+    "foreign_rpc_url",
+    "token_contract_address",
+    "foreign_bridge_contract_address",
+]
 
 OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
-    "transfer_event_poll_interval": 5
+    "max_reorg_depth": 10,
+    "event_filter_fetch_limit": 950,
+    "transfer_event_poll_interval": 5,
 }
 
 CONFIG_ENTRY_VALIDATORS = {
     "home_rpc_url": validate_rpc_url,
     "foreign_rpc_url": validate_rpc_url,
+    "token_contract_address": validate_checksum_address,
+    "foreign_bridge_contract_address": validate_checksum_address,
+    "max_reorg_depth": validate_positive_integer,
+    "event_filter_fetch_limit": validate_positive_integer,
     "transfer_event_poll_interval": validate_positive_float,
 }
 

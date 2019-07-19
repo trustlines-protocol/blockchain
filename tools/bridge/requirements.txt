@@ -2,4 +2,7 @@ Click
 eth-utils
 gevent
 toml
+web3
+
+contract-deploy-tools
 -r ../../requirements-dev.txt
