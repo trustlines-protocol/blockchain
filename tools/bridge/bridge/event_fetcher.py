@@ -14,7 +14,7 @@ class EventFetcher:
         web3: Web3,
         contract_address: str,
         event_signature_hash: HexBytes,
-        event_argument_filter: List[str],
+        event_argument_filter: List,
         event_fetch_limit: int,
         event_queue: Queue,
         max_reorg_depth: int,
