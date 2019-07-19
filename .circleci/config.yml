@@ -146,6 +146,10 @@ jobs:
           name: Run trailing-whitespace fixer
           command: |
             pre-commit run -a trailing-whitespace
+      - run:
+          name: Run prettier
+          command: |
+            pre-commit run -a prettier
 
   run-black:
     executor: ubuntu-builder

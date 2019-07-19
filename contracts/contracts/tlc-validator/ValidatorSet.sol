@@ -3,9 +3,7 @@ pragma solidity ^0.5.8;
 import "../equivocation-inspector/EquivocationInspector.sol";
 import "./ValidatorProxy.sol";
 
-
 contract ValidatorSet {
-
     /// Issue this log event to signal a desired change in validator set.
     /// This will not lead to a change in active validator set until
     /// finalizeChange is called.
@@ -28,7 +26,7 @@ contract ValidatorSet {
     address[] currentValidators;
     address[] public pendingValidators;
     mapping(address => AddressStatus) status;
-    bool public finalized;  // Was the last validator change finalized. Implies currentValidators == pendingValidators
+    bool public finalized; // Was the last validator change finalized. Implies currentValidators == pendingValidators
     address public systemAddress = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
     ValidatorProxy public validatorProxy;
     uint[] epochStartHeights;
@@ -43,18 +41,15 @@ contract ValidatorSet {
     }
 
     modifier isFinalized() {
-        require(
-            finalized,
-            "The last validator change must be finalized."
-        );
+        require(finalized, "The last validator change must be finalized.");
         _;
     }
 
-    function init(address[] calldata _validators, ValidatorProxy _validatorProxy) external {
-        require(
-            !initialized,
-            "Can not initialize twice."
-        );
+    function init(
+        address[] calldata _validators,
+        ValidatorProxy _validatorProxy
+    ) external {
+        require(!initialized, "Can not initialize twice.");
 
         pendingValidators = _validators;
         validatorProxy = _validatorProxy;
@@ -69,11 +64,15 @@ contract ValidatorSet {
         initialized = true;
     }
 
-    function getEpochStartHeights() external view returns(uint[] memory) {
+    function getEpochStartHeights() external view returns (uint[] memory) {
         return epochStartHeights;
     }
 
-    function getValidators(uint _epochStart) external view returns(address[] memory) {
+    function getValidators(uint _epochStart)
+        external
+        view
+        returns (address[] memory)
+    {
         return epochValidators[_epochStart];
     }
 
@@ -96,9 +95,7 @@ contract ValidatorSet {
         bytes calldata _signatureOne,
         bytes calldata _rlpUnsignedHeaderTwo,
         bytes calldata _signatureTwo
-    )
-        external
-    {
+    ) external {
         EquivocationInspector.verifyEquivocationProof(
             _rlpUnsignedHeaderOne,
             _signatureOne,
@@ -124,7 +121,11 @@ contract ValidatorSet {
 
     // Get current validator set (last enacted or initial if no changes ever made)
     // do not modify this function, aura will likely bug
-    function getValidators() public view returns (address[] memory _validators) {
+    function getValidators()
+        public
+        view
+        returns (address[] memory _validators)
+    {
         _validators = currentValidators;
     }
 
@@ -149,7 +150,8 @@ contract ValidatorSet {
         );
 
         uint index = status[_validator].index;
-        pendingValidators[index] = pendingValidators[pendingValidators.length - 1];
+        pendingValidators[index] = pendingValidators[pendingValidators.length -
+            1];
         status[pendingValidators[index]].index = index;
         delete pendingValidators[pendingValidators.length - 1];
         pendingValidators.length--;
@@ -160,7 +162,7 @@ contract ValidatorSet {
 
     function initiateChange(address[] memory _newValidatorSet) internal {
         finalized = false;
-        emit InitiateChange(blockhash(block.number-1), _newValidatorSet);
+        emit InitiateChange(blockhash(block.number - 1), _newValidatorSet);
     }
 
 }

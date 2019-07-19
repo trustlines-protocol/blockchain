@@ -3,9 +3,7 @@ pragma solidity ^0.5.8;
 import "../lib/Ownable.sol";
 import "./DepositLocker.sol";
 
-
 contract ValidatorAuction is Ownable {
-
     // auction constants set on deployment
     uint public auctionDurationInDays;
     uint public startPrice;
@@ -14,23 +12,40 @@ contract ValidatorAuction is Ownable {
 
     AuctionState public auctionState;
     DepositLocker public depositLocker;
-    mapping (address => bool) public whitelist;
-    mapping (address => uint) public bids;
+    mapping(address => bool) public whitelist;
+    mapping(address => uint) public bids;
     address[] public bidders;
     uint public startTime;
     uint public closeTime;
     uint public lowestSlotPrice;
 
-    event BidSubmitted(address bidder, uint bidValue, uint slotPrice, uint timestamp);
+    event BidSubmitted(
+        address bidder,
+        uint bidValue,
+        uint slotPrice,
+        uint timestamp
+    );
     event AddressWhitelisted(address whitelistedAddress);
-    event AuctionDeployed(uint startPrice, uint auctionDurationInDays, uint minimalNumberOfParticipants, uint maximalNumberOfParticipants);
+    event AuctionDeployed(
+        uint startPrice,
+        uint auctionDurationInDays,
+        uint minimalNumberOfParticipants,
+        uint maximalNumberOfParticipants
+    );
     event AuctionStarted(uint startTime);
-    event AuctionDepositPending(uint closeTime, uint lowestSlotPrice, uint totalParticipants);
-    event AuctionEnded(uint closeTime, uint lowestSlotPrice, uint totalParticipants);
+    event AuctionDepositPending(
+        uint closeTime,
+        uint lowestSlotPrice,
+        uint totalParticipants
+    );
+    event AuctionEnded(
+        uint closeTime,
+        uint lowestSlotPrice,
+        uint totalParticipants
+    );
     event AuctionFailed(uint closeTime, uint numberOfBidders);
 
-
-    enum AuctionState{
+    enum AuctionState {
         Deployed,
         Started,
         DepositPending, /* all slots sold, someone needs to call depositBids */
@@ -39,7 +54,10 @@ contract ValidatorAuction is Ownable {
     }
 
     modifier stateIs(AuctionState state) {
-        require(auctionState == state, "Auction is not in the proper state for desired action.");
+        require(
+            auctionState == state,
+            "Auction is not in the proper state for desired action."
+        );
         _;
     }
 
@@ -49,12 +67,23 @@ contract ValidatorAuction is Ownable {
         uint _minimalNumberOfParticipants,
         uint _maximalNumberOfParticipants,
         DepositLocker _depositLocker
-    ) public
-    {
-        require(_auctionDurationInDays > 0, "Duration of auction must be greater than 0");
-        require(_auctionDurationInDays < 100 * 365, "Duration of auction must be less than 100 years");
-        require(_minimalNumberOfParticipants > 0, "Minimal number of participants must be greater than 0");
-        require(_maximalNumberOfParticipants > 0, "Number of participants must be greater than 0");
+    ) public {
+        require(
+            _auctionDurationInDays > 0,
+            "Duration of auction must be greater than 0"
+        );
+        require(
+            _auctionDurationInDays < 100 * 365,
+            "Duration of auction must be less than 100 years"
+        );
+        require(
+            _minimalNumberOfParticipants > 0,
+            "Minimal number of participants must be greater than 0"
+        );
+        require(
+            _maximalNumberOfParticipants > 0,
+            "Number of participants must be greater than 0"
+        );
         require(
             _minimalNumberOfParticipants <= _maximalNumberOfParticipants,
             "The minimal number of participants must be smaller than the maximal number of participants."
@@ -73,7 +102,12 @@ contract ValidatorAuction is Ownable {
 
         lowestSlotPrice = ~uint(0);
 
-        emit AuctionDeployed(startPrice, auctionDurationInDays, _minimalNumberOfParticipants, _maximalNumberOfParticipants);
+        emit AuctionDeployed(
+            startPrice,
+            auctionDurationInDays,
+            _minimalNumberOfParticipants,
+            _maximalNumberOfParticipants
+        );
         auctionState = AuctionState.Deployed;
     }
 
@@ -83,12 +117,21 @@ contract ValidatorAuction is Ownable {
 
     function bid() public payable stateIs(AuctionState.Started) {
         require(now > startTime, "It is too early to bid.");
-        require(now <= startTime + auctionDurationInDays * 1 days, "Auction has already ended.");
+        require(
+            now <= startTime + auctionDurationInDays * 1 days,
+            "Auction has already ended."
+        );
         uint slotPrice = currentPrice();
-        require(msg.value >= slotPrice, "Not enough ether was provided for bidding.");
+        require(
+            msg.value >= slotPrice,
+            "Not enough ether was provided for bidding."
+        );
         require(whitelist[msg.sender], "The sender is not whitelisted.");
-        require(! isSenderContract(), "The sender cannot be a contract.");
-        require(bidders.length < maximalNumberOfParticipants, "The limit of participants has already been reached.");
+        require(!isSenderContract(), "The sender cannot be a contract.");
+        require(
+            bidders.length < maximalNumberOfParticipants,
+            "The limit of participants has already been reached."
+        );
         require(bids[msg.sender] == 0, "The sender has already bid.");
 
         bids[msg.sender] = msg.value;
@@ -106,7 +149,10 @@ contract ValidatorAuction is Ownable {
     }
 
     function startAuction() public onlyOwner stateIs(AuctionState.Deployed) {
-        require(depositLocker.initialized(), "The deposit locker contract is not initialized");
+        require(
+            depositLocker.initialized(),
+            "The deposit locker contract is not initialized"
+        );
 
         auctionState = AuctionState.Started;
         startTime = now;
@@ -116,12 +162,17 @@ contract ValidatorAuction is Ownable {
 
     function depositBids() public stateIs(AuctionState.DepositPending) {
         auctionState = AuctionState.Ended;
-        depositLocker.deposit.value(lowestSlotPrice * bidders.length)(lowestSlotPrice);
+        depositLocker.deposit.value(lowestSlotPrice * bidders.length)(
+            lowestSlotPrice
+        );
         emit AuctionEnded(closeTime, lowestSlotPrice, bidders.length);
     }
 
     function closeAuction() public stateIs(AuctionState.Started) {
-        require(now > startTime + auctionDurationInDays * 1 days, "The auction cannot be closed this early.");
+        require(
+            now > startTime + auctionDurationInDays * 1 days,
+            "The auction cannot be closed this early."
+        );
         assert(bidders.length < maximalNumberOfParticipants);
 
         if (bidders.length >= minimalNumberOfParticipants) {
@@ -131,7 +182,11 @@ contract ValidatorAuction is Ownable {
         }
     }
 
-    function addToWhitelist(address[] memory addressesToWhitelist) public onlyOwner stateIs(AuctionState.Deployed) {
+    function addToWhitelist(address[] memory addressesToWhitelist)
+        public
+        onlyOwner
+        stateIs(AuctionState.Deployed)
+    {
         for (uint32 i = 0; i < addressesToWhitelist.length; i++) {
             whitelist[addressesToWhitelist[i]] = true;
             emit AddressWhitelisted(addressesToWhitelist[i]);
@@ -140,7 +195,8 @@ contract ValidatorAuction is Ownable {
 
     function withdraw() public {
         require(
-            auctionState == AuctionState.Ended || auctionState == AuctionState.Failed,
+            auctionState == AuctionState.Ended ||
+                auctionState == AuctionState.Failed,
             "You cannot withdraw before the auction is ended or it failed."
         );
 
@@ -153,25 +209,42 @@ contract ValidatorAuction is Ownable {
         }
     }
 
-    function currentPrice() public view stateIs(AuctionState.Started) returns (uint) {
+    function currentPrice()
+        public
+        view
+        stateIs(AuctionState.Started)
+        returns (uint)
+    {
         assert(now >= startTime);
         uint secondsSinceStart = (now - startTime);
         return priceAtElapsedTime(secondsSinceStart);
     }
 
-    function priceAtElapsedTime(uint secondsSinceStart) public view returns (uint) {
+    function priceAtElapsedTime(uint secondsSinceStart)
+        public
+        view
+        returns (uint)
+    {
         // To prevent overflows
-        require(secondsSinceStart < 100 * 365 days, "Times longer than 100 years are not supported.");
+        require(
+            secondsSinceStart < 100 * 365 days,
+            "Times longer than 100 years are not supported."
+        );
         uint msSinceStart = 1000 * secondsSinceStart;
         uint relativeAuctionTime = msSinceStart / auctionDurationInDays;
         uint decayDivisor = 746571428571;
         uint decay = relativeAuctionTime ** 3 / decayDivisor;
-        uint price = startPrice * (1 + relativeAuctionTime)/(1 + relativeAuctionTime + decay);
+        uint price = startPrice *
+            (1 + relativeAuctionTime) /
+            (1 + relativeAuctionTime + decay);
         return price;
     }
 
     function withdrawAfterAuctionEnded() internal stateIs(AuctionState.Ended) {
-        require(bids[msg.sender] > lowestSlotPrice, "The sender has nothing to withdraw.");
+        require(
+            bids[msg.sender] > lowestSlotPrice,
+            "The sender has nothing to withdraw."
+        );
 
         uint valueToWithdraw = bids[msg.sender] - lowestSlotPrice;
         assert(valueToWithdraw <= bids[msg.sender]);
@@ -181,7 +254,10 @@ contract ValidatorAuction is Ownable {
         msg.sender.transfer(valueToWithdraw);
     }
 
-    function withdrawAfterAuctionFailed() internal stateIs(AuctionState.Failed) {
+    function withdrawAfterAuctionFailed()
+        internal
+        stateIs(AuctionState.Failed)
+    {
         require(bids[msg.sender] > 0, "The sender has nothing to withdraw.");
 
         uint valueToWithdraw = bids[msg.sender];
@@ -191,13 +267,19 @@ contract ValidatorAuction is Ownable {
         msg.sender.transfer(valueToWithdraw);
     }
 
-    function transitionToDepositPending() internal stateIs(AuctionState.Started) {
+    function transitionToDepositPending()
+        internal
+        stateIs(AuctionState.Started)
+    {
         auctionState = AuctionState.DepositPending;
         closeTime = now;
         emit AuctionDepositPending(closeTime, lowestSlotPrice, bidders.length);
     }
 
-    function transitionToAuctionFailed() internal stateIs(AuctionState.Started) {
+    function transitionToAuctionFailed()
+        internal
+        stateIs(AuctionState.Started)
+    {
         auctionState = AuctionState.Failed;
         closeTime = now;
         emit AuctionFailed(closeTime, bidders.length);

@@ -6,6 +6,13 @@ repos:
     - id: shellcheck
       exclude: ^docker/parity_wrapper.sh$
 
+-   repo: https://github.com/trustlines-protocol/prettier
+    rev: e16e6db0fbf03e18fcf63d18c5a1479dcb6e2e75
+    hooks:
+      - id: prettier
+        entry: prettier --write --list-different
+        files: "\\.sol$"
+
 -   repo: https://github.com/ambv/black
     rev: 19.3b0
     hooks:
@@ -26,7 +33,7 @@ repos:
     - id: debug-statements
       language_version: python3.6
     - id: end-of-file-fixer
-      exclude: ^contracts/contracts/lib/.*\.sol$
+      exclude: ^contracts/contracts/lib/.*\.sol|contracts/contracts/token/TrustlinesNetworkToken.sol$
     - id: flake8
       language_version: python3.6
       additional_dependencies: ["flake8-string-format", "flake8-per-file-ignores"]

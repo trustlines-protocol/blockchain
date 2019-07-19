@@ -2,7 +2,6 @@ pragma solidity ^0.5.8;
 
 import "./ValidatorSet.sol";
 
-
 /**
     This contract gives access to an up to date validator set on chain, that can be used by any other contracts.
     Its validator set is to be updated by validators contracts when the system address calls finalizeChange().
@@ -10,8 +9,7 @@ import "./ValidatorSet.sol";
 */
 
 contract ValidatorProxy {
-
-    mapping (address => bool) public isValidator;
+    mapping(address => bool) public isValidator;
     address public systemAddress = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
     address[] public validators;
 
@@ -24,7 +22,10 @@ contract ValidatorProxy {
     }
 
     function updateValidators(address[] memory newValidators) public {
-        require(tx.origin == systemAddress, "Only the system address can be responsible for the call of this function.");  // solium-disable-line security/no-tx-origin
+        require(
+            tx.origin == systemAddress, // solium-disable-line security/no-tx-origin
+            "Only the system address can be responsible for the call of this function."
+        );
 
         for (uint i = 0; i < validators.length; i++) {
             isValidator[validators[i]] = false;
@@ -37,11 +38,11 @@ contract ValidatorProxy {
         validators = newValidators;
     }
 
-    function numberOfValidators() public view returns(uint) {
+    function numberOfValidators() public view returns (uint) {
         return validators.length;
     }
 
-    function getValidators() public view returns(address[] memory) {
+    function getValidators() public view returns (address[] memory) {
         return validators;
     }
 }

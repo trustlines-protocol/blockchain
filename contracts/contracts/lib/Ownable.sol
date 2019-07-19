@@ -7,7 +7,6 @@ pragma solidity ^0.5.8;
  * Provides onlyOwner modifier, which prevents function from running if it is called by anyone other than the owner.
  */
 
-
 contract Ownable {
     address public owner;
 
@@ -16,7 +15,10 @@ contract Ownable {
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "The function can only be called by the owner");
+        require(
+            msg.sender == owner,
+            "The function can only be called by the owner"
+        );
         _;
     }
 
