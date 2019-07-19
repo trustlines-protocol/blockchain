@@ -28,9 +28,6 @@ def validate_positive_float(number: Any) -> float:
 
 
 def validate_checksum_address(address: Any) -> None:
-    if not Web3.isAddress(address):
-        raise ValueError(f"{address} is not a valid Ethereum address")
-
     if not Web3.isChecksumAddress(address):
         raise ValueError(f"{address} is not a valid Ethereum checksum address")
 
@@ -44,7 +41,7 @@ REQUIRED_CONFIG_ENTRIES = [
 
 OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
     "max_reorg_depth": 10,
-    "event_filter_fetch_limit": 950,
+    "transfer_event_fetch_limit": 950,
     "transfer_event_poll_interval": 5,
 }
 
@@ -54,7 +51,7 @@ CONFIG_ENTRY_VALIDATORS = {
     "token_contract_address": validate_checksum_address,
     "foreign_bridge_contract_address": validate_checksum_address,
     "max_reorg_depth": validate_positive_integer,
-    "event_filter_fetch_limit": validate_positive_integer,
+    "transfer_event_fetch_limit": validate_positive_integer,
     "transfer_event_poll_interval": validate_positive_float,
 }
 

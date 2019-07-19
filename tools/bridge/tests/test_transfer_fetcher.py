@@ -9,7 +9,7 @@ def max_reorg_depth():
 
 
 @pytest.fixture
-def event_filter_fetch_limit():
+def transfer_event_fetch_limit():
     return 25
 
 
@@ -20,7 +20,7 @@ def transfer_fetcher(
     token_contract,
     foreign_bridge_contract,
     max_reorg_depth,
-    event_filter_fetch_limit,
+    transfer_event_fetch_limit,
 ):
     return TransferFetcher(
         queue=token_transfer_event_queue,
@@ -28,7 +28,7 @@ def transfer_fetcher(
         token_contract_address=token_contract.address,
         foreign_bridge_contract_address=foreign_bridge_contract.address,
         max_reorg_depth=max_reorg_depth,
-        event_filter_fetch_limit=event_filter_fetch_limit,
+        transfer_event_fetch_limit=transfer_event_fetch_limit,
     )
 
 
@@ -55,7 +55,7 @@ def test_instantiate_transfer_fetcher_with_non_existing_token_contract(
     w3_foreign,
     foreign_bridge_contract,
     max_reorg_depth,
-    event_filter_fetch_limit,
+    transfer_event_fetch_limit,
 ):
     with pytest.raises(ValueError):
         TransferFetcher(
@@ -64,7 +64,7 @@ def test_instantiate_transfer_fetcher_with_non_existing_token_contract(
             token_contract_address="0x0000000000000000000000000000000000000000",
             foreign_bridge_contract_address=foreign_bridge_contract.address,
             max_reorg_depth=max_reorg_depth,
-            event_filter_fetch_limit=event_filter_fetch_limit,
+            transfer_event_fetch_limit=transfer_event_fetch_limit,
         )
 
 
@@ -72,7 +72,7 @@ def test_instantiate_transfer_fetcher_with_incorrect_token_contract(
     token_transfer_event_queue,
     w3_foreign,
     foreign_bridge_contract,
-    event_filter_fetch_limit,
+    transfer_event_fetch_limit,
 ):
     with pytest.raises(ValueError):
         TransferFetcher(
@@ -81,7 +81,7 @@ def test_instantiate_transfer_fetcher_with_incorrect_token_contract(
             token_contract_address=foreign_bridge_contract.address,
             foreign_bridge_contract_address=foreign_bridge_contract.address,
             max_reorg_depth=max_reorg_depth,
-            event_filter_fetch_limit=event_filter_fetch_limit,
+            transfer_event_fetch_limit=transfer_event_fetch_limit,
         )
 
 
@@ -90,7 +90,7 @@ def test_instantiate_transfer_fetcher_with_non_existing_foreign_bridge_contract(
     w3_foreign,
     token_contract,
     max_reorg_depth,
-    event_filter_fetch_limit,
+    transfer_event_fetch_limit,
 ):
     with pytest.raises(ValueError):
         TransferFetcher(
@@ -99,7 +99,7 @@ def test_instantiate_transfer_fetcher_with_non_existing_foreign_bridge_contract(
             token_contract_address=token_contract.address,
             foreign_bridge_contract_address="0x0000000000000000000000000000000000000000",
             max_reorg_depth=max_reorg_depth,
-            event_filter_fetch_limit=event_filter_fetch_limit,
+            transfer_event_fetch_limit=transfer_event_fetch_limit,
         )
 
 
@@ -117,6 +117,7 @@ def test_fetch_token_transfer_events_in_range(
     )
 
     assert token_transfer_event_queue.qsize() == 1
+    assert token_transfer_event_queue.get()["event"] == "Transfer"
 
 
 def test_fetch_token_transfer_events_in_range_fix_invalid_bounds(
@@ -195,12 +196,12 @@ def test_fetch_token_transfer_events_not_seen_handle_log_limit_exact_multiplicat
     transfer_tokens_to_foreign_bridge,
     tester_foreign,
     max_reorg_depth,
-    event_filter_fetch_limit,
+    transfer_event_fetch_limit,
     w3_foreign,
 ):
     assert token_transfer_event_queue.empty()
 
-    transfer_count = event_filter_fetch_limit * 2
+    transfer_count = transfer_event_fetch_limit * 2
 
     for i in range(transfer_count):
         transfer_tokens_to_foreign_bridge()
@@ -217,11 +218,11 @@ def test_fetch_token_transfer_events_not_seen_handle_log_limit_not_exact_multipl
     transfer_tokens_to_foreign_bridge,
     tester_foreign,
     max_reorg_depth,
-    event_filter_fetch_limit,
+    transfer_event_fetch_limit,
 ):
     assert token_transfer_event_queue.empty()
 
-    transfer_count = event_filter_fetch_limit + 1
+    transfer_count = transfer_event_fetch_limit + 1
 
     for i in range(transfer_count):
         transfer_tokens_to_foreign_bridge()
