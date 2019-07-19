@@ -4,18 +4,6 @@ import gevent
 from gevent.queue import Queue
 from web3 import Web3
 
-MINIMAL_TOKEN_ABI = [
-    {
-        "anonymous": False,
-        "inputs": [
-            {"indexed": True, "name": "from", "type": "address"},
-            {"indexed": True, "name": "to", "type": "address"},
-            {"indexed": False, "name": "value", "type": "uint256"},
-        ],
-        "name": "Transfer",
-        "type": "event",
-    }
-]
 
 TRANSFER_EVENT_SIGNATURE_HASH = Web3.keccak(text="Transfer(address,address,uint256)")
 
@@ -28,7 +16,7 @@ class TransferFetcher:
         w3_foreign: Web3,
         token_contract_address: str,
         foreign_bridge_contract_address: str,
-        max_reorg_depth: int,
+        foreign_chain_max_reorg_depth: int,
         transfer_event_fetch_limit: int,
     ):
         token_contract_code = w3_foreign.eth.getCode(token_contract_address)
@@ -58,11 +46,9 @@ class TransferFetcher:
         self._logger = logging.getLogger("bridge.transfer_fetcher")
         self._w3_foreign = w3_foreign
         self._queue = queue
-        self._token_contract = w3_foreign.eth.contract(
-            address=token_contract_address, abi=MINIMAL_TOKEN_ABI
-        )
+        self._token_contract_address = token_contract_address
         self._foreign_bridge_contract_address = foreign_bridge_contract_address
-        self._max_reorg_depth = max_reorg_depth
+        self._foreign_chain_max_reorg_depth = foreign_chain_max_reorg_depth
         self._transfer_event_fetch_limit = transfer_event_fetch_limit
         self._last_fetched_block_number = (
             -1
@@ -83,13 +69,18 @@ class TransferFetcher:
             f"({from_block_number} to {to_block_number})"
         )
 
-        transfer_event_filter = self._token_contract.events.Transfer.createFilter(
-            fromBlock=from_block_number,
-            toBlock=to_block_number,
-            argument_filters={"to": self._foreign_bridge_contract_address},
+        events = self._w3_foreign.eth.getLogs(
+            {
+                "fromBlock": from_block_number,
+                "toBlock": to_block_number,
+                "address": self._token_contract_address,
+                "topics": [
+                    TRANSFER_EVENT_SIGNATURE_HASH.hex(),
+                    None,
+                    f"0x000000000000000000000000{self._foreign_bridge_contract_address[2:]}",
+                ],
+            }
         )
-
-        events = transfer_event_filter.get_all_entries()
 
         self._logger.debug(f"Found {len(events)} events.")
 
@@ -103,12 +94,12 @@ class TransferFetcher:
         )
 
         head_block_number = max(
-            self._w3_foreign.eth.blockNumber - self._max_reorg_depth, 0
+            self._w3_foreign.eth.blockNumber - self._foreign_chain_max_reorg_depth, 0
         )
 
         self._logger.debug(
             f"Fetch to new head {head_block_number} respecting "
-            f"the maximum reorg depth of {self._max_reorg_depth}."
+            f"the maximum reorg depth of {self._foreign_chain_max_reorg_depth}."
         )
 
         for from_block_number in range(

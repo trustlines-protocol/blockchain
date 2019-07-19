@@ -40,7 +40,7 @@ REQUIRED_CONFIG_ENTRIES = [
 ]
 
 OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
-    "max_reorg_depth": 10,
+    "foreign_chain_max_reorg_depth": 10,
     "transfer_event_fetch_limit": 950,
     "transfer_event_poll_interval": 5,
 }
@@ -50,7 +50,7 @@ CONFIG_ENTRY_VALIDATORS = {
     "foreign_rpc_url": validate_rpc_url,
     "token_contract_address": validate_checksum_address,
     "foreign_bridge_contract_address": validate_checksum_address,
-    "max_reorg_depth": validate_positive_integer,
+    "foreign_chain_max_reorg_depth": validate_positive_integer,
     "transfer_event_fetch_limit": validate_positive_integer,
     "transfer_event_poll_interval": validate_positive_float,
 }
