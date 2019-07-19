@@ -1,6 +1,7 @@
 import pytest
 
 from web3 import Web3
+from gevent import Greenlet, sleep, joinall
 
 from bridge.event_fetcher import EventFetcher
 
@@ -257,4 +258,38 @@ def test_fetch_events_not_seen_handle_event_limit_not_exact_multiplicate(
     assert transfer_event_queue.qsize() == transfer_count
 
 
-# TODO: test worker when async framework integrated
+def test_fetch_events_continuously(
+    transfer_event_fetcher, transfer_event_queue, transfer_tokens_to_foreign_bridge
+):
+    assert transfer_event_queue.empty()
+
+    poll_time = 1
+    transfer_event_fetcher.max_reorg_depth = 0
+
+    try:
+        greenlet = Greenlet.spawn(transfer_event_fetcher.fetch_events, poll_time)
+        transfer_tokens_to_foreign_bridge()
+        sleep(poll_time + 1)
+
+        assert transfer_event_queue.qsize() == 1
+
+        transfer_tokens_to_foreign_bridge()
+        transfer_tokens_to_foreign_bridge()
+        sleep(poll_time + 1)
+
+        assert transfer_event_queue.qsize() == 3
+
+    finally:
+        greenlet.kill()
+
+
+def test_fetch_events_negativ_poll_interval(
+    transfer_event_fetcher, transfer_event_queue, transfer_tokens_to_foreign_bridge
+):
+    try:
+        with pytest.raises(AssertionError):
+            greenlet = Greenlet.spawn(transfer_event_fetcher.fetch_events, -1)
+            joinall([greenlet], raise_error=True)
+
+    finally:
+        greenlet.kill()

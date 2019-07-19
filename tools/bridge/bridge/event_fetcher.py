@@ -38,6 +38,7 @@ class EventFetcher:
         self.logger = logging.getLogger(
             f"bridge.event_fetcher.{contract_address}.{event_signature_hash}"
         )
+
         self.web3 = web3
         self.contract_address = contract_address
         self.event_signature_hash = event_signature_hash
@@ -56,7 +57,7 @@ class EventFetcher:
         to_block_number = min(to_block_number, self.web3.eth.blockNumber)
 
         self.logger.debug(
-            "Fetch events from block {from_block_number} to {to_block_number}."
+            f"Fetch events from block {from_block_number} to {to_block_number}."
         )
 
         assert from_block_number <= to_block_number, (
@@ -108,6 +109,8 @@ class EventFetcher:
         self.last_fetched_block_number = fetch_until_block_number
 
     def fetch_events(self, poll_interval: int) -> None:
+        assert poll_interval > 0
+
         self.logger.debug("Start event fetcher.")
 
         while True:
