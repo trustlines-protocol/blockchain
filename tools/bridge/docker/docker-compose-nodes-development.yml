@@ -18,6 +18,8 @@ services:
       - "--no-secretstore"
       - "--no-color"
     volumes: ['./data/ropsten:/data']
+    ports:
+      - "127.0.0.1:8545:8545"
     restart: unless-stopped
     mem_limit: 2G
     mem_reservation: 16M
@@ -35,6 +37,8 @@ services:
       - "--no-ipc"
       - "--no-secretstore"
     volumes: ['./data/laika:/home/parity/.local/share/io.parity.ethereum/chains_light']
+    ports:
+      - "127.0.0.1:8546:8545"
     restart: unless-stopped
     mem_limit: 2G
     mem_reservation: 16M
