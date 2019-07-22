@@ -15,6 +15,7 @@ from web3 import Web3, HTTPProvider
 
 from bridge.config import load_config
 from bridge.event_fetcher import EventFetcher
+from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI
 
 
 @click.command()
@@ -44,11 +45,9 @@ def main(config_path: str) -> None:
     transfer_event_fetcher = EventFetcher(
         web3=w3_foreign,
         contract_address=config["token_contract_address"],
-        event_signature="Transfer(address,address,uint256)",
-        event_argument_filter=[
-            None,
-            f"0x000000000000000000000000{config['foreign_bridge_contract_address'][2:]}",
-        ],
+        contract_abi=MINIMAL_ERC20_TOKEN_ABI,
+        event_name="Transfer",
+        event_argument_filter={"to": config["foreign_bridge_contract_address"]},
         event_queue=transfer_event_queue,
         max_reorg_depth=config["foreign_chain_max_reorg_depth"],
     )
