@@ -19,9 +19,9 @@ services:
       - "--no-color"
     volumes: ['./data/ropsten:/data']
     restart: unless-stopped
-    mem_limit: 2G
+    mem_limit: 1G
     mem_reservation: 16M
-    stop_grace_period: 1m
+    stop_grace_period: 3m
 
   node_home:
     image: trustlines/tlbc-testnet:release4044
@@ -36,6 +36,6 @@ services:
       - "--no-secretstore"
     volumes: ['./data/laika:/home/parity/.local/share/io.parity.ethereum/chains_light']
     restart: unless-stopped
-    mem_limit: 2G
+    mem_limit: 1G
     mem_reservation: 16M
-    stop_grace_period: 1m
+    stop_grace_period: 3m
