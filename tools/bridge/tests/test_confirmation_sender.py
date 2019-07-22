@@ -1,0 +1,207 @@
+import pytest
+
+import gevent
+from gevent.queue import Queue
+
+from hexbytes import HexBytes
+
+from web3.datastructures import AttributeDict
+
+import rlp
+
+from eth.vm.forks.spurious_dragon.transactions import SpuriousDragonTransaction
+
+from eth_utils import decode_hex, keccak
+
+from bridge.confirmation_sender import ConfirmationSender
+from bridge.constants import STEP_INTERVAL
+
+
+#
+# Fixtures related to the confirmation sender
+#
+@pytest.fixture
+def transfer_queue():
+    return Queue()
+
+
+@pytest.fixture
+def validator_account_and_key(proxy_validator_accounts_and_keys):
+    accounts, keys = proxy_validator_accounts_and_keys
+    return accounts[0], keys[0]
+
+
+@pytest.fixture
+def validator_address(validator_account_and_key):
+    account, _ = validator_account_and_key
+    return account
+
+
+@pytest.fixture
+def validator_key(validator_account_and_key):
+    _, key = validator_account_and_key
+    return key
+
+
+@pytest.fixture
+def max_reorg_depth():
+    return 5
+
+
+@pytest.fixture
+def gas_price():
+    return 1
+
+
+@pytest.fixture
+def confirmation_sender(
+    transfer_queue, home_bridge_contract, validator_key, max_reorg_depth, gas_price
+):
+    return ConfirmationSender(
+        transfer_queue=transfer_queue,
+        home_bridge_contract=home_bridge_contract,
+        private_key=validator_key.to_bytes(),
+        gas_price=gas_price,
+        max_reorg_depth=max_reorg_depth,
+    )
+
+
+@pytest.fixture
+def transfer_event():
+    return AttributeDict(
+        {
+            "args": AttributeDict(
+                {
+                    "from": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+                    "to": "0x2946259E0334f33A064106302415aD3391BeD384",
+                    "value": 1,
+                }
+            ),
+            "event": "Transfer",
+            "logIndex": 5,
+            "transactionIndex": 10,
+            "transactionHash": HexBytes(
+                "0x66ba278660204ddd43f350e9110a8339fd32a227354429744456aac63ff9ef6f"
+            ),
+            "address": "0xF2E246BB76DF876Cef8b38ae84130F4F55De395b",
+            "blockHash": HexBytes(
+                "0x0e9226f0b8eb7b1c0b1652b8c8ce81b1790927bdaa692223ec2fb746e21063f8"
+            ),
+            "blockNumber": 3,
+        }
+    )
+
+
+#
+# Tests
+#
+def test_next_nonce_without_pending_transactions(
+    confirmation_sender, w3_home, tester_home, validator_address
+):
+    transaction_count_before = w3_home.eth.getTransactionCount(validator_address)
+    assert confirmation_sender.get_next_nonce() == transaction_count_before
+    w3_home.eth.sendTransaction({"from": validator_address})
+    tester_home.mine_block()
+    assert confirmation_sender.get_next_nonce() == transaction_count_before + 1
+
+
+def test_next_nonce_with_pending_transactions(
+    confirmation_sender, w3_home, validator_address
+):
+    transaction_count_before = w3_home.eth.getTransactionCount(validator_address)
+    w3_home.eth.sendTransaction({"from": validator_address})
+    w3_home.eth.sendTransaction({"from": validator_address})
+    w3_home.eth.sendTransaction({"from": validator_address})
+    assert confirmation_sender.get_next_nonce() == transaction_count_before + 3
+
+
+def test_transfer_hash_computation(confirmation_sender, transfer_event):
+    transfer_hash = confirmation_sender.compute_transfer_hash(transfer_event)
+    assert transfer_event.logIndex == 5
+    assert transfer_hash == keccak(transfer_event.transactionHash + b"\x05")
+
+
+def test_transaction_preparation(
+    foreign_bridge_contract,
+    confirmation_sender,
+    validator_address,
+    gas_price,
+    home_bridge_contract,
+    transfer_event,
+):
+    signed_transaction = confirmation_sender.prepare_confirmation_transaction(
+        transfer_event
+    )
+    transaction = rlp.decode(
+        bytes(signed_transaction.rawTransaction), SpuriousDragonTransaction
+    )
+    assert transaction.sender == decode_hex(validator_address)
+    assert transaction.to == decode_hex(home_bridge_contract.address)
+    assert transaction.gas_price == gas_price
+    assert transaction.value == 0
+    assert transaction.nonce == confirmation_sender.get_next_nonce()
+
+
+def test_transaction_sending(
+    confirmation_sender,
+    w3_home,
+    tester_home,
+    home_bridge_contract,
+    transfer_event,
+    validator_address,
+):
+    transaction = confirmation_sender.prepare_confirmation_transaction(transfer_event)
+    confirmation_sender.send_confirmation_transaction(transaction)
+    assert transaction in confirmation_sender.pending_transactions
+    tester_home.mine_block()
+    receipt = w3_home.eth.getTransactionReceipt(transaction.hash)
+    assert receipt is not None
+    events = home_bridge_contract.events.Confirmation.getLogs(
+        fromBlock=receipt.blockNumber, toBlock=receipt.blockNumber
+    )
+    assert len(events) == 1
+    event_args = events[0].args
+    assert event_args.transferHash == confirmation_sender.compute_transfer_hash(
+        transfer_event
+    )
+    assert event_args.transactionHash == transfer_event.transactionHash
+    assert event_args.amount == transfer_event.args.value
+    assert event_args.recipient == transfer_event.args["from"]
+    assert event_args.validator == validator_address
+
+
+def test_transfers_are_handled(
+    confirmation_sender, w3_home, tester_home, transfer_queue, transfer_event
+):
+    try:
+        greenlet = gevent.spawn(confirmation_sender.run)
+        assert len(confirmation_sender.pending_transactions) == 0
+        transfer_queue.put(transfer_event)
+        gevent.sleep(0.1)
+        assert len(confirmation_sender.pending_transactions) == 1
+        transaction = confirmation_sender.pending_transactions[0]
+        tester_home.mine_block()
+        assert w3_home.eth.getTransactionReceipt(transaction.hash) is not None
+    finally:
+        greenlet.kill()
+
+
+def test_pending_transfers_are_cleared(
+    confirmation_sender, tester_home, transfer_queue, transfer_event, max_reorg_depth
+):
+    try:
+        greenlet = gevent.spawn(confirmation_sender.run)
+        assert len(confirmation_sender.pending_transactions) == 0
+        transfer_queue.put(transfer_event)
+        gevent.sleep(0.1)
+        assert len(confirmation_sender.pending_transactions) == 1
+        tester_home.mine_block()
+        gevent.sleep(1.5 * STEP_INTERVAL)  # wait until they have a chance to check
+        assert (
+            len(confirmation_sender.pending_transactions) == 1
+        )  # not confirmed enough yet
+        tester_home.mine_blocks(max_reorg_depth - 1)
+        gevent.sleep(1.5 * STEP_INTERVAL)
+        assert len(confirmation_sender.pending_transactions) == 0
+    finally:
+        greenlet.kill()

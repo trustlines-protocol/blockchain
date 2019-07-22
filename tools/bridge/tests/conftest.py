@@ -74,3 +74,68 @@ def foreign_bridge_contract(deploy_contract_on_chain, w3_foreign, token_contract
     return deploy_contract_on_chain(
         w3_foreign, "ForeignBridge", constructor_args=(token_contract.address,)
     )
+
+
+@pytest.fixture
+def proxy_validator_accounts_and_keys(accounts, account_keys):
+    num_validators = 5
+    return accounts[:num_validators], account_keys[:num_validators]
+
+
+@pytest.fixture
+def proxy_validators(proxy_validator_accounts_and_keys):
+    accounts, _ = proxy_validator_accounts_and_keys
+    return accounts
+
+
+@pytest.fixture
+def proxy_validator_keys(proxy_validator_accounts_and_keys):
+    _, keys = proxy_validator_accounts_and_keys
+    return keys
+
+
+@pytest.fixture
+def system_address(accounts):
+    return accounts[0]
+
+
+@pytest.fixture
+def validator_proxy_contract(
+    deploy_contract_on_chain, w3_home, system_address, accounts
+):
+    contract = deploy_contract_on_chain(
+        w3_home, "TestValidatorProxy", constructor_args=([], system_address)
+    )
+
+    assert contract.functions.systemAddress().call() == system_address
+
+    return contract
+
+
+@pytest.fixture
+def validator_proxy_with_validators(
+    validator_proxy_contract, system_address, proxy_validators
+):
+    validator_proxy_contract.functions.updateValidators(proxy_validators).transact(
+        {"from": system_address}
+    )
+    return validator_proxy_contract
+
+
+@pytest.fixture
+def home_bridge_contract(
+    deploy_contract_on_chain, validator_proxy_with_validators, w3_home, tester_home
+):
+    contract = deploy_contract_on_chain(
+        w3_home,
+        "TestHomeBridge",
+        constructor_args=(validator_proxy_with_validators.address, 50),
+    )
+
+    account_0 = tester_home.get_accounts()[0]
+
+    tester_home.send_transaction(
+        {"from": account_0, "to": contract.address, "gas": 100000, "value": 1_000_000}
+    )
+
+    return contract
