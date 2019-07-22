@@ -1,0 +1,41 @@
+version: '2.4'
+services:
+
+  node_foreign:
+    image: parity/parity:v2.5.5-stable
+    command:
+      - "--light"
+      - "--no-download"
+      - "--auto-update=none"
+      - "--chain=mainnet"
+      - "--base-path=/data"
+      - "--no-hardware-wallets"
+      - "--jsonrpc-interface=all"
+      - "--jsonrpc-apis=safe"
+      - "--jsonrpc-hosts=all"
+      - "--jsonrpc-cors=all"
+      - "--no-ipc"
+      - "--no-secretstore"
+      - "--no-color"
+    volumes: ['./data/mainnet:/data']
+    restart: unless-stopped
+    mem_limit: 1G
+    mem_reservation: 16M
+    stop_grace_period: 3m
+
+  # node_home:
+  #   image: # TODO: Add production release here
+  #   command:
+  #     - "--parity-args"
+  #     - "--light"
+  #     - "--no-hardware-wallets"
+  #     - "--jsonrpc-apis=safe"
+  #     - "--jsonrpc-hosts=all"
+  #     - "--jsonrpc-cors=all"
+  #     - "--no-ipc"
+  #     - "--no-secretstore"
+  #   volumes: ['./data/trustlines:/home/parity/.local/share/io.parity.ethereum/chains_light']
+  #   restart: unless-stopped
+  #   mem_limit: 1G
+  #   mem_reservation: 16M
+  #   stop_grace_period: 3m
