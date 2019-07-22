@@ -2,4 +2,5 @@ Click
 eth-utils
 gevent
 toml
+web3
 -r ../../requirements-dev.txt
