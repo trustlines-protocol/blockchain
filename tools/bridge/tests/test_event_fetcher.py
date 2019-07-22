@@ -163,9 +163,7 @@ def test_fetch_events_in_range(
     assert event["event"] == transfer_event_name
 
     for argument_name, argument_value in transfer_event_argument_filter.items():
-        print(f"Name: {argument_name} Value: {argument_value}")
-        event.args[argument_name] == argument_value
-        print(f"args: {event.args}")
+        assert event.args[argument_name] == argument_value
 
 
 def test_fetch_events_in_range_ignore_not_matching_arguments(
