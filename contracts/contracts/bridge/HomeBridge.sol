@@ -90,18 +90,35 @@ contract HomeBridge {
         }
     }
 
-    function _checkSufficientNumberOfConfirmations(uint16 numConfirmations)
+    function purgeConfirmationsFromExValidators(bytes32 transferStateId)
         internal
-        view
-        returns (bool)
     {
-        uint numRequired = (
-                validatorProxy.numberOfValidators() *
-                    validatorsRequiredPercent +
-                    99
-            ) /
-            100;
-        return numConfirmations >= numRequired;
+        address payable[] storage confirmingValidators = transferState[transferStateId]
+            .confirmingValidators;
+
+        uint i = 0;
+        while (i < confirmingValidators.length) {
+            if (validatorProxy.isValidator(confirmingValidators[i])) {
+                i++;
+            } else {
+                confirmingValidators[i] = confirmingValidators[confirmingValidators
+                        .length -
+                    1];
+                delete confirmingValidators[confirmingValidators.length - 1];
+                confirmingValidators.length--;
+                transferState[transferStateId].numConfirmations--;
+            }
+        }
+    }
+
+    function getNumRequiredConfirmations() internal view returns (uint) {
+        return
+            (
+                    validatorProxy.numberOfValidators() *
+                        validatorsRequiredPercent +
+                        99
+                ) /
+                100;
     }
 
     function _confirmTransfer(
@@ -121,14 +138,35 @@ contract HomeBridge {
         transferState[transferStateId].confirmingValidators.push(validator);
         transferState[transferStateId].numConfirmations += 1;
 
-        if (
-            _checkSufficientNumberOfConfirmations(
-                transferState[transferStateId].numConfirmations
-            )
-        ) {
-            transferState[transferStateId].isCompleted = true;
-            return true;
+        uint numRequired = getNumRequiredConfirmations();
+
+        /* We now check if we have enough configrmations.  If that is the
+           case, we purge ex-validators from the list of confirmations
+           and do the check again, so we do not count
+           confirmations from ex-validators.
+
+           This means that old confirmations stay valid over validator set changes given
+           that the validator doesn't loose it's validator status.
+
+           The double check is here to save some gas. If checking the validator
+           status for all confirming validators becomes too costly, we can introduce
+           a 'serial number' for the validator set changes and determine if there
+           was a change of the validator set between the first confirmation
+           and the last confirmation and skip calling into
+           purgeConfirmationsFromExValidators if there were no changes.
+        */
+
+        if (transferState[transferStateId].numConfirmations < numRequired) {
+            return false;
         }
-        return false;
+
+        purgeConfirmationsFromExValidators(transferStateId);
+
+        if (transferState[transferStateId].numConfirmations < numRequired) {
+            return false;
+        }
+
+        transferState[transferStateId].isCompleted = true;
+        return true;
     }
 }
