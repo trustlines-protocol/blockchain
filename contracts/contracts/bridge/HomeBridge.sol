@@ -26,14 +26,20 @@ contract HomeBridge {
 
     mapping(bytes32 => TransferState) public transferState;
     ValidatorProxy validatorProxy;
+    uint public validatorsRequiredPercent;
 
-    constructor(ValidatorProxy _proxy) public {
+    constructor(ValidatorProxy _proxy, uint _validatorsRequiredPercent) public {
         require(
             address(_proxy) != address(0),
             "proxy must not be the zero address!"
         );
-
+        require(
+            _validatorsRequiredPercent >= 0 &&
+                _validatorsRequiredPercent <= 100,
+            "_validatorsRequiredPercent must be between 0 and 100"
+        );
         validatorProxy = _proxy;
+        validatorsRequiredPercent = _validatorsRequiredPercent;
     }
 
     function confirmTransfer(
@@ -86,11 +92,16 @@ contract HomeBridge {
 
     function _checkSufficientNumberOfConfirmations(uint16 numConfirmations)
         internal
-        pure
+        view
         returns (bool)
     {
-        /* XXX We need to change this at some point */
-        return numConfirmations >= 2;
+        uint numRequired = (
+                validatorProxy.numberOfValidators() *
+                    validatorsRequiredPercent +
+                    99
+            ) /
+            100;
+        return numConfirmations >= numRequired;
     }
 
     function _confirmTransfer(
