@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 import toml
+import os
 
 from eth_utils.toolz import merge
 from web3 import Web3
@@ -59,13 +60,31 @@ assert all(
 )
 
 
+def load_config_from_environment():
+    result = {}
+    keys = set(
+        REQUIRED_CONFIG_ENTRIES
+        + list(OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS.keys())
+        + list(CONFIG_ENTRY_VALIDATORS.keys())
+    )
+    for key in keys:
+        if os.environ.get(key.upper()):
+            result[key] = os.environ.get(key.upper())
+
+    return result
+
+
 def load_config(path: str) -> Dict[str, Any]:
     if path is None:
         user_config = {}
     else:
         user_config = toml.load(path)
 
-    config = merge(OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS, user_config)
+    environment_config = load_config_from_environment()
+
+    config = merge(
+        OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS, user_config, environment_config
+    )
 
     validate_config(config)
 
