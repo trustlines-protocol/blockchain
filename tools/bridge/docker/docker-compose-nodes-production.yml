@@ -19,9 +19,9 @@ services:
       - "--no-color"
     volumes: ['./data/mainnet:/data']
     restart: unless-stopped
-    mem_limit: 2G
+    mem_limit: 1G
     mem_reservation: 16M
-    stop_grace_period: 1m
+    stop_grace_period: 3m
 
   # node_home:
   #   image: # TODO: Add production release here
@@ -36,6 +36,6 @@ services:
   #     - "--no-secretstore"
   #   volumes: ['./data/trustlines:/home/parity/.local/share/io.parity.ethereum/chains_light']
   #   restart: unless-stopped
-  #   mem_limit: 2G
+  #   mem_limit: 1G
   #   mem_reservation: 16M
-  #   stop_grace_period: 1m
+  #   stop_grace_period: 3m

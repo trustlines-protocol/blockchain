@@ -12,21 +12,21 @@ docker build --file ./Dockerfile ../../
 Running
 -------
 
-Just mix & match all the components you want to run. Redis is not required currently.
+Just mix & match all the components you want to run.
 
 ### Start Development Stack
 ```bash
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-development.yml --file ./docker/docker-compose-redis.yml up --detach
+docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-development.yml up --detach
 ```
 
 ### View Logs
 ```bash
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-development.yml --file ./docker/docker-compose-redis.yml logs -f
+docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-development.yml logs -f
 ```
 
 ### Stop Development Stack
 ```bash
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-development.yml --file ./docker/docker-compose-redis.yml down
+docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-development.yml down
 ```
 
 Production

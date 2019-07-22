@@ -21,9 +21,9 @@ services:
     ports:
       - "127.0.0.1:8545:8545"
     restart: unless-stopped
-    mem_limit: 2G
+    mem_limit: 1G
     mem_reservation: 16M
-    stop_grace_period: 1m
+    stop_grace_period: 3m
 
   node_home:
     image: trustlines/tlbc-testnet:release4044
@@ -40,6 +40,6 @@ services:
     ports:
       - "127.0.0.1:8546:8545"
     restart: unless-stopped
-    mem_limit: 2G
+    mem_limit: 1G
     mem_reservation: 16M
-    stop_grace_period: 1m
+    stop_grace_period: 3m
