@@ -120,3 +120,62 @@ additional confirmations from validators that are late.
         with pytest.raises(TransactionFailed):
             print(validator, "tries to confirm")
             confirm().transact({"from": validator})
+
+
+def test_complete_transfer_validator_set_change(
+    home_bridge_contract,
+    proxy_validators,
+    validator_proxy_with_validators,
+    confirm,
+    web3,
+    system_address,
+):
+    """send some confirmations, change the validator set and make sure
+    the contract handles that
+"""
+    required_confirmations = 3
+
+    get_confirmation_events = home_bridge_contract.events.Confirmation.createFilter(
+        fromBlock=web3.eth.blockNumber
+    ).get_all_entries
+    get_transfer_completed_events = home_bridge_contract.events.TransferCompleted.createFilter(
+        fromBlock=web3.eth.blockNumber
+    ).get_all_entries
+
+    bridge_balance_before = web3.eth.getBalance(home_bridge_contract.address)
+    assert (
+        bridge_balance_before >= confirm.amount
+    )  # We need at least that much for the test
+
+    for validator in proxy_validators[: required_confirmations - 1]:
+        assert not get_transfer_completed_events()
+        assert web3.eth.getBalance(confirm.recipient) == 0
+        print(validator, "confirms")
+        confirm().transact({"from": validator})
+
+    # replace the first validator
+    validator_proxy_with_validators.functions.updateValidators(
+        ["0x5413d1d9CaF79Bf01Cf821898D9B54ada014FbFA"] + proxy_validators[1:]
+    ).transact({"from": system_address})
+
+    for validator in proxy_validators[
+        required_confirmations - 1 : required_confirmations + 1
+    ]:
+        assert not get_transfer_completed_events()
+        assert web3.eth.getBalance(confirm.recipient) == 0
+        print(validator, "confirms")
+        confirm().transact({"from": validator})
+
+    transfer_completed_events = get_transfer_completed_events()
+    print("transfer_completed_events", transfer_completed_events)
+    assert len(transfer_completed_events) == 1
+    confirm.assert_event_matches(transfer_completed_events[0])
+
+    assert web3.eth.getBalance(confirm.recipient) == confirm.amount
+    assert (
+        web3.eth.getBalance(home_bridge_contract.address)
+        == bridge_balance_before - confirm.amount
+    )
+
+    confirmation_events = get_confirmation_events()
+    assert len(confirmation_events) == required_confirmations + 1

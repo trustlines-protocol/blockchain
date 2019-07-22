@@ -5,7 +5,7 @@
   ],
   "rules": {
     "indentation": [
-      "error",
+      "warning",
       4
     ],
     "function-order": "error",
