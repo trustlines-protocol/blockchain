@@ -2,7 +2,6 @@ import logging
 
 from typing import List, Dict, Any
 from time import sleep
-from queue import Queue
 from web3 import Web3
 from web3._utils.contracts import find_matching_event_abi
 from web3._utils.abi import abi_to_signature
@@ -18,7 +17,7 @@ class EventFetcher:
         event_name: str,
         event_argument_filter: Dict[str, Any],
         event_fetch_limit: int = 950,
-        event_queue: Queue,
+        event_queue: Any,
         max_reorg_depth: int,
     ):
         contract_code = web3.eth.getCode(contract_address)
