@@ -31,8 +31,6 @@ install: install-requirements compile
 .installed: constraints.txt requirements.txt $(VIRTUAL_ENV)
 	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt pip wheel setuptools
 	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -r requirements.txt
-	git submodule init
-	git submodule update
 	@echo "This file controls for make if the requirements in your virtual env are up to date" > $@
 
 $(VIRTUAL_ENV):
@@ -41,6 +39,5 @@ $(VIRTUAL_ENV):
 clean:
 	rm -rf build .tox .mypy_cache .pytest_cache */__pycache__ *.egg-info
 	rm -f .installed .compiled
-	git submodule deinit --all -f
 
 .PHONY: install install-requirements test lint compile build format clean
