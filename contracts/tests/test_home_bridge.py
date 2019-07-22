@@ -78,7 +78,7 @@ def test_complete_transfer(home_bridge_contract, proxy_validators, confirm, web3
 This walks through a complete Transfer on the home bridge, with
 additional confirmations from validators that are late.
 """
-    required_confirmations = 2
+    required_confirmations = 3
 
     get_confirmation_events = home_bridge_contract.events.Confirmation.createFilter(
         fromBlock=web3.eth.blockNumber
