@@ -1,19 +1,24 @@
 import pytest
 
-from web3 import Web3
-from gevent import Greenlet, sleep, joinall
+from gevent import monkey
+
+monkey.patch_all(thread=False)  # noqa: E702
+
+from gevent import Greenlet, joinall
+from time import sleep
 
 from bridge.event_fetcher import EventFetcher
+from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI
 
 
 @pytest.fixture
-def transfer_event_signature():
-    return "Transfer(address,address,uint256)"
+def transfer_event_name():
+    return "Transfer"
 
 
 @pytest.fixture
 def transfer_event_argument_filter(foreign_bridge_contract):
-    return [None, f"0x000000000000000000000000{foreign_bridge_contract.address[2:]}"]
+    return {"to": foreign_bridge_contract.address}
 
 
 @pytest.fixture
@@ -25,7 +30,7 @@ def foreign_chain_max_reorg_depth():
 def transfer_event_fetcher(
     w3_foreign,
     token_contract,
-    transfer_event_signature,
+    transfer_event_name,
     transfer_event_argument_filter,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
@@ -33,7 +38,8 @@ def transfer_event_fetcher(
     return EventFetcher(
         web3=w3_foreign,
         contract_address=token_contract.address,
-        event_signature=transfer_event_signature,
+        contract_abi=MINIMAL_ERC20_TOKEN_ABI,
+        event_name=transfer_event_name,
         event_argument_filter=transfer_event_argument_filter,
         event_queue=transfer_event_queue,
         max_reorg_depth=foreign_chain_max_reorg_depth,
@@ -60,7 +66,7 @@ def transfer_tokens_to_foreign_bridge(foreign_bridge_contract, transfer_tokens_t
 
 def test_instantiate_event_fetcher_with_non_existing_contract(
     w3_foreign,
-    transfer_event_signature,
+    transfer_event_name,
     transfer_event_argument_filter,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
@@ -69,14 +75,15 @@ def test_instantiate_event_fetcher_with_non_existing_contract(
         return EventFetcher(
             web3=w3_foreign,
             contract_address="0x0000000000000000000000000000000000000000",
-            event_signature=transfer_event_signature,
+            contract_abi=MINIMAL_ERC20_TOKEN_ABI,
+            event_name=transfer_event_name,
             event_argument_filter=transfer_event_argument_filter,
             event_queue=transfer_event_queue,
             max_reorg_depth=foreign_chain_max_reorg_depth,
         )
 
 
-def test_instantiate_event_fetcher_with_not_existing_event_signature(
+def test_instantiate_event_fetcher_with_not_existing_event_name(
     w3_foreign,
     token_contract,
     transfer_event_argument_filter,
@@ -87,7 +94,8 @@ def test_instantiate_event_fetcher_with_not_existing_event_signature(
         return EventFetcher(
             web3=w3_foreign,
             contract_address=token_contract.address,
-            event_signature="NonExistingEvent(bytes)",
+            contract_abi=MINIMAL_ERC20_TOKEN_ABI,
+            event_name="NonExistingEvent",
             event_argument_filter=transfer_event_argument_filter,
             event_queue=transfer_event_queue,
             max_reorg_depth=foreign_chain_max_reorg_depth,
@@ -97,16 +105,17 @@ def test_instantiate_event_fetcher_with_not_existing_event_signature(
 def test_instantiate_event_fetcher_with_negative_event_fetch_limit(
     w3_foreign,
     token_contract,
-    transfer_event_signature,
+    transfer_event_name,
     transfer_event_argument_filter,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
 ):
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         return EventFetcher(
             web3=w3_foreign,
             contract_address=token_contract.address,
-            event_signature=transfer_event_signature,
+            contract_abi=MINIMAL_ERC20_TOKEN_ABI,
+            event_name=transfer_event_name,
             event_argument_filter=transfer_event_argument_filter,
             event_fetch_limit=-1,
             event_queue=transfer_event_queue,
@@ -117,16 +126,17 @@ def test_instantiate_event_fetcher_with_negative_event_fetch_limit(
 def test_instantiate_event_fetcher_with_negative_max_reorg_depth(
     w3_foreign,
     token_contract,
-    transfer_event_signature,
+    transfer_event_name,
     transfer_event_argument_filter,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
 ):
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         return EventFetcher(
             web3=w3_foreign,
             contract_address=token_contract.address,
-            event_signature=transfer_event_signature,
+            contract_abi=MINIMAL_ERC20_TOKEN_ABI,
+            event_name=transfer_event_name,
             event_argument_filter=transfer_event_argument_filter,
             event_queue=transfer_event_queue,
             max_reorg_depth=-1,
@@ -136,7 +146,8 @@ def test_instantiate_event_fetcher_with_negative_max_reorg_depth(
 def test_fetch_events_in_range(
     transfer_event_fetcher,
     w3_foreign,
-    transfer_event_signature,
+    transfer_event_name,
+    transfer_event_argument_filter,
     transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
 ):
@@ -146,26 +157,18 @@ def test_fetch_events_in_range(
     transfer_event_fetcher.fetch_events_in_range(0, w3_foreign.eth.blockNumber)
 
     assert transfer_event_queue.qsize() == 1
-    assert transfer_event_queue.get()["topics"][0] == Web3.keccak(
-        text=transfer_event_signature
-    )
+
+    event = transfer_event_queue.get()
+
+    assert event["event"] == transfer_event_name
+
+    for argument_name, argument_value in transfer_event_argument_filter.items():
+        print(f"Name: {argument_name} Value: {argument_value}")
+        event.args[argument_name] == argument_value
+        print(f"args: {event.args}")
 
 
-def test_fetch_events_in_range_fix_invalid_bounds(
-    transfer_event_fetcher,
-    w3_foreign,
-    transfer_event_queue,
-    transfer_tokens_to_foreign_bridge,
-):
-    assert transfer_event_queue.empty()
-
-    transfer_tokens_to_foreign_bridge()
-    transfer_event_fetcher.fetch_events_in_range(-1, w3_foreign.eth.blockNumber + 1)
-
-    assert transfer_event_queue.qsize() == 1
-
-
-def test_fetch_events_in_range_apply_argument_filter(
+def test_fetch_events_in_range_ignore_not_matching_arguments(
     transfer_event_fetcher, transfer_event_queue, transfer_tokens_to, w3_foreign
 ):
     assert transfer_event_queue.empty()
@@ -176,8 +179,18 @@ def test_fetch_events_in_range_apply_argument_filter(
     assert transfer_event_queue.empty()
 
 
-def test_fetch_events_in_range_invalid_range(transfer_event_fetcher):
-    with pytest.raises(AssertionError):
+def test_fetch_events_in_range_negative_from_number(transfer_event_fetcher):
+    with pytest.raises(ValueError):
+        transfer_event_fetcher.fetch_events_in_range(-1, 1)
+
+
+def test_fetch_events_in_range_to_high_to_number(transfer_event_fetcher, w3_foreign):
+    with pytest.raises(ValueError):
+        transfer_event_fetcher.fetch_events_in_range(0, w3_foreign.eth.blockNumber + 1)
+
+
+def test_fetch_events_in_range_negative_range(transfer_event_fetcher):
+    with pytest.raises(ValueError):
         transfer_event_fetcher.fetch_events_in_range(1, 0)
 
 
@@ -285,11 +298,11 @@ def test_fetch_events_continuously(
         greenlet.kill()
 
 
-def test_fetch_events_negativ_poll_interval(
+def test_fetch_events_negative_poll_interval(
     transfer_event_fetcher, transfer_event_queue, transfer_tokens_to_foreign_bridge
 ):
     try:
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             greenlet = Greenlet.spawn(transfer_event_fetcher.fetch_events, -1)
             joinall([greenlet], raise_error=True)
 
