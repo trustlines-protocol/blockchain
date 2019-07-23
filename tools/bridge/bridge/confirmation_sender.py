@@ -51,7 +51,8 @@ class ConfirmationSender:
                 greenlet.kill()
 
     def send_confirmation_transactions(self):
-        for transfer in self.transfer_queue:
+        while True:
+            transfer = self.transfer_queue.get()
             transaction = self.prepare_confirmation_transaction(transfer)
             self.send_confirmation_transaction(transaction)
 
