@@ -8,7 +8,7 @@ from web3.contract import Contract
 from eth_keys.datatypes import PrivateKey
 from eth_utils import keccak, int_to_big_endian
 
-from bridge.constants import HOME_CHAIN_STEP_INTERVAL
+from bridge.constants import HOME_CHAIN_STEP_DURATION
 
 
 class ConfirmationSender:
@@ -16,13 +16,13 @@ class ConfirmationSender:
 
     def __init__(
         self,
-        transfer_queue: Queue,
+        transfer_event_queue: Queue,
         home_bridge_contract: Contract,
         private_key: bytes,
         gas_price: int,
         max_reorg_depth: int,
     ):
-        self.transfer_queue = transfer_queue
+        self.transfer_event_queue = transfer_event_queue
         self.home_bridge_contract = home_bridge_contract
         self.private_key = private_key
         self.address = PrivateKey(self.private_key).public_key.to_canonical_address()
@@ -52,17 +52,17 @@ class ConfirmationSender:
 
     def send_confirmation_transactions(self):
         while True:
-            transfer = self.transfer_queue.get()
-            transaction = self.prepare_confirmation_transaction(transfer)
+            transfer_event = self.transfer_event_queue.get()
+            transaction = self.prepare_confirmation_transaction(transfer_event)
             self.send_confirmation_transaction(transaction)
 
-    def prepare_confirmation_transaction(self, transfer):
+    def prepare_confirmation_transaction(self, transfer_event):
         nonce = self.get_next_nonce()
         transaction = self.home_bridge_contract.functions.confirmTransfer(
-            self.compute_transfer_hash(transfer),
-            transfer.transactionHash,
-            transfer.args.value,
-            transfer.args["from"],
+            self.compute_transfer_hash(transfer_event),
+            transfer_event.transactionHash,
+            transfer_event.args.value,
+            transfer_event.args["from"],
         ).buildTransaction({"gasPrice": self.gas_price, "nonce": nonce})
         signed_transaction = self.w3.eth.account.sign_transaction(
             transaction, self.private_key
@@ -84,7 +84,7 @@ class ConfirmationSender:
     def watch_pending_transactions(self):
         while True:
             self.clear_confirmed_transactions()
-            gevent.sleep(HOME_CHAIN_STEP_INTERVAL)
+            gevent.sleep(HOME_CHAIN_STEP_DURATION)
 
     def clear_confirmed_transactions(self):
         block_number = self.w3.eth.blockNumber
