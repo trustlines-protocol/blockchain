@@ -5,6 +5,8 @@ services:
     build:
       context: ../../../
       dockerfile: tools/bridge/Dockerfile
+    env_file:
+      - ../.env
     restart: unless-stopped
     mem_limit: 512M
     mem_reservation: 16M

@@ -9,28 +9,48 @@ The docker container needs to be built from the root path, so
 docker build --file ./Dockerfile ../../
 ```
 
-Running
--------
-
-Just mix & match all the components you want to run.
-
-### Start Development Stack
+Development
+-----------
+### Start the development/testnet light nodes
 ```bash
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-development.yml up --detach
+docker-compose --project-name tlbc-bridge -f ./docker/docker-compose-nodes-development.yml up
 ```
 
-### View Logs
+### Run the application locally
+
 ```bash
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-development.yml logs -f
+make start
 ```
 
-### Stop Development Stack
+#### Local configuration
+You can overwrite the .env parameters with predefined environment variables, so you can have your .env point to the docker hosts while locally using
 ```bash
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-development.yml down
+HOME_RPC_URL=http://localhost:8546 FOREIGN_RPC_URL=http://localhost:8545 make start
+```
+
+### **or** start the Docker file
+
+```bash
+docker-compose --project-name tlbc-bridge -f ./docker/docker-compose.yml build
+docker-compose --project-name tlbc-bridge -f ./docker/docker-compose.yml up
 ```
 
 Production
 ----------
-For the production stack, just replace the development nodes compose file with the production one.
+### Start Nodes & Service
+```bash
+docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-production.yml build
+docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-production.yml up --detach
+```
+
+### View Logs
+```bash
+docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-production.yml logs --tail 200 -f
+```
+
+### Stop Nodes & Service
+```bash
+docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-production.yml down
+```
 
 **There is no production Trustlines chain yet, so this won't work**

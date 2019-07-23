@@ -4,4 +4,5 @@ gevent
 toml
 web3
 contract-deploy-tools
+python-dotenv
 -r ../../requirements-dev.txt
