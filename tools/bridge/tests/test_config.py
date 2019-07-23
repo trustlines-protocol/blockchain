@@ -43,7 +43,7 @@ def test_validate_invalid_rpc_url():
 
 
 def test_validate_positive_integer():
-    validate_positive_integer(1)
+    validate_positive_integer(0)
 
 
 def test_validate_positive_integer_false_type():

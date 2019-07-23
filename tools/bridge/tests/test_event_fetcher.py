@@ -27,6 +27,11 @@ def foreign_chain_max_reorg_depth():
 
 
 @pytest.fixture
+def foreign_chain_event_fetch_start_block_number():
+    return 0
+
+
+@pytest.fixture
 def transfer_event_fetcher(
     w3_foreign,
     token_contract,
@@ -34,6 +39,7 @@ def transfer_event_fetcher(
     transfer_event_argument_filter,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
+    foreign_chain_event_fetch_start_block_number,
 ):
     return EventFetcher(
         web3=w3_foreign,
@@ -43,6 +49,7 @@ def transfer_event_fetcher(
         event_argument_filter=transfer_event_argument_filter,
         event_queue=transfer_event_queue,
         max_reorg_depth=foreign_chain_max_reorg_depth,
+        start_block_number=foreign_chain_event_fetch_start_block_number,
     )
 
 
@@ -70,6 +77,7 @@ def test_instantiate_event_fetcher_with_non_existing_contract(
     transfer_event_argument_filter,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
+    foreign_chain_event_fetch_start_block_number,
 ):
     with pytest.raises(ValueError):
         return EventFetcher(
@@ -80,6 +88,7 @@ def test_instantiate_event_fetcher_with_non_existing_contract(
             event_argument_filter=transfer_event_argument_filter,
             event_queue=transfer_event_queue,
             max_reorg_depth=foreign_chain_max_reorg_depth,
+            start_block_number=foreign_chain_event_fetch_start_block_number,
         )
 
 
@@ -89,6 +98,7 @@ def test_instantiate_event_fetcher_with_not_existing_event_name(
     transfer_event_argument_filter,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
+    foreign_chain_event_fetch_start_block_number,
 ):
     with pytest.raises(ValueError):
         return EventFetcher(
@@ -99,6 +109,7 @@ def test_instantiate_event_fetcher_with_not_existing_event_name(
             event_argument_filter=transfer_event_argument_filter,
             event_queue=transfer_event_queue,
             max_reorg_depth=foreign_chain_max_reorg_depth,
+            start_block_number=foreign_chain_event_fetch_start_block_number,
         )
 
 
@@ -109,6 +120,7 @@ def test_instantiate_event_fetcher_with_negative_event_fetch_limit(
     transfer_event_argument_filter,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
+    foreign_chain_event_fetch_start_block_number,
 ):
     with pytest.raises(ValueError):
         return EventFetcher(
@@ -120,10 +132,32 @@ def test_instantiate_event_fetcher_with_negative_event_fetch_limit(
             event_fetch_limit=-1,
             event_queue=transfer_event_queue,
             max_reorg_depth=foreign_chain_max_reorg_depth,
+            start_block_number=foreign_chain_event_fetch_start_block_number,
         )
 
 
 def test_instantiate_event_fetcher_with_negative_max_reorg_depth(
+    w3_foreign,
+    token_contract,
+    transfer_event_name,
+    transfer_event_argument_filter,
+    transfer_event_queue,
+    foreign_chain_event_fetch_start_block_number,
+):
+    with pytest.raises(ValueError):
+        return EventFetcher(
+            web3=w3_foreign,
+            contract_address=token_contract.address,
+            contract_abi=MINIMAL_ERC20_TOKEN_ABI,
+            event_name=transfer_event_name,
+            event_argument_filter=transfer_event_argument_filter,
+            event_queue=transfer_event_queue,
+            max_reorg_depth=-1,
+            start_block_number=foreign_chain_event_fetch_start_block_number,
+        )
+
+
+def test_instantiate_event_fetcher_with_negative_start_block_number(
     w3_foreign,
     token_contract,
     transfer_event_name,
@@ -139,7 +173,8 @@ def test_instantiate_event_fetcher_with_negative_max_reorg_depth(
             event_name=transfer_event_name,
             event_argument_filter=transfer_event_argument_filter,
             event_queue=transfer_event_queue,
-            max_reorg_depth=-1,
+            max_reorg_depth=foreign_chain_max_reorg_depth,
+            start_block_number=-1,
         )
 
 
@@ -269,6 +304,25 @@ def test_fetch_events_not_seen_handle_event_limit_not_exact_multiplicate(
     transfer_event_fetcher.fetch_events_not_seen()
 
     assert transfer_event_queue.qsize() == transfer_count
+
+
+def test_fetch_events_not_seen_apply_start_block_number(
+    transfer_event_fetcher,
+    w3_foreign,
+    tester_foreign,
+    transfer_event_queue,
+    transfer_tokens_to_foreign_bridge,
+    foreign_chain_max_reorg_depth,
+):
+    assert transfer_event_queue.empty()
+
+    transfer_tokens_to_foreign_bridge()
+    transfer_event_fetcher.last_fetched_block_number = w3_foreign.eth.blockNumber
+    transfer_tokens_to_foreign_bridge()
+    tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
+    transfer_event_fetcher.fetch_events_not_seen()
+
+    assert transfer_event_queue.qsize() == 1
 
 
 def test_fetch_events_continuously(

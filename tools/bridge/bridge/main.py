@@ -58,6 +58,7 @@ def main(config_path: str) -> None:
         event_argument_filter={"to": config["foreign_bridge_contract_address"]},
         event_queue=transfer_event_queue,
         max_reorg_depth=config["foreign_chain_max_reorg_depth"],
+        start_block_number=config["foreign_chain_event_fetch_start_block_number"],
     )
 
     try:
