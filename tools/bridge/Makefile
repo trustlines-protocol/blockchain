@@ -15,6 +15,9 @@ test: install-requirements install
 build: install
 	$(VIRTUAL_ENV)/bin/python setup.py sdist
 
+start: install
+	$(VIRTUAL_ENV)/bin/tlbc-bridge
+
 install-requirements: .installed
 
 install: install-requirements compile

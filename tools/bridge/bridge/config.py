@@ -6,6 +6,10 @@ import os
 from eth_utils.toolz import merge
 from web3 import Web3
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 def validate_rpc_url(url: Any) -> None:
     if not isinstance(url, str):

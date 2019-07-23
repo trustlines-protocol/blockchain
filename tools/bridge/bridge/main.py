@@ -28,6 +28,14 @@ from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI
     help="Path to a config file",
 )
 def main(config_path: str) -> None:
+    """The Trustlines Bridge Validation Server
+
+    Configuration can be made using a TOML file or via Environment Variables.
+    A dotenv (.env) file will be automatically evaluated.
+
+    See .env.example and config.py for valid configuration options and defaults.
+    """
+
     logging.basicConfig(level=logging.INFO)
 
     try:
