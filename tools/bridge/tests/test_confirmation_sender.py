@@ -95,26 +95,6 @@ def transfer_event():
 #
 # Tests
 #
-def test_next_nonce_without_pending_transactions(
-    confirmation_sender, w3_home, tester_home, validator_address
-):
-    transaction_count_before = w3_home.eth.getTransactionCount(validator_address)
-    assert confirmation_sender.get_next_nonce() == transaction_count_before
-    w3_home.eth.sendTransaction({"from": validator_address})
-    tester_home.mine_block()
-    assert confirmation_sender.get_next_nonce() == transaction_count_before + 1
-
-
-def test_next_nonce_with_pending_transactions(
-    confirmation_sender, w3_home, validator_address
-):
-    transaction_count_before = w3_home.eth.getTransactionCount(validator_address)
-    w3_home.eth.sendTransaction({"from": validator_address})
-    w3_home.eth.sendTransaction({"from": validator_address})
-    w3_home.eth.sendTransaction({"from": validator_address})
-    assert confirmation_sender.get_next_nonce() == transaction_count_before + 3
-
-
 def test_transfer_hash_computation(confirmation_sender, transfer_event):
     transfer_hash = confirmation_sender.compute_transfer_hash(transfer_event)
     assert transfer_event.logIndex == 5
@@ -152,7 +132,7 @@ def test_transaction_sending(
 ):
     transaction = confirmation_sender.prepare_confirmation_transaction(transfer_event)
     confirmation_sender.send_confirmation_transaction(transaction)
-    assert transaction in confirmation_sender.pending_transactions
+    assert transaction == confirmation_sender.pending_transaction_queue.peek()
     tester_home.mine_block()
     receipt = w3_home.eth.getTransactionReceipt(transaction.hash)
     assert receipt is not None
@@ -175,11 +155,11 @@ def test_transfers_are_handled(
 ):
     try:
         greenlet = gevent.spawn(confirmation_sender.run)
-        assert len(confirmation_sender.pending_transactions) == 0
+        assert confirmation_sender.pending_transaction_queue.empty()
         transfer_queue.put(transfer_event)
         gevent.sleep(0.1)
-        assert len(confirmation_sender.pending_transactions) == 1
-        transaction = confirmation_sender.pending_transactions[0]
+        assert confirmation_sender.pending_transaction_queue.qsize() == 1
+        transaction = confirmation_sender.pending_transaction_queue.peek()
         tester_home.mine_block()
         assert w3_home.eth.getTransactionReceipt(transaction.hash) is not None
     finally:
@@ -191,17 +171,17 @@ def test_pending_transfers_are_cleared(
 ):
     try:
         greenlet = gevent.spawn(confirmation_sender.run)
-        assert len(confirmation_sender.pending_transactions) == 0
+        assert confirmation_sender.pending_transaction_queue.empty()
         transfer_queue.put(transfer_event)
         gevent.sleep(0.1)
-        assert len(confirmation_sender.pending_transactions) == 1
+        assert confirmation_sender.pending_transaction_queue.qsize() == 1
         tester_home.mine_block()
         gevent.sleep(1.5 * STEP_INTERVAL)  # wait until they have a chance to check
         assert (
-            len(confirmation_sender.pending_transactions) == 1
+            confirmation_sender.pending_transaction_queue.qsize() == 1
         )  # not confirmed enough yet
         tester_home.mine_blocks(max_reorg_depth - 1)
         gevent.sleep(1.5 * STEP_INTERVAL)
-        assert len(confirmation_sender.pending_transactions) == 0
+        assert confirmation_sender.pending_transaction_queue.qsize() == 0
     finally:
         greenlet.kill()

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import gevent
 from gevent.queue import Queue
@@ -33,13 +33,10 @@ class ConfirmationSender:
 
         self.logger = logging.getLogger("bridge.confirmation_sender.ConfirmationSender")
 
-        self.pending_transactions: List[Dict[str, Any]] = []
+        self.pending_transaction_queue: Queue[Dict[str, Any]] = Queue()
 
     def get_next_nonce(self):
-        if not self.pending_transactions:
-            return self.w3.eth.getTransactionCount(self.address)
-        else:
-            return self.pending_transactions[-1].nonce + 1
+        return self.w3.eth.getTransactionCount(self.address)
 
     def run(self):
         self.logger.info("Starting")
@@ -80,7 +77,7 @@ class ConfirmationSender:
 
     def send_confirmation_transaction(self, transaction):
         self.logger.info(f"Sending confirmation transaction {transaction}")
-        self.pending_transactions.append(transaction)
+        self.pending_transaction_queue.put(transaction)
         self.w3.eth.sendRawTransaction(transaction.rawTransaction)
 
     def watch_pending_transactions(self):
@@ -89,28 +86,19 @@ class ConfirmationSender:
             gevent.sleep(STEP_INTERVAL)
 
     def clear_confirmed_transactions(self):
-        receipts = [
-            self.w3.eth.getTransactionReceipt(transaction.hash)
-            for transaction in self.pending_transactions
-        ]
-
         block_number = self.w3.eth.blockNumber
         confirmation_threshold = block_number - self.max_reorg_depth
 
-        confirmed_transactions = [
-            transaction
-            for transaction, receipt in zip(self.pending_transactions, receipts)
-            if receipt is not None and receipt.blockNumber <= confirmation_threshold
-        ]
-
-        # transactions are always confirmed in order because their nonces are ordered
-        assert (
-            confirmed_transactions
-            == self.pending_transactions[: len(confirmed_transactions)]
-        )
-        for transaction in confirmed_transactions:
-            self.logger.info(f"Transaction has been confirmed: {transaction}")
-
-        self.pending_transactions = self.pending_transactions[
-            len(confirmed_transactions) :
-        ]
+        while not self.pending_transaction_queue.empty():
+            oldest_pending_transaction = self.pending_transaction_queue.peek()
+            receipt = self.w3.eth.getTransactionReceipt(oldest_pending_transaction.hash)
+            if receipt and receipt.blockNumber <= confirmation_threshold:
+                self.logger.info(
+                    f"Transaction has been confirmed: {oldest_pending_transaction}"
+                )
+                confirmed_transaction = (
+                    self.pending_transaction_queue.get()
+                )  # remove from queue
+                assert confirmed_transaction == oldest_pending_transaction
+            else:
+                break  # no need to look at transactions that are even newer
