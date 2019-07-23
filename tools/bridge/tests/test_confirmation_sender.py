@@ -14,7 +14,7 @@ from eth.vm.forks.spurious_dragon.transactions import SpuriousDragonTransaction
 from eth_utils import decode_hex, keccak
 
 from bridge.confirmation_sender import ConfirmationSender
-from bridge.constants import STEP_INTERVAL
+from bridge.constants import HOME_CHAIN_STEP_INTERVAL
 
 
 #
@@ -176,12 +176,14 @@ def test_pending_transfers_are_cleared(
         gevent.sleep(0.1)
         assert confirmation_sender.pending_transaction_queue.qsize() == 1
         tester_home.mine_block()
-        gevent.sleep(1.5 * STEP_INTERVAL)  # wait until they have a chance to check
+        gevent.sleep(
+            1.5 * HOME_CHAIN_STEP_INTERVAL
+        )  # wait until they have a chance to check
         assert (
             confirmation_sender.pending_transaction_queue.qsize() == 1
         )  # not confirmed enough yet
         tester_home.mine_blocks(max_reorg_depth - 1)
-        gevent.sleep(1.5 * STEP_INTERVAL)
+        gevent.sleep(1.5 * HOME_CHAIN_STEP_INTERVAL)
         assert confirmation_sender.pending_transaction_queue.qsize() == 0
     finally:
         greenlet.kill()

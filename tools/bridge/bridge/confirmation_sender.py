@@ -8,7 +8,7 @@ from web3.contract import Contract
 from eth_keys.datatypes import PrivateKey
 from eth_utils import keccak, int_to_big_endian
 
-from bridge.constants import STEP_INTERVAL
+from bridge.constants import HOME_CHAIN_STEP_INTERVAL
 
 
 class ConfirmationSender:
@@ -83,7 +83,7 @@ class ConfirmationSender:
     def watch_pending_transactions(self):
         while True:
             self.clear_confirmed_transactions()
-            gevent.sleep(STEP_INTERVAL)
+            gevent.sleep(HOME_CHAIN_STEP_INTERVAL)
 
     def clear_confirmed_transactions(self):
         block_number = self.w3.eth.blockNumber
