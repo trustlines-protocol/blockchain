@@ -22,34 +22,40 @@ from bridge.constants import HOME_CHAIN_STEP_DURATION
 #
 @pytest.fixture
 def transfer_queue():
+    """Transfer event queue used by the confirmation sender."""
     return Queue()
 
 
 @pytest.fixture
 def validator_account_and_key(proxy_validator_accounts_and_keys):
+    """Address and private key of the validator running the confirmation sender."""
     accounts, keys = proxy_validator_accounts_and_keys
     return accounts[0], keys[0]
 
 
 @pytest.fixture
 def validator_address(validator_account_and_key):
+    """Address of the validator running the confirmation sender."""
     account, _ = validator_account_and_key
     return account
 
 
 @pytest.fixture
 def validator_key(validator_account_and_key):
+    """Private key of the validator running the confirmation sender."""
     _, key = validator_account_and_key
     return key
 
 
 @pytest.fixture
 def max_reorg_depth():
+    """Max reorg depth of the home chain used by the confirmation sender."""
     return 5
 
 
 @pytest.fixture
 def gas_price():
+    """Gas price used by the confirmation sender for transactions on the home bridge."""
     return 1
 
 
@@ -57,6 +63,7 @@ def gas_price():
 def confirmation_sender(
     transfer_queue, home_bridge_contract, validator_key, max_reorg_depth, gas_price
 ):
+    """A confirmation sender."""
     return ConfirmationSender(
         transfer_event_queue=transfer_queue,
         home_bridge_contract=home_bridge_contract,
@@ -68,6 +75,7 @@ def confirmation_sender(
 
 @pytest.fixture
 def transfer_event():
+    """An exemplary transfer event."""
     return AttributeDict(
         {
             "args": AttributeDict(
