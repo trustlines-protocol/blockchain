@@ -42,7 +42,7 @@ class EventFetcher:
             raise ValueError("Can not fetch events with zero or negative limit!")
 
         if max_reorg_depth < 0:
-            raise ValueError("Invalid maximum reorg depth with zero or negative value!")
+            raise ValueError("Invalid maximum reorg depth with a negative value!")
 
         if start_block_number < 0:
             raise ValueError(

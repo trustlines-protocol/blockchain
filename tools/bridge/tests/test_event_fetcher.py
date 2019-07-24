@@ -298,7 +298,7 @@ def test_fetch_events_continuously(
         transfer_tokens_to_foreign_bridge()
         sleep(poll_time + 1)
 
-        #  assert transfer_event_queue.qsize() == 1
+        assert transfer_event_queue.qsize() == 1
 
         transfer_tokens_to_foreign_bridge()
         transfer_tokens_to_foreign_bridge()
