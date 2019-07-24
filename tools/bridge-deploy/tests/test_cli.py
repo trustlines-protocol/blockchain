@@ -18,12 +18,6 @@ def test_deploy_foreign(runner, abitrary_address):
     assert result.exit_code == 0
 
 
-def test_print_foreign(runner):
-    result = runner.invoke(main, args=f"print-foreign --jsonrpc test")
-
-    assert result.exit_code == 0
-
-
 def test_deploy_home(runner, abitrary_address):
     result = runner.invoke(
         main,
