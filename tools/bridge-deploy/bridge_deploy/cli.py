@@ -154,29 +154,3 @@ def deploy_home(
 
     click.echo(f"HomeBridge address: {home_bridge_contract.address}")
     click.echo(f"  deployed at block #{web3.eth.blockNumber}")
-
-
-@main.command(
-    short_help="Print all information on the latest foreign bridge deployment."
-)
-@keystore_option
-@gas_option
-@gas_price_option
-@nonce_option
-@auto_nonce_option
-@jsonrpc_option
-def print_foreign(
-    keystore: str, jsonrpc: str, gas: int, gas_price: int, nonce: int, auto_nonce: bool
-) -> None:
-
-    web3 = connect_to_json_rpc(jsonrpc)
-    private_key = retrieve_private_key(keystore)
-
-    nonce = get_nonce(
-        web3=web3, nonce=nonce, auto_nonce=auto_nonce, private_key=private_key
-    )
-    # transaction_options = build_transaction_options(
-    #     gas=gas, gas_price=gas_price, nonce=nonce
-    # )
-
-    # TODO: Implement me
