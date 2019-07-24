@@ -292,14 +292,13 @@ def almost_filled_validator_auction(
 
 @pytest.fixture(scope="session")
 def whitelist(chain, maximal_number_of_auction_participants):
-    """Every known accounts appart from accounts[0] is in the whitelist"""
-    new_chain = chain
-    for i in range(100, 100 + maximal_number_of_auction_participants):
-        new_chain.add_account(
-            "0x0000000000000000000000000000000000000000000000000000000000000" + str(i)
-        )
-
-    whitelist = new_chain.get_accounts()[1:]
+    """whitelisted well-funded accounts, accounts[0] is not in the whitelist"""
+    # some other tests do also call add_account and we do not want to
+    # include them (it just takes longer)
+    whitelist = list(chain.get_accounts()[1:10]) + [
+        chain.add_account(f"0x{i:064}")
+        for i in range(100, 100 + maximal_number_of_auction_participants)
+    ]
 
     send_ether_to_whitelisted_accounts(chain, whitelist)
 
