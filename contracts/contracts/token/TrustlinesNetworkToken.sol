@@ -65,6 +65,7 @@ contract TrustlinesNetworkToken {
 
     function transfer(address recipient, uint256 amount) public returns (bool) {
         _transfer(msg.sender, recipient, amount);
+        return true;
     }
 
     function approve(address spender, uint256 value) public returns (bool) {
