@@ -14,7 +14,7 @@ from deploy_tools.cli import (
 from deploy_tools.deploy import build_transaction_options
 from deploy_tools.files import validate_and_format_address, InvalidAddressException
 
-from bridge_deploy.foreign import deploy_foreign_bridge_contract
+from bridge_deploy.core import deploy_foreign_bridge_contract
 
 
 def validate_address(ctx, param, value):

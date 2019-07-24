@@ -1,4 +1,4 @@
-from bridge_deploy.foreign import deploy_foreign_bridge_contract
+from bridge_deploy.core import deploy_foreign_bridge_contract
 
 
 def test_deploy_foreign_bridge_contract(web3):
