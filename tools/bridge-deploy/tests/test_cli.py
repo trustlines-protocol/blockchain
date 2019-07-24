@@ -36,14 +36,61 @@ def test_deploy_home(runner, abitrary_address):
     assert result.exit_code == 0
 
 
-def test_deploy_home_with_required_percentage_argument(runner, abitrary_address):
+def test_deploy_home_with_valid_required_percentage_argument_lower_bound(
+    runner, abitrary_address
+):
     result = runner.invoke(
         main,
         args=(
             "deploy-home --jsonrpc test"
             f" --validator-proxy-address {abitrary_address}"
-            " --validators-required-percent 20"
+            " --validators-required-percent 0"
         ),
     )
 
     assert result.exit_code == 0
+
+
+def test_deploy_home_with_valid_required_percentage_argument_upper_bound(
+    runner, abitrary_address
+):
+    result = runner.invoke(
+        main,
+        args=(
+            "deploy-home --jsonrpc test"
+            f" --validator-proxy-address {abitrary_address}"
+            " --validators-required-percent 100"
+        ),
+    )
+
+    assert result.exit_code == 0
+
+
+def test_deploy_home_with_invalid_required_percentage_argument_lower_bound(
+    runner, abitrary_address
+):
+    result = runner.invoke(
+        main,
+        args=(
+            "deploy-home --jsonrpc test"
+            f" --validator-proxy-address {abitrary_address}"
+            " --validators-required-percent -1"
+        ),
+    )
+
+    assert result.exit_code == 2
+
+
+def test_deploy_home_with_invalid_required_percentage_argument_upper_bound(
+    runner, abitrary_address
+):
+    result = runner.invoke(
+        main,
+        args=(
+            "deploy-home --jsonrpc test"
+            f" --validator-proxy-address {abitrary_address}"
+            " --validators-required-percent 101"
+        ),
+    )
+
+    assert result.exit_code == 2

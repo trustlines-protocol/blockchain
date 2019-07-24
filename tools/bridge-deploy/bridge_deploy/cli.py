@@ -30,6 +30,16 @@ def validate_address(ctx, param, value):
         ) from e
 
 
+def validate_percentage_value(ctx, param, value):
+    if value >= 0 and value <= 100:
+        return value
+
+    else:
+        raise click.BadParameter(
+            f"The percentage value is not in the valid range of 0 till 100"
+        )
+
+
 token_address_option = click.option(
     "--token-address",
     help=("The address of the TrustlinesNetworkToken contract ('0x' prefixed string)."),
@@ -54,6 +64,7 @@ validators_required_percent_option = click.option(
     ),
     type=int,
     default=50,
+    callback=validate_percentage_value,
 )
 
 
