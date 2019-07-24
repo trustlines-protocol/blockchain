@@ -15,7 +15,8 @@ from web3 import Web3, HTTPProvider
 
 from bridge.config import load_config
 from bridge.event_fetcher import EventFetcher
-from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI
+from bridge.confirmation_sender import ConfirmationSender
+from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI, HOME_BRIDGE_ABI
 
 
 @click.command()
@@ -24,7 +25,7 @@ from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI
     "--config",
     "config_path",
     type=click.Path(exists=True),
-    default=None,
+    required=True,
     help="Path to a config file",
 )
 def main(config_path: str) -> None:
@@ -46,7 +47,11 @@ def main(config_path: str) -> None:
         raise click.UsageError(f"Invalid config file: {value_error}") from value_error
 
     w3_foreign = Web3(HTTPProvider(config["foreign_rpc_url"]))
-    # w3_home = Web3(HTTPProvider(config["home_rpc_url"]))
+    w3_home = Web3(HTTPProvider(config["home_rpc_url"]))
+
+    home_bridge_contract = w3_home.eth.contract(
+        address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
+    )
 
     transfer_event_queue = Queue()
 
@@ -60,13 +65,27 @@ def main(config_path: str) -> None:
         max_reorg_depth=config["foreign_chain_max_reorg_depth"],
         start_block_number=config["foreign_chain_event_fetch_start_block_number"],
     )
+    confirmation_sender = ConfirmationSender(
+        transfer_event_queue=transfer_event_queue,
+        home_bridge_contract=home_bridge_contract,
+        private_key=config["validator_private_key"],
+        gas_price=config["home_chain_gas_price"],
+        max_reorg_depth=config["home_chain_max_reorg_depth"],
+    )
 
     try:
-        transfer_event_fetcher_greenlet = Greenlet.spawn(
-            transfer_event_fetcher.fetch_events,
-            config["foreign_chain_event_poll_interval"],
-        )
-
-        gevent.joinall([transfer_event_fetcher_greenlet], raise_error=True)
+        coroutines_and_args = [
+            (
+                transfer_event_fetcher.fetch_events,
+                config["foreign_chain_event_poll_interval"],
+            ),
+            (confirmation_sender.run,),
+        ]
+        greenlets = [
+            Greenlet.spawn(*coroutine_and_args)
+            for coroutine_and_args in coroutines_and_args
+        ]
+        gevent.joinall(greenlets, raise_error=True)
     finally:
-        transfer_event_fetcher_greenlet.kill()
+        for greenlet in greenlets:
+            greenlet.kill()

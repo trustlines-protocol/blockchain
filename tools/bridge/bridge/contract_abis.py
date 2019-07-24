@@ -10,3 +10,74 @@ MINIMAL_ERC20_TOKEN_ABI = [
         "type": "event",
     }
 ]
+
+
+HOME_BRIDGE_ABI = [
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "validatorsRequiredPercent",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "constant": True,
+        "inputs": [{"name": "", "type": "bytes32"}],
+        "name": "transferState",
+        "outputs": [
+            {"name": "numConfirmations", "type": "uint16"},
+            {"name": "isCompleted", "type": "bool"},
+        ],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "constant": False,
+        "inputs": [
+            {"name": "transferHash", "type": "bytes32"},
+            {"name": "transactionHash", "type": "bytes32"},
+            {"name": "amount", "type": "uint256"},
+            {"name": "recipient", "type": "address"},
+        ],
+        "name": "confirmTransfer",
+        "outputs": [],
+        "payable": False,
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"name": "_proxy", "type": "address"},
+            {"name": "_validatorsRequiredPercent", "type": "uint256"},
+        ],
+        "payable": False,
+        "stateMutability": "nonpayable",
+        "type": "constructor",
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": False, "name": "transferHash", "type": "bytes32"},
+            {"indexed": False, "name": "transactionHash", "type": "bytes32"},
+            {"indexed": False, "name": "amount", "type": "uint256"},
+            {"indexed": False, "name": "recipient", "type": "address"},
+            {"indexed": False, "name": "validator", "type": "address"},
+        ],
+        "name": "Confirmation",
+        "type": "event",
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": False, "name": "transferHash", "type": "bytes32"},
+            {"indexed": False, "name": "transactionHash", "type": "bytes32"},
+            {"indexed": False, "name": "amount", "type": "uint256"},
+            {"indexed": False, "name": "recipient", "type": "address"},
+        ],
+        "name": "TransferCompleted",
+        "type": "event",
+    },
+]
