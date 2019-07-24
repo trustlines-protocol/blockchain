@@ -17,6 +17,7 @@ from bridge.config import load_config
 from bridge.event_fetcher import EventFetcher
 from bridge.confirmation_sender import ConfirmationSender
 from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI, HOME_BRIDGE_ABI
+from bridge.contract_validator import validate_contract
 
 
 @click.command()
@@ -53,12 +54,19 @@ def main(config_path: str) -> None:
         address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
     )
 
+    validate_contract(home_bridge_contract)
+
+    token_contract = w3_foreign.eth.contract(
+        address=config["token_contract_address"], abi=MINIMAL_ERC20_TOKEN_ABI
+    )
+
+    validate_contract(token_contract)
+
     transfer_event_queue = Queue()
 
     transfer_event_fetcher = EventFetcher(
         web3=w3_foreign,
-        contract_address=config["token_contract_address"],
-        contract_abi=MINIMAL_ERC20_TOKEN_ABI,
+        contract=token_contract,
         event_name="Transfer",
         event_argument_filter={"to": config["foreign_bridge_contract_address"]},
         event_queue=transfer_event_queue,

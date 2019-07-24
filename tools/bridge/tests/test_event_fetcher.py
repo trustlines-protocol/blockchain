@@ -8,7 +8,6 @@ from gevent import Greenlet, joinall
 from time import sleep
 
 from bridge.event_fetcher import EventFetcher
-from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI
 
 
 @pytest.fixture
@@ -52,8 +51,7 @@ def transfer_event_fetcher_init_kwargs(
 
     return {
         "web3": w3_foreign,
-        "contract_address": token_contract.address,
-        "contract_abi": MINIMAL_ERC20_TOKEN_ABI,
+        "contract": token_contract,
         "event_name": transfer_event_name,
         "event_argument_filter": transfer_event_argument_filter,
         "event_queue": transfer_event_queue,
@@ -96,27 +94,6 @@ def transfer_tokens_to_foreign_bridge(foreign_bridge_contract, transfer_tokens_t
         transfer_tokens_to(foreign_bridge_contract.address)
 
     return transfer
-
-
-def test_instantiate_event_fetcher_with_non_existing_contract(
-    transfer_event_fetcher_init_kwargs
-):
-    with pytest.raises(ValueError):
-        return EventFetcher(
-            **{
-                **transfer_event_fetcher_init_kwargs,
-                "contract_address": "0x0000000000000000000000000000000000000000",
-            }
-        )
-
-
-def test_instantiate_event_fetcher_with_not_existing_event_name(
-    transfer_event_fetcher_init_kwargs
-):
-    with pytest.raises(ValueError):
-        return EventFetcher(
-            **{**transfer_event_fetcher_init_kwargs, "event_name": "NoneExistingEvent"}
-        )
 
 
 def test_instantiate_event_fetcher_with_negative_event_fetch_limit(
