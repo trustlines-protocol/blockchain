@@ -382,7 +382,7 @@ def foreign_bridge_contract(deploy_contract, tln_token_contract):
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def proxy_validators(accounts):
     return accounts[:5]
 
