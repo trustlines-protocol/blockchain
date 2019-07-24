@@ -16,7 +16,7 @@ def validate_rpc_url(url: Any) -> None:
         raise ValueError(f"{url} is not a valid RPC url")
 
 
-def validate_positive_integer(number: Any) -> float:
+def validate_non_negative_integer(number: Any) -> float:
     if not isinstance(number, int):
         raise ValueError(f"{number} is not an integer")
     if number < 0:
@@ -56,10 +56,10 @@ CONFIG_ENTRY_VALIDATORS = {
     "foreign_rpc_url": validate_rpc_url,
     "token_contract_address": validate_checksum_address,
     "foreign_bridge_contract_address": validate_checksum_address,
-    "foreign_chain_max_reorg_depth": validate_positive_integer,
+    "foreign_chain_max_reorg_depth": validate_non_negative_integer,
     "transfer_event_poll_interval": validate_positive_float,
-    "foreign_chain_event_fetch_start_block_number": validate_positive_integer,
-    "home_chain_event_fetch_start_block_number": validate_positive_integer,
+    "foreign_chain_event_fetch_start_block_number": validate_non_negative_integer,
+    "home_chain_event_fetch_start_block_number": validate_non_negative_integer,
 }
 
 assert all(key in CONFIG_ENTRY_VALIDATORS for key in REQUIRED_CONFIG_ENTRIES)

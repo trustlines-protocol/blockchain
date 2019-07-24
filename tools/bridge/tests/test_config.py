@@ -5,7 +5,7 @@ from toolz import dissoc
 from bridge.config import (
     validate_config,
     validate_rpc_url,
-    validate_positive_integer,
+    validate_non_negative_integer,
     validate_positive_float,
     validate_checksum_address,
 )
@@ -42,18 +42,18 @@ def test_validate_invalid_rpc_url():
         validate_rpc_url(1)
 
 
-def test_validate_positive_integer():
-    validate_positive_integer(0)
+def test_validate_non_negative_integer():
+    validate_non_negative_integer(0)
 
 
-def test_validate_positive_integer_false_type():
+def test_validate_non_negative_integer_false_type():
     with pytest.raises(ValueError):
-        validate_positive_integer(1.1)
+        validate_non_negative_integer(1.1)
 
 
-def test_validate_positive_integer_negative():
+def test_validate_non_negative_integer_negative():
     with pytest.raises(ValueError):
-        validate_positive_integer(-1)
+        validate_non_negative_integer(-1)
 
 
 def test_validate_positive_float():
