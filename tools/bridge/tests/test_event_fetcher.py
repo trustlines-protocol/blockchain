@@ -13,41 +13,69 @@ from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI
 
 @pytest.fixture
 def transfer_event_name():
+    """Name of event to fetch from the token ABI"""
     return "Transfer"
 
 
 @pytest.fixture
 def transfer_event_argument_filter(foreign_bridge_contract):
+    """Argument values to filter the token transfer event"""
     return {"to": foreign_bridge_contract.address}
 
 
 @pytest.fixture
 def foreign_chain_max_reorg_depth():
+    """Number of confirmed blocks after finality is assumed on the foreign chain"""
     return 10
 
 
 @pytest.fixture
-def transfer_event_fetcher(
+def foreign_chain_event_fetch_start_block_number():
+    """Block number from where to start fetching event on the foreign chain"""
+    return 0
+
+
+@pytest.fixture
+def transfer_event_fetcher_init_kwargs(
     w3_foreign,
     token_contract,
     transfer_event_name,
     transfer_event_argument_filter,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
+    foreign_chain_event_fetch_start_block_number,
 ):
-    return EventFetcher(
-        web3=w3_foreign,
-        contract_address=token_contract.address,
-        contract_abi=MINIMAL_ERC20_TOKEN_ABI,
-        event_name=transfer_event_name,
-        event_argument_filter=transfer_event_argument_filter,
-        event_queue=transfer_event_queue,
-        max_reorg_depth=foreign_chain_max_reorg_depth,
-    )
+    """Dictionary with the default initialization argument for the transfer event fetcher
+
+    Meant to be reused on instantiation and partially overwritten for the specific use case.
+    """
+
+    return {
+        "web3": w3_foreign,
+        "contract_address": token_contract.address,
+        "contract_abi": MINIMAL_ERC20_TOKEN_ABI,
+        "event_name": transfer_event_name,
+        "event_argument_filter": transfer_event_argument_filter,
+        "event_queue": transfer_event_queue,
+        "max_reorg_depth": foreign_chain_max_reorg_depth,
+        "start_block_number": foreign_chain_event_fetch_start_block_number,
+    }
+
+
+@pytest.fixture
+def transfer_event_fetcher(transfer_event_fetcher_init_kwargs):
+    """Default test instance of the event filter for the token transfer event"""
+    return EventFetcher(**transfer_event_fetcher_init_kwargs)
 
 
 @pytest.fixture
 def transfer_tokens_to(token_contract, premint_token_address):
+    """Function to transfer token to an address
+
+    The amount is a fixed value of one.
+    This will emit the Transfer event of the token contract.
+    """
+
     def transfer(receiver):
         token_contract.functions.transfer(receiver, 1).transact(
             {"from": premint_token_address}
@@ -58,6 +86,12 @@ def transfer_tokens_to(token_contract, premint_token_address):
 
 @pytest.fixture
 def transfer_tokens_to_foreign_bridge(foreign_bridge_contract, transfer_tokens_to):
+    """Function to transfer token to the foreign bridge contract
+
+    The emitted token transfer event matches the argument filter of the event
+    fetcher.
+    """
+
     def transfer():
         transfer_tokens_to(foreign_bridge_contract.address)
 
@@ -65,81 +99,50 @@ def transfer_tokens_to_foreign_bridge(foreign_bridge_contract, transfer_tokens_t
 
 
 def test_instantiate_event_fetcher_with_non_existing_contract(
-    w3_foreign,
-    transfer_event_name,
-    transfer_event_argument_filter,
-    transfer_event_queue,
-    foreign_chain_max_reorg_depth,
+    transfer_event_fetcher_init_kwargs
 ):
     with pytest.raises(ValueError):
         return EventFetcher(
-            web3=w3_foreign,
-            contract_address="0x0000000000000000000000000000000000000000",
-            contract_abi=MINIMAL_ERC20_TOKEN_ABI,
-            event_name=transfer_event_name,
-            event_argument_filter=transfer_event_argument_filter,
-            event_queue=transfer_event_queue,
-            max_reorg_depth=foreign_chain_max_reorg_depth,
+            **{
+                **transfer_event_fetcher_init_kwargs,
+                "contract_address": "0x0000000000000000000000000000000000000000",
+            }
         )
 
 
 def test_instantiate_event_fetcher_with_not_existing_event_name(
-    w3_foreign,
-    token_contract,
-    transfer_event_argument_filter,
-    transfer_event_queue,
-    foreign_chain_max_reorg_depth,
+    transfer_event_fetcher_init_kwargs
 ):
     with pytest.raises(ValueError):
         return EventFetcher(
-            web3=w3_foreign,
-            contract_address=token_contract.address,
-            contract_abi=MINIMAL_ERC20_TOKEN_ABI,
-            event_name="NonExistingEvent",
-            event_argument_filter=transfer_event_argument_filter,
-            event_queue=transfer_event_queue,
-            max_reorg_depth=foreign_chain_max_reorg_depth,
+            **{**transfer_event_fetcher_init_kwargs, "event_name": "NoneExistingEvent"}
         )
 
 
 def test_instantiate_event_fetcher_with_negative_event_fetch_limit(
-    w3_foreign,
-    token_contract,
-    transfer_event_name,
-    transfer_event_argument_filter,
-    transfer_event_queue,
-    foreign_chain_max_reorg_depth,
+    transfer_event_fetcher_init_kwargs
 ):
     with pytest.raises(ValueError):
         return EventFetcher(
-            web3=w3_foreign,
-            contract_address=token_contract.address,
-            contract_abi=MINIMAL_ERC20_TOKEN_ABI,
-            event_name=transfer_event_name,
-            event_argument_filter=transfer_event_argument_filter,
-            event_fetch_limit=-1,
-            event_queue=transfer_event_queue,
-            max_reorg_depth=foreign_chain_max_reorg_depth,
+            **{**transfer_event_fetcher_init_kwargs, "event_fetch_limit": -1}
         )
 
 
 def test_instantiate_event_fetcher_with_negative_max_reorg_depth(
-    w3_foreign,
-    token_contract,
-    transfer_event_name,
-    transfer_event_argument_filter,
-    transfer_event_queue,
-    foreign_chain_max_reorg_depth,
+    transfer_event_fetcher_init_kwargs
 ):
     with pytest.raises(ValueError):
         return EventFetcher(
-            web3=w3_foreign,
-            contract_address=token_contract.address,
-            contract_abi=MINIMAL_ERC20_TOKEN_ABI,
-            event_name=transfer_event_name,
-            event_argument_filter=transfer_event_argument_filter,
-            event_queue=transfer_event_queue,
-            max_reorg_depth=-1,
+            **{**transfer_event_fetcher_init_kwargs, "max_reorg_depth": -1}
+        )
+
+
+def test_instantiate_event_fetcher_with_negative_start_block_number(
+    transfer_event_fetcher_init_kwargs
+):
+    with pytest.raises(ValueError):
+        return EventFetcher(
+            **{**transfer_event_fetcher_init_kwargs, "start_block_number": -1}
         )
 
 
@@ -227,8 +230,7 @@ def test_fetch_events_not_seen(
 
 
 def test_fetch_events_not_seen_handle_event_limit_exact_multiplicate(
-    transfer_event_fetcher,
-    w3_foreign,
+    transfer_event_fetcher_init_kwargs,
     tester_foreign,
     transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
@@ -237,7 +239,12 @@ def test_fetch_events_not_seen_handle_event_limit_exact_multiplicate(
     assert transfer_event_queue.empty()
 
     reduced_event_fetch_limit = 25
-    transfer_event_fetcher.event_fetch_limit = reduced_event_fetch_limit
+    transfer_event_fetcher = EventFetcher(
+        **{
+            **transfer_event_fetcher_init_kwargs,
+            "event_fetch_limit": reduced_event_fetch_limit,
+        }
+    )
     transfer_count = reduced_event_fetch_limit * 2
 
     for i in range(transfer_count):
@@ -250,7 +257,7 @@ def test_fetch_events_not_seen_handle_event_limit_exact_multiplicate(
 
 
 def test_fetch_events_not_seen_handle_event_limit_not_exact_multiplicate(
-    transfer_event_fetcher,
+    transfer_event_fetcher_init_kwargs,
     tester_foreign,
     transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
@@ -259,7 +266,12 @@ def test_fetch_events_not_seen_handle_event_limit_not_exact_multiplicate(
     assert transfer_event_queue.empty()
 
     reduced_event_fetch_limit = 25
-    transfer_event_fetcher.event_fetch_limit = reduced_event_fetch_limit
+    transfer_event_fetcher = EventFetcher(
+        **{
+            **transfer_event_fetcher_init_kwargs,
+            "event_fetch_limit": reduced_event_fetch_limit,
+        }
+    )
     transfer_count = reduced_event_fetch_limit + 1
 
     for i in range(transfer_count):
@@ -271,13 +283,37 @@ def test_fetch_events_not_seen_handle_event_limit_not_exact_multiplicate(
     assert transfer_event_queue.qsize() == transfer_count
 
 
+def test_fetch_events_not_seen_apply_start_block_number(
+    transfer_event_fetcher,
+    w3_foreign,
+    tester_foreign,
+    transfer_event_queue,
+    transfer_tokens_to_foreign_bridge,
+    foreign_chain_max_reorg_depth,
+):
+    assert transfer_event_queue.empty()
+
+    transfer_tokens_to_foreign_bridge()
+    transfer_event_fetcher.last_fetched_block_number = w3_foreign.eth.blockNumber
+    transfer_tokens_to_foreign_bridge()
+    tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
+    transfer_event_fetcher.fetch_events_not_seen()
+
+    assert transfer_event_queue.qsize() == 1
+
+
 def test_fetch_events_continuously(
-    transfer_event_fetcher, transfer_event_queue, transfer_tokens_to_foreign_bridge
+    transfer_event_fetcher_init_kwargs,
+    tester_foreign,
+    transfer_event_queue,
+    transfer_tokens_to_foreign_bridge,
 ):
     assert transfer_event_queue.empty()
 
     poll_time = 1
-    transfer_event_fetcher.max_reorg_depth = 0
+    transfer_event_fetcher = EventFetcher(
+        **{**transfer_event_fetcher_init_kwargs, "max_reorg_depth": 0}
+    )
 
     try:
         greenlet = Greenlet.spawn(transfer_event_fetcher.fetch_events, poll_time)

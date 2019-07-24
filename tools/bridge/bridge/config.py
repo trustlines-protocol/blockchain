@@ -26,11 +26,11 @@ def validate_rpc_url(url: Any) -> str:
     return url
 
 
-def validate_positive_integer(number: Any) -> int:
+def validate_non_negative_integer(number: Any) -> float:
     if not isinstance(number, int):
         raise ValueError(f"{number} is not an integer")
-    if number <= 0:
-        raise ValueError(f"{number} must be positive")
+    if number < 0:
+        raise ValueError(f"{number} must be greater than or equal zero")
     return int(number)
 
 
@@ -77,7 +77,9 @@ REQUIRED_CONFIG_ENTRIES = [
 OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
     "home_chain_max_reorg_depth": 1,
     "foreign_chain_max_reorg_depth": 10,
-    "transfer_event_poll_interval": 5,
+    "foreign_chain_event_poll_interval": 5,
+    "foreign_chain_event_fetch_start_block_number": 0,
+    "home_chain_event_fetch_start_block_number": 0,
 }
 
 CONFIG_ENTRY_VALIDATORS = {
@@ -86,9 +88,11 @@ CONFIG_ENTRY_VALIDATORS = {
     "token_contract_address": validate_checksum_address,
     "home_bridge_contract_address": validate_checksum_address,
     "foreign_bridge_contract_address": validate_checksum_address,
-    "home_chain_max_reorg_depth": validate_positive_integer,
-    "foreign_chain_max_reorg_depth": validate_positive_integer,
-    "transfer_event_poll_interval": validate_positive_float,
+    "home_chain_max_reorg_depth": validate_non_negative_integer,
+    "foreign_chain_max_reorg_depth": validate_non_negative_integer,
+    "foreign_chain_event_poll_interval": validate_positive_float,
+    "foreign_chain_event_fetch_start_block_number": validate_non_negative_integer,
+    "home_chain_event_fetch_start_block_number": validate_non_negative_integer,
     "validator_private_key": validate_private_key,
 }
 

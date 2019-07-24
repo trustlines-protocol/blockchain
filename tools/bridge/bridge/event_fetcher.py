@@ -19,6 +19,7 @@ class EventFetcher:
         event_fetch_limit: int = 950,
         event_queue: Any,
         max_reorg_depth: int,
+        start_block_number: int,
     ):
         contract_code = web3.eth.getCode(contract_address)
 
@@ -40,8 +41,13 @@ class EventFetcher:
         if event_fetch_limit <= 0:
             raise ValueError("Can not fetch events with zero or negative limit!")
 
-        if max_reorg_depth <= 0:
-            raise ValueError("Invalid maximum reorg depth with zero or negative value!")
+        if max_reorg_depth < 0:
+            raise ValueError("Invalid maximum reorg depth with a negative value!")
+
+        if start_block_number < 0:
+            raise ValueError(
+                "Can not fetch events starting from a negative block number!"
+            )
 
         self.logger = logging.getLogger(
             f"bridge.event_fetcher.{contract_address}.{event_signature}"
@@ -54,9 +60,7 @@ class EventFetcher:
         self.event_fetch_limit = event_fetch_limit
         self.event_queue = event_queue
         self.max_reorg_depth = max_reorg_depth
-
-        # Fetching starts always one block after the last one.
-        self.last_fetched_block_number = -1
+        self.last_fetched_block_number = start_block_number
 
     def fetch_events_in_range(
         self, from_block_number: int, to_block_number: int

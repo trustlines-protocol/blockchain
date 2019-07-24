@@ -63,6 +63,7 @@ def main(config_path: str) -> None:
         event_argument_filter={"to": config["foreign_bridge_contract_address"]},
         event_queue=transfer_event_queue,
         max_reorg_depth=config["foreign_chain_max_reorg_depth"],
+        start_block_number=config["foreign_chain_event_fetch_start_block_number"],
     )
     confirmation_sender = ConfirmationSender(
         transfer_event_queue=transfer_event_queue,
@@ -76,7 +77,7 @@ def main(config_path: str) -> None:
         coroutines_and_args = [
             (
                 transfer_event_fetcher.fetch_events,
-                config["transfer_event_poll_interval"],
+                config["foreign_chain_event_poll_interval"],
             ),
             (confirmation_sender.run,),
         ]
