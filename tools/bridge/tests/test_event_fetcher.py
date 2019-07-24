@@ -13,21 +13,25 @@ from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI
 
 @pytest.fixture
 def transfer_event_name():
+    """Name of event to fetch from the token ABI"""
     return "Transfer"
 
 
 @pytest.fixture
 def transfer_event_argument_filter(foreign_bridge_contract):
+    """Argument values to filter the token transfer event"""
     return {"to": foreign_bridge_contract.address}
 
 
 @pytest.fixture
 def foreign_chain_max_reorg_depth():
+    """Number of confirmed blocks after finality is assumed on the foreign chain"""
     return 10
 
 
 @pytest.fixture
 def foreign_chain_event_fetch_start_block_number():
+    """Block number from where to start fetching event on the foreign chain"""
     return 0
 
 
@@ -41,6 +45,11 @@ def transfer_event_fetcher_init_kwargs(
     foreign_chain_max_reorg_depth,
     foreign_chain_event_fetch_start_block_number,
 ):
+    """Dictionary with the default initialization argument for the transfer event fetcher
+
+    Meant to be reused on instantiation and partially overwritten for the specific use case.
+    """
+
     return {
         "web3": w3_foreign,
         "contract_address": token_contract.address,
@@ -55,11 +64,18 @@ def transfer_event_fetcher_init_kwargs(
 
 @pytest.fixture
 def transfer_event_fetcher(transfer_event_fetcher_init_kwargs):
+    """Default test instance of the event filter for the token transfer event"""
     return EventFetcher(**transfer_event_fetcher_init_kwargs)
 
 
 @pytest.fixture
 def transfer_tokens_to(token_contract, premint_token_address):
+    """Function to transfer token to an address
+
+    The amount is a fixed value of one.
+    This will emit the Transfer event of the token contract.
+    """
+
     def transfer(receiver):
         token_contract.functions.transfer(receiver, 1).transact(
             {"from": premint_token_address}
@@ -70,6 +86,12 @@ def transfer_tokens_to(token_contract, premint_token_address):
 
 @pytest.fixture
 def transfer_tokens_to_foreign_bridge(foreign_bridge_contract, transfer_tokens_to):
+    """Function to transfer token to the foreign bridge contract
+
+    The emitted token transfer event matches the argument filter of the event
+    fetcher.
+    """
+
     def transfer():
         transfer_tokens_to(foreign_bridge_contract.address)
 

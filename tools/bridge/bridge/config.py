@@ -45,10 +45,10 @@ REQUIRED_CONFIG_ENTRIES = [
 ]
 
 OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
-    "foreign_max_reorg_depth": 10,
-    "foreign_event_poll_interval": 5,
-    "foreign_start_block_number": 0,
-    "home_start_block_number": 0,
+    "foreign_chain_max_reorg_depth": 10,
+    "foreign_chain_event_poll_interval": 5,
+    "foreign_chain_event_fetch_start_block_number": 0,
+    "home_chain_event_fetch_start_block_number": 0,
 }
 
 CONFIG_ENTRY_VALIDATORS = {
@@ -56,10 +56,10 @@ CONFIG_ENTRY_VALIDATORS = {
     "foreign_rpc_url": validate_rpc_url,
     "token_contract_address": validate_checksum_address,
     "foreign_bridge_contract_address": validate_checksum_address,
-    "foreign_max_reorg_depth": validate_non_negative_integer,
-    "foreign_event_poll_interval": validate_positive_float,
-    "foreign_start_block_number": validate_non_negative_integer,
-    "home_start_block_number": validate_non_negative_integer,
+    "foreign_chain_max_reorg_depth": validate_non_negative_integer,
+    "foreign_chain_event_poll_interval": validate_positive_float,
+    "foreign_chain_event_fetch_start_block_number": validate_non_negative_integer,
+    "home_chain_event_fetch_start_block_number": validate_non_negative_integer,
 }
 
 assert all(key in CONFIG_ENTRY_VALIDATORS for key in REQUIRED_CONFIG_ENTRIES)

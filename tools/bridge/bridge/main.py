@@ -57,13 +57,14 @@ def main(config_path: str) -> None:
         event_name="Transfer",
         event_argument_filter={"to": config["foreign_bridge_contract_address"]},
         event_queue=transfer_event_queue,
-        max_reorg_depth=config["foreign_max_reorg_depth"],
-        start_block_number=config["foreign_start_block_number"],
+        max_reorg_depth=config["foreign_chain_max_reorg_depth"],
+        start_block_number=config["foreign_chain_event_fetch_start_block_number"],
     )
 
     try:
         transfer_event_fetcher_greenlet = Greenlet.spawn(
-            transfer_event_fetcher.fetch_events, config["foreign_event_poll_interval"]
+            transfer_event_fetcher.fetch_events,
+            config["foreign_chain_event_poll_interval"],
         )
 
         gevent.joinall([transfer_event_fetcher_greenlet], raise_error=True)
