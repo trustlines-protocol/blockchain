@@ -13,6 +13,8 @@ from eth_utils import (
 )
 from eth_utils.toolz import merge
 
+import validators
+
 from eth_keys.constants import SECPK1_N
 
 from dotenv import load_dotenv
@@ -21,25 +23,25 @@ load_dotenv()
 
 
 def validate_rpc_url(url: Any) -> str:
-    if not isinstance(url, str):
+    if not validators.url(url):
         raise ValueError(f"{url} is not a valid RPC url")
     return url
 
 
-def validate_non_negative_integer(number: Any) -> float:
+def validate_non_negative_integer(number: Any) -> int:
     if not isinstance(number, int):
-        raise ValueError(f"{number} is not an integer")
+        number = int(number)
     if number < 0:
         raise ValueError(f"{number} must be greater than or equal zero")
-    return int(number)
+    return number
 
 
 def validate_positive_float(number: Any) -> float:
-    if not isinstance(number, (int, float)):
-        raise ValueError(f"{number} is neither integer nor float")
+    if not isinstance(number, float):
+        number = float(number)
     if number <= 0:
         raise ValueError(f"{number} must be positive")
-    return float(number)
+    return number
 
 
 def validate_checksum_address(address: Any) -> bytes:
