@@ -28,7 +28,9 @@ def all_proxy_validators(chain):
     account_0 = chain.get_accounts()[0]
     validators = []
     for i in range(maximal_number_of_validators):
-        account_num = 20000000 + i  # do not
+        # use an offset for the account number in order to not
+        # generate the same keys we generate in the whitelist fixture
+        account_num = 20000000 + i
         new_account = chain.add_account(f"0x{account_num:064}")
         chain.send_transaction(
             {
