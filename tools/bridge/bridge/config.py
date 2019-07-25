@@ -29,6 +29,8 @@ def validate_rpc_url(url: Any) -> str:
 
 
 def validate_non_negative_integer(number: Any) -> int:
+    if str(number) != str(int(number)):
+        raise ValueError(f"{number} is not a valid integer")
     if not isinstance(number, int):
         number = int(number)
     if number < 0:
@@ -37,6 +39,8 @@ def validate_non_negative_integer(number: Any) -> int:
 
 
 def validate_positive_float(number: Any) -> float:
+    if str(number) != str(float(number)):
+        raise ValueError(f"{number} is not a valid float")
     if not isinstance(number, float):
         number = float(number)
     if number <= 0:
