@@ -36,13 +36,7 @@ class ConfirmationSender:
         self.pending_transaction_queue: Queue[Dict[str, Any]] = Queue()
 
     def get_next_nonce(self):
-        try:
-            self.nonce = self.nonce + 1
-        except AttributeError:
-            self.logger.debug(f"Fetching nonce for address {self.address}")
-            self.nonce = self.w3.eth.getTransactionCount(self.address)
-
-        return self.nonce
+        return self.w3.eth.getTransactionCount(self.address, "pending")
 
     def run(self):
         self.logger.info("Starting")
@@ -64,13 +58,23 @@ class ConfirmationSender:
 
     def prepare_confirmation_transaction(self, transfer_event):
         nonce = self.get_next_nonce()
-        self.logger.debug(f"Preparing confirmation transaction for address {transfer_event.args['from']} for {transfer_event.args.value} coins (nonce {nonce})")
+        self.logger.debug(
+            f"Preparing confirmation transaction for address "
+            f"{transfer_event.args['from']} for {transfer_event.args.value} "
+            f"coins (nonce {nonce})"
+        )
         transaction = self.home_bridge_contract.functions.confirmTransfer(
             self.compute_transfer_hash(transfer_event),
             transfer_event.transactionHash,
             transfer_event.args.value,
             transfer_event.args["from"],
-        ).buildTransaction({"gasPrice": self.gas_price, "nonce": nonce, "chainId": "0x4874"})
+        ).buildTransaction(
+            {
+                "gasPrice": self.gas_price,
+                "nonce": nonce,
+                # "chainId": self.w3.eth.chainId,  # TODO: This should be obsolete with web3 5.0.0b4
+            }
+        )
         signed_transaction = self.w3.eth.account.sign_transaction(
             transaction, self.private_key
         )
@@ -84,10 +88,10 @@ class ConfirmationSender:
         )
 
     def send_confirmation_transaction(self, transaction):
-        self.logger.info(f"Sending confirmation transaction {transaction}")
-        # TODO: Aren't we tracking the transaction hash here?
         self.pending_transaction_queue.put(transaction)
-        return self.w3.eth.sendRawTransaction(transaction.rawTransaction)
+        tx_hash = self.w3.eth.sendRawTransaction(transaction.rawTransaction)
+        self.logger.info(f"Sent confirmation transaction {tx_hash}")
+        return tx_hash
 
     def watch_pending_transactions(self):
         while True:
