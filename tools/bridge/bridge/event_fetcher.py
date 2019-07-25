@@ -84,7 +84,10 @@ class EventFetcher:
             argument_filters=self.event_argument_filter,
         )
 
-        self.logger.debug(f"Found {len(events)} events.")
+        if len(events) > 0:
+            self.logger.info(f"Found {len(events)} events.")
+        else:
+            self.logger.debug(f"Found {len(events)} events.")
 
         for event in events:
             self.event_queue.put(event)
