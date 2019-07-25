@@ -82,7 +82,7 @@ REQUIRED_CONFIG_ENTRIES = [
 
 OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
     "home_rpc_timeout": 180,
-    "home_chain_gas_price": 10,
+    "home_chain_gas_price": 10 * 1000000000,  # Gas price is in GWei
     "home_chain_max_reorg_depth": 1,
     "home_chain_event_fetch_start_block_number": 0,
     "foreign_rpc_timeout": 180,
