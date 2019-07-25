@@ -78,41 +78,29 @@ REQUIRED_CONFIG_ENTRIES = [
 
 OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
     "home_rpc_timeout": 180,
-
     "home_chain_gas_price": 10,
     "home_chain_max_reorg_depth": 1,
-
     "home_chain_event_fetch_start_block_number": 0,
-
     "foreign_rpc_timeout": 180,
-
     "foreign_chain_max_reorg_depth": 10,
     "foreign_chain_event_poll_interval": 5,
-
     "foreign_chain_event_fetch_start_block_number": 0,
 }
 
 CONFIG_ENTRY_VALIDATORS = {
     "home_rpc_url": validate_rpc_url,
     "home_rpc_timeout": validate_non_negative_integer,
-
     "home_chain_gas_price": validate_non_negative_integer,
     "home_chain_max_reorg_depth": validate_non_negative_integer,
-
     "home_bridge_contract_address": validate_checksum_address,
     "home_chain_event_fetch_start_block_number": validate_non_negative_integer,
-
     "foreign_rpc_url": validate_rpc_url,
     "foreign_rpc_timeout": validate_non_negative_integer,
-
     "foreign_chain_max_reorg_depth": validate_non_negative_integer,
     "foreign_chain_event_poll_interval": validate_positive_float,
-
     "token_contract_address": validate_checksum_address,
-
     "foreign_bridge_contract_address": validate_checksum_address,
     "foreign_chain_event_fetch_start_block_number": validate_non_negative_integer,
-
     "validator_private_key": validate_private_key,
 }
 
