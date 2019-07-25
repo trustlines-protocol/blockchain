@@ -26,7 +26,7 @@ from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI, HOME_BRIDGE_ABI
     "--config",
     "config_path",
     type=click.Path(exists=True),
-    required=True,
+    required=False,
     help="Path to a config file",
 )
 def main(config_path: str) -> None:
