@@ -3,6 +3,7 @@ from gevent import monkey
 monkey.patch_all()  # noqa: E402
 
 import logging
+import os
 
 import gevent
 from gevent import Greenlet
@@ -37,7 +38,9 @@ def main(config_path: str) -> None:
     See .env.example and config.py for valid configuration options and defaults.
     """
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=os.environ.get('LOGLEVEL', 'INFO').upper())
+
+    logging.info('Starting Trustlines Bridge Validation Server')
 
     try:
         config = load_config(config_path)
