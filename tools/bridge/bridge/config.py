@@ -75,7 +75,7 @@ REQUIRED_CONFIG_ENTRIES = [
     "home_rpc_url",
     "home_bridge_contract_address",
     "foreign_rpc_url",
-    "token_contract_address",
+    "foreign_chain_token_contract_address",
     "foreign_bridge_contract_address",
     "validator_private_key",
 ]
@@ -102,7 +102,7 @@ CONFIG_ENTRY_VALIDATORS = {
     "foreign_rpc_timeout": validate_non_negative_integer,
     "foreign_chain_max_reorg_depth": validate_non_negative_integer,
     "foreign_chain_event_poll_interval": validate_non_negative_integer,
-    "token_contract_address": validate_checksum_address,
+    "foreign_chain_token_contract_address": validate_checksum_address,
     "foreign_bridge_contract_address": validate_checksum_address,
     "foreign_chain_event_fetch_start_block_number": validate_non_negative_integer,
     "validator_private_key": validate_private_key,
