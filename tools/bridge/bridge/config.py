@@ -82,7 +82,9 @@ OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
     "foreign_chain_event_poll_interval": 5,
     "foreign_chain_event_fetch_start_block_number": 0,
     "home_chain_event_fetch_start_block_number": 0,
-    "home_chain_gas_price": 10
+    "home_chain_gas_price": 10,
+    "home_rpc_timeout": 180,
+    "foreign_rpc_timeout": 180
 }
 
 CONFIG_ENTRY_VALIDATORS = {
@@ -98,6 +100,8 @@ CONFIG_ENTRY_VALIDATORS = {
     "home_chain_event_fetch_start_block_number": validate_non_negative_integer,
     "home_chain_gas_price": validate_non_negative_integer,
     "validator_private_key": validate_private_key,
+    "home_rpc_timeout": validate_non_negative_integer,
+    "foreign_rpc_timeout": validate_non_negative_integer,
 }
 
 assert all(key in CONFIG_ENTRY_VALIDATORS for key in REQUIRED_CONFIG_ENTRIES)

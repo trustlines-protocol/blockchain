@@ -49,8 +49,8 @@ def main(config_path: str) -> None:
     except ValueError as value_error:
         raise click.UsageError(f"Invalid config file: {value_error}") from value_error
 
-    w3_foreign = Web3(HTTPProvider(config["foreign_rpc_url"]))
-    w3_home = Web3(HTTPProvider(config["home_rpc_url"]))
+    w3_foreign = Web3(HTTPProvider(config["foreign_rpc_url"], request_kwargs={'timeout': config["foreign_rpc_timeout"]}))
+    w3_home = Web3(HTTPProvider(config["home_rpc_url"], request_kwargs={'timeout': config["home_rpc_timeout"]}))
 
     home_bridge_contract = w3_home.eth.contract(
         address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
