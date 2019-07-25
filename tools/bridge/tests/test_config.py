@@ -60,6 +60,10 @@ def test_validate_positive_float():
     validate_positive_float(1.1)
 
 
+def test_validate_positive_float_int():
+    validate_positive_float(5)
+
+
 def test_validate_positive_float_false_type():
     with pytest.raises(ValueError):
         validate_positive_float("foo")

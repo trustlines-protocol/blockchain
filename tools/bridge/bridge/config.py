@@ -39,7 +39,7 @@ def validate_non_negative_integer(number: Any) -> int:
 
 
 def validate_positive_float(number: Any) -> float:
-    if str(number) != str(float(number)):
+    if str(number) != str(float(number)) and str(number) != str(int(number)):
         raise ValueError(f"{number} is not a valid float")
     if not isinstance(number, float):
         number = float(number)
@@ -101,7 +101,7 @@ CONFIG_ENTRY_VALIDATORS = {
     "foreign_rpc_url": validate_rpc_url,
     "foreign_rpc_timeout": validate_non_negative_integer,
     "foreign_chain_max_reorg_depth": validate_non_negative_integer,
-    "foreign_chain_event_poll_interval": validate_positive_float,
+    "foreign_chain_event_poll_interval": validate_non_negative_integer,
     "token_contract_address": validate_checksum_address,
     "foreign_bridge_contract_address": validate_checksum_address,
     "foreign_chain_event_fetch_start_block_number": validate_non_negative_integer,
