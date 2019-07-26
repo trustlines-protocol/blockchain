@@ -1,3 +1,6 @@
+default_language_version:
+    python: python3
+
 repos:
 - repo: https://github.com/trustlines-protocol/more-pre-commit-hooks.git
   rev: 1edc6d3ab9380e17eb01a601551283cf7bc23f2b
@@ -17,25 +20,21 @@ repos:
     rev: 19.3b0
     hooks:
     - id: black
-      language_version: python3.6
 
 -   repo: git://github.com/pre-commit/pre-commit-hooks
     rev: v2.2.3
     hooks:
     - id: check-added-large-files
     - id: check-ast
-      language_version: python3.6
     - id: check-byte-order-marker
     - id: check-case-conflict
     - id: check-json
     - id: check-merge-conflict
     - id: check-yaml
     - id: debug-statements
-      language_version: python3.6
     - id: end-of-file-fixer
       exclude: ^contracts/contracts/lib/.*\.sol|contracts/contracts/token/TrustlinesNetworkToken.sol$
     - id: flake8
-      language_version: python3.6
       additional_dependencies: ["flake8-string-format", "flake8-per-file-ignores"]
     - id: trailing-whitespace
       exclude: ^contracts/contracts/lib/.*\.sol$

@@ -5,4 +5,5 @@ toml
 web3
 contract-deploy-tools
 python-dotenv
+validators
 -r ../../requirements-dev.txt

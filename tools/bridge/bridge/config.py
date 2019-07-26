@@ -13,6 +13,8 @@ from eth_utils import (
 )
 from eth_utils.toolz import merge
 
+import validators
+
 from eth_keys.constants import SECPK1_N
 
 from dotenv import load_dotenv
@@ -21,25 +23,29 @@ load_dotenv()
 
 
 def validate_rpc_url(url: Any) -> str:
-    if not isinstance(url, str):
+    if not validators.url(url):
         raise ValueError(f"{url} is not a valid RPC url")
     return url
 
 
-def validate_non_negative_integer(number: Any) -> float:
+def validate_non_negative_integer(number: Any) -> int:
+    if str(number) != str(int(number)):
+        raise ValueError(f"{number} is not a valid integer")
     if not isinstance(number, int):
-        raise ValueError(f"{number} is not an integer")
+        number = int(number)
     if number < 0:
         raise ValueError(f"{number} must be greater than or equal zero")
-    return int(number)
+    return number
 
 
 def validate_positive_float(number: Any) -> float:
-    if not isinstance(number, (int, float)):
-        raise ValueError(f"{number} is neither integer nor float")
+    if str(number) != str(float(number)) and str(number) != str(int(number)):
+        raise ValueError(f"{number} is not a valid float")
+    if not isinstance(number, float):
+        number = float(number)
     if number <= 0:
         raise ValueError(f"{number} must be positive")
-    return float(number)
+    return number
 
 
 def validate_checksum_address(address: Any) -> bytes:
@@ -67,32 +73,38 @@ def validate_private_key(private_key: Any) -> bytes:
 
 REQUIRED_CONFIG_ENTRIES = [
     "home_rpc_url",
-    "foreign_rpc_url",
-    "token_contract_address",
     "home_bridge_contract_address",
+    "foreign_rpc_url",
+    "foreign_chain_token_contract_address",
     "foreign_bridge_contract_address",
     "validator_private_key",
 ]
 
 OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
+    "home_rpc_timeout": 180,
+    "home_chain_gas_price": 10 * 1000000000,  # Gas price is in GWei
     "home_chain_max_reorg_depth": 1,
+    "home_chain_event_fetch_start_block_number": 0,
+    "foreign_rpc_timeout": 180,
     "foreign_chain_max_reorg_depth": 10,
     "foreign_chain_event_poll_interval": 5,
     "foreign_chain_event_fetch_start_block_number": 0,
-    "home_chain_event_fetch_start_block_number": 0,
 }
 
 CONFIG_ENTRY_VALIDATORS = {
     "home_rpc_url": validate_rpc_url,
-    "foreign_rpc_url": validate_rpc_url,
-    "token_contract_address": validate_checksum_address,
-    "home_bridge_contract_address": validate_checksum_address,
-    "foreign_bridge_contract_address": validate_checksum_address,
+    "home_rpc_timeout": validate_non_negative_integer,
+    "home_chain_gas_price": validate_non_negative_integer,
     "home_chain_max_reorg_depth": validate_non_negative_integer,
-    "foreign_chain_max_reorg_depth": validate_non_negative_integer,
-    "foreign_chain_event_poll_interval": validate_positive_float,
-    "foreign_chain_event_fetch_start_block_number": validate_non_negative_integer,
+    "home_bridge_contract_address": validate_checksum_address,
     "home_chain_event_fetch_start_block_number": validate_non_negative_integer,
+    "foreign_rpc_url": validate_rpc_url,
+    "foreign_rpc_timeout": validate_non_negative_integer,
+    "foreign_chain_max_reorg_depth": validate_non_negative_integer,
+    "foreign_chain_event_poll_interval": validate_non_negative_integer,
+    "foreign_chain_token_contract_address": validate_checksum_address,
+    "foreign_bridge_contract_address": validate_checksum_address,
+    "foreign_chain_event_fetch_start_block_number": validate_non_negative_integer,
     "validator_private_key": validate_private_key,
 }
 

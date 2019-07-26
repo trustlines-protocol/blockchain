@@ -4,7 +4,7 @@ from gevent import monkey
 
 monkey.patch_all(thread=False)  # noqa: E702
 
-from gevent import Greenlet, joinall
+from gevent import Greenlet
 from time import sleep
 
 from bridge.event_fetcher import EventFetcher
@@ -312,10 +312,5 @@ def test_fetch_events_continuously(
 def test_fetch_events_negative_poll_interval(
     transfer_event_fetcher, transfer_event_queue, transfer_tokens_to_foreign_bridge
 ):
-    try:
-        with pytest.raises(ValueError):
-            greenlet = Greenlet.spawn(transfer_event_fetcher.fetch_events, -1)
-            joinall([greenlet], raise_error=True)
-
-    finally:
-        greenlet.kill()
+    with pytest.raises(ValueError):
+        transfer_event_fetcher.fetch_events(poll_interval=-1)
