@@ -1,10 +1,9 @@
 import logging
 
-from typing import List, Dict, Any
+from typing import Dict, Any
 from time import sleep
 from web3 import Web3
-from web3._utils.contracts import find_matching_event_abi
-from web3._utils.abi import abi_to_signature
+from web3.contract import Contract
 
 
 class EventFetcher:
@@ -12,8 +11,7 @@ class EventFetcher:
         self,
         *,
         web3: Web3,
-        contract_address: str,
-        contract_abi: List[Dict],
+        contract: Contract,
         event_name: str,
         event_argument_filter: Dict[str, Any],
         event_fetch_limit: int = 950,
@@ -21,23 +19,6 @@ class EventFetcher:
         max_reorg_depth: int,
         start_block_number: int,
     ):
-        contract_code = web3.eth.getCode(contract_address)
-
-        if not contract_code:
-            raise ValueError(
-                f"The given contract address {contract_address} does not point to a contract!"
-            )
-
-        event_abi = find_matching_event_abi(abi=contract_abi, event_name=event_name)
-        event_signature = abi_to_signature(event_abi)
-        event_signature_hash = Web3.keccak(text=event_signature)
-
-        if event_signature_hash not in contract_code:
-            raise ValueError(
-                f"The contract at the given address {contract_address}"
-                "does not have an event with the given signature!"
-            )
-
         if event_fetch_limit <= 0:
             raise ValueError("Can not fetch events with zero or negative limit!")
 
@@ -50,11 +31,11 @@ class EventFetcher:
             )
 
         self.logger = logging.getLogger(
-            f"bridge.event_fetcher.{contract_address}.{event_signature}"
+            f"bridge.event_fetcher.{contract.address}.{event_name}"
         )
 
         self.web3 = web3
-        self.contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+        self.contract = contract
         self.event_name = event_name
         self.event_argument_filter = event_argument_filter
         self.event_fetch_limit = event_fetch_limit
