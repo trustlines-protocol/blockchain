@@ -54,7 +54,8 @@ class ConfirmationSender:
         while True:
             transfer_event = self.transfer_event_queue.get()
             transaction = self.prepare_confirmation_transaction(transfer_event)
-            self.send_confirmation_transaction(transaction)
+            if transaction is not None:
+                self.send_confirmation_transaction(transaction)
 
     def prepare_confirmation_transaction(self, transfer_event):
         nonce = self.get_next_nonce()
@@ -63,23 +64,31 @@ class ConfirmationSender:
             f"{transfer_event.args['from']} for {transfer_event.args.value} "
             f"coins (nonce {nonce}, chain {self.w3.eth.chainId})"
         )
-        transaction = self.home_bridge_contract.functions.confirmTransfer(
-            self.compute_transfer_hash(transfer_event),
-            transfer_event.transactionHash,
-            transfer_event.args.value,
-            transfer_event.args["from"],
-        ).buildTransaction(
-            {
-                "gasPrice": self.gas_price,
-                "nonce": nonce,
-                # "gas": 1000000,
-                # "chainId": self.w3.eth.chainId,  # TODO: This should be obsolete with web3 5.0.0b4
-            }
-        )
-        signed_transaction = self.w3.eth.account.sign_transaction(
-            transaction, self.private_key
-        )
-        return signed_transaction
+        try:
+            transaction = self.home_bridge_contract.functions.confirmTransfer(
+                self.compute_transfer_hash(transfer_event),
+                transfer_event.transactionHash,
+                transfer_event.args.value,
+                transfer_event.args["from"],
+            ).buildTransaction({"gasPrice": self.gas_price, "nonce": nonce})
+            signed_transaction = self.w3.eth.account.sign_transaction(
+                transaction, self.private_key
+            )
+            return signed_transaction
+        except ValueError as e:
+            if "failed due to an exception" in e.args[0]["message"]:
+                self.logger.info(
+                    (
+                        "Error while building the transaction. This might be because "
+                        "you are not in the validator set or the transfer has already "
+                        "been confirmed. If this error persists, please check if you "
+                        "are a member of the validator set or if your RPC nodes may "
+                        "have connection problems: %s"
+                    ),
+                    e,
+                )
+                return None
+            raise e
 
     def compute_transfer_hash(self, transfer):
         return keccak(
