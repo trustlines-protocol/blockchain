@@ -9,6 +9,7 @@ from eth_keys.datatypes import PrivateKey
 from eth_utils import keccak, int_to_big_endian
 
 from bridge.constants import HOME_CHAIN_STEP_DURATION
+from bridge.validation_utils import validate_confirmation_permissions
 
 
 class ConfirmationSender:
@@ -22,17 +23,17 @@ class ConfirmationSender:
         gas_price: int,
         max_reorg_depth: int,
     ):
-        self.transfer_event_queue = transfer_event_queue
-        self.home_bridge_contract = home_bridge_contract
         self.private_key = private_key
         self.address = PrivateKey(self.private_key).public_key.to_canonical_address()
+
+        validate_confirmation_permissions(home_bridge_contract, self.address)
+
+        self.transfer_event_queue = transfer_event_queue
+        self.home_bridge_contract = home_bridge_contract
         self.gas_price = gas_price
         self.max_reorg_depth = max_reorg_depth
-
         self.w3 = self.home_bridge_contract.web3
-
         self.logger = logging.getLogger("bridge.confirmation_sender.ConfirmationSender")
-
         self.pending_transaction_queue: Queue[Dict[str, Any]] = Queue()
 
     def get_next_nonce(self):

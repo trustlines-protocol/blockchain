@@ -27,20 +27,6 @@ def transfer_queue():
 
 
 @pytest.fixture
-def validator_account_and_key(proxy_validator_accounts_and_keys):
-    """Address and private key of the validator running the confirmation sender."""
-    accounts, keys = proxy_validator_accounts_and_keys
-    return accounts[0], keys[0]
-
-
-@pytest.fixture
-def validator_address(validator_account_and_key):
-    """Address of the validator running the confirmation sender."""
-    account, _ = validator_account_and_key
-    return account
-
-
-@pytest.fixture
 def validator_key(validator_account_and_key):
     """Private key of the validator running the confirmation sender."""
     _, key = validator_account_and_key
@@ -103,6 +89,19 @@ def transfer_event():
 #
 # Tests
 #
+def test_instantiate_with_not_permissioned_account(
+    transfer_queue, home_bridge_contract, non_validator_key, max_reorg_depth, gas_price
+):
+    with pytest.raises(ValueError):
+        ConfirmationSender(
+            transfer_event_queue=transfer_queue,
+            home_bridge_contract=home_bridge_contract,
+            private_key=non_validator_key.to_bytes(),
+            gas_price=gas_price,
+            max_reorg_depth=max_reorg_depth,
+        )
+
+
 def test_transfer_hash_computation(confirmation_sender, transfer_event):
     transfer_hash = confirmation_sender.compute_transfer_hash(transfer_event)
     assert transfer_event.logIndex == 5

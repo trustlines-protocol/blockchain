@@ -61,7 +61,7 @@ def validate_confirmation_permissions(home_bridge_contract: Contract, address: s
         ).call()
 
     except Exception as error:
-        print(
+        raise RuntimeError(
             "Something went wrong while trying to verify the signing accounts permission"
             f" on the home bridge contract:\n {str(error)}"
         )
