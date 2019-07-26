@@ -53,17 +53,14 @@ def main(config_path: str) -> None:
     home_bridge_contract = w3_home.eth.contract(
         address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
     )
-
     validate_contract(home_bridge_contract)
 
     token_contract = w3_foreign.eth.contract(
         address=config["token_contract_address"], abi=MINIMAL_ERC20_TOKEN_ABI
     )
-
     validate_contract(token_contract)
 
     transfer_event_queue = Queue()
-
     transfer_event_fetcher = EventFetcher(
         web3=w3_foreign,
         contract=token_contract,
