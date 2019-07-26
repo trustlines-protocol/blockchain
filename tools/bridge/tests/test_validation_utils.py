@@ -22,15 +22,6 @@ def internal_home_bridge_contract(w3_home, home_bridge_contract):
 
 
 @pytest.fixture
-def bridge_validator_address(proxy_validators):
-    """An authorized validator address of the home bridge
-
-    This is just any of the addresses provided to the validator proxy contract.
-    """
-    return proxy_validators[0]
-
-
-@pytest.fixture
 def home_bridge_contract_with_not_deployed_proxy_contract(
     deploy_contract_on_chain, w3_home
 ):
@@ -81,33 +72,31 @@ def test_validate_contract_not_matching_abi(internal_home_bridge_contract):
 
 
 def test_validate_confirmation_permissions_successfully(
-    home_bridge_contract, bridge_validator_address
+    home_bridge_contract, validator_address
 ):
-    validate_confirmation_permissions(home_bridge_contract, bridge_validator_address)
+    validate_confirmation_permissions(home_bridge_contract, validator_address)
 
 
-def test_validate_confirmation_permissions_not_permissioned(home_bridge_contract):
+def test_validate_confirmation_permissions_not_permissioned(
+    home_bridge_contract, non_validator_address
+):
     with pytest.raises(ValueError):
-        validate_confirmation_permissions(
-            home_bridge_contract, "0x0000000000000000000000000000000000000000"
-        )
+        validate_confirmation_permissions(home_bridge_contract, non_validator_address)
 
 
 def test_validate_confirmation_permissions_not_deployed_proxy_contract(
-    home_bridge_contract_with_not_deployed_proxy_contract, bridge_validator_address
+    home_bridge_contract_with_not_deployed_proxy_contract, validator_address
 ):
     with pytest.raises(RuntimeError):
         validate_confirmation_permissions(
-            home_bridge_contract_with_not_deployed_proxy_contract,
-            bridge_validator_address,
+            home_bridge_contract_with_not_deployed_proxy_contract, validator_address
         )
 
 
 def test_validate_confirmation_permissions_not_matching_proxy_contract_abi(
-    home_bridge_contract_with_not_matching_proxy_contract_abi, bridge_validator_address
+    home_bridge_contract_with_not_matching_proxy_contract_abi, validator_address
 ):
     with pytest.raises(RuntimeError):
         validate_confirmation_permissions(
-            home_bridge_contract_with_not_matching_proxy_contract_abi,
-            bridge_validator_address,
+            home_bridge_contract_with_not_matching_proxy_contract_abi, validator_address
         )

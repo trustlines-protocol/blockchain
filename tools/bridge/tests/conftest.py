@@ -85,11 +85,16 @@ def foreign_bridge_contract(deploy_contract_on_chain, w3_foreign, token_contract
     )
 
 
+@pytest.fixture(scope="session")
+def number_of_validators():
+    """The total amount of validator accounts"""
+    return 5
+
+
 @pytest.fixture
-def proxy_validator_accounts_and_keys(accounts, account_keys):
+def proxy_validator_accounts_and_keys(accounts, account_keys, number_of_validators):
     """Addresses and private keys of the validators in the proxy contract."""
-    num_validators = 5
-    return accounts[:num_validators], account_keys[:num_validators]
+    return accounts[:number_of_validators], account_keys[:number_of_validators]
 
 
 @pytest.fixture
@@ -104,6 +109,32 @@ def proxy_validator_keys(proxy_validator_accounts_and_keys):
     """Private keys of the validators in the proxy contract."""
     _, keys = proxy_validator_accounts_and_keys
     return keys
+
+
+@pytest.fixture
+def validator_account_and_key(proxy_validator_accounts_and_keys):
+    """Address and private key of the validator running the confirmation sender."""
+    accounts, keys = proxy_validator_accounts_and_keys
+    return accounts[0], keys[0]
+
+
+@pytest.fixture
+def validator_address(validator_account_and_key):
+    """Address of the validator running the confirmation sender."""
+    account, _ = validator_account_and_key
+    return account
+
+
+@pytest.fixture(scope="session")
+def non_validator_address(accounts, number_of_validators):
+    """Address of an account which is not part of the validator set"""
+    return accounts[number_of_validators]
+
+
+@pytest.fixture(scope="session")
+def non_validator_key(account_keys, number_of_validators):
+    """Key of an account which is not part of the validator set"""
+    return account_keys[number_of_validators]
 
 
 @pytest.fixture
