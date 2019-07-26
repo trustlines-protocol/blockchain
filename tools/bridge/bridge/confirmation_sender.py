@@ -36,7 +36,7 @@ class ConfirmationSender:
         self.pending_transaction_queue: Queue[Dict[str, Any]] = Queue()
 
     def get_next_nonce(self):
-        return self.w3.eth.getTransactionCount(self.address)
+        return self.w3.eth.getTransactionCount(self.address, "pending")
 
     def run(self):
         self.logger.info("Starting")
@@ -58,12 +58,24 @@ class ConfirmationSender:
 
     def prepare_confirmation_transaction(self, transfer_event):
         nonce = self.get_next_nonce()
+        self.logger.debug(
+            f"Preparing confirmation transaction for address "
+            f"{transfer_event.args['from']} for {transfer_event.args.value} "
+            f"coins (nonce {nonce}, chain {self.w3.eth.chainId})"
+        )
         transaction = self.home_bridge_contract.functions.confirmTransfer(
             self.compute_transfer_hash(transfer_event),
             transfer_event.transactionHash,
             transfer_event.args.value,
             transfer_event.args["from"],
-        ).buildTransaction({"gasPrice": self.gas_price, "nonce": nonce})
+        ).buildTransaction(
+            {
+                "gasPrice": self.gas_price,
+                "nonce": nonce,
+                # "gas": 1000000,
+                # "chainId": self.w3.eth.chainId,  # TODO: This should be obsolete with web3 5.0.0b4
+            }
+        )
         signed_transaction = self.w3.eth.account.sign_transaction(
             transaction, self.private_key
         )
@@ -77,9 +89,10 @@ class ConfirmationSender:
         )
 
     def send_confirmation_transaction(self, transaction):
-        self.logger.info(f"Sending confirmation transaction {transaction}")
         self.pending_transaction_queue.put(transaction)
-        self.w3.eth.sendRawTransaction(transaction.rawTransaction)
+        tx_hash = self.w3.eth.sendRawTransaction(transaction.rawTransaction)
+        self.logger.info(f"Sent confirmation transaction {tx_hash.hex()}")
+        return tx_hash
 
     def watch_pending_transactions(self):
         while True:
@@ -95,7 +108,7 @@ class ConfirmationSender:
             receipt = self.w3.eth.getTransactionReceipt(oldest_pending_transaction.hash)
             if receipt and receipt.blockNumber <= confirmation_threshold:
                 self.logger.info(
-                    f"Transaction has been confirmed: {oldest_pending_transaction}"
+                    f"Transaction has been confirmed: {oldest_pending_transaction.hash.hex()}"
                 )
                 confirmed_transaction = (
                     self.pending_transaction_queue.get()

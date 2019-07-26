@@ -3,6 +3,7 @@ from gevent import monkey
 monkey.patch_all()  # noqa: E402
 
 import logging
+import os
 
 import gevent
 from gevent import Greenlet
@@ -25,7 +26,7 @@ from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI, HOME_BRIDGE_ABI
     "--config",
     "config_path",
     type=click.Path(exists=True),
-    required=True,
+    required=False,
     help="Path to a config file",
 )
 def main(config_path: str) -> None:
@@ -37,7 +38,9 @@ def main(config_path: str) -> None:
     See .env.example and config.py for valid configuration options and defaults.
     """
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO").upper())
+
+    logging.info("Starting Trustlines Bridge Validation Server")
 
     try:
         config = load_config(config_path)
@@ -46,8 +49,18 @@ def main(config_path: str) -> None:
     except ValueError as value_error:
         raise click.UsageError(f"Invalid config file: {value_error}") from value_error
 
-    w3_foreign = Web3(HTTPProvider(config["foreign_rpc_url"]))
-    w3_home = Web3(HTTPProvider(config["home_rpc_url"]))
+    w3_foreign = Web3(
+        HTTPProvider(
+            config["foreign_rpc_url"],
+            request_kwargs={"timeout": config["foreign_rpc_timeout"]},
+        )
+    )
+    w3_home = Web3(
+        HTTPProvider(
+            config["home_rpc_url"],
+            request_kwargs={"timeout": config["home_rpc_timeout"]},
+        )
+    )
 
     home_bridge_contract = w3_home.eth.contract(
         address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
@@ -57,7 +70,7 @@ def main(config_path: str) -> None:
 
     transfer_event_fetcher = EventFetcher(
         web3=w3_foreign,
-        contract_address=config["token_contract_address"],
+        contract_address=config["foreign_chain_token_contract_address"],
         contract_abi=MINIMAL_ERC20_TOKEN_ABI,
         event_name="Transfer",
         event_argument_filter={"to": config["foreign_bridge_contract_address"]},
