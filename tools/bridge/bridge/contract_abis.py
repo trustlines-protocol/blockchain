@@ -80,4 +80,25 @@ HOME_BRIDGE_ABI = [
         "name": "TransferCompleted",
         "type": "event",
     },
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "validatorProxy",
+        "outputs": [{"name": "", "type": "address"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function",
+    },
+]
+
+MINIMAL_VALIDATOR_PROXY_ABI = [
+    {
+        "constant": True,
+        "inputs": [{"name": "", "type": "address"}],
+        "name": "isValidator",
+        "outputs": [{"name": "", "type": "bool"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function",
+    }
 ]
