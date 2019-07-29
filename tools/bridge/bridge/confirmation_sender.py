@@ -9,7 +9,7 @@ from eth_keys.datatypes import PrivateKey
 from eth_utils import keccak, int_to_big_endian
 
 from bridge.constants import HOME_CHAIN_STEP_DURATION
-from bridge.validation_utils import is_bridge_validator
+from bridge.contract_validation import is_bridge_validator
 
 
 class ConfirmationSender:
