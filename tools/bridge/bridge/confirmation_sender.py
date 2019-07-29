@@ -28,8 +28,9 @@ class ConfirmationSender:
         self.address = PrivateKey(self.private_key).public_key.to_canonical_address()
 
         if not is_bridge_validator(home_bridge_contract, self.address):
-            self.logger.warn(
-                f"The address {self.address} is not a bridge validator to confirm transfers on the home bridge contract!"
+            self.logger.warning(
+                f"The address {self.address} is not a bridge validator to confirm "
+                f"transfers on the home bridge contract!"
             )
 
         self.transfer_event_queue = transfer_event_queue
@@ -59,7 +60,7 @@ class ConfirmationSender:
             transfer_event = self.transfer_event_queue.get()
 
             if not is_bridge_validator(self.home_bridge_contract, self.address):
-                self.logger.warn(
+                self.logger.warning(
                     f"Can not confirm transaction because {self.address} is not a bridge validator!"
                 )
                 continue
