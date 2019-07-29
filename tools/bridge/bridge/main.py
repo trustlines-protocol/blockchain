@@ -18,7 +18,7 @@ from bridge.config import load_config
 from bridge.event_fetcher import EventFetcher
 from bridge.confirmation_sender import ConfirmationSender
 from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI, HOME_BRIDGE_ABI
-from bridge.validation_utils import validate_contract, get_validator_proxy_contract
+from bridge.contract_validation import validate_contract, get_validator_proxy_contract
 
 
 @click.command()
