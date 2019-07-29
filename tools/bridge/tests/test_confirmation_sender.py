@@ -60,6 +60,20 @@ def confirmation_sender(
 
 
 @pytest.fixture
+def confirmation_sender_with_non_validator_account(
+    transfer_queue, home_bridge_contract, non_validator_key, max_reorg_depth, gas_price
+):
+    """A confirmation sender."""
+    return ConfirmationSender(
+        transfer_event_queue=transfer_queue,
+        home_bridge_contract=home_bridge_contract,
+        private_key=non_validator_key.to_bytes(),
+        gas_price=gas_price,
+        max_reorg_depth=max_reorg_depth,
+    )
+
+
+@pytest.fixture
 def transfer_event():
     """An exemplary transfer event."""
     return AttributeDict(
@@ -89,19 +103,6 @@ def transfer_event():
 #
 # Tests
 #
-def test_instantiate_with_not_permissioned_account(
-    transfer_queue, home_bridge_contract, non_validator_key, max_reorg_depth, gas_price
-):
-    with pytest.raises(ValueError):
-        ConfirmationSender(
-            transfer_event_queue=transfer_queue,
-            home_bridge_contract=home_bridge_contract,
-            private_key=non_validator_key.to_bytes(),
-            gas_price=gas_price,
-            max_reorg_depth=max_reorg_depth,
-        )
-
-
 def test_transfer_hash_computation(confirmation_sender, transfer_event):
     transfer_hash = confirmation_sender.compute_transfer_hash(transfer_event)
     assert transfer_event.logIndex == 5
@@ -192,5 +193,26 @@ def test_pending_transfers_are_cleared(
         tester_home.mine_blocks(max_reorg_depth - 1)
         gevent.sleep(1.5 * HOME_CHAIN_STEP_DURATION)
         assert confirmation_sender.pending_transaction_queue.qsize() == 0
+    finally:
+        greenlet.kill()
+
+
+def test_do_not_confirm_as_non_bridge_validator(
+    confirmation_sender_with_non_validator_account, transfer_queue, transfer_event
+):
+    try:
+        greenlet = gevent.spawn(confirmation_sender_with_non_validator_account.run)
+
+        assert (
+            confirmation_sender_with_non_validator_account.pending_transaction_queue.empty()
+        )
+
+        transfer_queue.put(transfer_event)
+        gevent.sleep(0.1)
+
+        assert (
+            confirmation_sender_with_non_validator_account.pending_transaction_queue.empty()
+        )
+
     finally:
         greenlet.kill()
