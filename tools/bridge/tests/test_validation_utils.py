@@ -21,22 +21,6 @@ def internal_home_bridge_contract(w3_home, home_bridge_contract):
     )
 
 
-@pytest.fixture
-def home_bridge_contract_with_not_matching_proxy_contract_abi(
-    deploy_contract_on_chain, w3_home, foreign_bridge_contract
-):
-    """Home bridge contract which proxy address do not match the ABI
-
-    The referenced validator proxy address does not implemented the expected ABI
-    """
-
-    return deploy_contract_on_chain(
-        w3_home,
-        "TestHomeBridge",
-        constructor_args=(foreign_bridge_contract.address, 50),
-    )
-
-
 def test_validate_contract_successfully(internal_home_bridge_contract):
     validate_contract(internal_home_bridge_contract)
 
@@ -65,12 +49,3 @@ def test_validate_confirmation_permissions_not_permissioned(
     home_bridge_contract, non_validator_address
 ):
     assert not is_bridge_validator(home_bridge_contract, non_validator_address)
-
-
-def test_validate_confirmation_permissions_failing_call(
-    home_bridge_contract_with_not_matching_proxy_contract_abi, validator_address
-):
-    with pytest.raises(RuntimeError):
-        is_bridge_validator(
-            home_bridge_contract_with_not_matching_proxy_contract_abi, validator_address
-        )

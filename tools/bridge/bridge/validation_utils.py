@@ -56,12 +56,4 @@ def get_validator_proxy_contract(home_bridge_contract: Contract) -> Contract:
 
 def is_bridge_validator(home_bridge_contract: Contract, address: str) -> bool:
     validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
-
-    try:
-        return validator_proxy_contract.functions.isValidator(address).call()
-
-    # Catch any type of error which could be raised by web3 on making the call.
-    except Exception as error:
-        raise ValueError(
-            f"Something went wrong while trying to verify the signing accounts permission on the home bridge contract!"
-        ) from error
+    return validator_proxy_contract.functions.isValidator(address).call()
