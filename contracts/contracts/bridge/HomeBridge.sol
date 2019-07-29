@@ -42,6 +42,8 @@ contract HomeBridge {
         validatorsRequiredPercent = _validatorsRequiredPercent;
     }
 
+    function fund() external payable {}
+
     function confirmTransfer(
         bytes32 transferHash,
         bytes32 transactionHash,
