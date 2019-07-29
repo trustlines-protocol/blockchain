@@ -310,7 +310,7 @@ def send_ether_to_whitelisted_accounts(chain, whitelist):
 
     for participant in whitelist:
         chain.send_transaction(
-            {"from": account_0, "to": participant, "gas": 21000, "value": 10000000}
+            {"from": account_0, "to": participant, "gas": 21000, "value": 10_000_000}
         )
 
 
@@ -351,7 +351,7 @@ def premint_token_address(accounts):
 
 @pytest.fixture(scope="session")
 def premint_token_value():
-    return 132456
+    return 132_456
 
 
 @pytest.fixture(scope="session")
@@ -398,13 +398,13 @@ def home_bridge_contract(deploy_contract, validator_proxy_with_validators, chain
     validator_proxy_with_validators contract"""
 
     contract = deploy_contract(
-        "TestHomeBridge", constructor_args=(validator_proxy_with_validators.address, 50)
+        "HomeBridge", constructor_args=(validator_proxy_with_validators.address, 50)
     )
 
     account_0 = chain.get_accounts()[0]
 
-    chain.send_transaction(
-        {"from": account_0, "to": contract.address, "gas": 100000, "value": 1_000_000}
+    contract.functions.fund().transact(
+        {"from": account_0, "to": contract.address, "gas": 100_000, "value": 1_000_000}
     )
 
     return contract

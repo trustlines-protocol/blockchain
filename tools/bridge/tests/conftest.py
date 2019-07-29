@@ -69,7 +69,7 @@ def token_contract(deploy_contract_on_chain, w3_foreign, premint_token_address):
         "TLN",
         18,
         premint_token_address,
-        1000000,
+        1_000_000,
     )
 
     return deploy_contract_on_chain(
@@ -144,14 +144,14 @@ def home_bridge_contract(
     """The home bridge contract."""
     contract = deploy_contract_on_chain(
         w3_home,
-        "TestHomeBridge",
+        "HomeBridge",
         constructor_args=(validator_proxy_with_validators.address, 50),
     )
 
     account_0 = tester_home.get_accounts()[0]
 
     tester_home.send_transaction(
-        {"from": account_0, "to": contract.address, "gas": 100000, "value": 1_000_000}
+        {"from": account_0, "to": contract.address, "gas": 100_000, "value": 1_000_000}
     )
 
     return contract
