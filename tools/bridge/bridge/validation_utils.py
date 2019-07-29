@@ -47,35 +47,21 @@ def validate_contract(contract: Contract) -> None:
             )
 
 
-def validate_confirmation_permissions(
-    home_bridge_contract: Contract, address: str
-) -> None:
+def get_validator_proxy_contract(home_bridge_contract: Contract) -> Contract:
     validator_proxy_address = home_bridge_contract.functions.validatorProxy().call()
-    validator_proxy_contract = home_bridge_contract.web3.eth.contract(
+    return home_bridge_contract.web3.eth.contract(
         address=validator_proxy_address, abi=MINIMAL_VALIDATOR_PROXY_ABI
     )
 
-    try:
-        validate_contract(validator_proxy_contract)
 
-    except ValueError as error:
-        raise RuntimeError(
-            f"Serious bridge setup error. The validator proxy contract at the address the home "
-            f"bridge property points to does not exist or is not intact!"
-        ) from error
+def is_bridge_validator(home_bridge_contract: Contract, address: str) -> bool:
+    validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
 
     try:
-        permission_status = validator_proxy_contract.functions.isValidator(
-            address
-        ).call()
+        return validator_proxy_contract.functions.isValidator(address).call()
 
     # Catch any type of error which could be raised by web3 on making the call.
     except Exception as error:
-        raise RuntimeError(
+        raise ValueError(
             f"Something went wrong while trying to verify the signing accounts permission on the home bridge contract!"
         ) from error
-
-    if not permission_status:
-        raise ValueError(
-            f"The address {address} is not a bridge validator to confirm transfers on the home bridge contract!"
-        )

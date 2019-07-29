@@ -18,7 +18,7 @@ from bridge.config import load_config
 from bridge.event_fetcher import EventFetcher
 from bridge.confirmation_sender import ConfirmationSender
 from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI, HOME_BRIDGE_ABI
-from bridge.validation_utils import validate_contract
+from bridge.validation_utils import validate_contract, get_validator_proxy_contract
 
 
 @click.command()
@@ -67,6 +67,17 @@ def main(config_path: str) -> None:
         address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
     )
     validate_contract(home_bridge_contract)
+
+    validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
+
+    try:
+        validate_contract(validator_proxy_contract)
+
+    except ValueError as error:
+        raise ValueError(
+            f"Serious bridge setup error. The validator proxy contract at the address the home "
+            f"bridge property points to does not exist or is not intact!"
+        ) from error
 
     token_contract = w3_foreign.eth.contract(
         address=config["token_contract_address"], abi=MINIMAL_ERC20_TOKEN_ABI

@@ -9,7 +9,7 @@ from eth_keys.datatypes import PrivateKey
 from eth_utils import keccak, int_to_big_endian
 
 from bridge.constants import HOME_CHAIN_STEP_DURATION
-from bridge.validation_utils import validate_confirmation_permissions
+from bridge.validation_utils import is_bridge_validator
 
 
 class ConfirmationSender:
@@ -23,17 +23,20 @@ class ConfirmationSender:
         gas_price: int,
         max_reorg_depth: int,
     ):
+        self.logger = logging.getLogger("bridge.confirmation_sender.ConfirmationSender")
         self.private_key = private_key
         self.address = PrivateKey(self.private_key).public_key.to_canonical_address()
 
-        validate_confirmation_permissions(home_bridge_contract, self.address)
+        if not is_bridge_validator(home_bridge_contract, self.address):
+            self.logger.warn(
+                f"The address {self.address} is not a bridge validator to confirm transfers on the home bridge contract!"
+            )
 
         self.transfer_event_queue = transfer_event_queue
         self.home_bridge_contract = home_bridge_contract
         self.gas_price = gas_price
         self.max_reorg_depth = max_reorg_depth
         self.w3 = self.home_bridge_contract.web3
-        self.logger = logging.getLogger("bridge.confirmation_sender.ConfirmationSender")
         self.pending_transaction_queue: Queue[Dict[str, Any]] = Queue()
 
     def get_next_nonce(self):
@@ -54,7 +57,15 @@ class ConfirmationSender:
     def send_confirmation_transactions(self):
         while True:
             transfer_event = self.transfer_event_queue.get()
+
+            if not is_bridge_validator(self.home_bridge_contract, self.address):
+                self.logger.warn(
+                    f"Can not confirm transaction because {self.address} is not a bridge validator!"
+                )
+                continue
+
             transaction = self.prepare_confirmation_transaction(transfer_event)
+
             if transaction is not None:
                 self.send_confirmation_transaction(transaction)
 
