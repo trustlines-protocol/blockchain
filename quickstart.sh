@@ -374,6 +374,7 @@ function checkCredentials() {
 
 function setupNetstatsInteractive() {
   printmsg <<EOF
+
 We can setup a netstats client that reports to the netstats server
 running at
 
@@ -392,19 +393,20 @@ EOF
     read -s -r -p "Password: " password
     if checkCredentials https://laikanetstats.trustlines.foundation/check/ "${username}:${password}"; then
       printmsg <<EOF
+
 The provided credentials do work.
 EOF
       break
     else
       printmsg <<EOF
+
 The provided credentials do not work. Please try to enter them again.
 EOF
     fi
   done
 
   printmsg <<EOF
-Please enter an instance name now. You are free to choose any name you
-like.
+Please enter an instance name now. You are free to choose any name you like.
 EOF
 
   read -r -p "Instance name: " instance_name
