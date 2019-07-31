@@ -200,6 +200,10 @@ def test_pending_transfers_are_cleared(
 def test_do_not_confirm_as_non_bridge_validator(
     confirmation_sender_with_non_validator_account, transfer_queue, transfer_event
 ):
+    # TODO: This could fail in a non-testing environment. RPC requests can take
+    # longer or fail for any other reason. An empty queue at the end isn't
+    # a strong affirmation.
+
     try:
         greenlet = gevent.spawn(confirmation_sender_with_non_validator_account.run)
 

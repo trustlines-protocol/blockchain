@@ -6,7 +6,7 @@ from eth_utils import to_checksum_address
 from bridge.contract_abis import MINIMAL_VALIDATOR_PROXY_ABI
 
 
-def validate_contract(contract: Contract) -> None:
+def validate_contract_existence(contract: Contract) -> None:
     """Verifies if a given contract exists on the chain.
 
     It checks if any code is stored for the address. For events and functions
@@ -54,6 +54,6 @@ def get_validator_proxy_contract(home_bridge_contract: Contract) -> Contract:
     )
 
 
-def is_bridge_validator(home_bridge_contract: Contract, address: str) -> bool:
+def is_bridge_validator(home_bridge_contract: Contract, address: bytes) -> bool:
     validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
     return validator_proxy_contract.functions.isValidator(address).call()

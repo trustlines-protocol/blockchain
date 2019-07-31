@@ -1,7 +1,7 @@
 import pytest
 
 from bridge.contract_abis import HOME_BRIDGE_ABI
-from bridge.contract_validation import validate_contract, is_bridge_validator
+from bridge.contract_validation import validate_contract_existence, is_bridge_validator
 
 
 FAKE_ERC20_TOKEN_ABI = [
@@ -21,22 +21,22 @@ def internal_home_bridge_contract(w3_home, home_bridge_contract):
     )
 
 
-def test_validate_contract_successfully(internal_home_bridge_contract):
-    validate_contract(internal_home_bridge_contract)
+def test_validate_contract_existence_successfully(internal_home_bridge_contract):
+    validate_contract_existence(internal_home_bridge_contract)
 
 
-def test_validate_contract_undeployed_address(internal_home_bridge_contract):
+def test_validate_contract_existence_undeployed_address(internal_home_bridge_contract):
     internal_home_bridge_contract.address = "0x0000000000000000000000000000000000000000"
 
     with pytest.raises(ValueError):
-        validate_contract(internal_home_bridge_contract)
+        validate_contract_existence(internal_home_bridge_contract)
 
 
-def test_validate_contract_not_matching_abi(internal_home_bridge_contract):
+def test_validate_contract_existence_not_matching_abi(internal_home_bridge_contract):
     internal_home_bridge_contract.abi = FAKE_ERC20_TOKEN_ABI
 
     with pytest.raises(ValueError):
-        validate_contract(internal_home_bridge_contract)
+        validate_contract_existence(internal_home_bridge_contract)
 
 
 def test_validate_confirmation_permissions_successfully(
