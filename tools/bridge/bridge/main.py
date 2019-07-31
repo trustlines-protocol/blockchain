@@ -18,7 +18,10 @@ from bridge.config import load_config
 from bridge.event_fetcher import EventFetcher
 from bridge.confirmation_sender import ConfirmationSender
 from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI, HOME_BRIDGE_ABI
-from bridge.contract_validation import validate_contract, get_validator_proxy_contract
+from bridge.contract_validation import (
+    validate_contract_existence,
+    get_validator_proxy_contract,
+)
 
 
 @click.command()
@@ -66,12 +69,12 @@ def main(config_path: str) -> None:
     home_bridge_contract = w3_home.eth.contract(
         address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
     )
-    validate_contract(home_bridge_contract)
+    validate_contract_existence(home_bridge_contract)
 
     validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
 
     try:
-        validate_contract(validator_proxy_contract)
+        validate_contract_existence(validator_proxy_contract)
 
     except ValueError as error:
         raise ValueError(
@@ -82,7 +85,7 @@ def main(config_path: str) -> None:
     token_contract = w3_foreign.eth.contract(
         address=config["token_contract_address"], abi=MINIMAL_ERC20_TOKEN_ABI
     )
-    validate_contract(token_contract)
+    validate_contract_existence(token_contract)
 
     transfer_event_queue = Queue()
     transfer_event_fetcher = EventFetcher(

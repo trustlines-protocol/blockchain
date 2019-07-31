@@ -6,7 +6,7 @@ from gevent.queue import Queue
 
 from web3.contract import Contract
 from eth_keys.datatypes import PrivateKey
-from eth_utils import keccak, int_to_big_endian
+from eth_utils import keccak, int_to_big_endian, to_checksum_address
 
 from bridge.constants import HOME_CHAIN_STEP_DURATION
 from bridge.contract_validation import is_bridge_validator
@@ -61,7 +61,8 @@ class ConfirmationSender:
 
             if not is_bridge_validator(self.home_bridge_contract, self.address):
                 self.logger.warning(
-                    f"Can not confirm transaction because {self.address} is not a bridge validator!"
+                    f"Can not confirm transaction because {to_checksum_address(self.address)}"
+                    f"is not a bridge validator!"
                 )
                 continue
 
