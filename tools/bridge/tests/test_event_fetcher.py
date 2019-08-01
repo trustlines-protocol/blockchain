@@ -10,6 +10,15 @@ from time import sleep
 from bridge.event_fetcher import EventFetcher
 
 
+def fetch_all_events(fetcher: EventFetcher):
+    result = []
+    while 1:
+        events = fetcher.fetch_some_events()
+        if not events:
+            return result
+        result.extend(events)
+
+
 @pytest.fixture
 def transfer_event_name():
     """Name of event to fetch from the token ABI"""
@@ -58,6 +67,20 @@ def transfer_event_fetcher_init_kwargs(
         "max_reorg_depth": foreign_chain_max_reorg_depth,
         "start_block_number": foreign_chain_event_fetch_start_block_number,
     }
+
+
+@pytest.fixture
+def make_transfer_event_fetcher(transfer_event_fetcher_init_kwargs):
+    """returns a function that can be used to create an EventFetcher that fetches Transfer events
+
+keyword arguments passed to this function overwrite the defaults from
+the transfer_event_fetcher_init_kwargs fixture
+    """
+
+    def make_fetcher(**kw):
+        return EventFetcher(**{**transfer_event_fetcher_init_kwargs, **kw})
+
+    return make_fetcher
 
 
 @pytest.fixture
@@ -167,49 +190,39 @@ def test_fetch_events_in_range_negative_range(transfer_event_fetcher):
         transfer_event_fetcher.fetch_events_in_range(1, 0)
 
 
-def test_fetch_events_not_seen_ignore_reorg_depth_blocks(
+def test_fetch_events_ignore_last_reorg_depth_blocks(
     transfer_event_fetcher,
     w3_foreign,
-    transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
     foreign_chain_max_reorg_depth,
 ):
-    assert transfer_event_queue.empty()
-
     transfer_tokens_to_foreign_bridge()
 
     assert w3_foreign.eth.blockNumber < foreign_chain_max_reorg_depth
-
-    transfer_event_fetcher.fetch_events_not_seen()
-
-    assert transfer_event_queue.empty()
+    events = fetch_all_events(transfer_event_fetcher)
+    assert len(events) == 0
 
 
-def test_fetch_events_not_seen(
+def test_fetch_some_events(
     transfer_event_fetcher,
     tester_foreign,
-    transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
     foreign_chain_max_reorg_depth,
 ):
-    assert transfer_event_queue.empty()
-
     transfer_tokens_to_foreign_bridge()
     tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
-    transfer_event_fetcher.fetch_events_not_seen()
+    events = fetch_all_events(transfer_event_fetcher)
+    assert len(events) == 1
 
-    assert transfer_event_queue.qsize() == 1
 
-
-def test_fetch_events_not_seen_handle_event_limit_exact_multiplicate(
+@pytest.mark.parametrize("transfer_count", [0, 7, 12, 24, 25, 26, 49, 50, 51])
+def test_fetch_some_events_with_different_transfer_counts(
     transfer_event_fetcher_init_kwargs,
     tester_foreign,
-    transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
     foreign_chain_max_reorg_depth,
+    transfer_count,
 ):
-    assert transfer_event_queue.empty()
-
     reduced_event_fetch_limit = 25
     transfer_event_fetcher = EventFetcher(
         **{
@@ -217,42 +230,13 @@ def test_fetch_events_not_seen_handle_event_limit_exact_multiplicate(
             "event_fetch_limit": reduced_event_fetch_limit,
         }
     )
-    transfer_count = reduced_event_fetch_limit * 2
 
     for i in range(transfer_count):
         transfer_tokens_to_foreign_bridge()
 
     tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
-    transfer_event_fetcher.fetch_events_not_seen()
-
-    assert transfer_event_queue.qsize() == transfer_count
-
-
-def test_fetch_events_not_seen_handle_event_limit_not_exact_multiplicate(
-    transfer_event_fetcher_init_kwargs,
-    tester_foreign,
-    transfer_event_queue,
-    transfer_tokens_to_foreign_bridge,
-    foreign_chain_max_reorg_depth,
-):
-    assert transfer_event_queue.empty()
-
-    reduced_event_fetch_limit = 25
-    transfer_event_fetcher = EventFetcher(
-        **{
-            **transfer_event_fetcher_init_kwargs,
-            "event_fetch_limit": reduced_event_fetch_limit,
-        }
-    )
-    transfer_count = reduced_event_fetch_limit + 1
-
-    for i in range(transfer_count):
-        transfer_tokens_to_foreign_bridge()
-
-    tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
-    transfer_event_fetcher.fetch_events_not_seen()
-
-    assert transfer_event_queue.qsize() == transfer_count
+    events = fetch_all_events(transfer_event_fetcher)
+    assert len(events) == transfer_count
 
 
 def test_fetch_events_not_seen_apply_start_block_number(

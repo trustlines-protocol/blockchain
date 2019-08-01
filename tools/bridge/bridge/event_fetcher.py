@@ -72,19 +72,6 @@ class EventFetcher:
 
         return events
 
-    def fetch_events_not_seen(self) -> None:
-        self.logger.debug("Fetch new events.")
-        self.logger.debug(
-            f"Last fetched block number: {self.last_fetched_block_number}."
-        )
-
-        while True:
-            events = self.fetch_some_events()
-            for event in events:
-                self.event_queue.put(event)
-            if not events:
-                return
-
     def fetch_some_events(self) -> List:
         """fetch some events starting from the last_fetched_block_number
 
