@@ -41,7 +41,7 @@ class EventFetcher:
         self.event_fetch_limit = event_fetch_limit
         self.event_queue = event_queue
         self.max_reorg_depth = max_reorg_depth
-        self.last_fetched_block_number = start_block_number
+        self.last_fetched_block_number = start_block_number - 1
 
     def fetch_events_in_range(
         self, from_block_number: int, to_block_number: int

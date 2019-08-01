@@ -239,23 +239,27 @@ def test_fetch_some_events_with_different_transfer_counts(
     assert len(events) == transfer_count
 
 
-def test_fetch_events_not_seen_apply_start_block_number(
-    transfer_event_fetcher,
+def test_fetch_events_with_start_block_number(
     w3_foreign,
     tester_foreign,
-    transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
     foreign_chain_max_reorg_depth,
+    make_transfer_event_fetcher,
 ):
-    assert transfer_event_queue.empty()
 
     transfer_tokens_to_foreign_bridge()
-    transfer_event_fetcher.last_fetched_block_number = w3_foreign.eth.blockNumber
-    transfer_tokens_to_foreign_bridge()
+    event_block_number = w3_foreign.eth.blockNumber
     tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
-    transfer_event_fetcher.fetch_events_not_seen()
 
-    assert transfer_event_queue.qsize() == 1
+    events = fetch_all_events(
+        make_transfer_event_fetcher(start_block_number=event_block_number)
+    )
+    assert len(events) == 1
+
+    events2 = fetch_all_events(
+        make_transfer_event_fetcher(start_block_number=event_block_number + 1)
+    )
+    assert len(events2) == 0
 
 
 def test_fetch_events_continuously(
