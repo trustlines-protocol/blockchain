@@ -1,3 +1,4 @@
+from typing import List
 import pytest
 
 from gevent import monkey
@@ -9,8 +10,8 @@ import gevent
 from bridge.event_fetcher import EventFetcher
 
 
-def fetch_all_events(fetcher: EventFetcher):
-    result = []
+def fetch_all_events(fetcher: EventFetcher) -> List:
+    result: List = []
     while 1:
         events = fetcher.fetch_some_events()
         if not events:
