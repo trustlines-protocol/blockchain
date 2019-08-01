@@ -84,9 +84,9 @@ the transfer_event_fetcher_init_kwargs fixture
 
 
 @pytest.fixture
-def transfer_event_fetcher(transfer_event_fetcher_init_kwargs):
+def transfer_event_fetcher(make_transfer_event_fetcher):
     """Default test instance of the event filter for the token transfer event"""
-    return EventFetcher(**transfer_event_fetcher_init_kwargs)
+    return make_transfer_event_fetcher()
 
 
 @pytest.fixture
@@ -120,30 +120,24 @@ def transfer_tokens_to_foreign_bridge(foreign_bridge_contract, transfer_tokens_t
 
 
 def test_instantiate_event_fetcher_with_negative_event_fetch_limit(
-    transfer_event_fetcher_init_kwargs
+    make_transfer_event_fetcher
 ):
     with pytest.raises(ValueError):
-        return EventFetcher(
-            **{**transfer_event_fetcher_init_kwargs, "event_fetch_limit": -1}
-        )
+        make_transfer_event_fetcher(event_fetch_limit=-1)
 
 
 def test_instantiate_event_fetcher_with_negative_max_reorg_depth(
-    transfer_event_fetcher_init_kwargs
+    make_transfer_event_fetcher
 ):
     with pytest.raises(ValueError):
-        return EventFetcher(
-            **{**transfer_event_fetcher_init_kwargs, "max_reorg_depth": -1}
-        )
+        make_transfer_event_fetcher(max_reorg_depth=-1)
 
 
 def test_instantiate_event_fetcher_with_negative_start_block_number(
-    transfer_event_fetcher_init_kwargs
+    make_transfer_event_fetcher
 ):
     with pytest.raises(ValueError):
-        return EventFetcher(
-            **{**transfer_event_fetcher_init_kwargs, "start_block_number": -1}
-        )
+        make_transfer_event_fetcher(start_block_number=-1)
 
 
 def test_fetch_events_in_range(
@@ -217,18 +211,15 @@ def test_fetch_some_events(
 
 @pytest.mark.parametrize("transfer_count", [0, 7, 12, 24, 25, 26, 49, 50, 51])
 def test_fetch_some_events_with_different_transfer_counts(
-    transfer_event_fetcher_init_kwargs,
+    make_transfer_event_fetcher,
     tester_foreign,
     transfer_tokens_to_foreign_bridge,
     foreign_chain_max_reorg_depth,
     transfer_count,
 ):
     reduced_event_fetch_limit = 25
-    transfer_event_fetcher = EventFetcher(
-        **{
-            **transfer_event_fetcher_init_kwargs,
-            "event_fetch_limit": reduced_event_fetch_limit,
-        }
+    transfer_event_fetcher = make_transfer_event_fetcher(
+        event_fetch_limit=reduced_event_fetch_limit
     )
 
     for i in range(transfer_count):
@@ -263,7 +254,7 @@ def test_fetch_events_with_start_block_number(
 
 
 def test_fetch_events_continuously(
-    transfer_event_fetcher_init_kwargs,
+    make_transfer_event_fetcher,
     tester_foreign,
     transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
@@ -271,9 +262,7 @@ def test_fetch_events_continuously(
     assert transfer_event_queue.empty()
 
     poll_time = 1
-    transfer_event_fetcher = EventFetcher(
-        **{**transfer_event_fetcher_init_kwargs, "max_reorg_depth": 0}
-    )
+    transfer_event_fetcher = make_transfer_event_fetcher(max_reorg_depth=0)
 
     try:
         greenlet = Greenlet.spawn(transfer_event_fetcher.fetch_events, poll_time)
