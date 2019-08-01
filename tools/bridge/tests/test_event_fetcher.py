@@ -4,8 +4,7 @@ from gevent import monkey
 
 monkey.patch_all(thread=False)  # noqa: E702
 
-from gevent import Greenlet
-from time import sleep
+import gevent
 
 from bridge.event_fetcher import EventFetcher
 
@@ -258,27 +257,23 @@ def test_fetch_events_continuously(
     tester_foreign,
     transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
+    spawn,
 ):
     assert transfer_event_queue.empty()
 
-    poll_time = 1
+    poll_time = 0.1
     transfer_event_fetcher = make_transfer_event_fetcher(max_reorg_depth=0)
 
-    try:
-        greenlet = Greenlet.spawn(transfer_event_fetcher.fetch_events, poll_time)
-        transfer_tokens_to_foreign_bridge()
-        sleep(poll_time + 1)
+    spawn(transfer_event_fetcher.fetch_events, poll_time)
+    transfer_tokens_to_foreign_bridge()
+    with gevent.Timeout(poll_time + 0.05):
+        transfer_event_queue.get()
 
-        assert transfer_event_queue.qsize() == 1
-
-        transfer_tokens_to_foreign_bridge()
-        transfer_tokens_to_foreign_bridge()
-        sleep(poll_time + 1)
-
-        assert transfer_event_queue.qsize() == 3
-
-    finally:
-        greenlet.kill()
+    transfer_tokens_to_foreign_bridge()
+    transfer_tokens_to_foreign_bridge()
+    with gevent.Timeout(poll_time + 0.05):
+        transfer_event_queue.get()
+        transfer_event_queue.get()
 
 
 def test_fetch_events_negative_poll_interval(

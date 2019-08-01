@@ -4,7 +4,27 @@ from eth_tester import EthereumTester
 from web3 import Web3, EthereumTesterProvider
 from web3.contract import Contract
 from gevent.queue import Queue
+import gevent.pool
 from deploy_tools import deploy_compiled_contract
+
+
+@pytest.fixture()
+def pool():
+    """return a gevent pool object.
+
+    it will call kill all greenlets in the pool after the test has finished
+    """
+    p = gevent.pool.Pool()
+    yield p
+    p.kill(timeout=0.5)
+
+
+@pytest.fixture()
+def spawn(pool):
+    """spawn a greenlet
+    it will be automatically killed after the test run
+    """
+    return pool.spawn
 
 
 @pytest.fixture
