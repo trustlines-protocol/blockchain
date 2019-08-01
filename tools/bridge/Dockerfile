@@ -1,14 +1,45 @@
-FROM python:3
+# This can be build with the following command:
+#
+#   docker build -t bridge ../.. -f Dockerfile
+#
+# we use an intermediate image to build this image. it will make the resulting
+# image a bit smaller.
 
-WORKDIR /usr/src/app
+FROM ubuntu:18.04 as builder
 
-COPY ./constraints.txt ./tools/bridge/requirements.txt ./tools/bridge/setup.py ./
-COPY ./tools/bridge/bridge/ ./bridge/
+WORKDIR /src
 
-# Remove development dependencies & Install dependencies
-RUN sed -i '/requirements-dev/d' ./requirements.txt && \
-pip install -c constraints.txt pip wheel setuptools && \
-pip install -c constraints.txt -r requirements.txt && \
-pip install -c constraints.txt -e .
+# python needs LANG
+ENV LANG C.UTF-8
+RUN apt-get -y update \
+&& apt-get install -y --no-install-recommends python3 python3-distutils \
+               python3-dev python3-venv git build-essential \
+&& rm -rf /var/lib/apt/lists/*
 
-CMD [ "tlbc-bridge" ]
+
+RUN python3 -m venv /opt/bridge
+ENV PATH "/opt/bridge/bin:${PATH}"
+COPY ./constraints.txt .
+RUN pip install -c constraints.txt pip wheel setuptools
+COPY ./tools/bridge/requirements.txt .
+
+# remove development dependencies from the end of the file
+RUN sed -i -e '/development dependencies/q' requirements.txt
+
+RUN pip install -c constraints.txt -r requirements.txt
+
+COPY ./tools/bridge ./bridge/
+RUN pip install ./bridge/
+
+FROM ubuntu:18.04 as runner
+ENV LANG C.UTF-8
+RUN apt-get update \
+    && apt-get install -y apt-utils python3  \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM runner
+COPY --from=builder /opt/bridge /opt/bridge
+WORKDIR /opt/bridge
+ENV PATH "/opt/bridge/bin:${PATH}"
+
+ENTRYPOINT [ "/opt/bridge/bin/tlbc-bridge" ]
