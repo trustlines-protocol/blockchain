@@ -1,6 +1,6 @@
 import logging
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 from time import sleep
 from web3 import Web3
 from web3.contract import Contract
@@ -45,7 +45,7 @@ class EventFetcher:
 
     def fetch_events_in_range(
         self, from_block_number: int, to_block_number: int
-    ) -> None:
+    ) -> List:
         if from_block_number < 0:
             raise ValueError("Can not fetch events from a negative block number!")
 
@@ -70,8 +70,7 @@ class EventFetcher:
         else:
             self.logger.debug(f"Found {len(events)} events.")
 
-        for event in events:
-            self.event_queue.put(event)
+        return events
 
     def fetch_events_not_seen(self) -> None:
         self.logger.debug("Fetch new events.")
@@ -79,27 +78,35 @@ class EventFetcher:
             f"Last fetched block number: {self.last_fetched_block_number}."
         )
 
-        fetch_until_block_number = max(
-            self.web3.eth.blockNumber - self.max_reorg_depth, 0
-        )
+        while True:
+            events = self.fetch_some_events()
+            for event in events:
+                self.event_queue.put(event)
+            if not events:
+                return
 
-        self.logger.debug(
-            f"Fetch until {fetch_until_block_number} respecting "
-            f"the maximum reorg depth of {self.max_reorg_depth}."
-        )
+    def fetch_some_events(self) -> List:
+        """fetch some events starting from the last_fetched_block_number
 
-        for from_block_number in range(
-            self.last_fetched_block_number + 1,
-            fetch_until_block_number + 1,
-            self.event_fetch_limit,
-        ):
+        This method tries to fetch from consecutive ranges of blocks
+        until it has found some events in a range of blocks or it has
+        reached the head of the chain.
+
+        This method returns an empty list if the caller should wait
+        for new blocks to come in.
+        """
+        while True:
+            from_block_number = self.last_fetched_block_number + 1
+            reorg_safe_block_number = self.web3.eth.blockNumber - self.max_reorg_depth
             to_block_number = min(
-                from_block_number + self.event_fetch_limit - 1, fetch_until_block_number
+                from_block_number + self.event_fetch_limit - 1, reorg_safe_block_number
             )
-
-            self.fetch_events_in_range(from_block_number, to_block_number)
-
-        self.last_fetched_block_number = fetch_until_block_number
+            if to_block_number < from_block_number:
+                return []
+            events = self.fetch_events_in_range(from_block_number, to_block_number)
+            self.last_fetched_block_number = to_block_number
+            if events:
+                return events
 
     def fetch_events(self, poll_interval: int) -> None:
         if poll_interval <= 0:
@@ -110,5 +117,8 @@ class EventFetcher:
         self.logger.debug("Start event fetcher.")
 
         while True:
-            self.fetch_events_not_seen()
-            sleep(poll_interval)
+            events = self.fetch_some_events()
+            for event in events:
+                self.event_queue.put(event)
+            if not events:
+                sleep(poll_interval)

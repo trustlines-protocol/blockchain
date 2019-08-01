@@ -131,14 +131,12 @@ def test_fetch_events_in_range(
     transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
 ):
-    assert transfer_event_queue.empty()
-
     transfer_tokens_to_foreign_bridge()
-    transfer_event_fetcher.fetch_events_in_range(0, w3_foreign.eth.blockNumber)
+    events = transfer_event_fetcher.fetch_events_in_range(0, w3_foreign.eth.blockNumber)
 
-    assert transfer_event_queue.qsize() == 1
+    assert len(events) == 1
 
-    event = transfer_event_queue.get()
+    event = events[0]
 
     assert event["event"] == transfer_event_name
 
@@ -149,12 +147,9 @@ def test_fetch_events_in_range(
 def test_fetch_events_in_range_ignore_not_matching_arguments(
     transfer_event_fetcher, transfer_event_queue, transfer_tokens_to, w3_foreign
 ):
-    assert transfer_event_queue.empty()
-
     transfer_tokens_to("0xbB1046b0Fe450aA48DEafF6Fa474AdBf972840dD")
-    transfer_event_fetcher.fetch_events_in_range(0, w3_foreign.eth.blockNumber)
-
-    assert transfer_event_queue.empty()
+    events = transfer_event_fetcher.fetch_events_in_range(0, w3_foreign.eth.blockNumber)
+    assert len(events) == 0
 
 
 def test_fetch_events_in_range_negative_from_number(transfer_event_fetcher):
