@@ -13,7 +13,9 @@ class TransferHashRecorder:
         self.timestamped_transfer_hashes: List[TimestampedTransferHash] = []
         self.current_timestamp = 0
 
-    def record_transfer_hash(self, timestamp: int, transfer_hash: Hash32) -> None:
+    def record_transfer_hash(
+        self, timestamp: int, transfer_hash: Optional[Hash32]
+    ) -> None:
         """Record an event or record that no further event happened until the given timestamp.
 
         Events or non-events must be recorded in order.
