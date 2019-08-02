@@ -1,8 +1,6 @@
-from typing import List, Set, NamedTuple
+from typing import List, Set, NamedTuple, Optional
 
 from eth_typing import Hash32
-
-from eth_utils import decode_hex
 
 
 class TimestampedTransferHash(NamedTuple):
@@ -11,11 +9,11 @@ class TimestampedTransferHash(NamedTuple):
 
 
 class TransferHashRecorder:
-    def __init__(self):
+    def __init__(self) -> None:
         self.timestamped_transfer_hashes: List[TimestampedTransferHash] = []
         self.current_timestamp = 0
 
-    def record_event(self, timestamp, event):
+    def record_transfer_hash(self, timestamp: int, transfer_hash: Hash32) -> None:
         """Record an event or record that no further event happened until the given timestamp.
 
         Events or non-events must be recorded in order.
@@ -24,9 +22,9 @@ class TransferHashRecorder:
             raise ValueError(f"Tried to apply event out of order")
         self.current_timestamp = timestamp
 
-        if event is not None:
+        if transfer_hash is not None:
             timestamped_transfer_hash = TimestampedTransferHash(
-                timestamp, decode_hex(event["args"]["transferHash"])
+                timestamp, transfer_hash
             )
             self.timestamped_transfer_hashes.append(timestamped_transfer_hash)
 
@@ -75,17 +73,19 @@ class ConfirmationTaskPlanner:
 
         self.transfers_processed_until = 0
 
-    def apply_event(self, timestamp: int, event: dict) -> None:
-        if event["event"] == "Transfer":
+    def apply_transfer_hash(
+        self, event: str, timestamp: int, transfer_hash: Optional[Hash32]
+    ) -> None:
+        if event == "Transfer":
             recorder = self.transfer_event_recorder
-        elif event["event"] == "Confirmation":
+        elif event == "Confirmation":
             recorder = self.confirmation_event_recorder
-        elif event["event"] == "Completion":
+        elif event == "Completion":
             recorder = self.completion_event_recorder
         else:
-            raise ValueError("Got unknown event {event.event}")
+            raise ValueError("Got unknown event {event}")
 
-        recorder.record_event(timestamp, event)
+        recorder.record_transfer_hash(timestamp, transfer_hash)
 
     def get_next_transfer_hashes(self) -> List[Hash32]:
         transfer_time = self.transfer_event_recorder.current_timestamp
