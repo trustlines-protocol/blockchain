@@ -1,13 +1,13 @@
 import pytest
 
 from auction_deploy.core import (
-    deploy_auction_contracts,
     AuctionOptions,
     DeployedAuctionContracts,
-    initialize_auction_contracts,
     decrypt_private_key,
-    whitelist_addresses,
+    deploy_auction_contracts,
+    initialize_auction_contracts,
     missing_whitelisted_addresses,
+    whitelist_addresses,
 )
 
 

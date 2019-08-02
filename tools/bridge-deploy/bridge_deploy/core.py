@@ -1,11 +1,10 @@
 import json
-
 from os import path
 from typing import Dict
+
+from deploy_tools.deploy import deploy_compiled_contract
 from web3 import Web3
 from web3.contract import Contract
-from deploy_tools.deploy import deploy_compiled_contract
-
 
 SCRIPT_DIRECTORY = path.dirname(path.realpath(__file__))
 

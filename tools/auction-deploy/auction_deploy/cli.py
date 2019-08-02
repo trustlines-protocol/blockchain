@@ -2,22 +2,22 @@ from enum import Enum
 
 import click
 import pendulum
-from web3 import Web3, EthereumTesterProvider, Account
 from deploy_tools.deploy import send_function_call_transaction
+from web3 import Account, EthereumTesterProvider, Web3
 
 from auction_deploy.core import (
-    deploy_auction_contracts,
-    initialize_auction_contracts,
-    decrypt_private_key,
-    build_transaction_options,
+    ZERO_ADDRESS,
     AuctionOptions,
+    InvalidAddressException,
+    build_transaction_options,
+    decrypt_private_key,
+    deploy_auction_contracts,
     get_deployed_auction_contracts,
-    whitelist_addresses,
+    initialize_auction_contracts,
+    missing_whitelisted_addresses,
     read_whitelist,
     validate_and_format_address,
-    InvalidAddressException,
-    missing_whitelisted_addresses,
-    ZERO_ADDRESS,
+    whitelist_addresses,
 )
 
 # we need test_provider and test_json_rpc for running the tests in test_cli

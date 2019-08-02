@@ -1,13 +1,12 @@
-import json
 import csv
-import pkg_resources
+import json
 from typing import Dict, NamedTuple, Sequence
 
-from web3.contract import Contract
+import pkg_resources
+from deploy_tools.deploy import deploy_compiled_contract, send_function_call_transaction
 from eth_keyfile import extract_key_from_keyfile
 from eth_utils import is_address, to_checksum_address
-from deploy_tools.deploy import send_function_call_transaction, deploy_compiled_contract
-
+from web3.contract import Contract
 
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 

@@ -1,27 +1,25 @@
-from gevent import monkey
+from gevent import monkey  # isort:skip
 
-monkey.patch_all()  # noqa: E402
+monkey.patch_all()  # noqa: E402 isort:skip
 
 import logging
 import os
 
+import click
 import gevent
 from gevent import Greenlet
 from gevent.queue import Queue
-
-import click
 from toml.decoder import TomlDecodeError
-
-from web3 import Web3, HTTPProvider
+from web3 import HTTPProvider, Web3
 
 from bridge.config import load_config
-from bridge.event_fetcher import EventFetcher
 from bridge.confirmation_sender import ConfirmationSender
-from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI, HOME_BRIDGE_ABI
+from bridge.contract_abis import HOME_BRIDGE_ABI, MINIMAL_ERC20_TOKEN_ABI
 from bridge.contract_validation import (
-    validate_contract_existence,
     get_validator_proxy_contract,
+    validate_contract_existence,
 )
+from bridge.event_fetcher import EventFetcher
 
 
 @click.command()

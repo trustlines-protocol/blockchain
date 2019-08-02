@@ -1,11 +1,11 @@
-import pytest
+from gevent import monkey  # isort:skip
 
-from gevent import monkey
+monkey.patch_all()  # noqa: E402 isort:skip
 
-monkey.patch_all(thread=False)  # noqa: E702
-
-from gevent import Greenlet
 from time import sleep
+
+import pytest
+from gevent import Greenlet
 
 from bridge.event_fetcher import EventFetcher
 

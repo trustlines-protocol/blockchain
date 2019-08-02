@@ -2,11 +2,10 @@ import logging
 from typing import Any, Dict
 
 import gevent
-from gevent.queue import Queue
-
-from web3.contract import Contract
 from eth_keys.datatypes import PrivateKey
-from eth_utils import keccak, int_to_big_endian, to_checksum_address
+from eth_utils import int_to_big_endian, keccak, to_checksum_address
+from gevent.queue import Queue
+from web3.contract import Contract
 
 from bridge.constants import HOME_CHAIN_STEP_DURATION
 from bridge.contract_validation import is_bridge_validator

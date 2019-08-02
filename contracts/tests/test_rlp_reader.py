@@ -1,9 +1,8 @@
 #! pytest
+import eth_tester.exceptions
 import pytest
-
 import rlp
 from web3 import Web3
-import eth_tester.exceptions
 
 
 @pytest.fixture(scope="session")

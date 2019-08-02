@@ -1,8 +1,9 @@
 #! pytest
 
-import pytest
 import eth_tester.exceptions
+import pytest
 from web3.exceptions import MismatchedABI
+
 from .data_generation import make_block_header
 
 

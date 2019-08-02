@@ -1,13 +1,12 @@
-import os
 import json
+import os
 
-import pytest
 import eth_tester
-from eth_utils import to_canonical_address
+import pytest
 from eth_keyfile import create_keyfile_json
+from eth_utils import to_canonical_address
 
 from auction_deploy.core import AuctionOptions
-
 
 # increase eth_tester's GAS_LIMIT
 # Otherwise we can't whitelist enough addresses for the validator auction in one transaction

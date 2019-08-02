@@ -1,23 +1,19 @@
+import os
 from typing import Any, Dict
 
 import toml
-import os
-
+import validators
+from dotenv import load_dotenv
+from eth_keys.constants import SECPK1_N
 from eth_utils import (
-    is_checksum_address,
-    to_canonical_address,
-    is_hex,
-    is_0x_prefixed,
-    decode_hex,
     big_endian_to_int,
+    decode_hex,
+    is_0x_prefixed,
+    is_checksum_address,
+    is_hex,
+    to_canonical_address,
 )
 from eth_utils.toolz import merge
-
-import validators
-
-from eth_keys.constants import SECPK1_N
-
-from dotenv import load_dotenv
 
 load_dotenv()
 

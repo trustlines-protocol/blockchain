@@ -1,10 +1,10 @@
 import logging
-
-from typing import Dict, Any
 from time import sleep
+from typing import Any, Dict
+
+from eth_utils import to_checksum_address
 from web3 import Web3
 from web3.contract import Contract
-from eth_utils import to_checksum_address
 
 
 class EventFetcher:
