@@ -1,16 +1,15 @@
 from collections import namedtuple
 
-import pytest
 import eth_tester
-
-from .deploy_util import (
-    initialize_validator_set,
-    initialize_test_validator_slasher,
-    initialize_deposit_locker,
-)
+import pytest
 from deploy_tools.deploy import wait_for_successful_transaction_receipt
 
 from .data_generation import make_block_header
+from .deploy_util import (
+    initialize_deposit_locker,
+    initialize_test_validator_slasher,
+    initialize_validator_set,
+)
 
 # increase eth_tester's GAS_LIMIT
 # Otherwise we can't whitelist enough addresses in one transaction

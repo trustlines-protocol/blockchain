@@ -1,11 +1,12 @@
 """import private key or keystore file as parity account"""
 
-import sys
+import json
 import os
 import re
-import json
-from eth_account import Account
+import sys
+
 import click
+from eth_account import Account
 
 
 class TrustlinesFiles:

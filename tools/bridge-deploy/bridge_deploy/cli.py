@@ -1,18 +1,17 @@
 import click
-
 from deploy_tools.cli import (
-    jsonrpc_option,
-    keystore_option,
-    gas_option,
-    gas_price_option,
-    nonce_option,
     auto_nonce_option,
     connect_to_json_rpc,
-    retrieve_private_key,
+    gas_option,
+    gas_price_option,
     get_nonce,
+    jsonrpc_option,
+    keystore_option,
+    nonce_option,
+    retrieve_private_key,
 )
 from deploy_tools.deploy import build_transaction_options
-from deploy_tools.files import validate_and_format_address, InvalidAddressException
+from deploy_tools.files import InvalidAddressException, validate_and_format_address
 
 from bridge_deploy.core import (
     deploy_foreign_bridge_contract,

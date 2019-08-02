@@ -1,29 +1,28 @@
 import click
-from web3 import Web3, EthereumTesterProvider
-
-from validator_set_deploy.core import (
-    deploy_validator_set_contract,
-    initialize_validator_set_contract,
-    get_validator_contract,
-    deploy_validator_proxy_contract,
-)
-
 from deploy_tools.cli import (
-    jsonrpc_option,
-    keystore_option,
-    gas_option,
-    gas_price_option,
-    nonce_option,
     auto_nonce_option,
     connect_to_json_rpc,
-    retrieve_private_key,
+    gas_option,
+    gas_price_option,
     get_nonce,
+    jsonrpc_option,
+    keystore_option,
+    nonce_option,
+    retrieve_private_key,
 )
 from deploy_tools.deploy import build_transaction_options
 from deploy_tools.files import (
+    InvalidAddressException,
     read_addresses_in_csv,
     validate_and_format_address,
-    InvalidAddressException,
+)
+from web3 import EthereumTesterProvider, Web3
+
+from validator_set_deploy.core import (
+    deploy_validator_proxy_contract,
+    deploy_validator_set_contract,
+    get_validator_contract,
+    initialize_validator_set_contract,
 )
 
 # we need test_provider and test_json_rpc for running the tests in test_cli

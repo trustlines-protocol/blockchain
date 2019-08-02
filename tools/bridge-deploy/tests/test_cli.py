@@ -1,5 +1,4 @@
 import pytest
-
 from click.testing import CliRunner
 
 from bridge_deploy.cli import main

@@ -1,5 +1,5 @@
-import pytest
 import eth_tester.exceptions
+import pytest
 
 
 def test_update_validators(validator_proxy_contract, system_address, accounts):

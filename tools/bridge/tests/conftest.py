@@ -1,10 +1,9 @@
 import pytest
-
-from eth_tester import EthereumTester
-from web3 import Web3, EthereumTesterProvider
-from web3.contract import Contract
-from gevent.queue import Queue
 from deploy_tools import deploy_compiled_contract
+from eth_tester import EthereumTester
+from gevent.queue import Queue
+from web3 import EthereumTesterProvider, Web3
+from web3.contract import Contract
 
 
 @pytest.fixture

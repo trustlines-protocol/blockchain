@@ -1,7 +1,7 @@
-from web3 import Web3
-from web3.contract import Contract
-from web3._utils.abi import abi_to_signature
 from eth_utils import to_checksum_address
+from web3 import Web3
+from web3._utils.abi import abi_to_signature
+from web3.contract import Contract
 
 from bridge.contract_abis import MINIMAL_VALIDATOR_PROXY_ABI
 

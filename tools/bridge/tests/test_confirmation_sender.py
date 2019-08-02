@@ -1,17 +1,11 @@
-import pytest
-
 import gevent
-from gevent.queue import Queue
-
-from hexbytes import HexBytes
-
-from web3.datastructures import AttributeDict
-
+import pytest
 import rlp
-
 from eth.vm.forks.spurious_dragon.transactions import SpuriousDragonTransaction
-
 from eth_utils import decode_hex, keccak
+from gevent.queue import Queue
+from hexbytes import HexBytes
+from web3.datastructures import AttributeDict
 
 from bridge.confirmation_sender import ConfirmationSender
 from bridge.constants import HOME_CHAIN_STEP_DURATION

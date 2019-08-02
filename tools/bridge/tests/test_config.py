@@ -1,13 +1,12 @@
 import pytest
-
 from toolz import dissoc
 
 from bridge.config import (
+    validate_checksum_address,
     validate_config,
-    validate_rpc_url,
     validate_non_negative_integer,
     validate_positive_float,
-    validate_checksum_address,
+    validate_rpc_url,
 )
 
 

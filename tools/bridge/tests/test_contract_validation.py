@@ -1,8 +1,7 @@
 import pytest
 
 from bridge.contract_abis import HOME_BRIDGE_ABI
-from bridge.contract_validation import validate_contract_existence, is_bridge_validator
-
+from bridge.contract_validation import is_bridge_validator, validate_contract_existence
 
 FAKE_ERC20_TOKEN_ABI = [
     {"anonymous": False, "inputs": [], "name": "FakeEvent", "type": "event"}

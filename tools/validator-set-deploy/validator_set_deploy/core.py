@@ -1,11 +1,11 @@
 from typing import Dict
 
-from web3.contract import Contract
 from deploy_tools.deploy import (
     deploy_compiled_contract,
     load_contracts_json,
     send_function_call_transaction,
 )
+from web3.contract import Contract
 
 
 def deploy_validator_set_contract(
