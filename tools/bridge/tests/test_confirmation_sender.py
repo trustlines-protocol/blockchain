@@ -110,7 +110,6 @@ def test_transfer_hash_computation(confirmation_sender, transfer_event):
 
 
 def test_transaction_preparation(
-    foreign_bridge_contract,
     confirmation_sender,
     validator_address,
     gas_price,

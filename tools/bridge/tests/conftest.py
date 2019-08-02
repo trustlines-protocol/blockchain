@@ -133,9 +133,7 @@ def system_address(accounts):
 
 
 @pytest.fixture
-def validator_proxy_contract(
-    deploy_contract_on_chain, w3_home, system_address, accounts
-):
+def validator_proxy_contract(deploy_contract_on_chain, w3_home, system_address):
     """The plain validator proxy contract."""
     contract = deploy_contract_on_chain(
         w3_home, "TestValidatorProxy", constructor_args=([], system_address)

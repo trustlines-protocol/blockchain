@@ -145,7 +145,6 @@ def test_fetch_events_in_range(
     w3_foreign,
     transfer_event_name,
     transfer_event_argument_filter,
-    transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
 ):
     transfer_tokens_to_foreign_bridge()
@@ -162,7 +161,7 @@ def test_fetch_events_in_range(
 
 
 def test_fetch_events_in_range_ignore_not_matching_arguments(
-    transfer_event_fetcher, transfer_event_queue, transfer_tokens_to, w3_foreign
+    transfer_event_fetcher, transfer_tokens_to, w3_foreign
 ):
     transfer_tokens_to("0xbB1046b0Fe450aA48DEafF6Fa474AdBf972840dD")
     events = transfer_event_fetcher.fetch_events_in_range(0, w3_foreign.eth.blockNumber)
@@ -222,7 +221,7 @@ def test_fetch_some_events_with_different_transfer_counts(
         event_fetch_limit=reduced_event_fetch_limit
     )
 
-    for i in range(transfer_count):
+    for _ in range(transfer_count):
         transfer_tokens_to_foreign_bridge()
 
     tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
@@ -255,7 +254,6 @@ def test_fetch_events_with_start_block_number(
 
 def test_fetch_events_continuously(
     make_transfer_event_fetcher,
-    tester_foreign,
     transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
     spawn,
@@ -277,8 +275,6 @@ def test_fetch_events_continuously(
         transfer_event_queue.get()
 
 
-def test_fetch_events_negative_poll_interval(
-    transfer_event_fetcher, transfer_event_queue, transfer_tokens_to_foreign_bridge
-):
+def test_fetch_events_negative_poll_interval(transfer_event_fetcher):
     with pytest.raises(ValueError):
         transfer_event_fetcher.fetch_events(poll_interval=-1)
