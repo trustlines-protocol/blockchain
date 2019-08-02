@@ -3,7 +3,10 @@ eth-utils
 gevent
 toml
 web3
-contract-deploy-tools
 python-dotenv
 validators
+
+# --- development dependencies:
+
+contract-deploy-tools
 -r ../../requirements-dev.txt
