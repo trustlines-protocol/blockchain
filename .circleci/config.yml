@@ -151,6 +151,11 @@ jobs:
           command: |
             pre-commit run -a prettier
 
+      - run:
+          name: Run isort
+          command: |
+            pre-commit run -a isort
+
   run-black:
     executor: ubuntu-builder
     steps:

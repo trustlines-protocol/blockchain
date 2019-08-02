@@ -1,6 +1,6 @@
-from gevent import monkey
+from gevent import monkey  # isort:skip
 
-monkey.patch_all()  # noqa: E402
+monkey.patch_all()  # noqa: E402 isort:skip
 
 import logging
 import os
