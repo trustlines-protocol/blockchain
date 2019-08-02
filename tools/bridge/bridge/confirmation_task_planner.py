@@ -1,6 +1,11 @@
 from typing import List, Set, NamedTuple, Optional
 
+import gevent
+from gevent.queue import Queue
+
 from eth_typing import Hash32
+
+from eth_utils import decode_hex
 
 
 class TimestampedTransferHash(NamedTuple):
@@ -62,7 +67,7 @@ class TransferHashRecorder:
         ]
 
 
-class ConfirmationTaskPlanner:
+class TransferHashCollector:
     def __init__(self, home_look_ahead: int, history_length: int) -> None:
         self.transfer_event_recorder = TransferHashRecorder()
         self.confirmation_event_recorder = TransferHashRecorder()
@@ -97,7 +102,7 @@ class ConfirmationTaskPlanner:
         home_time = min(confirmation_time, completion_time)
 
         start_time = self.transfers_processed_until
-        end_time = home_time - self.home_look_ahead
+        end_time = min(home_time - self.home_look_ahead, transfer_time)
 
         transfer_hashes = self.transfer_event_recorder.get_transfer_hashes(
             start_time=start_time, end_time=end_time
@@ -156,3 +161,51 @@ class ConfirmationTaskPlanner:
         )
         self.recently_processed_transfer_hashes -= cleared_transfer_hashes
         self.recently_processed_transfer_hashes -= processed_transfer_hashes
+
+
+class ConfirmationTaskPlanner:
+    def __init__(
+        self,
+        transfer_event_queue: Queue,
+        confirmation_event_queue: Queue,
+        completion_event_queue: Queue,
+        confirmation_task_queue: Queue,
+        home_look_ahead: int,
+        history_length: int,
+    ) -> None:
+        self.transfer_event_queue = transfer_event_queue
+        self.confirmation_event_queue = confirmation_event_queue
+        self.completion_event_queue = completion_event_queue
+
+        self.confirmation_task_queue = confirmation_task_queue
+
+        self.collector = TransferHashCollector(home_look_ahead, history_length)
+
+    def run(self) -> None:
+        try:
+            greenlets = [
+                gevent.run(self.process_events, self.transfer_event_queue),
+                gevent.run(self.process_events, self.confirmation_event_queue),
+                gevent.run(self.process_events, self.completion_event_queue),
+            ]
+        finally:
+            for greenlet in greenlets:
+                gevent.kill(greenlet)
+
+    def process_events(self, queue: Queue) -> None:
+        while True:
+            event = queue.get()
+            self.apply_event(event)
+            for transfer_hash in self.collector.get_next_transfer_hashes():
+                self.confirmation_task_queue.put(transfer_hash)
+            self.collector.clear_history()
+
+    def apply_event(self, event: dict) -> None:
+        # TODO: handle artificial events
+        event_name = event["event"]
+        if event_name not in ("Transfer", "Confirmation", "Completion"):
+            raise ValueError(f"Got unknown event {event_name}")
+
+        timestamp = 0  # TODO: get timestamp from queue
+        transfer_hash = Hash32(decode_hex(event["args"]["transferHash"]))
+        self.collector.apply_transfer_hash(event_name, timestamp, transfer_hash)
