@@ -17,8 +17,10 @@ RELEASE_TIMESTAMP_OFFSET = 3600 * 24 * 180
 
 
 def remove_click_options_environment_variables():
-    """remove the environment variables used by click options in the CLI.
-    Otherwise they will interfere with the tests
+    """Remove the environment variables used by click options in the CLI.
+    Otherwise they will interfere with the tests.
+    Mark that environment variables related to options provided by the deploy
+    tools are already removed due to the plugin.
     """
     for env_var in list(os.environ.keys()):
         if env_var.startswith("AUCTION_DEPLOY_"):

@@ -1,11 +1,11 @@
-import csv
-import json
 from typing import Dict, NamedTuple, Sequence
 
-import pkg_resources
-from deploy_tools.deploy import deploy_compiled_contract, send_function_call_transaction
-from eth_keyfile import extract_key_from_keyfile
-from eth_utils import is_address, to_checksum_address
+from deploy_tools.deploy import (
+    deploy_compiled_contract,
+    increase_transaction_options_nonce,
+    load_contracts_json,
+    send_function_call_transaction,
+)
 from web3.contract import Contract
 
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
@@ -25,38 +25,6 @@ class DeployedAuctionContracts(NamedTuple):
     auction: Contract
 
 
-def load_contracts_json() -> Dict:
-    resource_package = __name__
-    json_string = pkg_resources.resource_string(resource_package, "contracts.json")
-    return json.loads(json_string)
-
-
-def decrypt_private_key(keystore_path: str, password: str) -> bytes:
-    return extract_key_from_keyfile(keystore_path, password.encode("utf-8"))
-
-
-def build_transaction_options(*, gas, gas_price, nonce):
-
-    transaction_options = {}
-
-    if gas is not None:
-        transaction_options["gas"] = gas
-    if gas_price is not None:
-        transaction_options["gasPrice"] = gas_price
-    if nonce is not None:
-        transaction_options["nonce"] = nonce
-
-    return transaction_options
-
-
-def increase_transaction_options_nonce(transaction_options: Dict) -> None:
-    """Increases the nonce inside of `transaction_options` by 1 if present.
-    If there is no nonce in `transaction_options`, this function will not do anything
-    """
-    if "nonce" in transaction_options:
-        transaction_options["nonce"] = transaction_options["nonce"] + 1
-
-
 def deploy_auction_contracts(
     *,
     web3,
@@ -68,7 +36,7 @@ def deploy_auction_contracts(
     if transaction_options is None:
         transaction_options = {}
 
-    compiled_contracts = load_contracts_json()
+    compiled_contracts = load_contracts_json(__name__)
 
     deposit_locker_abi = compiled_contracts["DepositLocker"]["abi"]
     deposit_locker_bin = compiled_contracts["DepositLocker"]["bytecode"]
@@ -157,7 +125,7 @@ def get_deployed_auction_contracts(
     web3, auction_address: str
 ) -> DeployedAuctionContracts:
 
-    compiled_contracts = load_contracts_json()
+    compiled_contracts = load_contracts_json(__name__)
 
     auction_abi = compiled_contracts["ValidatorAuction"]["abi"]
     locker_abi = compiled_contracts["DepositLocker"]["abi"]
@@ -233,26 +201,3 @@ def missing_whitelisted_addresses(
         for address in whitelist
         if not auction_contract.functions.whitelist(address).call()
     ]
-
-
-class InvalidAddressException(Exception):
-    pass
-
-
-def validate_and_format_address(address):
-    """Validates the address and formats it into the internal format
-    Will raise `InvalidAddressException, if the address is invalid"""
-    if is_address(address):
-        return to_checksum_address(address)
-    else:
-        raise InvalidAddressException()
-
-
-def read_whitelist(file_path: str):
-    with open(file_path) as f:
-        reader = csv.reader(f)
-        addresses = []
-        for line in reader:
-            address = validate_and_format_address(line[0])
-            addresses.append(address)
-        return addresses
