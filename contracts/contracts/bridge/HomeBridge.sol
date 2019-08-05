@@ -25,7 +25,7 @@ contract HomeBridge {
     );
 
     mapping(bytes32 => TransferState) public transferState;
-    ValidatorProxy validatorProxy;
+    ValidatorProxy public validatorProxy;
     uint public validatorsRequiredPercent;
 
     constructor(ValidatorProxy _proxy, uint _validatorsRequiredPercent) public {

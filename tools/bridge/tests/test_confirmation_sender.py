@@ -1,17 +1,11 @@
-import pytest
-
 import gevent
-from gevent.queue import Queue
-
-from hexbytes import HexBytes
-
-from web3.datastructures import AttributeDict
-
+import pytest
 import rlp
-
 from eth.vm.forks.spurious_dragon.transactions import SpuriousDragonTransaction
-
 from eth_utils import decode_hex, keccak
+from gevent.queue import Queue
+from hexbytes import HexBytes
+from web3.datastructures import AttributeDict
 
 from bridge.confirmation_sender import ConfirmationSender
 from bridge.constants import HOME_CHAIN_STEP_DURATION
@@ -24,20 +18,6 @@ from bridge.constants import HOME_CHAIN_STEP_DURATION
 def transfer_queue():
     """Transfer event queue used by the confirmation sender."""
     return Queue()
-
-
-@pytest.fixture
-def validator_account_and_key(proxy_validator_accounts_and_keys):
-    """Address and private key of the validator running the confirmation sender."""
-    accounts, keys = proxy_validator_accounts_and_keys
-    return accounts[0], keys[0]
-
-
-@pytest.fixture
-def validator_address(validator_account_and_key):
-    """Address of the validator running the confirmation sender."""
-    account, _ = validator_account_and_key
-    return account
 
 
 @pytest.fixture
@@ -68,6 +48,20 @@ def confirmation_sender(
         transfer_event_queue=transfer_queue,
         home_bridge_contract=home_bridge_contract,
         private_key=validator_key.to_bytes(),
+        gas_price=gas_price,
+        max_reorg_depth=max_reorg_depth,
+    )
+
+
+@pytest.fixture
+def confirmation_sender_with_non_validator_account(
+    transfer_queue, home_bridge_contract, non_validator_key, max_reorg_depth, gas_price
+):
+    """A confirmation sender."""
+    return ConfirmationSender(
+        transfer_event_queue=transfer_queue,
+        home_bridge_contract=home_bridge_contract,
+        private_key=non_validator_key.to_bytes(),
         gas_price=gas_price,
         max_reorg_depth=max_reorg_depth,
     )
@@ -193,3 +187,28 @@ def test_pending_transfers_are_cleared(
     tester_home.mine_blocks(max_reorg_depth - 1)
     gevent.sleep(1.5 * HOME_CHAIN_STEP_DURATION)
     assert confirmation_sender.pending_transaction_queue.qsize() == 0
+
+
+def test_do_not_confirm_as_non_bridge_validator(
+    confirmation_sender_with_non_validator_account, transfer_queue, transfer_event
+):
+    # TODO: This could fail in a non-testing environment. RPC requests can take
+    # longer or fail for any other reason. An empty queue at the end isn't
+    # a strong affirmation.
+
+    try:
+        greenlet = gevent.spawn(confirmation_sender_with_non_validator_account.run)
+
+        assert (
+            confirmation_sender_with_non_validator_account.pending_transaction_queue.empty()
+        )
+
+        transfer_queue.put(transfer_event)
+        gevent.sleep(0.1)
+
+        assert (
+            confirmation_sender_with_non_validator_account.pending_transaction_queue.empty()
+        )
+
+    finally:
+        greenlet.kill()

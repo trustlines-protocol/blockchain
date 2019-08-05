@@ -1,24 +1,25 @@
-from gevent import monkey
+from gevent import monkey  # isort:skip
 
-monkey.patch_all()  # noqa: E402
+monkey.patch_all()  # noqa: E402 isort:skip
 
 import logging
 import os
 
+import click
 import gevent
 from gevent import Greenlet
 from gevent.queue import Queue
-
-import click
 from toml.decoder import TomlDecodeError
-
-from web3 import Web3, HTTPProvider
+from web3 import HTTPProvider, Web3
 
 from bridge.config import load_config
-from bridge.event_fetcher import EventFetcher
 from bridge.confirmation_sender import ConfirmationSender
-from bridge.contract_abis import MINIMAL_ERC20_TOKEN_ABI, HOME_BRIDGE_ABI
-from bridge.contract_validator import validate_contract
+from bridge.contract_abis import HOME_BRIDGE_ABI, MINIMAL_ERC20_TOKEN_ABI
+from bridge.contract_validation import (
+    get_validator_proxy_contract,
+    validate_contract_existence,
+)
+from bridge.event_fetcher import EventFetcher
 
 
 @click.command()
@@ -66,12 +67,23 @@ def main(config_path: str) -> None:
     home_bridge_contract = w3_home.eth.contract(
         address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
     )
-    validate_contract(home_bridge_contract)
+    validate_contract_existence(home_bridge_contract)
+
+    validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
+
+    try:
+        validate_contract_existence(validator_proxy_contract)
+
+    except ValueError as error:
+        raise ValueError(
+            f"Serious bridge setup error. The validator proxy contract at the address the home "
+            f"bridge property points to does not exist or is not intact!"
+        ) from error
 
     token_contract = w3_foreign.eth.contract(
         address=config["token_contract_address"], abi=MINIMAL_ERC20_TOKEN_ABI
     )
-    validate_contract(token_contract)
+    validate_contract_existence(token_contract)
 
     transfer_event_queue = Queue()
     transfer_event_fetcher = EventFetcher(

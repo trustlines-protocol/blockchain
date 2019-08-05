@@ -1,7 +1,8 @@
 import logging
-
-from typing import Dict, Any, List
 from time import sleep
+from typing import Any, Dict, List
+
+from eth_utils import to_checksum_address
 from web3 import Web3
 from web3.contract import Contract
 
@@ -31,7 +32,7 @@ class EventFetcher:
             )
 
         self.logger = logging.getLogger(
-            f"bridge.event_fetcher.{contract.address}.{event_name}"
+            f"bridge.event_fetcher.{to_checksum_address(contract.address)}.{event_name}"
         )
 
         self.web3 = web3

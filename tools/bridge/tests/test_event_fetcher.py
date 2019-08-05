@@ -1,11 +1,11 @@
+from gevent import monkey  # isort:skip
+
+monkey.patch_all()  # noqa: E402 isort:skip
+
 from typing import List
-import pytest
-
-from gevent import monkey
-
-monkey.patch_all(thread=False)  # noqa: E702
 
 import gevent
+import pytest
 
 from bridge.event_fetcher import EventFetcher
 

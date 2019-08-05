@@ -1,11 +1,10 @@
-import pytest
-
-from eth_tester import EthereumTester
-from web3 import Web3, EthereumTesterProvider
-from web3.contract import Contract
-from gevent.queue import Queue
 import gevent.pool
+import pytest
 from deploy_tools import deploy_compiled_contract
+from eth_tester import EthereumTester
+from gevent.queue import Queue
+from web3 import EthereumTesterProvider, Web3
+from web3.contract import Contract
 
 
 @pytest.fixture()
@@ -106,10 +105,15 @@ def foreign_bridge_contract(deploy_contract_on_chain, w3_foreign, token_contract
 
 
 @pytest.fixture
-def proxy_validator_accounts_and_keys(accounts, account_keys):
+def number_of_validators():
+    """The total amount of validator accounts"""
+    return 5
+
+
+@pytest.fixture
+def proxy_validator_accounts_and_keys(accounts, account_keys, number_of_validators):
     """Addresses and private keys of the validators in the proxy contract."""
-    num_validators = 5
-    return accounts[:num_validators], account_keys[:num_validators]
+    return accounts[:number_of_validators], account_keys[:number_of_validators]
 
 
 @pytest.fixture
@@ -124,6 +128,40 @@ def proxy_validator_keys(proxy_validator_accounts_and_keys):
     """Private keys of the validators in the proxy contract."""
     _, keys = proxy_validator_accounts_and_keys
     return keys
+
+
+@pytest.fixture
+def validator_account_and_key(proxy_validator_accounts_and_keys):
+    """Address and private key of the validator running the confirmation sender."""
+    accounts, keys = proxy_validator_accounts_and_keys
+    return accounts[0], keys[0]
+
+
+@pytest.fixture
+def validator_address(validator_account_and_key):
+    """Address of the validator running the confirmation sender."""
+    account, _ = validator_account_and_key
+    return account
+
+
+@pytest.fixture
+def non_validator_account_and_key(accounts, account_keys, number_of_validators):
+    """Address and private key of an account which is not part of the validator set"""
+    return accounts[number_of_validators], account_keys[number_of_validators]
+
+
+@pytest.fixture
+def non_validator_address(non_validator_account_and_key):
+    """Address of an account which is not part of the validator set"""
+    account, _ = non_validator_account_and_key
+    return account
+
+
+@pytest.fixture
+def non_validator_key(non_validator_account_and_key):
+    """Private key of an account which is not part of the validator set"""
+    _, key = non_validator_account_and_key
+    return key
 
 
 @pytest.fixture

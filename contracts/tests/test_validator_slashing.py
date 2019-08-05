@@ -1,7 +1,8 @@
 #! pytest
 
-import pytest
 import eth_tester.exceptions
+import pytest
+
 from .data_generation import make_block_header
 
 

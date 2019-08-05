@@ -74,6 +74,7 @@ contract TrustlinesNetworkToken {
             "ERC20: approve only to or from 0 value"
         );
         _approve(msg.sender, spender, value);
+        return true;
     }
 
     function transferFrom(address sender, address recipient, uint256 amount)
@@ -87,6 +88,7 @@ contract TrustlinesNetworkToken {
         if (_allowance < MAX_UINT) {
             _approve(sender, msg.sender, updatedAllowance);
         }
+        return true;
     }
 
     function burn(uint256 amount) public {
