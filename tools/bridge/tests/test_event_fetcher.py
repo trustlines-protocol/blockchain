@@ -7,16 +7,16 @@ from typing import List
 import gevent
 import pytest
 
-from bridge.event_fetcher import EventFetcher
+from bridge.event_fetcher import EventBatch, EventFetcher
 
 
-def fetch_all_events(fetcher: EventFetcher) -> List:
-    result: List = []
+def fetch_all_event_batches(fetcher: EventFetcher) -> List:
+    result: List[EventBatch] = []
     while 1:
-        events = fetcher.fetch_some_events()
-        if not events:
+        event_batches = fetcher.fetch_some_event_batches()
+        if event_batches is None:
             return result
-        result.extend(events)
+        result.extend(event_batches)
 
 
 @pytest.fixture
@@ -49,7 +49,7 @@ def transfer_event_fetcher_init_kwargs(
     token_contract,
     transfer_event_name,
     transfer_event_argument_filter,
-    transfer_event_queue,
+    transfer_event_batch_queue,
     foreign_chain_max_reorg_depth,
     foreign_chain_event_fetch_start_block_number,
 ):
@@ -63,7 +63,7 @@ def transfer_event_fetcher_init_kwargs(
         "contract": token_contract,
         "event_name": transfer_event_name,
         "event_argument_filter": transfer_event_argument_filter,
-        "event_queue": transfer_event_queue,
+        "event_batch_queue": transfer_event_batch_queue,
         "max_reorg_depth": foreign_chain_max_reorg_depth,
         "start_block_number": foreign_chain_event_fetch_start_block_number,
     }
@@ -192,11 +192,11 @@ def test_fetch_events_ignore_last_reorg_depth_blocks(
     transfer_tokens_to_foreign_bridge()
 
     assert w3_foreign.eth.blockNumber < foreign_chain_max_reorg_depth
-    events = fetch_all_events(transfer_event_fetcher)
-    assert len(events) == 0
+    event_batches = fetch_all_event_batches(transfer_event_fetcher)
+    assert len(event_batches) == 0
 
 
-def test_fetch_some_events(
+def test_fetch_some_event_batches(
     transfer_event_fetcher,
     tester_foreign,
     transfer_tokens_to_foreign_bridge,
@@ -204,12 +204,13 @@ def test_fetch_some_events(
 ):
     transfer_tokens_to_foreign_bridge()
     tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
-    events = fetch_all_events(transfer_event_fetcher)
-    assert len(events) == 1
+    event_batches = fetch_all_event_batches(transfer_event_fetcher)
+    assert len(event_batches) == 1
+    assert len(event_batches[0].events) == 1
 
 
-@pytest.mark.parametrize("transfer_count", [0, 7, 12, 24, 25, 26, 49, 50, 51])
-def test_fetch_some_events_with_different_transfer_counts(
+@pytest.mark.parametrize("transfer_count", [1, 7, 12, 24, 25, 26, 49, 50, 51])
+def test_fetch_some_event_batches_with_different_transfer_counts(
     make_transfer_event_fetcher,
     tester_foreign,
     transfer_tokens_to_foreign_bridge,
@@ -225,8 +226,10 @@ def test_fetch_some_events_with_different_transfer_counts(
         transfer_tokens_to_foreign_bridge()
 
     tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
-    events = fetch_all_events(transfer_event_fetcher)
-    assert len(events) == transfer_count
+    event_batches = fetch_all_event_batches(transfer_event_fetcher)
+    assert len(event_batches) == transfer_count
+    for event_batch in event_batches:
+        assert len(event_batch.events) == 1
 
 
 def test_fetch_events_with_start_block_number(
@@ -241,24 +244,25 @@ def test_fetch_events_with_start_block_number(
     event_block_number = w3_foreign.eth.blockNumber
     tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
 
-    events = fetch_all_events(
+    event_batches = fetch_all_event_batches(
         make_transfer_event_fetcher(start_block_number=event_block_number)
     )
-    assert len(events) == 1
+    assert len(event_batches) == 1
+    assert len(event_batches[0].events) == 1
 
-    events2 = fetch_all_events(
+    event_batches2 = fetch_all_event_batches(
         make_transfer_event_fetcher(start_block_number=event_block_number + 1)
     )
-    assert len(events2) == 0
+    assert len(event_batches2) == 0
 
 
 def test_fetch_events_continuously(
     make_transfer_event_fetcher,
-    transfer_event_queue,
+    transfer_event_batch_queue,
     transfer_tokens_to_foreign_bridge,
     spawn,
 ):
-    assert transfer_event_queue.empty()
+    assert transfer_event_batch_queue.empty()
 
     poll_time = 0.1
     transfer_event_fetcher = make_transfer_event_fetcher(max_reorg_depth=0)
@@ -266,13 +270,13 @@ def test_fetch_events_continuously(
     spawn(transfer_event_fetcher.fetch_events, poll_time)
     transfer_tokens_to_foreign_bridge()
     with gevent.Timeout(poll_time + 0.05):
-        transfer_event_queue.get()
+        transfer_event_batch_queue.get()
 
     transfer_tokens_to_foreign_bridge()
     transfer_tokens_to_foreign_bridge()
     with gevent.Timeout(poll_time + 0.05):
-        transfer_event_queue.get()
-        transfer_event_queue.get()
+        transfer_event_batch_queue.get()
+        transfer_event_batch_queue.get()
 
 
 def test_fetch_events_negative_poll_interval(transfer_event_fetcher):

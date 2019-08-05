@@ -53,7 +53,7 @@ def w3_home(tester_home):
 
 
 @pytest.fixture
-def transfer_event_queue():
+def transfer_event_batch_queue():
     return Queue()
 
 
