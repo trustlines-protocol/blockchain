@@ -12,26 +12,31 @@ from bridge.confirmation_task_planner import (
 
 @pytest.fixture
 def recorder():
+    """A transfer hash recorder"""
     return TransferHashRecorder()
 
 
 @pytest.fixture
 def transfer_hashes():
+    """A generator that produces an infinite, non-repeatable sequence of hashes."""
     return (int_to_big_endian(counter).rjust(32, b"\x00") for counter in count())
 
 
 @pytest.fixture
 def home_look_ahead():
+    """The home look ahead time of the confirmation task planner."""
     return 5
 
 
 @pytest.fixture
 def history_length():
+    """The history length of the confirmation task planner."""
     return 60
 
 
 @pytest.fixture
 def planner(home_look_ahead, history_length):
+    """A confirmation task planner."""
     return ConfirmationTaskPlanner(
         home_look_ahead=home_look_ahead, history_length=history_length
     )
