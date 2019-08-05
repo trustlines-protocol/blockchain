@@ -1,11 +1,14 @@
-from typing import List, Set, NamedTuple, Optional
+from typing import List, Set, Optional
+
+import attr
 
 from eth_typing import Hash32
 
 
-class TimestampedTransferHash(NamedTuple):
-    timestamp: int
-    transfer_hash: Hash32
+@attr.s
+class TimestampedTransferHash:
+    timestamp: int = attr.ib()
+    transfer_hash: Hash32 = attr.ib()
 
 
 class TransferHashRecorder:
@@ -56,9 +59,9 @@ class TransferHashRecorder:
     def get_transfer_hashes(self, start_time: int, end_time: int) -> List[Hash32]:
         """Return all transfer hashes in a given (inclusive) time interval."""
         return [
-            transfer_hash
-            for timestamp, transfer_hash in self.timestamped_transfer_hashes
-            if start_time <= timestamp <= end_time
+            timestamped_transfer_hash.transfer_hash
+            for timestamped_transfer_hash in self.timestamped_transfer_hashes
+            if start_time <= timestamped_transfer_hash.timestamp <= end_time
         ]
 
 
