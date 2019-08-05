@@ -77,18 +77,31 @@ class ConfirmationSender:
             f"{transfer_event.args['from']} for {transfer_event.args.value} "
             f"coins (nonce {nonce}, chain {self.w3.eth.chainId})"
         )
+
+        # In case one of the preconditions in the smart contract fails, the buildTransaction
+        # function will just fail with a value error and no specific error message.
+        # It's currently not possible to get a usable error message from a live parity node
+        # without actually sending the transaction.
+        # Therefore we just fail with a pretty long error message for the user and hope
+        # for the best.
         try:
+            # Build the transaction. This might fail when one of the asserts in the smart contract applies
             transaction = self.home_bridge_contract.functions.confirmTransfer(
                 self.compute_transfer_hash(transfer_event),
                 transfer_event.transactionHash,
                 transfer_event.args.value,
                 transfer_event.args["from"],
             ).buildTransaction({"gasPrice": self.gas_price, "nonce": nonce})
+
+            # The signing step should not fail, but we want to exit this execution path early,
+            # therefore it's inside the try block
             signed_transaction = self.w3.eth.account.sign_transaction(
                 transaction, self.private_key
             )
+
             return signed_transaction
         except ValueError as e:
+            # Check if the error is (hopefully) from parity
             if "failed due to an exception" in e.args[0]["message"]:
                 self.logger.info(
                     (
@@ -100,7 +113,11 @@ class ConfirmationSender:
                     ),
                     e,
                 )
+
+                # There is an explicit check for None values before sending. See send_confirmation_transactions
                 return None
+
+            # Re-throw all unknown errors
             raise e
 
     def compute_transfer_hash(self, transfer):
