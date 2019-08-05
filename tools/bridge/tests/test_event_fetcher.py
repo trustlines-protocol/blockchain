@@ -2,12 +2,21 @@ from gevent import monkey  # isort:skip
 
 monkey.patch_all()  # noqa: E402 isort:skip
 
-from time import sleep
+from typing import List
 
+import gevent
 import pytest
-from gevent import Greenlet
 
 from bridge.event_fetcher import EventFetcher
+
+
+def fetch_all_events(fetcher: EventFetcher) -> List:
+    result: List = []
+    while 1:
+        events = fetcher.fetch_some_events()
+        if not events:
+            return result
+        result.extend(events)
 
 
 @pytest.fixture
@@ -61,9 +70,23 @@ def transfer_event_fetcher_init_kwargs(
 
 
 @pytest.fixture
-def transfer_event_fetcher(transfer_event_fetcher_init_kwargs):
+def make_transfer_event_fetcher(transfer_event_fetcher_init_kwargs):
+    """returns a function that can be used to create an EventFetcher that fetches Transfer events
+
+keyword arguments passed to this function overwrite the defaults from
+the transfer_event_fetcher_init_kwargs fixture
+    """
+
+    def make_fetcher(**kw):
+        return EventFetcher(**{**transfer_event_fetcher_init_kwargs, **kw})
+
+    return make_fetcher
+
+
+@pytest.fixture
+def transfer_event_fetcher(make_transfer_event_fetcher):
     """Default test instance of the event filter for the token transfer event"""
-    return EventFetcher(**transfer_event_fetcher_init_kwargs)
+    return make_transfer_event_fetcher()
 
 
 @pytest.fixture
@@ -97,30 +120,24 @@ def transfer_tokens_to_foreign_bridge(foreign_bridge_contract, transfer_tokens_t
 
 
 def test_instantiate_event_fetcher_with_negative_event_fetch_limit(
-    transfer_event_fetcher_init_kwargs
+    make_transfer_event_fetcher
 ):
     with pytest.raises(ValueError):
-        return EventFetcher(
-            **{**transfer_event_fetcher_init_kwargs, "event_fetch_limit": -1}
-        )
+        make_transfer_event_fetcher(event_fetch_limit=-1)
 
 
 def test_instantiate_event_fetcher_with_negative_max_reorg_depth(
-    transfer_event_fetcher_init_kwargs
+    make_transfer_event_fetcher
 ):
     with pytest.raises(ValueError):
-        return EventFetcher(
-            **{**transfer_event_fetcher_init_kwargs, "max_reorg_depth": -1}
-        )
+        make_transfer_event_fetcher(max_reorg_depth=-1)
 
 
 def test_instantiate_event_fetcher_with_negative_start_block_number(
-    transfer_event_fetcher_init_kwargs
+    make_transfer_event_fetcher
 ):
     with pytest.raises(ValueError):
-        return EventFetcher(
-            **{**transfer_event_fetcher_init_kwargs, "start_block_number": -1}
-        )
+        make_transfer_event_fetcher(start_block_number=-1)
 
 
 def test_fetch_events_in_range(
@@ -128,17 +145,14 @@ def test_fetch_events_in_range(
     w3_foreign,
     transfer_event_name,
     transfer_event_argument_filter,
-    transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
 ):
-    assert transfer_event_queue.empty()
-
     transfer_tokens_to_foreign_bridge()
-    transfer_event_fetcher.fetch_events_in_range(0, w3_foreign.eth.blockNumber)
+    events = transfer_event_fetcher.fetch_events_in_range(0, w3_foreign.eth.blockNumber)
 
-    assert transfer_event_queue.qsize() == 1
+    assert len(events) == 1
 
-    event = transfer_event_queue.get()
+    event = events[0]
 
     assert event["event"] == transfer_event_name
 
@@ -147,14 +161,11 @@ def test_fetch_events_in_range(
 
 
 def test_fetch_events_in_range_ignore_not_matching_arguments(
-    transfer_event_fetcher, transfer_event_queue, transfer_tokens_to, w3_foreign
+    transfer_event_fetcher, transfer_tokens_to, w3_foreign
 ):
-    assert transfer_event_queue.empty()
-
     transfer_tokens_to("0xbB1046b0Fe450aA48DEafF6Fa474AdBf972840dD")
-    transfer_event_fetcher.fetch_events_in_range(0, w3_foreign.eth.blockNumber)
-
-    assert transfer_event_queue.empty()
+    events = transfer_event_fetcher.fetch_events_in_range(0, w3_foreign.eth.blockNumber)
+    assert len(events) == 0
 
 
 def test_fetch_events_in_range_negative_from_number(transfer_event_fetcher):
@@ -172,145 +183,98 @@ def test_fetch_events_in_range_negative_range(transfer_event_fetcher):
         transfer_event_fetcher.fetch_events_in_range(1, 0)
 
 
-def test_fetch_events_not_seen_ignore_reorg_depth_blocks(
+def test_fetch_events_ignore_last_reorg_depth_blocks(
     transfer_event_fetcher,
     w3_foreign,
-    transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
     foreign_chain_max_reorg_depth,
 ):
-    assert transfer_event_queue.empty()
-
     transfer_tokens_to_foreign_bridge()
 
     assert w3_foreign.eth.blockNumber < foreign_chain_max_reorg_depth
-
-    transfer_event_fetcher.fetch_events_not_seen()
-
-    assert transfer_event_queue.empty()
+    events = fetch_all_events(transfer_event_fetcher)
+    assert len(events) == 0
 
 
-def test_fetch_events_not_seen(
+def test_fetch_some_events(
     transfer_event_fetcher,
     tester_foreign,
-    transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
     foreign_chain_max_reorg_depth,
 ):
-    assert transfer_event_queue.empty()
-
     transfer_tokens_to_foreign_bridge()
     tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
-    transfer_event_fetcher.fetch_events_not_seen()
+    events = fetch_all_events(transfer_event_fetcher)
+    assert len(events) == 1
 
-    assert transfer_event_queue.qsize() == 1
 
-
-def test_fetch_events_not_seen_handle_event_limit_exact_multiplicate(
-    transfer_event_fetcher_init_kwargs,
+@pytest.mark.parametrize("transfer_count", [0, 7, 12, 24, 25, 26, 49, 50, 51])
+def test_fetch_some_events_with_different_transfer_counts(
+    make_transfer_event_fetcher,
     tester_foreign,
-    transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
     foreign_chain_max_reorg_depth,
+    transfer_count,
 ):
-    assert transfer_event_queue.empty()
-
     reduced_event_fetch_limit = 25
-    transfer_event_fetcher = EventFetcher(
-        **{
-            **transfer_event_fetcher_init_kwargs,
-            "event_fetch_limit": reduced_event_fetch_limit,
-        }
+    transfer_event_fetcher = make_transfer_event_fetcher(
+        event_fetch_limit=reduced_event_fetch_limit
     )
-    transfer_count = reduced_event_fetch_limit * 2
 
-    for i in range(transfer_count):
+    for _ in range(transfer_count):
         transfer_tokens_to_foreign_bridge()
 
     tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
-    transfer_event_fetcher.fetch_events_not_seen()
-
-    assert transfer_event_queue.qsize() == transfer_count
-
-
-def test_fetch_events_not_seen_handle_event_limit_not_exact_multiplicate(
-    transfer_event_fetcher_init_kwargs,
-    tester_foreign,
-    transfer_event_queue,
-    transfer_tokens_to_foreign_bridge,
-    foreign_chain_max_reorg_depth,
-):
-    assert transfer_event_queue.empty()
-
-    reduced_event_fetch_limit = 25
-    transfer_event_fetcher = EventFetcher(
-        **{
-            **transfer_event_fetcher_init_kwargs,
-            "event_fetch_limit": reduced_event_fetch_limit,
-        }
-    )
-    transfer_count = reduced_event_fetch_limit + 1
-
-    for i in range(transfer_count):
-        transfer_tokens_to_foreign_bridge()
-
-    tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
-    transfer_event_fetcher.fetch_events_not_seen()
-
-    assert transfer_event_queue.qsize() == transfer_count
+    events = fetch_all_events(transfer_event_fetcher)
+    assert len(events) == transfer_count
 
 
-def test_fetch_events_not_seen_apply_start_block_number(
-    transfer_event_fetcher,
+def test_fetch_events_with_start_block_number(
     w3_foreign,
     tester_foreign,
-    transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
     foreign_chain_max_reorg_depth,
+    make_transfer_event_fetcher,
 ):
-    assert transfer_event_queue.empty()
 
     transfer_tokens_to_foreign_bridge()
-    transfer_event_fetcher.last_fetched_block_number = w3_foreign.eth.blockNumber
-    transfer_tokens_to_foreign_bridge()
+    event_block_number = w3_foreign.eth.blockNumber
     tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
-    transfer_event_fetcher.fetch_events_not_seen()
 
-    assert transfer_event_queue.qsize() == 1
+    events = fetch_all_events(
+        make_transfer_event_fetcher(start_block_number=event_block_number)
+    )
+    assert len(events) == 1
+
+    events2 = fetch_all_events(
+        make_transfer_event_fetcher(start_block_number=event_block_number + 1)
+    )
+    assert len(events2) == 0
 
 
 def test_fetch_events_continuously(
-    transfer_event_fetcher_init_kwargs,
-    tester_foreign,
+    make_transfer_event_fetcher,
     transfer_event_queue,
     transfer_tokens_to_foreign_bridge,
+    spawn,
 ):
     assert transfer_event_queue.empty()
 
-    poll_time = 1
-    transfer_event_fetcher = EventFetcher(
-        **{**transfer_event_fetcher_init_kwargs, "max_reorg_depth": 0}
-    )
+    poll_time = 0.1
+    transfer_event_fetcher = make_transfer_event_fetcher(max_reorg_depth=0)
 
-    try:
-        greenlet = Greenlet.spawn(transfer_event_fetcher.fetch_events, poll_time)
-        transfer_tokens_to_foreign_bridge()
-        sleep(poll_time + 1)
+    spawn(transfer_event_fetcher.fetch_events, poll_time)
+    transfer_tokens_to_foreign_bridge()
+    with gevent.Timeout(poll_time + 0.05):
+        transfer_event_queue.get()
 
-        assert transfer_event_queue.qsize() == 1
-
-        transfer_tokens_to_foreign_bridge()
-        transfer_tokens_to_foreign_bridge()
-        sleep(poll_time + 1)
-
-        assert transfer_event_queue.qsize() == 3
-
-    finally:
-        greenlet.kill()
+    transfer_tokens_to_foreign_bridge()
+    transfer_tokens_to_foreign_bridge()
+    with gevent.Timeout(poll_time + 0.05):
+        transfer_event_queue.get()
+        transfer_event_queue.get()
 
 
-def test_fetch_events_negative_poll_interval(
-    transfer_event_fetcher, transfer_event_queue, transfer_tokens_to_foreign_bridge
-):
+def test_fetch_events_negative_poll_interval(transfer_event_fetcher):
     with pytest.raises(ValueError):
         transfer_event_fetcher.fetch_events(poll_interval=-1)
