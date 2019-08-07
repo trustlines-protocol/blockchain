@@ -26,19 +26,19 @@ class TransferRecorder:
         self.confirmations_synced_until = 0.0
         self.completions_synced_until = 0.0
 
-    def apply_sync_completed(self, event: str, timestamp: float) -> None:
-        if event == TRANSFER_EVENT_NAME:
+    def apply_sync_completed(self, event_name: str, timestamp: float) -> None:
+        if event_name == TRANSFER_EVENT_NAME:
             pass
-        elif event == CONFIRMATION_EVENT_NAME:
+        elif event_name == CONFIRMATION_EVENT_NAME:
             if timestamp < self.confirmations_synced_until:
                 raise ValueError("Sync time must never decrease")
             self.confirmations_synced_until = timestamp
-        elif event == COMPLETION_EVENT_NAME:
+        elif event_name == COMPLETION_EVENT_NAME:
             if timestamp < self.completions_synced_until:
                 raise ValueError("Sync time must never decrease")
             self.completions_synced_until = timestamp
         else:
-            raise ValueError(f"Got unknown event {event}")
+            raise ValueError(f"Got unknown event {event_name}")
 
     def apply_event(self, event: AttributeDict) -> None:
         event_name = event.event
