@@ -13,6 +13,8 @@ from bridge.constants import (
 
 class TransferRecorder:
     def __init__(self, sync_persistence_time: float) -> None:
+        if sync_persistence_time < 0:
+            raise ValueError("Sync persistence time must not be negative")
         self.sync_persistence_time = sync_persistence_time
 
         self.transfer_events: Dict[Hash32, AttributeDict] = {}
