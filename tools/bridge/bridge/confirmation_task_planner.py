@@ -4,9 +4,11 @@ from eth_typing import Hash32
 from eth_utils import decode_hex
 from web3.datastructures import AttributeDict
 
-TRANSFER_EVENT_NAME = "Transfer"
-CONFIRMATION_EVENT_NAME = "Confirmation"
-COMPLETION_EVENT_NAME = "TransferCompleted"
+from bridge.constants import (
+    COMPLETION_EVENT_NAME,
+    CONFIRMATION_EVENT_NAME,
+    TRANSFER_EVENT_NAME,
+)
 
 
 class TransferRecorder:

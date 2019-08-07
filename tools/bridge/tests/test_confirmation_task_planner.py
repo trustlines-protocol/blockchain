@@ -5,11 +5,11 @@ from eth_typing import Hash32
 from eth_utils import encode_hex, int_to_big_endian
 from web3.datastructures import AttributeDict
 
-from bridge.confirmation_task_planner import (
+from bridge.confirmation_task_planner import TransferRecorder
+from bridge.constants import (
     COMPLETION_EVENT_NAME,
     CONFIRMATION_EVENT_NAME,
     TRANSFER_EVENT_NAME,
-    TransferRecorder,
 )
 
 
