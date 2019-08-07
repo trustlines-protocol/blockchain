@@ -1,12 +1,11 @@
 from itertools import count
 
 import pytest
-
 from eth_utils import int_to_big_endian
 
 from bridge.confirmation_task_planner import (
-    TransferHashRecorder,
     ConfirmationTaskPlanner,
+    TransferHashRecorder,
 )
 
 

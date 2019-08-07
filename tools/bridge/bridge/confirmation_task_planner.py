@@ -1,7 +1,6 @@
-from typing import List, Set, Optional
+from typing import List, Optional, Set
 
 import attr
-
 from eth_typing import Hash32
 
 
