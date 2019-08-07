@@ -4,7 +4,7 @@ import gevent
 import pytest
 
 from bridge.constants import TRANSFER_EVENT_NAME
-from bridge.event_fetcher import EventFetcher
+from bridge.event_fetcher import EventFetcher, FetcherReachedHeadEvent
 
 
 def fetch_all_events(fetcher: EventFetcher) -> List:
@@ -239,6 +239,22 @@ def test_fetch_events_with_start_block_number(
         make_transfer_event_fetcher(start_block_number=event_block_number + 1)
     )
     assert len(events2) == 0
+
+
+def test_fetch_event_synthetic_sync_event(
+    make_transfer_event_fetcher,
+    transfer_event_queue,
+    transfer_tokens_to_foreign_bridge,
+    spawn,
+):
+    assert transfer_event_queue.empty()
+
+    poll_time = 0.1
+    transfer_event_fetcher = make_transfer_event_fetcher(max_reorg_depth=0)
+    spawn(transfer_event_fetcher.fetch_events, poll_time)
+
+    with gevent.Timeout(poll_time + 0.05):
+        assert isinstance(transfer_event_queue.get(), FetcherReachedHeadEvent)
 
 
 def test_fetch_events_continuously(

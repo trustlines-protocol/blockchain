@@ -9,6 +9,7 @@ from web3.contract import Contract
 
 from bridge.constants import HOME_CHAIN_STEP_DURATION
 from bridge.contract_validation import is_bridge_validator
+from bridge.event_fetcher import FetcherReachedHeadEvent
 
 
 class ConfirmationSender:
@@ -57,6 +58,10 @@ class ConfirmationSender:
     def send_confirmation_transactions(self):
         while True:
             transfer_event = self.transfer_event_queue.get()
+
+            if isinstance(transfer_event, FetcherReachedHeadEvent):
+                # TODO: Needs to be handled
+                continue
 
             if not is_bridge_validator(self.home_bridge_contract, self.address):
                 self.logger.warning(
