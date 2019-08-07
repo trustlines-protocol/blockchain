@@ -10,7 +10,7 @@ from web3.datastructures import AttributeDict
 
 class FetcherReachedHeadEvent:
     def __init__(self):
-        self.timestamp = int(time())
+        self.timestamp = time()
 
 
 class EventFetcher:
