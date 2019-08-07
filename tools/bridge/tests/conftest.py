@@ -1,3 +1,4 @@
+import gevent.monkey
 import gevent.pool
 import pytest
 from deploy_tools import deploy_compiled_contract
@@ -5,6 +6,12 @@ from eth_tester import EthereumTester
 from gevent.queue import Queue
 from web3 import EthereumTesterProvider, Web3
 from web3.contract import Contract
+
+# check if gevent did it's monkeypatching
+if "time" not in gevent.monkey.saved:
+    raise RuntimeError(
+        "cannot run bridge tests without gevent's monkeypatching, please use the pytest wrapper"
+    )
 
 
 @pytest.fixture()
