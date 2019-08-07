@@ -1,11 +1,16 @@
 import logging
-from time import sleep
+from time import sleep, time
 from typing import Any, Dict, List
 
 from eth_utils import to_checksum_address
 from web3 import Web3
 from web3.contract import Contract
 from web3.datastructures import AttributeDict
+
+
+class FetcherReachedHeadEvent:
+    def __init__(self):
+        self.timestamp = int(time())
 
 
 class EventFetcher:
@@ -118,5 +123,7 @@ class EventFetcher:
             events = self.fetch_some_events()
             for event in events:
                 self.event_queue.put(event)
+
             if not events:
+                self.event_queue.put(FetcherReachedHeadEvent())
                 sleep(poll_interval)
