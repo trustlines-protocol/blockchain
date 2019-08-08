@@ -123,20 +123,20 @@ def test_recorder_plans_transfers_if_in_sync(recorder, transfer_event):
     recorder.apply_event(transfer_event)
     recorder.apply_sync_completed(CONFIRMATION_EVENT_NAME, 10)
     recorder.apply_sync_completed(COMPLETION_EVENT_NAME, 10)
-    assert recorder.get_unconfirmed_transfers(10) == [transfer_event]
+    assert recorder.pull_transfers_to_confirm(10) == [transfer_event]
 
 
 def test_recorder_does_not_plan_transfer_if_not_in_sync(recorder, transfer_event):
     recorder.apply_event(transfer_event)
-    assert len(recorder.get_unconfirmed_transfers(10)) == 0
+    assert len(recorder.pull_transfers_to_confirm(10)) == 0
 
 
 def test_recorder_does_not_plan_transfers_twice(recorder, transfer_event):
     recorder.apply_event(transfer_event)
     recorder.apply_sync_completed(CONFIRMATION_EVENT_NAME, 10)
     recorder.apply_sync_completed(COMPLETION_EVENT_NAME, 10)
-    assert recorder.get_unconfirmed_transfers(10) == [transfer_event]
-    assert len(recorder.get_unconfirmed_transfers(10)) == 0
+    assert recorder.pull_transfers_to_confirm(10) == [transfer_event]
+    assert len(recorder.pull_transfers_to_confirm(10)) == 0
 
 
 def test_recorder_does_not_plan_confirmed_transfer(recorder, transfer_hash):
@@ -146,7 +146,7 @@ def test_recorder_does_not_plan_confirmed_transfer(recorder, transfer_hash):
     recorder.apply_event(confirmation_event)
     recorder.apply_sync_completed(CONFIRMATION_EVENT_NAME, 10)
     recorder.apply_sync_completed(COMPLETION_EVENT_NAME, 10)
-    assert len(recorder.get_unconfirmed_transfers(10)) == 0
+    assert len(recorder.pull_transfers_to_confirm(10)) == 0
 
 
 def test_recorder_does_not_plan_completed_transfer(recorder, transfer_hash):
@@ -156,4 +156,4 @@ def test_recorder_does_not_plan_completed_transfer(recorder, transfer_hash):
     recorder.apply_event(completion_event)
     recorder.apply_sync_completed(CONFIRMATION_EVENT_NAME, 10)
     recorder.apply_sync_completed(COMPLETION_EVENT_NAME, 10)
-    assert len(recorder.get_unconfirmed_transfers(10)) == 0
+    assert len(recorder.pull_transfers_to_confirm(10)) == 0

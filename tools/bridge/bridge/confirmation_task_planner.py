@@ -73,7 +73,7 @@ class TransferRecorder:
         for transfer_hash in all_stages_seen:
             self.transfer_events.pop(transfer_hash, None)
 
-    def get_unconfirmed_transfers(self, current_time: float) -> List[AttributeDict]:
+    def pull_transfers_to_confirm(self, current_time: float) -> List[AttributeDict]:
         if not self.is_in_sync(current_time):
             return []
         else:
