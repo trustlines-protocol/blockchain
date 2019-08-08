@@ -68,6 +68,9 @@ class TransferRecorder:
             self.transfer_hashes & self.confirmation_hashes & self.completion_hashes
         )
         self.transfer_hashes -= all_stages_seen
+        self.confirmation_hashes -= all_stages_seen
+        self.completion_hashes -= all_stages_seen
+
         self.scheduled_hashes -= all_stages_seen
 
         for transfer_hash in all_stages_seen:
