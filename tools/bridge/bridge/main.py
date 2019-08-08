@@ -14,6 +14,7 @@ from web3 import HTTPProvider, Web3
 
 from bridge.config import load_config
 from bridge.confirmation_sender import ConfirmationSender
+from bridge.constanst import TRANSFER_EVENT_NAME
 from bridge.contract_abis import HOME_BRIDGE_ABI, MINIMAL_ERC20_TOKEN_ABI
 from bridge.contract_validation import (
     get_validator_proxy_contract,
@@ -89,8 +90,9 @@ def main(config_path: str) -> None:
     transfer_event_fetcher = EventFetcher(
         web3=w3_foreign,
         contract=token_contract,
-        event_name="Transfer",
-        event_argument_filter={"to": config["foreign_bridge_contract_address"]},
+        filter_definition={
+            TRANSFER_EVENT_NAME: {"to": config["foreign_bridge_contract_address"]}
+        },
         event_queue=transfer_event_queue,
         max_reorg_depth=config["foreign_chain_max_reorg_depth"],
         start_block_number=config["foreign_chain_event_fetch_start_block_number"],
