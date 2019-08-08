@@ -25,24 +25,14 @@ class TransferRecorder:
 
         self.scheduled_hashes: Set[Hash32] = set()
 
-        self.confirmations_synced_until = 0.0
-        self.completions_synced_until = 0.0
+        self.home_chain_synced_until = 0.0
 
-    def apply_sync_completed(self, event_name: str, timestamp: float) -> None:
-        if event_name == TRANSFER_EVENT_NAME:
-            pass
-        elif event_name == CONFIRMATION_EVENT_NAME:
-            if timestamp < self.confirmations_synced_until:
-                raise ValueError("Sync time must never decrease")
-            self.confirmations_synced_until = timestamp
-        elif event_name == COMPLETION_EVENT_NAME:
-            if timestamp < self.completions_synced_until:
-                raise ValueError("Sync time must never decrease")
-            self.completions_synced_until = timestamp
-        else:
-            raise ValueError(f"Got unknown event {event_name}")
+    def apply_home_chain_synced_event(self, timestamp: float) -> None:
+        if timestamp < self.home_chain_synced_until:
+            raise ValueError("Sync time must not decrease")
+        self.home_chain_synced_until = timestamp
 
-    def apply_event(self, event: AttributeDict) -> None:
+    def apply_proper_event(self, event: AttributeDict) -> None:
         event_name = event.event
         transfer_hash = Hash32(decode_hex(event.args.transferHash))
         assert len(transfer_hash) == 32
@@ -58,10 +48,7 @@ class TransferRecorder:
             raise ValueError(f"Got unknown event {event}")
 
     def is_in_sync(self, current_time: float) -> bool:
-        synced_until = min(
-            self.confirmations_synced_until, self.completions_synced_until
-        )
-        return current_time <= synced_until + self.sync_persistence_time
+        return current_time <= self.home_chain_synced_until + self.sync_persistence_time
 
     def clear_transfers(self) -> None:
         all_stages_seen = (

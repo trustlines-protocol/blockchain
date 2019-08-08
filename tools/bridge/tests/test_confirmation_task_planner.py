@@ -93,48 +93,33 @@ def recorder(sync_persistence_time):
 
 def test_recorder_is_in_sync_if_home_chain_is_in_sync(recorder, sync_persistence_time):
     assert not recorder.is_in_sync(10)
-    recorder.apply_sync_completed(CONFIRMATION_EVENT_NAME, 10)
-    assert not recorder.is_in_sync(10)
-    recorder.apply_sync_completed(COMPLETION_EVENT_NAME, 10)
+    recorder.apply_home_chain_synced_event(10)
     assert recorder.is_in_sync(10)
-
-
-def test_recorder_remains_in_sync_for_sync_persistence_time(
-    recorder, sync_persistence_time
-):
-    recorder.apply_sync_completed(CONFIRMATION_EVENT_NAME, 10)
-    recorder.apply_sync_completed(
-        COMPLETION_EVENT_NAME, 10 + sync_persistence_time * 0.5
-    )
-    assert recorder.is_in_sync(10 + sync_persistence_time * 0.5 + 0.01)
     assert recorder.is_in_sync(10 + sync_persistence_time - 0.01)
     assert not recorder.is_in_sync(10 + sync_persistence_time + 0.01)
 
 
 def test_sync_time_can_not_be_reduced(recorder):
-    for event_name in [CONFIRMATION_EVENT_NAME, COMPLETION_EVENT_NAME]:
-        recorder.apply_sync_completed(event_name, 2)
-        recorder.apply_sync_completed(event_name, 2)  # this is fine
-        with pytest.raises(ValueError):
-            recorder.apply_sync_completed(event_name, 1)  # this is not
+    recorder.apply_home_chain_synced_event(2)
+    recorder.apply_home_chain_synced_event(2)  # this is fine
+    with pytest.raises(ValueError):
+        recorder.apply_home_chain_synced_event(1)  # this is not
 
 
 def test_recorder_plans_transfers_if_in_sync(recorder, transfer_event):
-    recorder.apply_event(transfer_event)
-    recorder.apply_sync_completed(CONFIRMATION_EVENT_NAME, 10)
-    recorder.apply_sync_completed(COMPLETION_EVENT_NAME, 10)
+    recorder.apply_proper_event(transfer_event)
+    recorder.apply_home_chain_synced_event(10)
     assert recorder.pull_transfers_to_confirm(10) == [transfer_event]
 
 
 def test_recorder_does_not_plan_transfer_if_not_in_sync(recorder, transfer_event):
-    recorder.apply_event(transfer_event)
+    recorder.apply_proper_event(transfer_event)
     assert len(recorder.pull_transfers_to_confirm(10)) == 0
 
 
 def test_recorder_does_not_plan_transfers_twice(recorder, transfer_event):
-    recorder.apply_event(transfer_event)
-    recorder.apply_sync_completed(CONFIRMATION_EVENT_NAME, 10)
-    recorder.apply_sync_completed(COMPLETION_EVENT_NAME, 10)
+    recorder.apply_proper_event(transfer_event)
+    recorder.apply_home_chain_synced_event(10)
     assert recorder.pull_transfers_to_confirm(10) == [transfer_event]
     assert len(recorder.pull_transfers_to_confirm(10)) == 0
 
@@ -142,18 +127,16 @@ def test_recorder_does_not_plan_transfers_twice(recorder, transfer_event):
 def test_recorder_does_not_plan_confirmed_transfer(recorder, transfer_hash):
     transfer_event = get_transfer_hash_event(TRANSFER_EVENT_NAME, transfer_hash)
     confirmation_event = get_transfer_hash_event(CONFIRMATION_EVENT_NAME, transfer_hash)
-    recorder.apply_event(transfer_event)
-    recorder.apply_event(confirmation_event)
-    recorder.apply_sync_completed(CONFIRMATION_EVENT_NAME, 10)
-    recorder.apply_sync_completed(COMPLETION_EVENT_NAME, 10)
+    recorder.apply_proper_event(transfer_event)
+    recorder.apply_proper_event(confirmation_event)
+    recorder.apply_home_chain_synced_event(10)
     assert len(recorder.pull_transfers_to_confirm(10)) == 0
 
 
 def test_recorder_does_not_plan_completed_transfer(recorder, transfer_hash):
     transfer_event = get_transfer_hash_event(TRANSFER_EVENT_NAME, transfer_hash)
     completion_event = get_transfer_hash_event(COMPLETION_EVENT_NAME, transfer_hash)
-    recorder.apply_event(transfer_event)
-    recorder.apply_event(completion_event)
-    recorder.apply_sync_completed(CONFIRMATION_EVENT_NAME, 10)
-    recorder.apply_sync_completed(COMPLETION_EVENT_NAME, 10)
+    recorder.apply_proper_event(transfer_event)
+    recorder.apply_proper_event(completion_event)
+    recorder.apply_home_chain_synced_event(10)
     assert len(recorder.pull_transfers_to_confirm(10)) == 0
