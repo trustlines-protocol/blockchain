@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 from eth_utils import to_checksum_address
 from web3 import Web3
 from web3.contract import Contract
+from web3.datastructures import AttributeDict
 
 
 class EventFetcher:
@@ -13,8 +14,7 @@ class EventFetcher:
         *,
         web3: Web3,
         contract: Contract,
-        event_name: str,
-        event_argument_filter: Dict[str, Any],
+        filter_definition: Dict[str, Dict[str, Any]],
         event_fetch_limit: int = 950,
         event_queue: Any,
         max_reorg_depth: int,
@@ -32,13 +32,12 @@ class EventFetcher:
             )
 
         self.logger = logging.getLogger(
-            f"bridge.event_fetcher.{to_checksum_address(contract.address)}.{event_name}"
+            f"bridge.event_fetcher.{to_checksum_address(contract.address)}"
         )
 
         self.web3 = web3
         self.contract = contract
-        self.event_name = event_name
-        self.event_argument_filter = event_argument_filter
+        self.filter_definition = filter_definition
         self.event_fetch_limit = event_fetch_limit
         self.event_queue = event_queue
         self.max_reorg_depth = max_reorg_depth
@@ -60,10 +59,21 @@ class EventFetcher:
             f"Fetch events from block {from_block_number} to {to_block_number}."
         )
 
-        events = self.contract.events[self.event_name].getLogs(
-            fromBlock=from_block_number,
-            toBlock=to_block_number,
-            argument_filters=self.event_argument_filter,
+        events: List[AttributeDict] = []
+        for event_name, argument_filters in self.filter_definition.items():
+            events.extend(
+                self.contract.events[event_name].getLogs(
+                    fromBlock=from_block_number,
+                    toBlock=to_block_number,
+                    argument_filters=argument_filters,
+                )
+            )
+        events.sort(
+            key=lambda event: (
+                event.blockNumber,
+                event.transactionIndex,
+                event.logIndex,
+            )
         )
 
         if len(events) > 0:
