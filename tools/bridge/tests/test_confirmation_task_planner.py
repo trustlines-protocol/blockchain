@@ -1,18 +1,16 @@
 from itertools import count
 
 import pytest
-from eth_utils import int_to_big_endian
+from eth_typing import Hash32
+from eth_utils import encode_hex, int_to_big_endian
+from web3.datastructures import AttributeDict
 
-from bridge.confirmation_task_planner import (
-    ConfirmationTaskPlanner,
-    TransferHashRecorder,
+from bridge.confirmation_task_planner import TransferRecorder
+from bridge.constants import (
+    COMPLETION_EVENT_NAME,
+    CONFIRMATION_EVENT_NAME,
+    TRANSFER_EVENT_NAME,
 )
-
-
-@pytest.fixture
-def recorder():
-    """A transfer hash recorder"""
-    return TransferHashRecorder()
 
 
 @pytest.fixture
@@ -22,112 +20,123 @@ def transfer_hashes():
 
 
 @pytest.fixture
-def home_look_ahead():
-    """The home look ahead time of the confirmation task planner."""
-    return 5
+def transfer_hash(transfer_hashes):
+    """A single transfer hash."""
+    return next(transfer_hashes)
 
 
-@pytest.fixture
-def history_length():
-    """The history length of the confirmation task planner."""
-    return 60
-
-
-@pytest.fixture
-def planner(home_look_ahead, history_length):
-    """A confirmation task planner."""
-    return ConfirmationTaskPlanner(
-        home_look_ahead=home_look_ahead, history_length=history_length
+def get_transfer_hash_event(event_name: str, transfer_hash: Hash32) -> AttributeDict:
+    return AttributeDict(
+        {
+            "event": event_name,
+            "args": AttributeDict({"transferHash": encode_hex(transfer_hash)}),
+        }
     )
 
 
-def test_recorder_records_hashes(recorder, transfer_hashes):
-    transfer_hash = next(transfer_hashes)
-    assert not recorder.transfer_hash_exists(transfer_hash)
-    recorder.record_transfer_hash(10, transfer_hash)
-    assert recorder.transfer_hash_exists(transfer_hash)
+@pytest.fixture
+def transfer_events(transfer_hashes):
+    """A generator that produces an infinite, non-repeatable sequence of transfer events."""
+    return (
+        get_transfer_hash_event(TRANSFER_EVENT_NAME, transfer_hash)
+        for transfer_hash in transfer_hashes
+    )
 
 
-def test_recorder_updates_time(recorder, transfer_hashes):
-    assert recorder.current_timestamp == 0
-    recorder.record_transfer_hash(10, next(transfer_hashes))
-    assert recorder.current_timestamp == 10
-    recorder.record_transfer_hash(10, None)
-    assert recorder.current_timestamp == 10
-    recorder.record_transfer_hash(15, next(transfer_hashes))
-    assert recorder.current_timestamp == 15
+@pytest.fixture
+def transfer_event(transfer_events):
+    """A single transfer event."""
+    return next(transfer_events)
 
 
-def test_recorder_prevents_out_of_order_events(recorder, transfer_hashes):
-    recorder.record_transfer_hash(10, next(transfer_hashes))
+@pytest.fixture
+def confirmation_events(transfer_hashes):
+    """A generator that produces an infinite, non-repeatable sequence of confirmation events."""
+    return (
+        get_transfer_hash_event(CONFIRMATION_EVENT_NAME, transfer_hash)
+        for transfer_hash in transfer_hashes
+    )
+
+
+@pytest.fixture
+def confirmation_event(confirmation_events):
+    """A single confirmation event."""
+    return next(confirmation_events)
+
+
+@pytest.fixture
+def completion_events(transfer_hashes):
+    """A generator that produces an infinite, non-repeatable sequence of completion events."""
+    return (
+        get_transfer_hash_event(COMPLETION_EVENT_NAME, transfer_hash)
+        for transfer_hash in transfer_hashes
+    )
+
+
+@pytest.fixture
+def completion_event(completion_events):
+    """A single completion event."""
+    return next(completion_events)
+
+
+@pytest.fixture
+def sync_persistence_time():
+    """The time the transfer recorder assumes the sync status will persist."""
+    return 2
+
+
+@pytest.fixture
+def recorder(sync_persistence_time):
+    """A transfer recorder."""
+    return TransferRecorder(sync_persistence_time)
+
+
+def test_recorder_is_in_sync_if_home_chain_is_in_sync(recorder, sync_persistence_time):
+    assert not recorder.is_in_sync(10)
+    recorder.apply_home_chain_synced_event(10)
+    assert recorder.is_in_sync(10)
+    assert recorder.is_in_sync(10 + sync_persistence_time - 0.01)
+    assert not recorder.is_in_sync(10 + sync_persistence_time + 0.01)
+
+
+def test_sync_time_can_not_be_reduced(recorder):
+    recorder.apply_home_chain_synced_event(2)
+    recorder.apply_home_chain_synced_event(2)  # this is fine
     with pytest.raises(ValueError):
-        recorder.record_transfer_hash(9, next(transfer_hashes))
+        recorder.apply_home_chain_synced_event(1)  # this is not
 
 
-def test_recorder_forgets_hashes(recorder, transfer_hashes):
-    transfer_hash = next(transfer_hashes)
-    recorder.record_transfer_hash(10, transfer_hash)
-    recorder.forget_transfer_hash(transfer_hash)
-    assert not recorder.transfer_hash_exists(transfer_hash)
-    assert len(recorder.get_transfer_hashes(10, 10)) == 0
-    assert recorder.current_timestamp == 10
+def test_recorder_plans_transfers_if_in_sync(recorder, transfer_event):
+    recorder.apply_proper_event(transfer_event)
+    recorder.apply_home_chain_synced_event(10)
+    assert recorder.pull_transfers_to_confirm(10) == [transfer_event]
 
 
-def test_recorder_gets_hashes_in_time_interval(recorder, transfer_hashes):
-    transfer_hash_1 = next(transfer_hashes)
-    transfer_hash_2 = next(transfer_hashes)
-    transfer_hash_3 = next(transfer_hashes)
-    recorder.record_transfer_hash(10, transfer_hash_1)
-    recorder.record_transfer_hash(12, transfer_hash_2)
-    recorder.record_transfer_hash(14, transfer_hash_3)
-    assert recorder.get_transfer_hashes(10, 12) == [transfer_hash_1, transfer_hash_2]
+def test_recorder_does_not_plan_transfer_if_not_in_sync(recorder, transfer_event):
+    recorder.apply_proper_event(transfer_event)
+    assert len(recorder.pull_transfers_to_confirm(10)) == 0
 
 
-def test_planner_plans_transfers(planner, transfer_hashes, home_look_ahead):
-    assert planner.get_next_transfer_hashes() == []
-
-    transfer_hash = next(transfer_hashes)
-    planner.apply_transfer_hash("Transfer", 10, transfer_hash)
-    planner.apply_transfer_hash("Confirmation", 10 + home_look_ahead, None)
-    planner.apply_transfer_hash("Completion", 10 + home_look_ahead, None)
-    assert planner.get_next_transfer_hashes() == [transfer_hash]
-    assert planner.get_next_transfer_hashes() == []
+def test_recorder_does_not_plan_transfers_twice(recorder, transfer_event):
+    recorder.apply_proper_event(transfer_event)
+    recorder.apply_home_chain_synced_event(10)
+    assert recorder.pull_transfers_to_confirm(10) == [transfer_event]
+    assert len(recorder.pull_transfers_to_confirm(10)) == 0
 
 
-def test_planner_ignores_transfers_not_in_look_ahead(
-    planner, transfer_hashes, home_look_ahead
-):
-    transfer_hash = next(transfer_hashes)
-    planner.apply_transfer_hash("Transfer", 10, transfer_hash)
-    planner.apply_transfer_hash("Confirmation", 10 + home_look_ahead - 1, None)
-    assert planner.get_next_transfer_hashes() == []
+def test_recorder_does_not_plan_confirmed_transfer(recorder, transfer_hash):
+    transfer_event = get_transfer_hash_event(TRANSFER_EVENT_NAME, transfer_hash)
+    confirmation_event = get_transfer_hash_event(CONFIRMATION_EVENT_NAME, transfer_hash)
+    recorder.apply_proper_event(transfer_event)
+    recorder.apply_proper_event(confirmation_event)
+    recorder.apply_home_chain_synced_event(10)
+    assert len(recorder.pull_transfers_to_confirm(10)) == 0
 
 
-def test_planner_clears_historic_transfers(
-    planner, transfer_hashes, home_look_ahead, history_length
-):
-    forgot_transfer_hash = next(transfer_hashes)
-    remembered_transfer_hash = next(transfer_hashes)
-    planner.apply_transfer_hash("Transfer", 10, forgot_transfer_hash)
-    planner.apply_transfer_hash(
-        "Transfer", 10 + history_length + 1, remembered_transfer_hash
-    )
-    planner.apply_transfer_hash(
-        "Confirmation", 10 + history_length + 1 + home_look_ahead, None
-    )
-    planner.apply_transfer_hash(
-        "Completion", 10 + history_length + 1 + home_look_ahead, None
-    )
-    planner.clear_history()
-    assert planner.get_next_transfer_hashes() == [remembered_transfer_hash]
-
-
-def test_planner_clears_fully_processed_transfers(
-    planner, transfer_hashes, home_look_ahead
-):
-    transfer_hash = next(transfer_hashes)
-    planner.apply_transfer_hash("Transfer", 10, transfer_hash)
-    planner.apply_transfer_hash("Confirmation", 10 + home_look_ahead, transfer_hash)
-    planner.apply_transfer_hash("Completion", 10 + home_look_ahead, transfer_hash)
-    planner.clear_history()
-    assert planner.get_next_transfer_hashes() == []
+def test_recorder_does_not_plan_completed_transfer(recorder, transfer_hash):
+    transfer_event = get_transfer_hash_event(TRANSFER_EVENT_NAME, transfer_hash)
+    completion_event = get_transfer_hash_event(COMPLETION_EVENT_NAME, transfer_hash)
+    recorder.apply_proper_event(transfer_event)
+    recorder.apply_proper_event(completion_event)
+    recorder.apply_home_chain_synced_event(10)
+    assert len(recorder.pull_transfers_to_confirm(10)) == 0
