@@ -2,7 +2,7 @@ import logging
 from time import sleep, time
 from typing import Any, Dict, List
 
-from eth_utils import to_checksum_address
+from eth_utils import is_same_address, to_checksum_address
 from web3 import Web3
 from web3.contract import Contract
 from web3.datastructures import AttributeDict
@@ -66,13 +66,27 @@ class EventFetcher:
 
         events: List[AttributeDict] = []
         for event_name, argument_filters in self.filter_definition.items():
-            events.extend(
-                self.contract.events[event_name].getLogs(
-                    fromBlock=from_block_number,
-                    toBlock=to_block_number,
-                    argument_filters=argument_filters,
-                )
+            fetched_events = self.contract.events[event_name].getLogs(
+                fromBlock=from_block_number,
+                toBlock=to_block_number,
+                argument_filters=argument_filters,
             )
+            # hack until validator event argument is indexed
+            if "validator" in argument_filters:
+                fetched_events = [
+                    event
+                    for event in fetched_events
+                    if is_same_address(
+                        event.args.validator, argument_filters["validator"]
+                    )
+                ]
+            events += fetched_events
+
+            if len(fetched_events) > 0:
+                self.logger.info(f"Found {len(fetched_events)} {event_name} events.")
+            else:
+                self.logger.debug(f"Found {len(fetched_events)} {event_name} events.")
+
         events.sort(
             key=lambda event: (
                 event.blockNumber,
@@ -80,11 +94,6 @@ class EventFetcher:
                 event.logIndex,
             )
         )
-
-        if len(events) > 0:
-            self.logger.info(f"Found {len(events)} events.")
-        else:
-            self.logger.debug(f"Found {len(events)} events.")
 
         return events
 

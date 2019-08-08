@@ -89,7 +89,8 @@ def main(config_path: str) -> None:
         ) from error
 
     token_contract = w3_foreign.eth.contract(
-        address=config["token_contract_address"], abi=MINIMAL_ERC20_TOKEN_ABI
+        address=config["foreign_chain_token_contract_address"],
+        abi=MINIMAL_ERC20_TOKEN_ABI,
     )
     validate_contract_existence(token_contract)
 

@@ -1,9 +1,9 @@
+import logging
 import time
 from typing import Dict, List, Set
 
 import gevent
 from eth_typing import Hash32
-from eth_utils import decode_hex
 from gevent.queue import Queue
 from web3.datastructures import AttributeDict
 
@@ -13,6 +13,7 @@ from bridge.constants import (
     TRANSFER_EVENT_NAME,
 )
 from bridge.event_fetcher import FetcherReachedHeadEvent
+from bridge.utils import compute_transfer_hash
 
 
 class TransferRecorder:
@@ -38,15 +39,18 @@ class TransferRecorder:
 
     def apply_proper_event(self, event: AttributeDict) -> None:
         event_name = event.event
-        transfer_hash = Hash32(decode_hex(event.args.transferHash))
-        assert len(transfer_hash) == 32
 
         if event_name == TRANSFER_EVENT_NAME:
+            transfer_hash = compute_transfer_hash(event)
             self.transfer_hashes.add(transfer_hash)
             self.transfer_events[transfer_hash] = event
         elif event_name == CONFIRMATION_EVENT_NAME:
+            transfer_hash = Hash32(bytes(event.args.transferHash))
+            assert len(transfer_hash) == 32
             self.confirmation_hashes.add(transfer_hash)
         elif event_name == COMPLETION_EVENT_NAME:
+            transfer_hash = Hash32(bytes(event.args.transferHash))
+            assert len(transfer_hash) == 32
             self.completion_hashes.add(transfer_hash)
         else:
             raise ValueError(f"Got unknown event {event}")
@@ -69,7 +73,7 @@ class TransferRecorder:
 
     def pull_transfers_to_confirm(self, current_time: float) -> List[AttributeDict]:
         if not self.is_in_sync(current_time):
-            return []
+            confirmation_tasks = []
         else:
             unconfirmed_transfer_hashes = (
                 self.transfer_hashes
@@ -78,10 +82,13 @@ class TransferRecorder:
                 - self.scheduled_hashes
             )
             self.scheduled_hashes |= unconfirmed_transfer_hashes
-            return [
+            confirmation_tasks = [
                 self.transfer_events[transfer_hash]
                 for transfer_hash in unconfirmed_transfer_hashes
             ]
+
+        self.clear_transfers()
+        return confirmation_tasks
 
 
 class ConfirmationTaskPlanner:
@@ -92,6 +99,10 @@ class ConfirmationTaskPlanner:
         home_bridge_event_queue: Queue,
         confirmation_task_queue: Queue,
     ) -> None:
+        self.logger = logging.getLogger(
+            "bridge.confirmation_task_planner.ConfirmationTaskPlanner"
+        )
+
         self.recorder = TransferRecorder(sync_persistence_time)
 
         self.transfer_event_queue = transfer_event_queue
@@ -100,17 +111,15 @@ class ConfirmationTaskPlanner:
         self.confirmation_task_queue = confirmation_task_queue
 
     def run(self):
-        event_processor_args = [
-            (TRANSFER_EVENT_NAME, self.transfer_event_queue),
-            (CONFIRMATION_EVENT_NAME, self.confirmation_event_queue),
-            (COMPLETION_EVENT_NAME, self.completion_event_queue),
-        ]
+        self.logger.info("Starting")
         try:
             greenlets = [
-                gevent.spawn(self.process_events, *args)
-                for args in event_processor_args
+                gevent.spawn(self.process_transfer_events),
+                gevent.spawn(self.process_home_bridge_events),
             ]
+            gevent.joinall(greenlets, raise_error=True)
         finally:
+            self.logger.info("Stopping")
             for greenlet in greenlets:
                 greenlet.kill()
 
@@ -118,8 +127,9 @@ class ConfirmationTaskPlanner:
         while True:
             event = self.transfer_event_queue.get()
             if isinstance(event, FetcherReachedHeadEvent):
-                pass
+                self.logger.info("Transfer events are in sync now")
             else:
+                self.logger.info("Received transfer to confirm")
                 self.recorder.apply_proper_event(event)
                 self.check_for_confirmation_tasks()
 
@@ -127,12 +137,17 @@ class ConfirmationTaskPlanner:
         while True:
             event = self.home_bridge_event_queue.get()
             if isinstance(event, FetcherReachedHeadEvent):
+                self.logger.info("Home bridge is in sync now")
                 self.recorder.apply_home_chain_synced_event(event.timestamp)
             else:
+                self.logger.info("Received home bridge event")
                 self.recorder.apply_proper_event(event)
             self.check_for_confirmation_tasks()
 
     def check_for_confirmation_tasks(self) -> None:
         confirmation_tasks = self.recorder.pull_transfers_to_confirm(time.time())
+        self.logger.info(
+            f"Scheduling {len(confirmation_tasks)} confirmation transactions"
+        )
         for confirmation_task in confirmation_tasks:
             self.confirmation_task_queue.put(confirmation_task)

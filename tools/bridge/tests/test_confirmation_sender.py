@@ -9,6 +9,7 @@ from web3.datastructures import AttributeDict
 
 from bridge.confirmation_sender import ConfirmationSender
 from bridge.constants import HOME_CHAIN_STEP_DURATION
+from bridge.utils import compute_transfer_hash
 
 
 #
@@ -98,7 +99,7 @@ def transfer_event():
 # Tests
 #
 def test_transfer_hash_computation(confirmation_sender, transfer_event):
-    transfer_hash = confirmation_sender.compute_transfer_hash(transfer_event)
+    transfer_hash = compute_transfer_hash(transfer_event)
     assert transfer_event.logIndex == 5
     assert transfer_hash == keccak(transfer_event.transactionHash + b"\x05")
 
@@ -142,9 +143,7 @@ def test_transaction_sending(
     )
     assert len(events) == 1
     event_args = events[0].args
-    assert event_args.transferHash == confirmation_sender.compute_transfer_hash(
-        transfer_event
-    )
+    assert event_args.transferHash == compute_transfer_hash(transfer_event)
     assert event_args.transactionHash == transfer_event.transactionHash
     assert event_args.amount == transfer_event.args.value
     assert event_args.recipient == transfer_event.args["from"]
