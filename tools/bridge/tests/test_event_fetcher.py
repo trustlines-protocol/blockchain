@@ -7,6 +7,7 @@ from typing import List
 import gevent
 import pytest
 
+from bridge.constants import TRANSFER_EVENT_NAME
 from bridge.event_fetcher import EventFetcher
 
 
@@ -20,15 +21,9 @@ def fetch_all_events(fetcher: EventFetcher) -> List:
 
 
 @pytest.fixture
-def transfer_event_name():
-    """Name of event to fetch from the token ABI"""
-    return "Transfer"
-
-
-@pytest.fixture
-def transfer_event_argument_filter(foreign_bridge_contract):
-    """Argument values to filter the token transfer event"""
-    return {"to": foreign_bridge_contract.address}
+def transfer_event_filter_definition(foreign_bridge_contract):
+    """Filter definition to fetch only Transfer events to the token transfer event"""
+    return {TRANSFER_EVENT_NAME: {"to": foreign_bridge_contract.address}}
 
 
 @pytest.fixture
@@ -47,8 +42,7 @@ def foreign_chain_event_fetch_start_block_number():
 def transfer_event_fetcher_init_kwargs(
     w3_foreign,
     token_contract,
-    transfer_event_name,
-    transfer_event_argument_filter,
+    transfer_event_filter_definition,
     transfer_event_queue,
     foreign_chain_max_reorg_depth,
     foreign_chain_event_fetch_start_block_number,
@@ -61,8 +55,7 @@ def transfer_event_fetcher_init_kwargs(
     return {
         "web3": w3_foreign,
         "contract": token_contract,
-        "event_name": transfer_event_name,
-        "event_argument_filter": transfer_event_argument_filter,
+        "filter_definition": transfer_event_filter_definition,
         "event_queue": transfer_event_queue,
         "max_reorg_depth": foreign_chain_max_reorg_depth,
         "start_block_number": foreign_chain_event_fetch_start_block_number,
@@ -143,8 +136,7 @@ def test_instantiate_event_fetcher_with_negative_start_block_number(
 def test_fetch_events_in_range(
     transfer_event_fetcher,
     w3_foreign,
-    transfer_event_name,
-    transfer_event_argument_filter,
+    transfer_event_filter_definition,
     transfer_tokens_to_foreign_bridge,
 ):
     transfer_tokens_to_foreign_bridge()
@@ -154,9 +146,10 @@ def test_fetch_events_in_range(
 
     event = events[0]
 
-    assert event["event"] == transfer_event_name
+    assert event["event"] == TRANSFER_EVENT_NAME
 
-    for argument_name, argument_value in transfer_event_argument_filter.items():
+    transfer_arguments = transfer_event_filter_definition[TRANSFER_EVENT_NAME]
+    for argument_name, argument_value in transfer_arguments.items():
         assert event.args[argument_name] == argument_value
 
 
@@ -278,3 +271,35 @@ def test_fetch_events_continuously(
 def test_fetch_events_negative_poll_interval(transfer_event_fetcher):
     with pytest.raises(ValueError):
         transfer_event_fetcher.fetch_events(poll_interval=-1)
+
+
+def test_fetch_multiple_events(
+    make_transfer_event_fetcher,
+    token_contract,
+    premint_token_address,
+    tester_foreign,
+    foreign_chain_max_reorg_depth,
+):
+    transfer_and_approval_fetcher = make_transfer_event_fetcher(
+        filter_definition={"Transfer": {}, "Approval": {}}
+    )
+
+    token_contract.functions.transfer(premint_token_address, 1).transact(
+        {"from": premint_token_address}
+    )
+    token_contract.functions.approve(premint_token_address, 1).transact(
+        {"from": premint_token_address}
+    )
+    token_contract.functions.approve(premint_token_address, 0).transact(
+        {"from": premint_token_address}
+    )
+    token_contract.functions.transfer(premint_token_address, 1).transact(
+        {"from": premint_token_address}
+    )
+
+    tester_foreign.mine_blocks(foreign_chain_max_reorg_depth)
+    events = fetch_all_events(transfer_and_approval_fetcher)[
+        -4:
+    ]  # there might be earlier events we don't care about
+    event_names = [event.event for event in events]
+    assert event_names == ["Transfer", "Approval", "Approval", "Transfer"]
