@@ -1,7 +1,3 @@
-from gevent import monkey  # isort:skip
-
-monkey.patch_all()  # noqa: E402 isort:skip
-
 from typing import List
 
 import gevent
