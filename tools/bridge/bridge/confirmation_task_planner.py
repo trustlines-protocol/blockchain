@@ -73,7 +73,7 @@ class TransferRecorder:
 
     def pull_transfers_to_confirm(self, current_time: float) -> List[AttributeDict]:
         if not self.is_in_sync(current_time):
-            confirmation_tasks = []
+            confirmation_tasks: List[AttributeDict] = []
         else:
             unconfirmed_transfer_hashes = (
                 self.transfer_hashes
