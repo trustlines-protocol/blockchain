@@ -3,6 +3,7 @@ from gevent import monkey  # isort:skip
 monkey.patch_all()  # noqa: E402 isort:skip
 
 import logging
+import logging.config
 import os
 
 import click
@@ -21,6 +22,25 @@ from bridge.contract_validation import (
     validate_contract_existence,
 )
 from bridge.event_fetcher import EventFetcher
+
+logger = logging.getLogger(__name__)
+
+
+def configure_logging(config):
+    """configure the logging subsystem via the 'logging' key in the TOML config"""
+    try:
+        logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO").upper())
+        logging.config.dictConfig(config["logging"])
+    except (ValueError, TypeError, AttributeError, ImportError) as err:
+        click.echo(
+            f"Error configuring logging: {err}\n"
+            "Please check your configuration file and the LOGLEVEL environment variable"
+        )
+        raise click.Abort()
+
+    logger.debug(
+        "Initialized logging system with the following config: %r", config["logging"]
+    )
 
 
 @click.command()
@@ -41,16 +61,15 @@ def main(config_path: str) -> None:
     See .env.example and config.py for valid configuration options and defaults.
     """
 
-    logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO").upper())
-
-    logging.info("Starting Trustlines Bridge Validation Server")
-
     try:
         config = load_config(config_path)
     except TomlDecodeError as decode_error:
         raise click.UsageError(f"Invalid config file: {decode_error}") from decode_error
     except ValueError as value_error:
         raise click.UsageError(f"Invalid config file: {value_error}") from value_error
+
+    configure_logging(config)
+    logger.info("Starting Trustlines Bridge Validation Server")
 
     w3_foreign = Web3(
         HTTPProvider(
