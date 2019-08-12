@@ -131,7 +131,6 @@ class ConfirmationTaskPlanner:
             else:
                 self.logger.info("Received transfer to confirm")
                 self.recorder.apply_proper_event(event)
-                self.check_for_confirmation_tasks()
 
     def process_home_bridge_events(self) -> None:
         while True:
@@ -139,10 +138,10 @@ class ConfirmationTaskPlanner:
             if isinstance(event, FetcherReachedHeadEvent):
                 self.logger.info("Home bridge is in sync now")
                 self.recorder.apply_home_chain_synced_event(event.timestamp)
+                self.check_for_confirmation_tasks()
             else:
                 self.logger.info("Received home bridge event")
                 self.recorder.apply_proper_event(event)
-            self.check_for_confirmation_tasks()
 
     def check_for_confirmation_tasks(self) -> None:
         confirmation_tasks = self.recorder.pull_transfers_to_confirm(time.time())
