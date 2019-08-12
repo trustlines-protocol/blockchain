@@ -14,7 +14,7 @@ from web3 import HTTPProvider, Web3
 
 from bridge.config import load_config
 from bridge.confirmation_sender import ConfirmationSender
-from bridge.constanst import TRANSFER_EVENT_NAME
+from bridge.constants import TRANSFER_EVENT_NAME
 from bridge.contract_abis import HOME_BRIDGE_ABI, MINIMAL_ERC20_TOKEN_ABI
 from bridge.contract_validation import (
     get_validator_proxy_contract,
