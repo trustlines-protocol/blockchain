@@ -88,53 +88,29 @@ class ConfirmationSender:
             f"coins (nonce {nonce}, chain {self.w3.eth.chainId})"
         )
 
-        # In case one of the preconditions in the smart contract fails, the buildTransaction
-        # function will just fail with a value error and no specific error message.
-        # It's currently not possible to get a usable error message from a live parity node
-        # without actually sending the transaction.
-        # Therefore we just fail with a pretty long error message for the user and hope
-        # for the best.
-        try:
-            # Build the transaction. This might fail when one of the asserts in the smart contract applies
-            transaction = self.home_bridge_contract.functions.confirmTransfer(
-                compute_transfer_hash(transfer_event),
-                transfer_event.transactionHash,
-                transfer_event.args.value,
-                transfer_event.args["from"],
-            ).buildTransaction(
-                {
-                    "gasPrice": self.gas_price,
-                    "nonce": nonce,
-                    "gas": CONFIRMATION_TRANSACTION_GAS_LIMIT,
-                }
-            )
+        # hard code gas limit to avoid executing the transaction (which would fail as the sender
+        # address is not defined before signing the transaction, but the contract asserts that
+        # it's a validator)
+        transaction = self.home_bridge_contract.functions.confirmTransfer(
+            compute_transfer_hash(transfer_event),
+            transfer_event.transactionHash,
+            transfer_event.args.value,
+            transfer_event.args["from"],
+        ).buildTransaction(
+            {
+                "gasPrice": self.gas_price,
+                "nonce": nonce,
+                "gas": CONFIRMATION_TRANSACTION_GAS_LIMIT,
+            }
+        )
 
-            # The signing step should not fail, but we want to exit this execution path early,
-            # therefore it's inside the try block
-            signed_transaction = self.w3.eth.account.sign_transaction(
-                transaction, self.private_key
-            )
+        # The signing step should not fail, but we want to exit this execution path early,
+        # therefore it's inside the try block
+        signed_transaction = self.w3.eth.account.sign_transaction(
+            transaction, self.private_key
+        )
 
-            return signed_transaction
-        except ValueError as e:
-            # Check if the error is (hopefully) from parity
-            if "failed due to an exception" in e.args[0]["message"]:
-                self.logger.info(
-                    (
-                        "Error while building the transaction. This might be because "
-                        "you are not in the validator set or the transfer has already "
-                        "been confirmed. If this error persists, please check if you "
-                        "are a member of the validator set or if your RPC nodes may "
-                        "have connection problems: %s"
-                    ),
-                    e,
-                )
-
-                # There is an explicit check for None values before sending. See send_confirmation_transactions
-                return None
-
-            # Re-throw all unknown errors
-            raise e
+        return signed_transaction
 
     def send_confirmation_transaction(self, transaction):
         self.pending_transaction_queue.put(transaction)
