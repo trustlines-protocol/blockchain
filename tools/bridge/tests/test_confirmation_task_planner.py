@@ -2,7 +2,8 @@ from itertools import count
 
 import pytest
 from eth_typing import Hash32
-from eth_utils import encode_hex, int_to_big_endian
+from eth_utils import int_to_big_endian
+from hexbytes import HexBytes
 from web3.datastructures import AttributeDict
 
 from bridge.confirmation_task_planner import TransferRecorder
@@ -11,36 +12,48 @@ from bridge.constants import (
     CONFIRMATION_EVENT_NAME,
     TRANSFER_EVENT_NAME,
 )
+from bridge.utils import compute_transfer_hash
 
 
 @pytest.fixture
-def transfer_hashes():
+def hashes():
     """A generator that produces an infinite, non-repeatable sequence of hashes."""
     return (int_to_big_endian(counter).rjust(32, b"\x00") for counter in count())
 
 
 @pytest.fixture
-def transfer_hash(transfer_hashes):
+def transfer_hash(hashes):
     """A single transfer hash."""
-    return next(transfer_hashes)
+    return next(hashes)
 
 
-def get_transfer_hash_event(event_name: str, transfer_hash: Hash32) -> AttributeDict:
+def get_transfer_event(transaction_hash: Hash32) -> AttributeDict:
+    return AttributeDict(
+        {
+            "event": TRANSFER_EVENT_NAME,
+            "transactionHash": HexBytes(transaction_hash),
+            "logIndex": 0,
+        }
+    )
+
+
+def get_transfer_hash_event(
+    event_name: str, transfer_hash: Hash32, transaction_hash: Hash32
+) -> AttributeDict:
     return AttributeDict(
         {
             "event": event_name,
-            "args": AttributeDict({"transferHash": encode_hex(transfer_hash)}),
+            "transactionHash": HexBytes(transaction_hash),
+            "logIndex": 0,
+            "args": AttributeDict({"transferHash": HexBytes(transfer_hash)}),
         }
     )
 
 
 @pytest.fixture
-def transfer_events(transfer_hashes):
+def transfer_events(hashes):
     """A generator that produces an infinite, non-repeatable sequence of transfer events."""
-    return (
-        get_transfer_hash_event(TRANSFER_EVENT_NAME, transfer_hash)
-        for transfer_hash in transfer_hashes
-    )
+    return (get_transfer_event(transaction_hash) for transaction_hash in hashes)
 
 
 @pytest.fixture
@@ -50,11 +63,13 @@ def transfer_event(transfer_events):
 
 
 @pytest.fixture
-def confirmation_events(transfer_hashes):
+def confirmation_events(hashes):
     """A generator that produces an infinite, non-repeatable sequence of confirmation events."""
     return (
-        get_transfer_hash_event(CONFIRMATION_EVENT_NAME, transfer_hash)
-        for transfer_hash in transfer_hashes
+        get_transfer_hash_event(
+            CONFIRMATION_EVENT_NAME, transfer_hash, transaction_hash
+        )
+        for transfer_hash, transaction_hash in zip(hashes, hashes)
     )
 
 
@@ -65,11 +80,11 @@ def confirmation_event(confirmation_events):
 
 
 @pytest.fixture
-def completion_events(transfer_hashes):
+def completion_events(hashes):
     """A generator that produces an infinite, non-repeatable sequence of completion events."""
     return (
-        get_transfer_hash_event(COMPLETION_EVENT_NAME, transfer_hash)
-        for transfer_hash in transfer_hashes
+        get_transfer_hash_event(COMPLETION_EVENT_NAME, transfer_hash, transaction_hash)
+        for transfer_hash, transaction_hash in zip(hashes, hashes)
     )
 
 
@@ -124,18 +139,26 @@ def test_recorder_does_not_plan_transfers_twice(recorder, transfer_event):
     assert len(recorder.pull_transfers_to_confirm(10)) == 0
 
 
-def test_recorder_does_not_plan_confirmed_transfer(recorder, transfer_hash):
-    transfer_event = get_transfer_hash_event(TRANSFER_EVENT_NAME, transfer_hash)
-    confirmation_event = get_transfer_hash_event(CONFIRMATION_EVENT_NAME, transfer_hash)
+def test_recorder_does_not_plan_confirmed_transfer(recorder, transfer_hash, hashes):
+    transfer_event = get_transfer_hash_event(
+        TRANSFER_EVENT_NAME, transfer_hash, next(hashes)
+    )
+    confirmation_event = get_transfer_hash_event(
+        CONFIRMATION_EVENT_NAME, compute_transfer_hash(transfer_event), next(hashes)
+    )
     recorder.apply_proper_event(transfer_event)
     recorder.apply_proper_event(confirmation_event)
     recorder.apply_home_chain_synced_event(10)
     assert len(recorder.pull_transfers_to_confirm(10)) == 0
 
 
-def test_recorder_does_not_plan_completed_transfer(recorder, transfer_hash):
-    transfer_event = get_transfer_hash_event(TRANSFER_EVENT_NAME, transfer_hash)
-    completion_event = get_transfer_hash_event(COMPLETION_EVENT_NAME, transfer_hash)
+def test_recorder_does_not_plan_completed_transfer(recorder, transfer_hash, hashes):
+    transfer_event = get_transfer_hash_event(
+        TRANSFER_EVENT_NAME, transfer_hash, next(hashes)
+    )
+    completion_event = get_transfer_hash_event(
+        COMPLETION_EVENT_NAME, compute_transfer_hash(transfer_event), next(hashes)
+    )
     recorder.apply_proper_event(transfer_event)
     recorder.apply_proper_event(completion_event)
     recorder.apply_home_chain_synced_event(10)
