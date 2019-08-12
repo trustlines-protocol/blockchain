@@ -9,6 +9,9 @@ import pytest
 minimal_number_of_validators = 50
 maximal_number_of_validators = 123
 
+# Keep in sync with CONFIRMATION_TRANSACTION_GAS_LIMIT in bridge/constants.py
+maximal_allowed_gas_usage = 400_000
+
 
 @pytest.fixture(params=[maximal_number_of_validators, minimal_number_of_validators])
 def number_of_validators(request):
@@ -106,17 +109,17 @@ def test_gas_cost_complete_transfer(
 
     for i in range(required_confirmations - 1):
         gas = confirm_nth(i)
-        assert gas < 120_000
+        assert gas < 120_000 < maximal_allowed_gas_usage
 
     assert not get_transfer_completed_events()
 
     # complete the transfer
     print("Completing the transfer")
     gas = confirm_nth(required_confirmations - 1)
-    assert gas < 400_000
+    assert gas < maximal_allowed_gas_usage
     assert get_transfer_completed_events()
 
     print("Confirm after complete")
     gas = confirm_nth(required_confirmations, fail_ok=True)
-    assert gas < 50000
+    assert gas < 50000 < maximal_allowed_gas_usage
     print("")
