@@ -54,3 +54,20 @@ docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --f
 ```
 
 **There is no production Trustlines chain yet, so this won't work**
+
+### Configure logging via the TOML configuration file
+
+You can configure logging by setting the 'logging' key in the
+TOML configuration file:
+
+```toml
+[logging.root]
+level = "INFO"
+
+[logging.loggers."bridge.main"]
+level = "DEBUG"
+```
+
+Internally this is using python's [logging.config.dictConfig](https://docs.python.org/3/library/logging.config.html#logging.config.dictConfig).
+
+The exact schema for this key can be found [Configuration dictionary schema](https://docs.python.org/3/library/logging.config.html#logging-config-dictschema)
