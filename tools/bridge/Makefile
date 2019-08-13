@@ -10,7 +10,7 @@ format:
 	$(VIRTUAL_ENV)/bin/black bridge tests setup.py
 
 test: install-requirements install
-	$(VIRTUAL_ENV)/bin/pytest tests
+	$(VIRTUAL_ENV)/bin/python ./pytest tests
 
 build: install
 	$(VIRTUAL_ENV)/bin/python setup.py sdist

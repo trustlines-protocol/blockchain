@@ -9,6 +9,7 @@ from web3.datastructures import AttributeDict
 
 from bridge.confirmation_sender import ConfirmationSender
 from bridge.constants import HOME_CHAIN_STEP_DURATION
+from bridge.utils import compute_transfer_hash
 
 
 #
@@ -98,13 +99,12 @@ def transfer_event():
 # Tests
 #
 def test_transfer_hash_computation(confirmation_sender, transfer_event):
-    transfer_hash = confirmation_sender.compute_transfer_hash(transfer_event)
+    transfer_hash = compute_transfer_hash(transfer_event)
     assert transfer_event.logIndex == 5
     assert transfer_hash == keccak(transfer_event.transactionHash + b"\x05")
 
 
 def test_transaction_preparation(
-    foreign_bridge_contract,
     confirmation_sender,
     validator_address,
     gas_price,
@@ -143,9 +143,7 @@ def test_transaction_sending(
     )
     assert len(events) == 1
     event_args = events[0].args
-    assert event_args.transferHash == confirmation_sender.compute_transfer_hash(
-        transfer_event
-    )
+    assert event_args.transferHash == compute_transfer_hash(transfer_event)
     assert event_args.transactionHash == transfer_event.transactionHash
     assert event_args.amount == transfer_event.args.value
     assert event_args.recipient == transfer_event.args["from"]
@@ -153,64 +151,62 @@ def test_transaction_sending(
 
 
 def test_transfers_are_handled(
-    confirmation_sender, w3_home, tester_home, transfer_queue, transfer_event
+    confirmation_sender, w3_home, tester_home, transfer_queue, transfer_event, spawn
 ):
-    try:
-        greenlet = gevent.spawn(confirmation_sender.run)
-        assert confirmation_sender.pending_transaction_queue.empty()
-        transfer_queue.put(transfer_event)
-        gevent.sleep(0.1)
-        assert confirmation_sender.pending_transaction_queue.qsize() == 1
-        transaction = confirmation_sender.pending_transaction_queue.peek()
-        tester_home.mine_block()
-        assert w3_home.eth.getTransactionReceipt(transaction.hash) is not None
-    finally:
-        greenlet.kill()
+    spawn(confirmation_sender.run)
+    assert confirmation_sender.pending_transaction_queue.empty()
+    transfer_queue.put(transfer_event)
+    gevent.sleep(0.1)
+    assert confirmation_sender.pending_transaction_queue.qsize() == 1
+    transaction = confirmation_sender.pending_transaction_queue.peek()
+    tester_home.mine_block()
+    assert w3_home.eth.getTransactionReceipt(transaction.hash) is not None
 
 
 def test_pending_transfers_are_cleared(
-    confirmation_sender, tester_home, transfer_queue, transfer_event, max_reorg_depth
+    confirmation_sender,
+    tester_home,
+    transfer_queue,
+    transfer_event,
+    max_reorg_depth,
+    spawn,
 ):
-    try:
-        greenlet = gevent.spawn(confirmation_sender.run)
-        assert confirmation_sender.pending_transaction_queue.empty()
-        transfer_queue.put(transfer_event)
-        gevent.sleep(0.1)
-        assert confirmation_sender.pending_transaction_queue.qsize() == 1
-        tester_home.mine_block()
-        gevent.sleep(
-            1.5 * HOME_CHAIN_STEP_DURATION
-        )  # wait until they have a chance to check
-        assert (
-            confirmation_sender.pending_transaction_queue.qsize() == 1
-        )  # not confirmed enough yet
-        tester_home.mine_blocks(max_reorg_depth - 1)
-        gevent.sleep(1.5 * HOME_CHAIN_STEP_DURATION)
-        assert confirmation_sender.pending_transaction_queue.qsize() == 0
-    finally:
-        greenlet.kill()
+    spawn(confirmation_sender.run)
+    assert confirmation_sender.pending_transaction_queue.empty()
+    transfer_queue.put(transfer_event)
+    gevent.sleep(0.1)
+    assert confirmation_sender.pending_transaction_queue.qsize() == 1
+    tester_home.mine_block()
+    gevent.sleep(
+        1.5 * HOME_CHAIN_STEP_DURATION
+    )  # wait until they have a chance to check
+    assert (
+        confirmation_sender.pending_transaction_queue.qsize() == 1
+    )  # not confirmed enough yet
+    tester_home.mine_blocks(max_reorg_depth - 1)
+    gevent.sleep(1.5 * HOME_CHAIN_STEP_DURATION)
+    assert confirmation_sender.pending_transaction_queue.qsize() == 0
 
 
 def test_do_not_confirm_as_non_bridge_validator(
-    confirmation_sender_with_non_validator_account, transfer_queue, transfer_event
+    confirmation_sender_with_non_validator_account,
+    transfer_queue,
+    transfer_event,
+    spawn,
 ):
     # TODO: This could fail in a non-testing environment. RPC requests can take
     # longer or fail for any other reason. An empty queue at the end isn't
     # a strong affirmation.
 
-    try:
-        greenlet = gevent.spawn(confirmation_sender_with_non_validator_account.run)
+    spawn(confirmation_sender_with_non_validator_account.run)
 
-        assert (
-            confirmation_sender_with_non_validator_account.pending_transaction_queue.empty()
-        )
+    assert (
+        confirmation_sender_with_non_validator_account.pending_transaction_queue.empty()
+    )
 
-        transfer_queue.put(transfer_event)
-        gevent.sleep(0.1)
+    transfer_queue.put(transfer_event)
+    gevent.sleep(0.1)
 
-        assert (
-            confirmation_sender_with_non_validator_account.pending_transaction_queue.empty()
-        )
-
-    finally:
-        greenlet.kill()
+    assert (
+        confirmation_sender_with_non_validator_account.pending_transaction_queue.empty()
+    )

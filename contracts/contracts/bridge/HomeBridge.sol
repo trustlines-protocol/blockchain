@@ -15,7 +15,7 @@ contract HomeBridge {
         bytes32 transactionHash,
         uint256 amount,
         address recipient,
-        address validator
+        address indexed validator
     );
     event TransferCompleted(
         bytes32 transferHash,
@@ -142,7 +142,7 @@ contract HomeBridge {
 
         uint numRequired = getNumRequiredConfirmations();
 
-        /* We now check if we have enough configrmations.  If that is the
+        /* We now check if we have enough confirmations.  If that is the
            case, we purge ex-validators from the list of confirmations
            and do the check again, so we do not count
            confirmations from ex-validators.

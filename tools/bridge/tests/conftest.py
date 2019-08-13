@@ -1,9 +1,36 @@
+import gevent.monkey
+import gevent.pool
 import pytest
 from deploy_tools import deploy_compiled_contract
 from eth_tester import EthereumTester
 from gevent.queue import Queue
 from web3 import EthereumTesterProvider, Web3
 from web3.contract import Contract
+
+# check if gevent did it's monkeypatching
+if "time" not in gevent.monkey.saved:
+    raise RuntimeError(
+        "cannot run bridge tests without gevent's monkeypatching, please use the pytest wrapper"
+    )
+
+
+@pytest.fixture()
+def pool():
+    """return a gevent pool object.
+
+    it will call kill all greenlets in the pool after the test has finished
+    """
+    p = gevent.pool.Pool()
+    yield p
+    p.kill(timeout=0.5)
+
+
+@pytest.fixture()
+def spawn(pool):
+    """spawn a greenlet
+    it will be automatically killed after the test run
+    """
+    return pool.spawn
 
 
 @pytest.fixture
@@ -151,9 +178,7 @@ def system_address(accounts):
 
 
 @pytest.fixture
-def validator_proxy_contract(
-    deploy_contract_on_chain, w3_home, system_address, accounts
-):
+def validator_proxy_contract(deploy_contract_on_chain, w3_home, system_address):
     """The plain validator proxy contract."""
     contract = deploy_contract_on_chain(
         w3_home, "TestValidatorProxy", constructor_args=([], system_address)

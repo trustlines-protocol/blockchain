@@ -67,6 +67,17 @@ def validate_private_key(private_key: Any) -> bytes:
     return private_key_bytes
 
 
+def validate_logging(logging_dict: Dict) -> Dict:
+    """validate the logging dictionary
+
+    We don't do much here, but instead rely on the main function to
+    catch errors from logging.config.dictConfig
+    """
+    if not isinstance(logging_dict, dict):
+        raise ValueError("logging must be a dictionary")
+    return merge({"version": 1, "incremental": True}, logging_dict)
+
+
 REQUIRED_CONFIG_ENTRIES = [
     "home_rpc_url",
     "home_bridge_contract_address",
@@ -77,9 +88,11 @@ REQUIRED_CONFIG_ENTRIES = [
 ]
 
 OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
+    "logging": {},
     "home_rpc_timeout": 180,
     "home_chain_gas_price": 10 * 1000000000,  # Gas price is in GWei
     "home_chain_max_reorg_depth": 1,
+    "home_chain_event_poll_interval": 5,
     "home_chain_event_fetch_start_block_number": 0,
     "foreign_rpc_timeout": 180,
     "foreign_chain_max_reorg_depth": 10,
@@ -88,11 +101,13 @@ OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
 }
 
 CONFIG_ENTRY_VALIDATORS = {
+    "logging": validate_logging,
     "home_rpc_url": validate_rpc_url,
     "home_rpc_timeout": validate_non_negative_integer,
     "home_chain_gas_price": validate_non_negative_integer,
     "home_chain_max_reorg_depth": validate_non_negative_integer,
     "home_bridge_contract_address": validate_checksum_address,
+    "home_chain_event_poll_interval": validate_non_negative_integer,
     "home_chain_event_fetch_start_block_number": validate_non_negative_integer,
     "foreign_rpc_url": validate_rpc_url,
     "foreign_rpc_timeout": validate_non_negative_integer,

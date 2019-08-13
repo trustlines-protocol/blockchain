@@ -1,3 +1,4 @@
+attrs
 Click
 eth-utils
 gevent
