@@ -15,7 +15,7 @@ contract HomeBridge {
         bytes32 transactionHash,
         uint256 amount,
         address recipient,
-        address validator
+        address indexed validator
     );
     event TransferCompleted(
         bytes32 transferHash,
