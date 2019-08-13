@@ -12,11 +12,7 @@ from bridge.utils import compute_transfer_hash
 
 
 class TransferRecorder:
-    def __init__(self, sync_persistence_time: float) -> None:
-        if sync_persistence_time < 0:
-            raise ValueError("Sync persistence time must not be negative")
-        self.sync_persistence_time = sync_persistence_time
-
+    def __init__(self) -> None:
         self.transfer_events: Dict[Hash32, AttributeDict] = {}
 
         self.transfer_hashes: Set[Hash32] = set()
@@ -26,11 +22,6 @@ class TransferRecorder:
         self.scheduled_hashes: Set[Hash32] = set()
 
         self.home_chain_synced_until = 0.0
-
-    def apply_home_chain_synced_event(self, timestamp: float) -> None:
-        if timestamp < self.home_chain_synced_until:
-            raise ValueError("Sync time must not decrease")
-        self.home_chain_synced_until = timestamp
 
     def apply_proper_event(self, event: AttributeDict) -> None:
         event_name = event.event
@@ -50,9 +41,6 @@ class TransferRecorder:
         else:
             raise ValueError(f"Got unknown event {event}")
 
-    def is_in_sync(self, current_time: float) -> bool:
-        return current_time <= self.home_chain_synced_until + self.sync_persistence_time
-
     def clear_transfers(self) -> None:
         all_stages_seen = (
             self.transfer_hashes & self.confirmation_hashes & self.completion_hashes
@@ -66,21 +54,18 @@ class TransferRecorder:
         for transfer_hash in all_stages_seen:
             self.transfer_events.pop(transfer_hash, None)
 
-    def pull_transfers_to_confirm(self, current_time: float) -> List[AttributeDict]:
-        if not self.is_in_sync(current_time):
-            confirmation_tasks: List[AttributeDict] = []
-        else:
-            unconfirmed_transfer_hashes = (
-                self.transfer_hashes
-                - self.confirmation_hashes
-                - self.completion_hashes
-                - self.scheduled_hashes
-            )
-            self.scheduled_hashes |= unconfirmed_transfer_hashes
-            confirmation_tasks = [
-                self.transfer_events[transfer_hash]
-                for transfer_hash in unconfirmed_transfer_hashes
-            ]
+    def pull_transfers_to_confirm(self) -> List[AttributeDict]:
+        unconfirmed_transfer_hashes = (
+            self.transfer_hashes
+            - self.confirmation_hashes
+            - self.completion_hashes
+            - self.scheduled_hashes
+        )
+        self.scheduled_hashes |= unconfirmed_transfer_hashes
+        confirmation_tasks = [
+            self.transfer_events[transfer_hash]
+            for transfer_hash in unconfirmed_transfer_hashes
+        ]
 
         self.clear_transfers()
         return confirmation_tasks
