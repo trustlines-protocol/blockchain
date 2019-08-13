@@ -20,7 +20,8 @@ class ConfirmationTaskPlanner:
             "bridge.confirmation_task_planner.ConfirmationTaskPlanner"
         )
 
-        self.recorder = TransferRecorder(sync_persistence_time)
+        self.recorder = TransferRecorder()
+        self.sync_persistence_time = sync_persistence_time
 
         self.transfer_event_queue = transfer_event_queue
         self.home_bridge_event_queue = home_bridge_event_queue
@@ -54,14 +55,15 @@ class ConfirmationTaskPlanner:
             event = self.home_bridge_event_queue.get()
             if isinstance(event, FetcherReachedHeadEvent):
                 self.logger.info("Home bridge is in sync now")
-                self.recorder.apply_home_chain_synced_event(event.timestamp)
-                self.check_for_confirmation_tasks()
+                # Let's check that this has not been for too long in the queue
+                if time.time() - event.timestamp < self.sync_persistence_time:
+                    self.check_for_confirmation_tasks()
             else:
                 self.logger.info("Received home bridge event")
                 self.recorder.apply_proper_event(event)
 
     def check_for_confirmation_tasks(self) -> None:
-        confirmation_tasks = self.recorder.pull_transfers_to_confirm(time.time())
+        confirmation_tasks = self.recorder.pull_transfers_to_confirm()
         self.logger.info(
             f"Scheduling {len(confirmation_tasks)} confirmation transactions"
         )
