@@ -3,7 +3,6 @@ import pytest
 from auction_deploy.core import (
     AuctionOptions,
     DeployedAuctionContracts,
-    decrypt_private_key,
     deploy_auction_contracts,
     initialize_auction_contracts,
     missing_whitelisted_addresses,
@@ -57,11 +56,6 @@ def test_init_contracts(deployed_contracts, web3, release_timestamp):
 
     assert deployed_contracts.locker.functions.initialized().call() is True
     assert deployed_contracts.slasher.functions.initialized().call() is True
-
-
-def test_decrypt_private_key(keystore_file_path, key_password, private_key):
-    extracted_key = decrypt_private_key(str(keystore_file_path), key_password)
-    assert extracted_key == private_key
 
 
 def test_whitelist_addresses(deployed_contracts, whitelist, web3):

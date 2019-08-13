@@ -3,9 +3,10 @@ import re
 
 import pytest
 from click.testing import CliRunner
+from deploy_tools.cli import test_json_rpc, test_provider
 from eth_utils import to_checksum_address
 
-from auction_deploy.cli import AuctionState, main, test_json_rpc, test_provider
+from auction_deploy.cli import AuctionState, main
 from auction_deploy.core import (
     DeployedAuctionContracts,
     deploy_auction_contracts,
