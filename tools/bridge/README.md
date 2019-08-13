@@ -57,7 +57,7 @@ docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --f
 
 ### Configure logging via the TOML configuration file
 
-You can configure logging with by setting the 'logging' key in the
+You can configure logging by setting the 'logging' key in the
 TOML configuration file:
 
 ```toml
