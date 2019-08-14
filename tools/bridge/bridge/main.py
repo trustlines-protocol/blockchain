@@ -5,6 +5,7 @@ monkey.patch_all()  # noqa: E402 isort:skip
 import logging
 import logging.config
 import os
+import signal
 
 import click
 import gevent
@@ -210,9 +211,17 @@ def main(config_path: str) -> None:
     ]
 
     pool = gevent.pool.Pool()
+
+    def raise_keyboard_interrupt():
+        raise KeyboardInterrupt()
+
     try:
         for coroutine_and_args in coroutines_and_args:
             pool.spawn(*coroutine_and_args)
+
+        gevent.signal(signal.SIGINT, raise_keyboard_interrupt)
+        gevent.signal(signal.SIGTERM, raise_keyboard_interrupt)
+
         pool.join(raise_error=True)
     finally:
         pool.kill()
