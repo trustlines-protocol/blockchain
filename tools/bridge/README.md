@@ -11,7 +11,7 @@ out. Already completed transfers are not confirmed again.
 
 - [Basic Concept](#basic-concept)
 - [Setup](#setup)
-  - [Makefile](#make-file)
+  - [Python Package Manager](#python-package-manager)
   - [Docker Image](#docker-image)
 - [Configuration](#configuration)
   - [Validation](#validation)
@@ -40,32 +40,31 @@ to the foreign bridge contract. They then confirm each transfer on the
 [HomeBridgeContract](https://github.com/trustlines-protocol/blockchain/blob/master/contracts/contracts/bridge/HomeBridge.sol)
 on the _Trustlines_ chain with their signature. As soon as more than 50% of all
 registered bridge validators have confirmed the same token transfer, the
-`HomeBridge` initiates an internal transaction to release the `TLC`. To be able to do so, the bridge contract gets initially funded. The recipient on the
+`HomeBridge` initiates an internal transaction to release the `TLC`. To be able
+to do so, the bridge contract gets initially funded. The recipient on the
 _Trustlines_ chain is the same as the token sender on the main chain. The same
 token transfer can not be payed out twice.
 
 ## Setup
 
-Running a bridge validator requires in addition to this client two synchronized nodes
-for the foreign (_Ethereum_ main chain) and home (_Trustlines_ chain) network
-(see [configuration options](#configuration)). The bridge client supports [light
-nodes](https://www.parity.io/what-is-a-light-client/). For a more extended setup
-including these nodes, check out the [section](#docker-compose) for
-`docker-compose` instructions.
+Running a bridge validator requires in addition to this client two synchronized
+nodes for the foreign (_Ethereum_ main chain) and home (_Trustlines_ chain)
+network (see [configuration options](#configuration)). The bridge client
+supports [light nodes](https://www.parity.io/what-is-a-light-client/). For
+a more extended setup including these nodes, check out the
+[section](#docker-compose) for `docker-compose` instructions.
 
-### Makefile
+### Python Package Manager
 
-The bridge validator client can be installed with a `Makefile`. Therefore it is
-necessary to checkout this repository locally.
+The bridge validator client is written in _Python_ can be installed with `pip`
+directly.
 
 ```bash
-git clone https://github.com/trustlines-protocol/blockchain.git
-cd blockchain/tools/bridge
-make install
+pip install git+https://github.com/trustlines-protocol/blockchain.git#subdirectory=tools/bridge
 ```
 
-The client can be started with `make start`, but must me
-[configured](#configuration) to work.
+The client can be started with the `tlbc-bridge` command, but needs
+a [configuration](#configuration) to do so.
 
 ### Docker Image
 
@@ -77,7 +76,10 @@ The following example illustrates how to do so from the current directory
 docker build --file ./Dockerfile --tag tlbc-bridge ../../
 ```
 
-As the bridge can be configured via environment variables, following the same naming scheme as the [TOML configuration](#configuration), you can simply use an `.env` file in the current directory. See the `.env.example` file as a first example.
+As the bridge can be configured via environment variables, following the same
+naming scheme as the [TOML configuration](#configuration), you can simply use an
+`.env` file in the current directory. See the `.env.example` file as a first
+example.
 
 ---
 
@@ -161,7 +163,7 @@ you checked out the section regarding the [docker setup](#docker-image).
 ### Nodes Only
 
 This approach is useful, when you intend to run the bridge client as a standalone
-application on your machine (see [Makefile](#makefile) setup). To switch between
+application on your machine (see [pip install](#python-package-manager)). To switch between
 the test and production setup, exchange the `docker-compose` configuration file
 postfix with `development` or `production`.
 
