@@ -11,7 +11,6 @@ out. Already completed transfers are not confirmed again.
 
 - [Basic Concept](#basic-concept)
 - [Setup](#setup)
-  - [Python Package Manager](#python-package-manager)
   - [Makefile](#make-file)
   - [Docker Image](#docker-image)
 - [Configuration](#configuration)
@@ -54,22 +53,10 @@ nodes](https://www.parity.io/what-is-a-light-client/). For a more extended setup
 including these nodes, check out the [section](#docker-compose) for
 `docker-compose` instructions.
 
-### Python Package Manager
-
-The bridge validator client is written in _Python_ can be installed with `pip`
-directly.
-
-```bash
-pip install git+https://github.com/trustlines-protocol/blockchain.git#subdirectory=tools/bridge
-```
-
-The client can be started with the `tlbc-bridge` command, but needs a [configuration](#configuration) to do so.
-
 ### Makefile
 
-Alternatively you can checkout this repository locally and use the `Makefile` to
-install the bridge client. This approach is the go to solution when intending to
-work on the source code.
+The bridge validator client can be installed with a `Makefile`. Therefore it is
+necessary to checkout this repository locally.
 
 ```bash
 git clone https://github.com/trustlines-protocol/blockchain.git
@@ -77,7 +64,8 @@ cd blockchain/tools/bridge
 make install
 ```
 
-The client can be started with `make start`, but must me . It must be [configured](#configuration) as stated before.
+The client can be started with `make start`, but must me
+[configured](#configuration) to work.
 
 ### Docker Image
 
@@ -121,7 +109,7 @@ with a default value are optional.
 | `foreign_chain_event_fetch_start_block_number` |      `0`      | block number from which on events should be fetched on foreign chain |
 |  `home_chain_event_fetch_start_block_number`   |      `0`      |  block number from which on events should be fetched on home chain   |
 |             `home_chain_gas_price`             | `10000000000` |           gas price in GWei for confirmation transactions            |
-|            `validator_private_key`             |               |    Private key of the validator to confirm transfers as hex string   |
+|            `validator_private_key`             |               |   Private key of the validator to confirm transfers as hex string    |
 |                   `logging`                    |               |             dictionary to configure [logging](#logging)              |
 
 ### Logging
@@ -173,10 +161,9 @@ you checked out the section regarding the [docker setup](#docker-image).
 ### Nodes Only
 
 This approach is useful, when you intend to run the bridge client as a standalone
-application on your machine (see [pip](#python-package-manager) and
-[Makefile](#makefile) setup). To switch between the test and production setup,
-exchange the `docker-compose` configuration file postfix with `development` or
-`production`.
+application on your machine (see [Makefile](#makefile) setup). To switch between
+the test and production setup, exchange the `docker-compose` configuration file
+postfix with `development` or `production`.
 
 ```bash
 docker-compose --project-name tlbc-bridge --file ./docker/docker-compose-nodes-production.yml up
