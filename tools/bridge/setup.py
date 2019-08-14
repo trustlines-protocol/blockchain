@@ -1,7 +1,4 @@
-from setuptools import find_packages, setup
+from setuptools import setup
 
-setup(
-    name="tlbc-bridge",
-    packages=find_packages(),
-    entry_points={"console_scripts": ["tlbc-bridge=bridge.main:main"]},
-)
+# configuration is read from setup.cfg
+setup()
