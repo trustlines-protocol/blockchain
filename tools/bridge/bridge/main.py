@@ -71,7 +71,7 @@ def make_w3_foreign(config):
     )
 
 
-def sanity_check_home_bridge_contract(home_bridge_contract):
+def sanity_check_home_bridge_contracts(home_bridge_contract):
     validate_contract_existence(home_bridge_contract)
 
     validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
@@ -110,7 +110,7 @@ def make_home_bridge_event_fetcher(config, home_bridge_event_queue):
     home_bridge_contract = w3_home.eth.contract(
         address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
     )
-    sanity_check_home_bridge_contract(home_bridge_contract)
+    sanity_check_home_bridge_contracts(home_bridge_contract)
 
     validator_address = PrivateKey(
         config["validator_private_key"]
@@ -136,7 +136,7 @@ def make_confirmation_sender(config, confirmation_task_queue):
     home_bridge_contract = w3_home.eth.contract(
         address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
     )
-    sanity_check_home_bridge_contract(home_bridge_contract)
+    sanity_check_home_bridge_contracts(home_bridge_contract)
 
     return ConfirmationSender(
         transfer_event_queue=confirmation_task_queue,
