@@ -168,7 +168,13 @@ def main(config_path: str) -> None:
         raise click.UsageError(f"Invalid config file: {value_error}") from value_error
 
     configure_logging(config)
-    logger.info("Starting Trustlines Bridge Validation Server")
+    validator_address = PrivateKey(
+        config["validator_private_key"]
+    ).public_key.to_checksum_address()
+
+    logger.info(
+        f"Starting Trustlines Bridge Validation Server for address {validator_address}"
+    )
 
     transfer_event_queue = Queue()
     home_bridge_event_queue = Queue()
