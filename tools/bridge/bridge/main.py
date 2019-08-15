@@ -8,8 +8,8 @@ import os
 
 import click
 import gevent
+import gevent.pool
 from eth_keys.datatypes import PrivateKey
-from gevent import Greenlet
 from gevent.queue import Queue
 from toml.decoder import TomlDecodeError
 from web3 import HTTPProvider, Web3
@@ -50,6 +50,98 @@ def configure_logging(config):
     )
 
 
+def make_w3_home(config):
+    return Web3(
+        HTTPProvider(
+            config["home_rpc_url"],
+            request_kwargs={"timeout": config["home_rpc_timeout"]},
+        )
+    )
+
+
+def make_w3_foreign(config):
+    return Web3(
+        HTTPProvider(
+            config["foreign_rpc_url"],
+            request_kwargs={"timeout": config["foreign_rpc_timeout"]},
+        )
+    )
+
+
+def sanity_check_home_bridge_contract(home_bridge_contract):
+    validate_contract_existence(home_bridge_contract)
+
+    validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
+
+    try:
+        validate_contract_existence(validator_proxy_contract)
+    except ValueError as error:
+        raise ValueError(
+            f"Serious bridge setup error. The validator proxy contract at the address the home "
+            f"bridge property points to does not exist or is not intact!"
+        ) from error
+
+
+def make_transfer_event_fetcher(config, transfer_event_queue):
+    w3_foreign = make_w3_foreign(config)
+    token_contract = w3_foreign.eth.contract(
+        address=config["foreign_chain_token_contract_address"],
+        abi=MINIMAL_ERC20_TOKEN_ABI,
+    )
+    validate_contract_existence(token_contract)
+    return EventFetcher(
+        web3=w3_foreign,
+        contract=token_contract,
+        filter_definition={
+            TRANSFER_EVENT_NAME: {"to": config["foreign_bridge_contract_address"]}
+        },
+        event_queue=transfer_event_queue,
+        max_reorg_depth=config["foreign_chain_max_reorg_depth"],
+        start_block_number=config["foreign_chain_event_fetch_start_block_number"],
+    )
+
+
+def make_home_bridge_event_fetcher(config, home_bridge_event_queue):
+    w3_home = make_w3_home(config)
+    home_bridge_contract = w3_home.eth.contract(
+        address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
+    )
+    sanity_check_home_bridge_contract(home_bridge_contract)
+
+    validator_address = PrivateKey(
+        config["validator_private_key"]
+    ).public_key.to_canonical_address()
+
+    return EventFetcher(
+        web3=w3_home,
+        contract=home_bridge_contract,
+        filter_definition={
+            CONFIRMATION_EVENT_NAME: {"validator": validator_address},
+            COMPLETION_EVENT_NAME: {},
+        },
+        event_queue=home_bridge_event_queue,
+        max_reorg_depth=config["home_chain_max_reorg_depth"],
+        start_block_number=config["home_chain_event_fetch_start_block_number"],
+    )
+
+
+def make_confirmation_sender(config, confirmation_task_queue):
+    w3_home = make_w3_home(config)
+
+    home_bridge_contract = w3_home.eth.contract(
+        address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
+    )
+    sanity_check_home_bridge_contract(home_bridge_contract)
+
+    return ConfirmationSender(
+        transfer_event_queue=confirmation_task_queue,
+        home_bridge_contract=home_bridge_contract,
+        private_key=config["validator_private_key"],
+        gas_price=config["home_chain_gas_price"],
+        max_reorg_depth=config["home_chain_max_reorg_depth"],
+    )
+
+
 @click.command()
 @click.option(
     "-c",
@@ -78,103 +170,42 @@ def main(config_path: str) -> None:
     configure_logging(config)
     logger.info("Starting Trustlines Bridge Validation Server")
 
-    w3_foreign = Web3(
-        HTTPProvider(
-            config["foreign_rpc_url"],
-            request_kwargs={"timeout": config["foreign_rpc_timeout"]},
-        )
-    )
-    w3_home = Web3(
-        HTTPProvider(
-            config["home_rpc_url"],
-            request_kwargs={"timeout": config["home_rpc_timeout"]},
-        )
-    )
-
-    home_bridge_contract = w3_home.eth.contract(
-        address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
-    )
-    validate_contract_existence(home_bridge_contract)
-
-    validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
-
-    try:
-        validate_contract_existence(validator_proxy_contract)
-
-    except ValueError as error:
-        raise ValueError(
-            f"Serious bridge setup error. The validator proxy contract at the address the home "
-            f"bridge property points to does not exist or is not intact!"
-        ) from error
-
-    token_contract = w3_foreign.eth.contract(
-        address=config["foreign_chain_token_contract_address"],
-        abi=MINIMAL_ERC20_TOKEN_ABI,
-    )
-    validate_contract_existence(token_contract)
-
-    validator_private_key = config["validator_private_key"]
-    validator_address = PrivateKey(
-        validator_private_key
-    ).public_key.to_canonical_address()
-
     transfer_event_queue = Queue()
     home_bridge_event_queue = Queue()
     confirmation_task_queue = Queue()
 
-    transfer_event_fetcher = EventFetcher(
-        web3=w3_foreign,
-        contract=token_contract,
-        filter_definition={
-            TRANSFER_EVENT_NAME: {"to": config["foreign_bridge_contract_address"]}
-        },
-        event_queue=transfer_event_queue,
-        max_reorg_depth=config["foreign_chain_max_reorg_depth"],
-        start_block_number=config["foreign_chain_event_fetch_start_block_number"],
+    transfer_event_fetcher = make_transfer_event_fetcher(config, transfer_event_queue)
+    home_bridge_event_fetcher = make_home_bridge_event_fetcher(
+        config, home_bridge_event_queue
     )
-    home_bridge_event_fetcher = EventFetcher(
-        web3=w3_home,
-        contract=home_bridge_contract,
-        filter_definition={
-            CONFIRMATION_EVENT_NAME: {"validator": validator_address},
-            COMPLETION_EVENT_NAME: {},
-        },
-        event_queue=home_bridge_event_queue,
-        max_reorg_depth=config["home_chain_max_reorg_depth"],
-        start_block_number=config["home_chain_event_fetch_start_block_number"],
-    )
+
     confirmation_task_planner = ConfirmationTaskPlanner(
         sync_persistence_time=HOME_CHAIN_STEP_DURATION,
         transfer_event_queue=transfer_event_queue,
         home_bridge_event_queue=home_bridge_event_queue,
         confirmation_task_queue=confirmation_task_queue,
     )
-    confirmation_sender = ConfirmationSender(
-        transfer_event_queue=confirmation_task_queue,
-        home_bridge_contract=home_bridge_contract,
-        private_key=config["validator_private_key"],
-        gas_price=config["home_chain_gas_price"],
-        max_reorg_depth=config["home_chain_max_reorg_depth"],
-    )
 
+    confirmation_sender = make_confirmation_sender(config, confirmation_task_queue)
+
+    coroutines_and_args = [
+        (
+            transfer_event_fetcher.fetch_events,
+            config["foreign_chain_event_poll_interval"],
+        ),
+        (
+            home_bridge_event_fetcher.fetch_events,
+            config["home_chain_event_poll_interval"],
+        ),
+        (confirmation_task_planner.run,),
+        (confirmation_sender.run,),
+    ]
+
+    pool = gevent.pool.Pool()
     try:
-        coroutines_and_args = [
-            (
-                transfer_event_fetcher.fetch_events,
-                config["foreign_chain_event_poll_interval"],
-            ),
-            (
-                home_bridge_event_fetcher.fetch_events,
-                config["home_chain_event_poll_interval"],
-            ),
-            (confirmation_task_planner.run,),
-            (confirmation_sender.run,),
-        ]
-        greenlets = [
-            Greenlet.spawn(*coroutine_and_args)
-            for coroutine_and_args in coroutines_and_args
-        ]
-        gevent.joinall(greenlets, raise_error=True)
+        for coroutine_and_args in coroutines_and_args:
+            pool.spawn(*coroutine_and_args)
+        pool.join(raise_error=True)
     finally:
-        for greenlet in greenlets:
-            greenlet.kill()
+        pool.kill()
+        pool.join()
