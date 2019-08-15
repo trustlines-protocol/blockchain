@@ -2,7 +2,7 @@ import logging
 from time import sleep, time
 from typing import Any, Dict, List
 
-from eth_utils import is_same_address, to_checksum_address
+from eth_utils import to_checksum_address
 from web3 import Web3
 from web3.contract import Contract
 from web3.datastructures import AttributeDict
@@ -71,15 +71,6 @@ class EventFetcher:
                 toBlock=to_block_number,
                 argument_filters=argument_filters,
             )
-            # hack until validator event argument is indexed
-            if "validator" in argument_filters:
-                fetched_events = [
-                    event
-                    for event in fetched_events
-                    if is_same_address(
-                        event.args.validator, argument_filters["validator"]
-                    )
-                ]
             events += fetched_events
 
             if len(fetched_events) > 0:
