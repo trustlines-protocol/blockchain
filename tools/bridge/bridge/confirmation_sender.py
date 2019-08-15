@@ -16,6 +16,8 @@ from bridge.contract_validation import is_bridge_validator
 from bridge.event_fetcher import FetcherReachedHeadEvent
 from bridge.utils import compute_transfer_hash
 
+logger = logging.getLogger(__name__)
+
 
 class ConfirmationSender:
     """Sends confirmTransfer transactions to the home bridge contract."""
@@ -28,12 +30,11 @@ class ConfirmationSender:
         gas_price: int,
         max_reorg_depth: int,
     ):
-        self.logger = logging.getLogger("bridge.confirmation_sender.ConfirmationSender")
         self.private_key = private_key
         self.address = PrivateKey(self.private_key).public_key.to_canonical_address()
 
         if not is_bridge_validator(home_bridge_contract, self.address):
-            self.logger.warning(
+            logger.warning(
                 f"The address {self.address} is not a bridge validator to confirm "
                 f"transfers on the home bridge contract!"
             )
@@ -49,7 +50,7 @@ class ConfirmationSender:
         return self.w3.eth.getTransactionCount(self.address, "pending")
 
     def run(self):
-        self.logger.info("Starting")
+        logger.debug("Starting")
         try:
             greenlets = [
                 gevent.spawn(self.watch_pending_transactions),
@@ -69,7 +70,7 @@ class ConfirmationSender:
                 continue
 
             if not is_bridge_validator(self.home_bridge_contract, self.address):
-                self.logger.warning(
+                logger.warning(
                     f"Can not confirm transaction because {to_checksum_address(self.address)}"
                     f"is not a bridge validator!"
                 )
@@ -82,20 +83,28 @@ class ConfirmationSender:
 
     def prepare_confirmation_transaction(self, transfer_event):
         nonce = self.get_next_nonce()
-        self.logger.debug(
-            f"Preparing confirmation transaction for address "
-            f"{transfer_event.args['from']} for {transfer_event.args.value} "
-            f"coins (nonce {nonce}, chain {self.w3.eth.chainId})"
-        )
 
+        transfer_hash = compute_transfer_hash(transfer_event)
+        transaction_hash = transfer_event.transactionHash
+        amount = transfer_event.args.value
+        recipient = transfer_event.args["from"]
+
+        logger.info(
+            "confirmTransfer(transferHash=%s transactionHash=%s amount=%s recipient=%s) with nonce=%s",
+            transfer_hash.hex(),
+            transaction_hash.hex(),
+            amount,
+            recipient,
+            nonce,
+        )
         # hard code gas limit to avoid executing the transaction (which would fail as the sender
         # address is not defined before signing the transaction, but the contract asserts that
         # it's a validator)
         transaction = self.home_bridge_contract.functions.confirmTransfer(
-            compute_transfer_hash(transfer_event),
-            transfer_event.transactionHash,
-            transfer_event.args.value,
-            transfer_event.args["from"],
+            transferHash=transfer_hash,
+            transactionHash=transaction_hash,
+            amount=amount,
+            recipient=recipient,
         ).buildTransaction(
             {
                 "gasPrice": self.gas_price,
@@ -115,7 +124,7 @@ class ConfirmationSender:
     def send_confirmation_transaction(self, transaction):
         self.pending_transaction_queue.put(transaction)
         tx_hash = self.w3.eth.sendRawTransaction(transaction.rawTransaction)
-        self.logger.info(f"Sent confirmation transaction {tx_hash.hex()}")
+        logger.info(f"Sent confirmation transaction {tx_hash.hex()}")
         return tx_hash
 
     def watch_pending_transactions(self):
@@ -139,11 +148,11 @@ class ConfirmationSender:
 
             if receipt and receipt.blockNumber <= confirmation_threshold:
                 if receipt.status == 0:
-                    self.logger.warning(
+                    logger.warning(
                         f"Transaction failed: {oldest_pending_transaction.hash.hex()}"
                     )
                 else:
-                    self.logger.info(
+                    logger.info(
                         f"Transaction has been confirmed: {oldest_pending_transaction.hash.hex()}"
                     )
                 confirmed_transaction = (
