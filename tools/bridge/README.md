@@ -121,10 +121,17 @@ Logging can be configured globally or for specific components by setting the
 
 ```toml
 [logging.root]
-level = "INFO"
+level = "DEBUG"
 
 [logging.loggers."bridge.main"]
 level = "DEBUG"
+
+# web3 is too verbose with level debug
+[logging.loggers.web3]
+level = "INFO"
+
+[logging.loggers.urllib3]
+level = "INFO"
 ```
 
 Internally this is using _Python_'s
