@@ -17,6 +17,7 @@ class ConfirmationTaskPlanner:
         transfer_event_queue: Queue,
         home_bridge_event_queue: Queue,
         confirmation_task_queue: Queue,
+        is_validating: bool = True,
     ) -> None:
 
         self.recorder = TransferRecorder()
@@ -26,6 +27,13 @@ class ConfirmationTaskPlanner:
         self.home_bridge_event_queue = home_bridge_event_queue
 
         self.confirmation_task_queue = confirmation_task_queue
+
+    def start_validating(self) -> None:
+        self.recorder.start_validating()
+
+    @property
+    def is_validating(self) -> bool:
+        return self.recorder.is_validating
 
     def run(self):
         logger.debug("Starting")

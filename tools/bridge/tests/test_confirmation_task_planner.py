@@ -97,7 +97,7 @@ def completion_event(completion_events):
 @pytest.fixture
 def recorder():
     """A transfer recorder."""
-    return TransferRecorder()
+    return TransferRecorder(is_validating=True)
 
 
 def test_recorder_plans_transfers(recorder, transfer_event):
@@ -132,4 +132,28 @@ def test_recorder_does_not_plan_completed_transfer(recorder, transfer_hash, hash
     )
     recorder.apply_proper_event(transfer_event)
     recorder.apply_proper_event(completion_event)
+    assert len(recorder.pull_transfers_to_confirm()) == 0
+
+
+def test_transfer_recorder_does_not_plan_before_becoming_validator(transfer_event):
+    recorder = TransferRecorder(is_validating=False)
+    recorder.apply_proper_event(transfer_event)
+    assert len(recorder.pull_transfers_to_confirm()) == 0
+    recorder.start_validating()
+    assert recorder.pull_transfers_to_confirm() == [transfer_event]
+
+
+def test_transfer_recorder_drops_completed_transfers_before_becoming_validator(hashes):
+    transfer_hash = next(hashes)
+    transfer_event = get_transfer_hash_event(
+        TRANSFER_EVENT_NAME, transfer_hash, next(hashes)
+    )
+    completion_event = get_transfer_hash_event(
+        COMPLETION_EVENT_NAME, compute_transfer_hash(transfer_event), next(hashes)
+    )
+
+    recorder = TransferRecorder(is_validating=False)
+    recorder.apply_proper_event(transfer_event)
+    recorder.apply_proper_event(completion_event)
+    recorder.start_validating()
     assert len(recorder.pull_transfers_to_confirm()) == 0

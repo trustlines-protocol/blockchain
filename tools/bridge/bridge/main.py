@@ -234,10 +234,21 @@ def main(config_path: str) -> None:
         transfer_event_queue=transfer_event_queue,
         home_bridge_event_queue=home_bridge_event_queue,
         confirmation_task_queue=confirmation_task_queue,
+        is_validating=validator_status_watcher.check_validator_status(),
     )
 
     confirmation_sender = make_confirmation_sender(config, confirmation_task_queue)
 
+    def start_validating_when_joining_validator_set():
+        if not confirmation_task_planner.is_validating:
+            validator_status_watcher.has_started_validating.wait()
+            confirmation_task_planner.start_validating()
+
+    def stop_everything_when_leaving_validator_set(pool):
+        validator_status_watcher.has_stopped_validating.wait()
+        pool.kill()
+
+    pool = gevent.pool.Pool()
     coroutines_and_args = [
         (
             transfer_event_fetcher.fetch_events,
@@ -250,9 +261,9 @@ def main(config_path: str) -> None:
         (validator_status_watcher.run,),
         (confirmation_task_planner.run,),
         (confirmation_sender.run,),
+        (start_validating_when_joining_validator_set,),
+        (stop_everything_when_leaving_validator_set, pool),
     ]
-
-    pool = gevent.pool.Pool()
 
     try:
         for coroutine_and_args in coroutines_and_args:
