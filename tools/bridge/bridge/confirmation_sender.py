@@ -138,9 +138,14 @@ class ConfirmationSender:
                 continue
 
             if receipt and receipt.blockNumber <= confirmation_threshold:
-                self.logger.info(
-                    f"Transaction has been confirmed: {oldest_pending_transaction.hash.hex()}"
-                )
+                if receipt.status == 0:
+                    self.logger.warning(
+                        f"Transaction failed: {oldest_pending_transaction.hash.hex()}"
+                    )
+                else:
+                    self.logger.info(
+                        f"Transaction has been confirmed: {oldest_pending_transaction.hash.hex()}"
+                    )
                 confirmed_transaction = (
                     self.pending_transaction_queue.get()
                 )  # remove from queue
