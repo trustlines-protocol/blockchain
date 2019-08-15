@@ -32,6 +32,7 @@ from bridge.contract_validation import (
     validate_contract_existence,
 )
 from bridge.event_fetcher import EventFetcher
+from bridge.validator_status_watcher import ValidatorStatusWatcher
 
 logger = logging.getLogger(__name__)
 
@@ -147,6 +148,26 @@ def make_confirmation_sender(config, confirmation_task_queue):
     )
 
 
+def make_validator_status_watcher(config):
+    w3_home = make_w3_home(config)
+
+    home_bridge_contract = w3_home.eth.contract(
+        address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
+    )
+    sanity_check_home_bridge_contracts(home_bridge_contract)
+    validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
+
+    validator_address = PrivateKey(
+        config["validator_private_key"]
+    ).public_key.to_canonical_address()
+
+    return ValidatorStatusWatcher(
+        validator_proxy_contract,
+        validator_address,
+        poll_interval=HOME_CHAIN_STEP_DURATION,
+    )
+
+
 def stop(pool, timeout):
     logger.info("Stopping...")
 
@@ -206,6 +227,8 @@ def main(config_path: str) -> None:
         config, home_bridge_event_queue
     )
 
+    validator_status_watcher = make_validator_status_watcher(config)
+
     confirmation_task_planner = ConfirmationTaskPlanner(
         sync_persistence_time=HOME_CHAIN_STEP_DURATION,
         transfer_event_queue=transfer_event_queue,
@@ -224,6 +247,7 @@ def main(config_path: str) -> None:
             home_bridge_event_fetcher.fetch_events,
             config["home_chain_event_poll_interval"],
         ),
+        (validator_status_watcher.run,),
         (confirmation_task_planner.run,),
         (confirmation_sender.run,),
     ]
