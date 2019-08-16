@@ -64,7 +64,7 @@ HOME_BRIDGE_ABI = [
             {"indexed": False, "name": "transactionHash", "type": "bytes32"},
             {"indexed": False, "name": "amount", "type": "uint256"},
             {"indexed": False, "name": "recipient", "type": "address"},
-            {"indexed": False, "name": "validator", "type": "address"},
+            {"indexed": True, "name": "validator", "type": "address"},
         ],
         "name": "Confirmation",
         "type": "event",

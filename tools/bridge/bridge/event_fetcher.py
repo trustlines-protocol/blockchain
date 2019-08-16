@@ -2,7 +2,6 @@ import logging
 from time import sleep, time
 from typing import Any, Dict, List
 
-from eth_utils import is_same_address, to_checksum_address
 from web3 import Web3
 from web3.contract import Contract
 from web3.datastructures import AttributeDict
@@ -24,6 +23,7 @@ class EventFetcher:
         event_queue: Any,
         max_reorg_depth: int,
         start_block_number: int,
+        name: str = "",
     ):
         if event_fetch_limit <= 0:
             raise ValueError("Can not fetch events with zero or negative limit!")
@@ -35,10 +35,11 @@ class EventFetcher:
             raise ValueError(
                 "Can not fetch events starting from a negative block number!"
             )
-
-        self.logger = logging.getLogger(
-            f"bridge.event_fetcher.{to_checksum_address(contract.address)}"
-        )
+        self.name = name
+        if name:
+            self.logger = logging.getLogger(f"{__name__}.{name}")
+        else:
+            self.logger = logging.getLogger(f"{__name__}")
 
         self.web3 = web3
         self.contract = contract
@@ -71,15 +72,6 @@ class EventFetcher:
                 toBlock=to_block_number,
                 argument_filters=argument_filters,
             )
-            # hack until validator event argument is indexed
-            if "validator" in argument_filters:
-                fetched_events = [
-                    event
-                    for event in fetched_events
-                    if is_same_address(
-                        event.args.validator, argument_filters["validator"]
-                    )
-                ]
             events += fetched_events
 
             if len(fetched_events) > 0:

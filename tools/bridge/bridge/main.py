@@ -98,6 +98,7 @@ def make_transfer_event_fetcher(config, transfer_event_queue):
         event_queue=transfer_event_queue,
         max_reorg_depth=config["foreign_chain_max_reorg_depth"],
         start_block_number=config["foreign_chain_event_fetch_start_block_number"],
+        name="foreign",
     )
 
 
@@ -122,6 +123,7 @@ def make_home_bridge_event_fetcher(config, home_bridge_event_queue):
         event_queue=home_bridge_event_queue,
         max_reorg_depth=config["home_chain_max_reorg_depth"],
         start_block_number=config["home_chain_event_fetch_start_block_number"],
+        name="home",
     )
 
 
@@ -168,7 +170,13 @@ def main(config_path: str) -> None:
         raise click.UsageError(f"Invalid config file: {value_error}") from value_error
 
     configure_logging(config)
-    logger.info("Starting Trustlines Bridge Validation Server")
+    validator_address = PrivateKey(
+        config["validator_private_key"]
+    ).public_key.to_checksum_address()
+
+    logger.info(
+        f"Starting Trustlines Bridge Validation Server for address {validator_address}"
+    )
 
     transfer_event_queue = Queue()
     home_bridge_event_queue = Queue()
