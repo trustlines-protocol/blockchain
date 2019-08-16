@@ -12,7 +12,7 @@ from bridge.utils import compute_transfer_hash
 
 
 class TransferRecorder:
-    def __init__(self, is_validating: bool = True) -> None:
+    def __init__(self) -> None:
         self.transfer_events: Dict[Hash32, AttributeDict] = {}
 
         self.transfer_hashes: Set[Hash32] = set()
@@ -23,7 +23,7 @@ class TransferRecorder:
 
         self.home_chain_synced_until = 0.0
 
-        self.is_validating = is_validating
+        self.is_validating = False
 
     def start_validating(self) -> None:
         if self.is_validating:

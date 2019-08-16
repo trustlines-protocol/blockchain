@@ -148,7 +148,7 @@ def make_confirmation_sender(config, confirmation_task_queue):
     )
 
 
-def make_validator_status_watcher(config):
+def make_validator_status_watcher(config, confirmation_task_planner, stop):
     w3_home = make_w3_home(config)
 
     home_bridge_contract = w3_home.eth.contract(
@@ -165,6 +165,8 @@ def make_validator_status_watcher(config):
         validator_proxy_contract,
         validator_address,
         poll_interval=HOME_CHAIN_STEP_DURATION,
+        start_validating_callback=confirmation_task_planner.start_validating,
+        stop_validating_callback=stop,
     )
 
 
@@ -218,6 +220,9 @@ def main(config_path: str) -> None:
         f"Starting Trustlines Bridge Validation Server for address {validator_address}"
     )
 
+    pool = gevent.pool.Pool()
+    stop_pool = partial(stop, pool, APPLICATION_CLEANUP_TIMEOUT)
+
     transfer_event_queue = Queue()
     home_bridge_event_queue = Queue()
     confirmation_task_queue = Queue()
@@ -227,28 +232,19 @@ def main(config_path: str) -> None:
         config, home_bridge_event_queue
     )
 
-    validator_status_watcher = make_validator_status_watcher(config)
-
     confirmation_task_planner = ConfirmationTaskPlanner(
         sync_persistence_time=HOME_CHAIN_STEP_DURATION,
         transfer_event_queue=transfer_event_queue,
         home_bridge_event_queue=home_bridge_event_queue,
         confirmation_task_queue=confirmation_task_queue,
-        is_validating=validator_status_watcher.check_validator_status(),
+    )
+
+    validator_status_watcher = make_validator_status_watcher(
+        config, confirmation_task_planner, stop_pool
     )
 
     confirmation_sender = make_confirmation_sender(config, confirmation_task_queue)
 
-    def start_validating_when_joining_validator_set():
-        if not confirmation_task_planner.is_validating:
-            validator_status_watcher.has_started_validating.wait()
-            confirmation_task_planner.start_validating()
-
-    def stop_everything_when_leaving_validator_set(pool):
-        validator_status_watcher.has_stopped_validating.wait()
-        pool.kill()
-
-    pool = gevent.pool.Pool()
     coroutines_and_args = [
         (
             transfer_event_fetcher.fetch_events,
@@ -261,15 +257,12 @@ def main(config_path: str) -> None:
         (validator_status_watcher.run,),
         (confirmation_task_planner.run,),
         (confirmation_sender.run,),
-        (start_validating_when_joining_validator_set,),
-        (stop_everything_when_leaving_validator_set, pool),
     ]
 
     try:
         for coroutine_and_args in coroutines_and_args:
             pool.spawn(*coroutine_and_args)
 
-        stop_pool = partial(stop, pool, APPLICATION_CLEANUP_TIMEOUT)
         for signum in [signal.SIGINT, signal.SIGTERM]:
             gevent.signal(signum, stop_pool)
 

@@ -17,9 +17,7 @@ class ConfirmationTaskPlanner:
         transfer_event_queue: Queue,
         home_bridge_event_queue: Queue,
         confirmation_task_queue: Queue,
-        is_validating: bool = True,
     ) -> None:
-
         self.recorder = TransferRecorder()
         self.sync_persistence_time = sync_persistence_time
 
