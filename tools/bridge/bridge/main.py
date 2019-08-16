@@ -6,6 +6,7 @@ import logging
 import logging.config
 import os
 import signal
+from functools import partial
 
 import click
 import gevent
@@ -19,6 +20,7 @@ from bridge.config import load_config
 from bridge.confirmation_sender import ConfirmationSender
 from bridge.confirmation_task_planner import ConfirmationTaskPlanner
 from bridge.constants import (
+    APPLICATION_CLEANUP_TIMEOUT,
     COMPLETION_EVENT_NAME,
     CONFIRMATION_EVENT_NAME,
     HOME_CHAIN_STEP_DURATION,
@@ -145,6 +147,22 @@ def make_confirmation_sender(config, confirmation_task_queue):
     )
 
 
+def stop(pool, timeout):
+    logger.info("Stopping...")
+
+    timeout = gevent.Timeout(timeout)
+    timeout.start()
+    try:
+        pool.kill()
+        pool.join()
+    except gevent.Timeout as handled_timeout:
+        if handled_timeout is not timeout:
+            logger.error("Catched wrong timeout exception, exciting anyway")
+        else:
+            logger.error("Bridge didn't clean up in time, doing a hard exit")
+        os._exit(os.EX_SOFTWARE)
+
+
 @click.command()
 @click.option(
     "-c",
@@ -212,17 +230,15 @@ def main(config_path: str) -> None:
 
     pool = gevent.pool.Pool()
 
-    def raise_keyboard_interrupt():
-        raise KeyboardInterrupt()
-
     try:
         for coroutine_and_args in coroutines_and_args:
             pool.spawn(*coroutine_and_args)
 
-        gevent.signal(signal.SIGINT, raise_keyboard_interrupt)
-        gevent.signal(signal.SIGTERM, raise_keyboard_interrupt)
+        stop_pool = partial(stop, pool, APPLICATION_CLEANUP_TIMEOUT)
+        for signum in [signal.SIGINT, signal.SIGTERM]:
+            gevent.signal(signum, stop_pool)
 
         pool.join(raise_error=True)
-    finally:
-        pool.kill()
-        pool.join()
+    except Exception as exception:
+        logger.exception("Application error", exc_info=exception)
+        stop(pool, APPLICATION_CLEANUP_TIMEOUT)
