@@ -32,6 +32,7 @@ from bridge.contract_validation import (
     validate_contract_existence,
 )
 from bridge.event_fetcher import EventFetcher
+from bridge.validator_status_watcher import ValidatorStatusWatcher
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ def make_w3_foreign(config):
     )
 
 
-def sanity_check_home_bridge_contract(home_bridge_contract):
+def sanity_check_home_bridge_contracts(home_bridge_contract):
     validate_contract_existence(home_bridge_contract)
 
     validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
@@ -110,7 +111,7 @@ def make_home_bridge_event_fetcher(config, home_bridge_event_queue):
     home_bridge_contract = w3_home.eth.contract(
         address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
     )
-    sanity_check_home_bridge_contract(home_bridge_contract)
+    sanity_check_home_bridge_contracts(home_bridge_contract)
 
     validator_address = PrivateKey(
         config["validator_private_key"]
@@ -136,7 +137,7 @@ def make_confirmation_sender(config, confirmation_task_queue):
     home_bridge_contract = w3_home.eth.contract(
         address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
     )
-    sanity_check_home_bridge_contract(home_bridge_contract)
+    sanity_check_home_bridge_contracts(home_bridge_contract)
 
     return ConfirmationSender(
         transfer_event_queue=confirmation_task_queue,
@@ -144,6 +145,28 @@ def make_confirmation_sender(config, confirmation_task_queue):
         private_key=config["validator_private_key"],
         gas_price=config["home_chain_gas_price"],
         max_reorg_depth=config["home_chain_max_reorg_depth"],
+    )
+
+
+def make_validator_status_watcher(config, confirmation_task_planner, stop):
+    w3_home = make_w3_home(config)
+
+    home_bridge_contract = w3_home.eth.contract(
+        address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
+    )
+    sanity_check_home_bridge_contracts(home_bridge_contract)
+    validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
+
+    validator_address = PrivateKey(
+        config["validator_private_key"]
+    ).public_key.to_canonical_address()
+
+    return ValidatorStatusWatcher(
+        validator_proxy_contract,
+        validator_address,
+        poll_interval=HOME_CHAIN_STEP_DURATION,
+        start_validating_callback=confirmation_task_planner.start_validating,
+        stop_validating_callback=stop,
     )
 
 
@@ -197,6 +220,9 @@ def main(config_path: str) -> None:
         f"Starting Trustlines Bridge Validation Server for address {validator_address}"
     )
 
+    pool = gevent.pool.Pool()
+    stop_pool = partial(stop, pool, APPLICATION_CLEANUP_TIMEOUT)
+
     transfer_event_queue = Queue()
     home_bridge_event_queue = Queue()
     confirmation_task_queue = Queue()
@@ -213,6 +239,10 @@ def main(config_path: str) -> None:
         confirmation_task_queue=confirmation_task_queue,
     )
 
+    validator_status_watcher = make_validator_status_watcher(
+        config, confirmation_task_planner, stop_pool
+    )
+
     confirmation_sender = make_confirmation_sender(config, confirmation_task_queue)
 
     coroutines_and_args = [
@@ -224,17 +254,15 @@ def main(config_path: str) -> None:
             home_bridge_event_fetcher.fetch_events,
             config["home_chain_event_poll_interval"],
         ),
+        (validator_status_watcher.run,),
         (confirmation_task_planner.run,),
         (confirmation_sender.run,),
     ]
-
-    pool = gevent.pool.Pool()
 
     try:
         for coroutine_and_args in coroutines_and_args:
             pool.spawn(*coroutine_and_args)
 
-        stop_pool = partial(stop, pool, APPLICATION_CLEANUP_TIMEOUT)
         for signum in [signal.SIGINT, signal.SIGTERM]:
             gevent.signal(signum, stop_pool)
 

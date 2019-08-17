@@ -23,6 +23,14 @@ class TransferRecorder:
 
         self.home_chain_synced_until = 0.0
 
+        self.is_validating = False
+
+    def start_validating(self) -> None:
+        if self.is_validating:
+            raise ValueError("Validator is already validating")
+
+        self.is_validating = True
+
     def apply_proper_event(self, event: AttributeDict) -> None:
         event_name = event.event
 
@@ -42,30 +50,38 @@ class TransferRecorder:
             raise ValueError(f"Got unknown event {event}")
 
     def clear_transfers(self) -> None:
-        all_stages_seen = (
-            self.transfer_hashes & self.confirmation_hashes & self.completion_hashes
-        )
-        self.transfer_hashes -= all_stages_seen
-        self.confirmation_hashes -= all_stages_seen
-        self.completion_hashes -= all_stages_seen
+        if self.is_validating:
+            transfer_hashes_to_remove = (
+                self.transfer_hashes & self.confirmation_hashes & self.completion_hashes
+            )
+        else:
+            # if we're not validating, there's no chance to see a confirmation by us
+            transfer_hashes_to_remove = self.transfer_hashes & self.completion_hashes
 
-        self.scheduled_hashes -= all_stages_seen
+        self.transfer_hashes -= transfer_hashes_to_remove
+        self.confirmation_hashes -= transfer_hashes_to_remove
+        self.completion_hashes -= transfer_hashes_to_remove
 
-        for transfer_hash in all_stages_seen:
+        self.scheduled_hashes -= transfer_hashes_to_remove
+
+        for transfer_hash in transfer_hashes_to_remove:
             self.transfer_events.pop(transfer_hash, None)
 
     def pull_transfers_to_confirm(self) -> List[AttributeDict]:
-        unconfirmed_transfer_hashes = (
-            self.transfer_hashes
-            - self.confirmation_hashes
-            - self.completion_hashes
-            - self.scheduled_hashes
-        )
-        self.scheduled_hashes |= unconfirmed_transfer_hashes
-        confirmation_tasks = [
-            self.transfer_events[transfer_hash]
-            for transfer_hash in unconfirmed_transfer_hashes
-        ]
+        if self.is_validating:
+            unconfirmed_transfer_hashes = (
+                self.transfer_hashes
+                - self.confirmation_hashes
+                - self.completion_hashes
+                - self.scheduled_hashes
+            )
+            self.scheduled_hashes |= unconfirmed_transfer_hashes
+            confirmation_tasks = [
+                self.transfer_events[transfer_hash]
+                for transfer_hash in unconfirmed_transfer_hashes
+            ]
+        else:
+            confirmation_tasks = []
 
         self.clear_transfers()
         return confirmation_tasks
