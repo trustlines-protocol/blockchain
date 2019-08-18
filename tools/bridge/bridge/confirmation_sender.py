@@ -117,8 +117,8 @@ class ConfirmationSender:
         return signed_transaction
 
     def send_confirmation_transaction(self, transaction):
-        self.pending_transaction_queue.put(transaction)
         tx_hash = self.w3.eth.sendRawTransaction(transaction.rawTransaction)
+        self.pending_transaction_queue.put(transaction)
         logger.info(f"Sent confirmation transaction {tx_hash.hex()}")
         return tx_hash
 
