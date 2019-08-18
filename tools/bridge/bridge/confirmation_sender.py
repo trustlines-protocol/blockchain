@@ -140,8 +140,7 @@ class ConfirmationSender:
                     oldest_pending_transaction.hash
                 )
             except TransactionNotFound:
-                gevent.sleep(HOME_CHAIN_STEP_DURATION)  # wait roughly for next block
-                continue
+                break
 
             if receipt and receipt.blockNumber <= confirmation_threshold:
                 if receipt.status == 0:
