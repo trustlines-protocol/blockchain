@@ -110,8 +110,6 @@ class ConfirmationSender:
             }
         )
 
-        # The signing step should not fail, but we want to exit this execution path early,
-        # therefore it's inside the try block
         signed_transaction = self.w3.eth.account.sign_transaction(
             transaction, self.private_key
         )
