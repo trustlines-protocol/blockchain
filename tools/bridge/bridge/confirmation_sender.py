@@ -6,6 +6,7 @@ from eth_keys.datatypes import PrivateKey
 from eth_utils import to_checksum_address
 from gevent.queue import Queue
 from web3.contract import Contract
+from web3.datastructures import AttributeDict
 from web3.exceptions import TransactionNotFound
 
 from bridge.constants import (
@@ -13,7 +14,6 @@ from bridge.constants import (
     HOME_CHAIN_STEP_DURATION,
 )
 from bridge.contract_validation import is_bridge_validator
-from bridge.event_fetcher import FetcherReachedHeadEvent
 from bridge.utils import compute_transfer_hash
 
 logger = logging.getLogger(__name__)
@@ -64,10 +64,7 @@ class ConfirmationSender:
     def send_confirmation_transactions(self):
         while True:
             transfer_event = self.transfer_event_queue.get()
-
-            if isinstance(transfer_event, FetcherReachedHeadEvent):
-                # TODO: Needs to be handled
-                continue
+            assert isinstance(transfer_event, AttributeDict)
 
             if not is_bridge_validator(self.home_bridge_contract, self.address):
                 logger.warning(
