@@ -92,6 +92,12 @@ are equal to the ones in the TOML file but in upper case (e.g. `HOME_RPC_URL`).
 The `--config` (`-c`) CLI parameter allows to define the path to the
 configuration file.
 
+There are tools which make working with a set of environment variables a more pleasent experience.
+One of those is [dotenv](https://www.npmjs.com/package/dotenv-cli) which allows loading environment
+variables from a `.env` file, an example of which is provided [here](.env.example). To start the
+bridge with configuration from a `.env` file, run `dotenv tlbc-bridge`. Alternatively, you can
+also use [envdir](https://pypi.org/project/envdir/).
+
 The following table lists all available options. Configuration entries
 with a default value are optional.
 
