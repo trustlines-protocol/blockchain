@@ -259,14 +259,15 @@ def main(config_path: str) -> None:
         (confirmation_sender.run,),
     ]
 
+    greenlets = []
     try:
         for coroutine_and_args in coroutines_and_args:
-            pool.spawn(*coroutine_and_args)
+            greenlets.append(pool.spawn(*coroutine_and_args))
 
         for signum in [signal.SIGINT, signal.SIGTERM]:
             gevent.signal(signum, stop_pool)
 
-        pool.join(raise_error=True)
+        gevent.joinall(greenlets, raise_error=True)
     except Exception as exception:
         logger.exception("Application error", exc_info=exception)
         stop(pool, APPLICATION_CLEANUP_TIMEOUT)

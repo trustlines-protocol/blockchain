@@ -6,6 +6,7 @@ from eth_keys.datatypes import PrivateKey
 from eth_utils import to_checksum_address
 from gevent.queue import Queue
 from web3.contract import Contract
+from web3.datastructures import AttributeDict
 from web3.exceptions import TransactionNotFound
 
 from bridge.constants import (
@@ -13,7 +14,6 @@ from bridge.constants import (
     HOME_CHAIN_STEP_DURATION,
 )
 from bridge.contract_validation import is_bridge_validator
-from bridge.event_fetcher import FetcherReachedHeadEvent
 from bridge.utils import compute_transfer_hash
 
 logger = logging.getLogger(__name__)
@@ -64,10 +64,7 @@ class ConfirmationSender:
     def send_confirmation_transactions(self):
         while True:
             transfer_event = self.transfer_event_queue.get()
-
-            if isinstance(transfer_event, FetcherReachedHeadEvent):
-                # TODO: Needs to be handled
-                continue
+            assert isinstance(transfer_event, AttributeDict)
 
             if not is_bridge_validator(self.home_bridge_contract, self.address):
                 logger.warning(
@@ -113,8 +110,6 @@ class ConfirmationSender:
             }
         )
 
-        # The signing step should not fail, but we want to exit this execution path early,
-        # therefore it's inside the try block
         signed_transaction = self.w3.eth.account.sign_transaction(
             transaction, self.private_key
         )
@@ -122,8 +117,8 @@ class ConfirmationSender:
         return signed_transaction
 
     def send_confirmation_transaction(self, transaction):
-        self.pending_transaction_queue.put(transaction)
         tx_hash = self.w3.eth.sendRawTransaction(transaction.rawTransaction)
+        self.pending_transaction_queue.put(transaction)
         logger.info(f"Sent confirmation transaction {tx_hash.hex()}")
         return tx_hash
 
@@ -143,8 +138,7 @@ class ConfirmationSender:
                     oldest_pending_transaction.hash
                 )
             except TransactionNotFound:
-                gevent.sleep(HOME_CHAIN_STEP_DURATION)  # wait roughly for next block
-                continue
+                break
 
             if receipt and receipt.blockNumber <= confirmation_threshold:
                 if receipt.status == 0:
