@@ -12,6 +12,7 @@ import click
 import gevent
 import gevent.pool
 from eth_keys.datatypes import PrivateKey
+from eth_utils import from_wei, to_checksum_address
 from gevent.queue import Queue
 from toml.decoder import TomlDecodeError
 from web3 import HTTPProvider, Web3
@@ -32,6 +33,7 @@ from bridge.contract_validation import (
     validate_contract_existence,
 )
 from bridge.event_fetcher import EventFetcher
+from bridge.validator_balance_watcher import ValidatorBalanceWatcher
 from bridge.validator_status_watcher import ValidatorStatusWatcher
 
 logger = logging.getLogger(__name__)
@@ -70,6 +72,24 @@ def make_w3_foreign(config):
             request_kwargs={"timeout": config["foreign_rpc_timeout"]},
         )
     )
+
+
+def make_validator_address(config):
+    return PrivateKey(config["validator_private_key"]).public_key.to_canonical_address()
+
+
+def check_validator_balance(config, ctx):
+    w3 = make_w3_home(config)
+    validator_address = make_validator_address(config)
+    balance = w3.eth.getBalance(validator_address)
+    if balance < config["balance_warn_threshold"]:
+        ctx.fail(
+            f"The balance of the validator account at address "
+            f"{to_checksum_address(validator_address)} on the home chain is only "
+            f"{from_wei(balance, 'ether')} TLC, but at least "
+            f"{from_wei(config['balance_warn_threshold'], 'ether')} TLC are required. Either send "
+            f"some TLC to this address or configure a lower 'balance_warn_threshold'"
+        )
 
 
 def sanity_check_home_bridge_contracts(home_bridge_contract):
@@ -113,9 +133,7 @@ def make_home_bridge_event_fetcher(config, home_bridge_event_queue):
     )
     sanity_check_home_bridge_contracts(home_bridge_contract)
 
-    validator_address = PrivateKey(
-        config["validator_private_key"]
-    ).public_key.to_canonical_address()
+    validator_address = make_validator_address(config)
 
     return EventFetcher(
         web3=w3_home,
@@ -157,9 +175,7 @@ def make_validator_status_watcher(config, confirmation_task_planner, stop):
     sanity_check_home_bridge_contracts(home_bridge_contract)
     validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
 
-    validator_address = PrivateKey(
-        config["validator_private_key"]
-    ).public_key.to_canonical_address()
+    validator_address = make_validator_address(config)
 
     return ValidatorStatusWatcher(
         validator_proxy_contract,
@@ -167,6 +183,22 @@ def make_validator_status_watcher(config, confirmation_task_planner, stop):
         poll_interval=HOME_CHAIN_STEP_DURATION,
         start_validating_callback=confirmation_task_planner.start_validating,
         stop_validating_callback=stop,
+    )
+
+
+def make_validator_balance_watcher(config):
+    w3 = make_w3_home(config)
+
+    validator_address = make_validator_address(config)
+
+    balance_warn_threshold = config["balance_warn_threshold"]
+    poll_interval = config["balance_warn_poll_interval"]
+
+    return ValidatorBalanceWatcher(
+        w3=w3,
+        validator_address=validator_address,
+        poll_interval=poll_interval,
+        balance_warn_threshold=balance_warn_threshold,
     )
 
 
@@ -195,7 +227,8 @@ def stop(pool, timeout):
     required=False,
     help="Path to a config file",
 )
-def main(config_path: str) -> None:
+@click.pass_context
+def main(ctx, config_path: str) -> None:
     """The Trustlines Bridge Validation Server
 
     Configuration can be made using a TOML file or via Environment Variables.
@@ -212,10 +245,10 @@ def main(config_path: str) -> None:
         raise click.UsageError(f"Invalid config file: {value_error}") from value_error
 
     configure_logging(config)
-    validator_address = PrivateKey(
-        config["validator_private_key"]
-    ).public_key.to_checksum_address()
 
+    check_validator_balance(config, ctx)
+
+    validator_address = make_validator_address(config)
     logger.info(
         f"Starting Trustlines Bridge Validation Server for address {validator_address}"
     )
@@ -245,6 +278,8 @@ def main(config_path: str) -> None:
 
     confirmation_sender = make_confirmation_sender(config, confirmation_task_queue)
 
+    validator_balance_watcher = make_validator_balance_watcher(config)
+
     coroutines_and_args = [
         (
             transfer_event_fetcher.fetch_events,
@@ -255,6 +290,7 @@ def main(config_path: str) -> None:
             config["home_chain_event_poll_interval"],
         ),
         (validator_status_watcher.run,),
+        (validator_balance_watcher.run,),
         (confirmation_task_planner.run,),
         (confirmation_sender.run,),
     ]

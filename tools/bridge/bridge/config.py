@@ -12,6 +12,7 @@ from eth_utils import (
     is_checksum_address,
     is_hex,
     to_canonical_address,
+    to_wei,
 )
 from eth_utils.toolz import merge
 
@@ -98,6 +99,8 @@ OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
     "foreign_chain_max_reorg_depth": 10,
     "foreign_chain_event_poll_interval": 5,
     "foreign_chain_event_fetch_start_block_number": 0,
+    "balance_warn_threshold": to_wei(0.1, "ether"),
+    "balance_warn_poll_interval": 60,
 }
 
 CONFIG_ENTRY_VALIDATORS = {
@@ -117,6 +120,8 @@ CONFIG_ENTRY_VALIDATORS = {
     "foreign_bridge_contract_address": validate_checksum_address,
     "foreign_chain_event_fetch_start_block_number": validate_non_negative_integer,
     "validator_private_key": validate_private_key,
+    "balance_warn_threshold": validate_non_negative_integer,
+    "balance_warn_poll_interval": validate_positive_float,
 }
 
 assert all(key in CONFIG_ENTRY_VALIDATORS for key in REQUIRED_CONFIG_ENTRIES)
