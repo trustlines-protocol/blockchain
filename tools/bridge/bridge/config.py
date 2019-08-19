@@ -99,7 +99,9 @@ OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
     "foreign_chain_max_reorg_depth": 10,
     "foreign_chain_event_poll_interval": 5,
     "foreign_chain_event_fetch_start_block_number": 0,
-    "balance_warn_threshold": to_wei(0.1, "ether"),
+    # disable type check as type hint in eth_utils is wrong, (see
+    # https://github.com/ethereum/eth-utils/issues/168)
+    "balance_warn_threshold": to_wei(0.1, "ether"),  # type: ignore
     "balance_warn_poll_interval": 60,
 }
 
