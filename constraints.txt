@@ -74,6 +74,7 @@ semantic-version==2.6.0
 setuptools==41.0.1
 setuptools-scm==3.3.3
 six==1.12.0
+tenacity==5.1.1
 toml==0.10.0
 toolz==0.10.0
 trie==1.4.0
