@@ -50,13 +50,7 @@ class TransferRecorder:
             raise ValueError(f"Got unknown event {event}")
 
     def clear_transfers(self) -> None:
-        if self.is_validating:
-            transfer_hashes_to_remove = (
-                self.transfer_hashes & self.confirmation_hashes & self.completion_hashes
-            )
-        else:
-            # if we're not validating, there's no chance to see a confirmation by us
-            transfer_hashes_to_remove = self.transfer_hashes & self.completion_hashes
+        transfer_hashes_to_remove = self.transfer_hashes & self.completion_hashes
 
         self.transfer_hashes -= transfer_hashes_to_remove
         self.confirmation_hashes -= transfer_hashes_to_remove
