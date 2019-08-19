@@ -11,7 +11,7 @@ test: install
 	$(VIRTUAL_ENV)/bin/pytest tests
 
 compile: install-requirements
-	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg --optimize-runs 100 -d $(CONTRACTS_DIRECTORY)
+	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg --optimize --optimize-runs 100 -d $(CONTRACTS_DIRECTORY)
 	$(VIRTUAL_ENV)/bin/python scripts/pack_contracts.py build/contracts.json auction_deploy/contracts.json
 
 build: compile
