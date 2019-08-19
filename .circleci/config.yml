@@ -452,6 +452,43 @@ jobs:
             make test
             cd ../..
 
+  build-bridge-validator-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: tlbc-bridge-validator
+    steps:
+      - setup_remote_docker
+      - checkout
+      - run:
+          name: Build bridge image
+          command: |
+            docker build -f tools/bridge -t $LOCAL_IMAGE tools/bridge
+      - run:
+          name: Save bridge image
+          command: |
+            mkdir -p ~/images
+            docker save --output ~/images/$LOCAL_IMAGE.tar $LOCAL_IMAGE
+            du -hc ~/images
+      - persist_to_workspace:
+          root: '~'
+          paths:
+            - images
+
+  deploy-bridge-validator-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: tlbc-bridge-validator
+    working_directory: ~/repo
+    steps:
+      - run:
+          name: set DOCKER_REPO
+          command: |
+            echo ': \"${DOCKER_REPO:=trustlines/tlbc-bridge-validator}\"' >> ${BASH_ENV}
+          # this allows us to set DOCKER_REPO from circleci when building in a
+          # fork. makes testing easier.
+
+      - upload-docker-image
+
   build-quickstart-image:
     executor: ubuntu-builder
     environment:
@@ -488,7 +525,6 @@ jobs:
           # fork. makes testing easier.
 
       - upload-docker-image
-
 
   build-docker-image:
     executor: ubuntu-builder
@@ -617,9 +653,24 @@ workflows:
           requires:
             - install-bridge-validator
 
+      - build-bridge-validator-image
       - build-docker-image
       - build-quickstart-image
       - test-quickstart
+      - deploy-bridge-validator-image:
+          filters:
+            branches:
+              only:
+                - release-bridge-validator
+          requires:
+            - pre-commit-checks
+            - run-black
+            - run-flake8
+            - mypy-bridge-validator
+            - pytest-bridge-validator
+            - build-bridge-validator-image
+          context: docker-credentials
+
       - deploy-docker-image:
           filters:
             branches:
