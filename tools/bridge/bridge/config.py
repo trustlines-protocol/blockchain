@@ -3,7 +3,6 @@ from typing import Any, Dict
 
 import toml
 import validators
-from dotenv import load_dotenv
 from eth_keys.constants import SECPK1_N
 from eth_utils import (
     big_endian_to_int,
@@ -14,8 +13,6 @@ from eth_utils import (
     to_canonical_address,
 )
 from eth_utils.toolz import merge
-
-load_dotenv()
 
 
 def validate_rpc_url(url: Any) -> str:
