@@ -1,6 +1,7 @@
 import logging
 
 import gevent
+import tenacity
 from eth_keys.datatypes import PrivateKey
 from eth_utils import to_checksum_address
 from gevent.queue import Queue
@@ -141,6 +142,12 @@ class Sender:
         return tx_hash
 
 
+watcher_retry = tenacity.retry(
+    wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
+    before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
+)
+
+
 class Watcher:
     def __init__(self, *, w3, pending_transaction_queue: Queue, max_reorg_depth: int):
         self.w3 = w3
@@ -153,24 +160,29 @@ class Watcher:
         else:
             logger.info(f"Transaction confirmed: {receipt.transactionHash.hex()}")
 
+    @watcher_retry
+    def _rpc_get_receipt(self, txhash):
+        try:
+            return self.w3.eth.getTransactionReceipt(txhash)
+        except TransactionNotFound:
+            return None
+
+    @watcher_retry
+    def _rpc_latest_block(self):
+        return self.w3.eth.blockNumber
+
     def watch_pending_transactions(self):
         while True:
             self.clear_confirmed_transactions()
             gevent.sleep(HOME_CHAIN_STEP_DURATION)
 
     def clear_confirmed_transactions(self):
-        block_number = self.w3.eth.blockNumber
-        confirmation_threshold = block_number - self.max_reorg_depth
+        confirmation_threshold = self._rpc_latest_block() - self.max_reorg_depth
 
         while not self.pending_transaction_queue.empty():
             oldest_pending_transaction = self.pending_transaction_queue.peek()
-            try:
-                receipt = self.w3.eth.getTransactionReceipt(
-                    oldest_pending_transaction.hash
-                )
-            except TransactionNotFound:
-                break
-
+            receipt = self._rpc_get_receipt(oldest_pending_transaction.hash)
+            assert receipt.transactionHash == oldest_pending_transaction.hash
             if receipt and receipt.blockNumber <= confirmation_threshold:
                 self._log_txreceipt(receipt)
                 # remove from queue
