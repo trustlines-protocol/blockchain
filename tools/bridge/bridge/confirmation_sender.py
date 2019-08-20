@@ -95,9 +95,8 @@ class Sender:
             assert isinstance(transfer_event, AttributeDict)
 
             transaction = self.prepare_confirmation_transaction(transfer_event)
-
-            if transaction is not None:
-                self.send_confirmation_transaction(transaction)
+            assert transaction is not None
+            self.send_confirmation_transaction(transaction)
 
     def prepare_confirmation_transaction(self, transfer_event):
         nonce = self.get_next_nonce()
