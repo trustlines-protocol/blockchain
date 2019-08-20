@@ -147,6 +147,12 @@ class Watcher:
         self.max_reorg_depth = max_reorg_depth
         self.pending_transaction_queue = pending_transaction_queue
 
+    def _log_txreceipt(self, receipt):
+        if receipt.status == 0:
+            logger.warning(f"Transaction failed: {receipt.transactionHash.hex()}")
+        else:
+            logger.info(f"Transaction confirmed: {receipt.transactionHash.hex()}")
+
     def watch_pending_transactions(self):
         while True:
             self.clear_confirmed_transactions()
@@ -166,17 +172,9 @@ class Watcher:
                 break
 
             if receipt and receipt.blockNumber <= confirmation_threshold:
-                if receipt.status == 0:
-                    logger.warning(
-                        f"Transaction failed: {oldest_pending_transaction.hash.hex()}"
-                    )
-                else:
-                    logger.info(
-                        f"Transaction has been confirmed: {oldest_pending_transaction.hash.hex()}"
-                    )
-                confirmed_transaction = (
-                    self.pending_transaction_queue.get()
-                )  # remove from queue
-                assert confirmed_transaction == oldest_pending_transaction
+                self._log_txreceipt(receipt)
+                # remove from queue
+                confirmed_transaction = self.pending_transaction_queue.get()
+                assert confirmed_transaction is oldest_pending_transaction
             else:
                 break  # no need to look at transactions that are even newer
