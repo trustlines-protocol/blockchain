@@ -93,14 +93,12 @@ class Sender:
         while True:
             transfer_event = self.transfer_event_queue.get()
             assert isinstance(transfer_event, AttributeDict)
-
-            transaction = self.prepare_confirmation_transaction(transfer_event)
+            nonce = self.get_next_nonce()
+            transaction = self.prepare_confirmation_transaction(transfer_event, nonce)
             assert transaction is not None
             self.send_confirmation_transaction(transaction)
 
-    def prepare_confirmation_transaction(self, transfer_event):
-        nonce = self.get_next_nonce()
-
+    def prepare_confirmation_transaction(self, transfer_event, nonce: int):
         transfer_hash = compute_transfer_hash(transfer_event)
         transaction_hash = transfer_event.transactionHash
         amount = transfer_event.args.value
