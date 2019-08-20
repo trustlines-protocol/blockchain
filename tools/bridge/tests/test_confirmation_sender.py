@@ -188,27 +188,3 @@ def test_pending_transfers_are_cleared(
     tester_home.mine_blocks(max_reorg_depth - 1)
     gevent.sleep(1.5 * HOME_CHAIN_STEP_DURATION)
     assert confirmation_sender.pending_transaction_queue.qsize() == 0
-
-
-def test_do_not_confirm_as_non_bridge_validator(
-    confirmation_sender_with_non_validator_account,
-    transfer_queue,
-    transfer_event,
-    spawn,
-):
-    # TODO: This could fail in a non-testing environment. RPC requests can take
-    # longer or fail for any other reason. An empty queue at the end isn't
-    # a strong affirmation.
-
-    spawn(confirmation_sender_with_non_validator_account.run)
-
-    assert (
-        confirmation_sender_with_non_validator_account.pending_transaction_queue.empty()
-    )
-
-    transfer_queue.put(transfer_event)
-    gevent.sleep(0.1)
-
-    assert (
-        confirmation_sender_with_non_validator_account.pending_transaction_queue.empty()
-    )

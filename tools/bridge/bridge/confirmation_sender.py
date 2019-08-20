@@ -75,7 +75,7 @@ class Sender:
 
         if not is_bridge_validator(home_bridge_contract, self.address):
             logger.warning(
-                f"The address {self.address} is not a bridge validator to confirm "
+                f"The address {to_checksum_address(self.address)} is not a bridge validator to confirm "
                 f"transfers on the home bridge contract!"
             )
 
@@ -93,13 +93,6 @@ class Sender:
         while True:
             transfer_event = self.transfer_event_queue.get()
             assert isinstance(transfer_event, AttributeDict)
-
-            if not is_bridge_validator(self.home_bridge_contract, self.address):
-                logger.warning(
-                    f"Can not confirm transaction because {to_checksum_address(self.address)}"
-                    f"is not a bridge validator!"
-                )
-                continue
 
             transaction = self.prepare_confirmation_transaction(transfer_event)
 
