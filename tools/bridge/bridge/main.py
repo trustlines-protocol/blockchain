@@ -198,10 +198,10 @@ def stop(pool, timeout):
 def main(config_path: str) -> None:
     """The Trustlines Bridge Validation Server
 
-    Configuration can be made using a TOML file or via Environment Variables.
-    A dotenv (.env) file will be automatically evaluated.
+    Configuration can be made using a TOML file or via environment variables. Tools such as dotenv
+    or envdir may simplify setting environment variables. For a dotenv example, see `.env.example`.
 
-    See .env.example and config.py for valid configuration options and defaults.
+    See config.py for valid configuration options and defaults.
     """
 
     try:
