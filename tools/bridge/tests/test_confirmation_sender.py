@@ -111,7 +111,7 @@ def test_transaction_preparation(
     home_bridge_contract,
     transfer_event,
 ):
-    signed_transaction = confirmation_sender.prepare_confirmation_transaction(
+    signed_transaction = confirmation_sender.sender.prepare_confirmation_transaction(
         transfer_event
     )
     transaction = rlp.decode(
@@ -121,7 +121,7 @@ def test_transaction_preparation(
     assert transaction.to == decode_hex(home_bridge_contract.address)
     assert transaction.gas_price == gas_price
     assert transaction.value == 0
-    assert transaction.nonce == confirmation_sender.get_next_nonce()
+    assert transaction.nonce == confirmation_sender.sender.get_next_nonce()
 
 
 def test_transaction_sending(
@@ -132,8 +132,10 @@ def test_transaction_sending(
     transfer_event,
     validator_address,
 ):
-    transaction = confirmation_sender.prepare_confirmation_transaction(transfer_event)
-    confirmation_sender.send_confirmation_transaction(transaction)
+    transaction = confirmation_sender.sender.prepare_confirmation_transaction(
+        transfer_event
+    )
+    confirmation_sender.sender.send_confirmation_transaction(transaction)
     assert transaction == confirmation_sender.pending_transaction_queue.peek()
     tester_home.mine_block()
     receipt = w3_home.eth.getTransactionReceipt(transaction.hash)
