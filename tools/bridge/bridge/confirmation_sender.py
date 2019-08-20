@@ -1,5 +1,4 @@
 import logging
-from typing import Any, Dict
 
 import gevent
 from eth_keys.datatypes import PrivateKey
@@ -30,6 +29,47 @@ class ConfirmationSender:
         gas_price: int,
         max_reorg_depth: int,
     ):
+        self.pending_transaction_queue = Queue()
+        w3 = home_bridge_contract.web3
+
+        self.sender = Sender(
+            transfer_event_queue=transfer_event_queue,
+            home_bridge_contract=home_bridge_contract,
+            private_key=private_key,
+            gas_price=gas_price,
+            max_reorg_depth=max_reorg_depth,
+            pending_transaction_queue=self.pending_transaction_queue,
+        )
+        self.watcher = Watcher(
+            w3=w3,
+            pending_transaction_queue=self.pending_transaction_queue,
+            max_reorg_depth=max_reorg_depth,
+        )
+
+    def run(self):
+        logger.debug("Starting")
+        try:
+            greenlets = [
+                gevent.spawn(self.watcher.watch_pending_transactions),
+                gevent.spawn(self.sender.send_confirmation_transactions),
+            ]
+            gevent.joinall(greenlets)
+        finally:
+            for greenlet in greenlets:
+                greenlet.kill()
+
+
+class Sender:
+    def __init__(
+        self,
+        *,
+        transfer_event_queue: Queue,
+        home_bridge_contract: Contract,
+        private_key: bytes,
+        gas_price: int,
+        max_reorg_depth: int,
+        pending_transaction_queue: Queue,
+    ):
         self.private_key = private_key
         self.address = PrivateKey(self.private_key).public_key.to_canonical_address()
 
@@ -44,22 +84,10 @@ class ConfirmationSender:
         self.gas_price = gas_price
         self.max_reorg_depth = max_reorg_depth
         self.w3 = self.home_bridge_contract.web3
-        self.pending_transaction_queue: Queue[Dict[str, Any]] = Queue()
+        self.pending_transaction_queue = pending_transaction_queue
 
     def get_next_nonce(self):
         return self.w3.eth.getTransactionCount(self.address, "pending")
-
-    def run(self):
-        logger.debug("Starting")
-        try:
-            greenlets = [
-                gevent.spawn(self.watch_pending_transactions),
-                gevent.spawn(self.send_confirmation_transactions),
-            ]
-            gevent.joinall(greenlets)
-        finally:
-            for greenlet in greenlets:
-                greenlet.kill()
 
     def send_confirmation_transactions(self):
         while True:
@@ -121,6 +149,13 @@ class ConfirmationSender:
         self.pending_transaction_queue.put(transaction)
         logger.info(f"Sent confirmation transaction {tx_hash.hex()}")
         return tx_hash
+
+
+class Watcher:
+    def __init__(self, *, w3, pending_transaction_queue: Queue, max_reorg_depth: int):
+        self.w3 = w3
+        self.max_reorg_depth = max_reorg_depth
+        self.pending_transaction_queue = pending_transaction_queue
 
     def watch_pending_transactions(self):
         while True:
