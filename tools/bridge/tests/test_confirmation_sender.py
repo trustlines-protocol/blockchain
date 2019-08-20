@@ -1,3 +1,5 @@
+import logging
+
 import gevent
 import pytest
 import rlp
@@ -153,16 +155,25 @@ def test_transaction_sending(
 
 
 def test_transfers_are_handled(
-    confirmation_sender, w3_home, tester_home, transfer_queue, transfer_event, spawn
+    confirmation_sender,
+    w3_home,
+    tester_home,
+    transfer_queue,
+    transfer_event,
+    home_bridge_contract,
+    spawn,
 ):
     spawn(confirmation_sender.run)
-    assert confirmation_sender.pending_transaction_queue.empty()
+    latest_block_number = w3_home.eth.blockNumber
     transfer_queue.put(transfer_event)
-    gevent.sleep(0.1)
-    assert confirmation_sender.pending_transaction_queue.qsize() == 1
-    transaction = confirmation_sender.pending_transaction_queue.peek()
-    tester_home.mine_block()
-    assert w3_home.eth.getTransactionReceipt(transaction.hash) is not None
+
+    gevent.sleep(0.01)
+
+    events = home_bridge_contract.events.Confirmation.createFilter(
+        fromBlock=latest_block_number
+    ).get_all_entries()
+    print("EVENTS", events)
+    assert len(events) == 1
 
 
 def test_pending_transfers_are_cleared(
@@ -171,20 +182,29 @@ def test_pending_transfers_are_cleared(
     transfer_queue,
     transfer_event,
     max_reorg_depth,
+    caplog,
     spawn,
 ):
+    caplog.set_level(logging.INFO)
+
+    def confirmed():
+        for rec in caplog.records:
+            if rec.message.startswith("Transaction confirmed:"):
+                return True
+        return False
+
     spawn(confirmation_sender.run)
-    assert confirmation_sender.pending_transaction_queue.empty()
     transfer_queue.put(transfer_event)
-    gevent.sleep(0.1)
-    assert confirmation_sender.pending_transaction_queue.qsize() == 1
+    gevent.sleep(0.01)
+
     tester_home.mine_block()
     gevent.sleep(
         1.5 * HOME_CHAIN_STEP_DURATION
     )  # wait until they have a chance to check
-    assert (
-        confirmation_sender.pending_transaction_queue.qsize() == 1
-    )  # not confirmed enough yet
+
+    assert not confirmed()
+
     tester_home.mine_blocks(max_reorg_depth - 1)
     gevent.sleep(1.5 * HOME_CHAIN_STEP_DURATION)
-    assert confirmation_sender.pending_transaction_queue.qsize() == 0
+
+    assert confirmed()

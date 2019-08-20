@@ -171,22 +171,24 @@ class Watcher:
     def _rpc_latest_block(self):
         return self.w3.eth.blockNumber
 
+    def _wait_for_next_block(self):
+        logger.debug("_wait_for_next_block: %s", HOME_CHAIN_STEP_DURATION)
+        gevent.sleep(HOME_CHAIN_STEP_DURATION)
+
     def watch_pending_transactions(self):
         while True:
-            self.clear_confirmed_transactions()
-            gevent.sleep(HOME_CHAIN_STEP_DURATION)
+            oldest_pending_transaction = self.pending_transaction_queue.get()
+            logger.debug(
+                "waiting for transaction %s", oldest_pending_transaction.hash.hex()
+            )
+            receipt = self.wait_for_transaction(oldest_pending_transaction)
+            self._log_txreceipt(receipt)
 
-    def clear_confirmed_transactions(self):
-        confirmation_threshold = self._rpc_latest_block() - self.max_reorg_depth
-
-        while not self.pending_transaction_queue.empty():
-            oldest_pending_transaction = self.pending_transaction_queue.peek()
-            receipt = self._rpc_get_receipt(oldest_pending_transaction.hash)
-            assert receipt.transactionHash == oldest_pending_transaction.hash
+    def wait_for_transaction(self, pending_transaction):
+        while True:
+            confirmation_threshold = self._rpc_latest_block() - self.max_reorg_depth
+            receipt = self._rpc_get_receipt(pending_transaction.hash)
             if receipt and receipt.blockNumber <= confirmation_threshold:
-                self._log_txreceipt(receipt)
-                # remove from queue
-                confirmed_transaction = self.pending_transaction_queue.get()
-                assert confirmed_transaction is oldest_pending_transaction
+                return receipt
             else:
-                break  # no need to look at transactions that are even newer
+                self._wait_for_next_block()
