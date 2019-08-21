@@ -464,7 +464,7 @@ jobs:
       - run:
           name: Build bridge image
           command: |
-            docker build -f tools/bridge -t $LOCAL_IMAGE tools/bridge
+            docker build -f tools/bridge/Dockerfile -t $LOCAL_IMAGE .
       - run:
           name: Save bridge image
           command: |
