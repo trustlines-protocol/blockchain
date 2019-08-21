@@ -1,6 +1,7 @@
 import logging
 
 import gevent
+import tenacity
 from eth_keys.datatypes import PrivateKey
 from eth_utils import to_checksum_address
 from gevent.queue import Queue
@@ -59,6 +60,12 @@ class ConfirmationSender:
                 greenlet.kill()
 
 
+sender_retry = tenacity.retry(
+    wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
+    before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
+)
+
+
 class Sender:
     def __init__(
         self,
@@ -75,7 +82,7 @@ class Sender:
 
         if not is_bridge_validator(home_bridge_contract, self.address):
             logger.warning(
-                f"The address {self.address} is not a bridge validator to confirm "
+                f"The address {to_checksum_address(self.address)} is not a bridge validator to confirm "
                 f"transfers on the home bridge contract!"
             )
 
@@ -86,6 +93,11 @@ class Sender:
         self.w3 = self.home_bridge_contract.web3
         self.pending_transaction_queue = pending_transaction_queue
 
+    @sender_retry
+    def _rpc_send_raw_transaction(self, raw_transaction):
+        return self.w3.eth.sendRawTransaction(raw_transaction)
+
+    @sender_retry
     def get_next_nonce(self):
         return self.w3.eth.getTransactionCount(self.address, "pending")
 
@@ -93,22 +105,12 @@ class Sender:
         while True:
             transfer_event = self.transfer_event_queue.get()
             assert isinstance(transfer_event, AttributeDict)
+            nonce = self.get_next_nonce()
+            transaction = self.prepare_confirmation_transaction(transfer_event, nonce)
+            assert transaction is not None
+            self.send_confirmation_transaction(transaction)
 
-            if not is_bridge_validator(self.home_bridge_contract, self.address):
-                logger.warning(
-                    f"Can not confirm transaction because {to_checksum_address(self.address)}"
-                    f"is not a bridge validator!"
-                )
-                continue
-
-            transaction = self.prepare_confirmation_transaction(transfer_event)
-
-            if transaction is not None:
-                self.send_confirmation_transaction(transaction)
-
-    def prepare_confirmation_transaction(self, transfer_event):
-        nonce = self.get_next_nonce()
-
+    def prepare_confirmation_transaction(self, transfer_event, nonce: int):
         transfer_hash = compute_transfer_hash(transfer_event)
         transaction_hash = transfer_event.transactionHash
         amount = transfer_event.args.value
@@ -145,10 +147,16 @@ class Sender:
         return signed_transaction
 
     def send_confirmation_transaction(self, transaction):
-        tx_hash = self.w3.eth.sendRawTransaction(transaction.rawTransaction)
+        tx_hash = self._rpc_send_raw_transaction(transaction.rawTransaction)
         self.pending_transaction_queue.put(transaction)
         logger.info(f"Sent confirmation transaction {tx_hash.hex()}")
         return tx_hash
+
+
+watcher_retry = tenacity.retry(
+    wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
+    before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
+)
 
 
 class Watcher:
@@ -157,36 +165,41 @@ class Watcher:
         self.max_reorg_depth = max_reorg_depth
         self.pending_transaction_queue = pending_transaction_queue
 
+    def _log_txreceipt(self, receipt):
+        if receipt.status == 0:
+            logger.warning(f"Transaction failed: {receipt.transactionHash.hex()}")
+        else:
+            logger.info(f"Transaction confirmed: {receipt.transactionHash.hex()}")
+
+    @watcher_retry
+    def _rpc_get_receipt(self, txhash):
+        try:
+            return self.w3.eth.getTransactionReceipt(txhash)
+        except TransactionNotFound:
+            return None
+
+    @watcher_retry
+    def _rpc_latest_block(self):
+        return self.w3.eth.blockNumber
+
+    def _wait_for_next_block(self):
+        logger.debug("_wait_for_next_block: %s", HOME_CHAIN_STEP_DURATION)
+        gevent.sleep(HOME_CHAIN_STEP_DURATION)
+
     def watch_pending_transactions(self):
         while True:
-            self.clear_confirmed_transactions()
-            gevent.sleep(HOME_CHAIN_STEP_DURATION)
+            oldest_pending_transaction = self.pending_transaction_queue.get()
+            logger.debug(
+                "waiting for transaction %s", oldest_pending_transaction.hash.hex()
+            )
+            receipt = self.wait_for_transaction(oldest_pending_transaction)
+            self._log_txreceipt(receipt)
 
-    def clear_confirmed_transactions(self):
-        block_number = self.w3.eth.blockNumber
-        confirmation_threshold = block_number - self.max_reorg_depth
-
-        while not self.pending_transaction_queue.empty():
-            oldest_pending_transaction = self.pending_transaction_queue.peek()
-            try:
-                receipt = self.w3.eth.getTransactionReceipt(
-                    oldest_pending_transaction.hash
-                )
-            except TransactionNotFound:
-                break
-
+    def wait_for_transaction(self, pending_transaction):
+        while True:
+            confirmation_threshold = self._rpc_latest_block() - self.max_reorg_depth
+            receipt = self._rpc_get_receipt(pending_transaction.hash)
             if receipt and receipt.blockNumber <= confirmation_threshold:
-                if receipt.status == 0:
-                    logger.warning(
-                        f"Transaction failed: {oldest_pending_transaction.hash.hex()}"
-                    )
-                else:
-                    logger.info(
-                        f"Transaction has been confirmed: {oldest_pending_transaction.hash.hex()}"
-                    )
-                confirmed_transaction = (
-                    self.pending_transaction_queue.get()
-                )  # remove from queue
-                assert confirmed_transaction == oldest_pending_transaction
+                return receipt
             else:
-                break  # no need to look at transactions that are even newer
+                self._wait_for_next_block()
