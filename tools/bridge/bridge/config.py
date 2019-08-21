@@ -100,6 +100,7 @@ OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
     # https://github.com/ethereum/eth-utils/issues/168)
     "balance_warn_threshold": to_wei(0.1, "ether"),  # type: ignore
     "balance_warn_poll_interval": 60,
+    "minimum_validator_balance": to_wei(0.04, "ether"),  # type: ignore
 }
 
 CONFIG_ENTRY_VALIDATORS = {
@@ -121,6 +122,7 @@ CONFIG_ENTRY_VALIDATORS = {
     "validator_private_key": validate_private_key,
     "balance_warn_threshold": validate_non_negative_integer,
     "balance_warn_poll_interval": validate_positive_float,
+    "minimum_validator_balance": validate_positive_float,
 }
 
 assert all(key in CONFIG_ENTRY_VALIDATORS for key in REQUIRED_CONFIG_ENTRIES)
