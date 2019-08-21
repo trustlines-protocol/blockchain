@@ -21,7 +21,6 @@ def test_watcher_checks_initial_validator_status_correctly(
 
     spawn(validator_status_watcher.run)
     gevent.sleep(0.01)
-    assert validator_status_watcher.is_validating
     start_callback.assert_called_once()
     stop_callback.assert_not_called()
 
@@ -41,7 +40,6 @@ def test_watcher_checks_initial_non_validator_status_correctly(
 
     spawn(validator_status_watcher.run)
     gevent.sleep(0.01)
-    assert not validator_status_watcher.is_validating
     start_callback.assert_not_called()
     stop_callback.assert_not_called()
 
@@ -62,7 +60,6 @@ def test_watcher_notices_validator_set_joining(
 
     spawn(validator_status_watcher.run)
     gevent.sleep(0.01)  # check initial status
-    assert not validator_status_watcher.is_validating
     start_callback.assert_not_called()
     stop_callback.assert_not_called()
 
@@ -72,7 +69,6 @@ def test_watcher_notices_validator_set_joining(
     ).transact({"from": system_address})
 
     gevent.sleep(poll_interval * 1.5)  # check a second time
-    assert validator_status_watcher.is_validating
     start_callback.assert_called_once()
     stop_callback.assert_not_called()
 
@@ -93,7 +89,6 @@ def test_watcher_notices_validator_set_leaving(
 
     spawn(validator_status_watcher.run)
     gevent.sleep(poll_interval * 0.01)  # check initial status
-    assert validator_status_watcher.is_validating
     start_callback.assert_called_once()
     stop_callback.assert_not_called()
 
@@ -105,6 +100,5 @@ def test_watcher_notices_validator_set_leaving(
     )
 
     gevent.sleep(poll_interval)  # check a second time
-    assert not validator_status_watcher.is_validating
     start_callback.assert_not_called()
     stop_callback.assert_called_once()

@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 import gevent
 from eth_utils import is_canonical_address, to_checksum_address
@@ -25,32 +24,35 @@ class ValidatorStatusWatcher:
         self.start_validating_callback = start_validating_callback
         self.stop_validating_callback = stop_validating_callback
 
-        self.is_validating: Optional[bool] = None
-
-    def run(self) -> None:
-        self.is_validating = self.check_validator_status()
-        if self.is_validating:
-            logger.info("The account is a member of the validator set")
-            self.start_validating_callback()
-        else:
+    def _wait_for_validator_status(self):
+        """wait until address has validator status"""
+        while not self.check_validator_status():
             logger.warning(
                 f"The account with address {to_checksum_address(self.validator_address)} is not a "
                 f"member of the validator set at the moment. This status will be checked "
                 f"periodically."
             )
-
-        while True:
             gevent.sleep(self.poll_interval)
 
-            has_been_validating_before = self.is_validating
-            self.is_validating = self.check_validator_status()
+    def _wait_for_non_validator_status(self):
+        """wait until address has lost its validator status"""
+        while self.check_validator_status():
+            gevent.sleep(self.poll_interval)
 
-            if self.is_validating and not has_been_validating_before:
-                logger.info("Account joined the validator set")
-                self.start_validating_callback()
-            elif not self.is_validating and has_been_validating_before:
-                logger.info("Account has left the validator set")
-                self.stop_validating_callback()
+    def run(self) -> None:
+        self._wait_for_validator_status()
+        logger.info("The account is a member of the validator set")
+        self.start_validating_callback()
+
+        gevent.sleep(self.poll_interval)  # wait until we poll again
+        self._wait_for_non_validator_status()
+
+        logger.warning(
+            f"The account with address {to_checksum_address(self.validator_address)} has lost it's"
+            f"validator status. The program will be shutdown now. "
+        )
+
+        self.stop_validating_callback()
 
     def check_validator_status(self):
         logger.debug("Checking validator status")
