@@ -230,6 +230,7 @@ def stop(pool, timeout):
     "config_path",
     type=click.Path(exists=True),
     required=False,
+    envvar="BRIDGE_CONFIG",
     help="Path to a config file",
 )
 @click.pass_context
