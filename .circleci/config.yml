@@ -85,12 +85,14 @@ commands:
           name: Upload docker images
           command: |
             echo "Uploading to $DOCKER_REPO"
+            CLEAN_BRANCH_NAME=${CIRCLE_BRANCH##*/}
+            # e.g. transforms 'bridge/pre-release' to 'pre-release'
 
-            docker tag $LOCAL_IMAGE $DOCKER_REPO:$CIRCLE_BRANCH$CIRCLE_BUILD_NUM
-            docker push $DOCKER_REPO:$CIRCLE_BRANCH$CIRCLE_BUILD_NUM
+            docker tag $LOCAL_IMAGE $DOCKER_REPO:$CLEAN_BRANCH_NAME$CIRCLE_BUILD_NUM
+            docker push $DOCKER_REPO:$CLEAN_BRANCH_NAME$CIRCLE_BUILD_NUM
 
-            docker tag $LOCAL_IMAGE $DOCKER_REPO:$CIRCLE_BRANCH
-            docker push $DOCKER_REPO:$CIRCLE_BRANCH
+            docker tag $LOCAL_IMAGE $DOCKER_REPO:$CLEAN_BRANCH_NAME
+            docker push $DOCKER_REPO:$CLEAN_BRANCH_NAME
 
 jobs:
   pre-commit-checks:
@@ -452,10 +454,10 @@ jobs:
             make test
             cd ../..
 
-  build-bridge-validator-image:
+  build-bridge-image:
     executor: ubuntu-builder
     environment:
-      LOCAL_IMAGE: tlbc-bridge-validator
+      LOCAL_IMAGE: bridge-next
     steps:
       - setup_remote_docker
       - checkout
@@ -474,20 +476,39 @@ jobs:
           paths:
             - images
 
-  deploy-bridge-validator-image:
+  deploy-bridge-image:
     executor: ubuntu-builder
     environment:
-      LOCAL_IMAGE: tlbc-bridge-validator
+      LOCAL_IMAGE: bridge-next
     working_directory: ~/repo
     steps:
       - run:
           name: set DOCKER_REPO
           command: |
-            echo ': \"${DOCKER_REPO:=trustlines/tlbc-bridge-validator}\"' >> ${BASH_ENV}
+            echo ': \"${DOCKER_REPO:=trustlines/bridge-next}\"' >> ${BASH_ENV}
           # this allows us to set DOCKER_REPO from circleci when building in a
           # fork. makes testing easier.
 
       - upload-docker-image
+
+  deploy-bridge-release-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: bridge-next
+    working_directory: ~/repo
+    steps:
+      - run:
+          name: set DOCKER_REPO
+          command: |
+            echo ': \"${DOCKER_REPO:=trustlines/bridge}\"' >> ${BASH_ENV}
+          # this allows us to set DOCKER_REPO from circleci when building in a
+          # fork. makes testing easier.
+      - upload-docker-image
+      - run:
+          name: upload latest image
+          command: |
+            docker tag $LOCAL_IMAGE $DOCKER_REPO:latest
+            docker push $DOCKER_REPO:latest
 
   build-quickstart-image:
     executor: ubuntu-builder
@@ -653,22 +674,23 @@ workflows:
           requires:
             - install-bridge-validator
 
-      - build-bridge-validator-image
+      - build-bridge-image
       - build-docker-image
       - build-quickstart-image
       - test-quickstart
-      - deploy-bridge-validator-image:
+      - deploy-bridge-image:
           filters:
             branches:
               only:
-                - release-bridge-validator
+                - master
+                - bridge/pre-release
           requires:
             - pre-commit-checks
             - run-black
             - run-flake8
             - mypy-bridge-validator
             - pytest-bridge-validator
-            - build-bridge-validator-image
+            - build-bridge-image
           context: docker-credentials
 
       - deploy-docker-image:
@@ -713,6 +735,20 @@ workflows:
                 - release
           requires:
             - compare-docker-image
+
+      - deploy-bridge-release-image:
+          filters:
+            branches:
+              only:
+                - bridge/release
+          requires:
+            - pre-commit-checks
+            - run-black
+            - run-flake8
+            - mypy-bridge-validator
+            - pytest-bridge-validator
+            - build-bridge-image
+          context: docker-credentials
 
       - deploy-docker-release-image:
           filters:
