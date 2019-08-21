@@ -4,12 +4,12 @@ import gevent
 import pytest
 import rlp
 from eth.vm.forks.spurious_dragon.transactions import SpuriousDragonTransaction
-from eth_utils import decode_hex, keccak
+from eth_utils import decode_hex, keccak, to_checksum_address
 from gevent.queue import Queue
 from hexbytes import HexBytes
 from web3.datastructures import AttributeDict
 
-from bridge.confirmation_sender import ConfirmationSender
+from bridge.confirmation_sender import ConfirmationSender, make_sanity_check_transfer
 from bridge.constants import HOME_CHAIN_STEP_DURATION
 from bridge.utils import compute_transfer_hash
 
@@ -44,7 +44,12 @@ def gas_price():
 
 @pytest.fixture
 def confirmation_sender(
-    transfer_queue, home_bridge_contract, validator_key, max_reorg_depth, gas_price
+    transfer_queue,
+    home_bridge_contract,
+    validator_key,
+    max_reorg_depth,
+    gas_price,
+    foreign_bridge_contract,
 ):
     """A confirmation sender."""
     return ConfirmationSender(
@@ -53,12 +58,20 @@ def confirmation_sender(
         private_key=validator_key.to_bytes(),
         gas_price=gas_price,
         max_reorg_depth=max_reorg_depth,
+        sanity_check_transfer=make_sanity_check_transfer(
+            to_checksum_address(foreign_bridge_contract.address)
+        ),
     )
 
 
 @pytest.fixture
 def confirmation_sender_with_non_validator_account(
-    transfer_queue, home_bridge_contract, non_validator_key, max_reorg_depth, gas_price
+    transfer_queue,
+    home_bridge_contract,
+    non_validator_key,
+    max_reorg_depth,
+    gas_price,
+    foreign_bridge_contract,
 ):
     """A confirmation sender."""
     return ConfirmationSender(
@@ -67,6 +80,9 @@ def confirmation_sender_with_non_validator_account(
         private_key=non_validator_key.to_bytes(),
         gas_price=gas_price,
         max_reorg_depth=max_reorg_depth,
+        sanity_check_transfer=make_sanity_check_transfer(
+            to_checksum_address(foreign_bridge_contract.address)
+        ),
     )
 
 
