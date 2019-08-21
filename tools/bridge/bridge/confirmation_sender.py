@@ -60,6 +60,12 @@ class ConfirmationSender:
                 greenlet.kill()
 
 
+sender_retry = tenacity.retry(
+    wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
+    before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
+)
+
+
 class Sender:
     def __init__(
         self,
@@ -87,6 +93,11 @@ class Sender:
         self.w3 = self.home_bridge_contract.web3
         self.pending_transaction_queue = pending_transaction_queue
 
+    @sender_retry
+    def _rpc_send_raw_transaction(self, raw_transaction):
+        return self.w3.eth.sendRawTransaction(raw_transaction)
+
+    @sender_retry
     def get_next_nonce(self):
         return self.w3.eth.getTransactionCount(self.address, "pending")
 
@@ -136,7 +147,7 @@ class Sender:
         return signed_transaction
 
     def send_confirmation_transaction(self, transaction):
-        tx_hash = self.w3.eth.sendRawTransaction(transaction.rawTransaction)
+        tx_hash = self._rpc_send_raw_transaction(transaction.rawTransaction)
         self.pending_transaction_queue.put(transaction)
         logger.info(f"Sent confirmation transaction {tx_hash.hex()}")
         return tx_hash
