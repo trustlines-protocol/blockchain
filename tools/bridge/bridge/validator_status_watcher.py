@@ -1,9 +1,15 @@
 import logging
 
 import gevent
+import tenacity
 from eth_utils import is_canonical_address, to_checksum_address
 
 logger = logging.getLogger(__name__)
+
+retry = tenacity.retry(
+    wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
+    before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
+)
 
 
 class ValidatorStatusWatcher:
@@ -54,6 +60,7 @@ class ValidatorStatusWatcher:
 
         self.stop_validating_callback()
 
+    @retry
     def check_validator_status(self):
         logger.debug("Checking validator status")
         return self.validator_proxy_contract.functions.isValidator(
