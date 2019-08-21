@@ -476,6 +476,35 @@ jobs:
           paths:
             - images
 
+  compare-bridge-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: bridge-next
+    working_directory: ~/repo
+    steps:
+      - setup_remote_docker
+      - checkout
+      - attach_workspace:
+          at: '~'
+      - run:
+          name: Load bridge image
+          command: |
+            du -hc ~/images/*
+            docker load --input ~/images/$LOCAL_IMAGE.tar
+      - run:
+          name: Fetch latest pre-release
+          command: |
+            docker pull trustlines/bridge-next:pre-release
+      - run:
+          name: Compute image tree summaries
+          command: |
+            .circleci/show-docker-tree trustlines/bridge-next:pre-release >/tmp/tree-pre-release
+            .circleci/show-docker-tree $LOCAL_IMAGE >/tmp/tree-local
+      - run:
+          name: Compare image tree summaries
+          command: |
+            diff -s /tmp/tree-pre-release /tmp/tree-local || true
+
   deploy-bridge-image:
     executor: ubuntu-builder
     environment:
@@ -727,7 +756,11 @@ workflows:
           requires:
             - build-docker-image
 
-      - approve-the-release:
+      - compare-bridge-image:
+          requires:
+            - build-bridge-image
+
+      - approve-docker-release:
           type: approval
           filters:
             branches:
@@ -736,19 +769,14 @@ workflows:
           requires:
             - compare-docker-image
 
-      - deploy-bridge-release-image:
+      - approve-bridge-release:
+          type: approval
           filters:
             branches:
               only:
                 - bridge/release
           requires:
-            - pre-commit-checks
-            - run-black
-            - run-flake8
-            - mypy-bridge-validator
-            - pytest-bridge-validator
-            - build-bridge-image
-          context: docker-credentials
+            - compare-bridge-image
 
       - deploy-docker-release-image:
           filters:
@@ -756,7 +784,7 @@ workflows:
               only:
                 - release
           requires:
-            - approve-the-release
+            - approve-docker-release
             - solium-contracts
             - pre-commit-checks
             - run-black
@@ -765,3 +793,18 @@ workflows:
             - pytest-contracts
             - build-docker-image
           context: docker-release-credentials
+
+      - deploy-bridge-release-image:
+          filters:
+            branches:
+              only:
+                - bridge/release
+          requires:
+            - approve-bridge-release
+            - pre-commit-checks
+            - run-black
+            - run-flake8
+            - mypy-bridge-validator
+            - pytest-bridge-validator
+            - build-bridge-image
+          context: docker-credentials
