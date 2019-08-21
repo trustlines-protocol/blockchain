@@ -250,7 +250,7 @@ def main(ctx, config_path: str) -> None:
 
     validator_address = make_validator_address(config)
     logger.info(
-        f"Starting Trustlines Bridge Validation Server for address {validator_address}"
+        f"Starting Trustlines Bridge Validation Server for address {to_checksum_address(validator_address)}"
     )
 
     pool = gevent.pool.Pool()
