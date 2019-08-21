@@ -18,7 +18,7 @@ from toml.decoder import TomlDecodeError
 from web3 import HTTPProvider, Web3
 
 from bridge.config import load_config
-from bridge.confirmation_sender import ConfirmationSender
+from bridge.confirmation_sender import ConfirmationSender, make_sanity_check_transfer
 from bridge.confirmation_task_planner import ConfirmationTaskPlanner
 from bridge.constants import (
     APPLICATION_CLEANUP_TIMEOUT,
@@ -163,6 +163,11 @@ def make_confirmation_sender(config, confirmation_task_queue):
         private_key=config["validator_private_key"],
         gas_price=config["home_chain_gas_price"],
         max_reorg_depth=config["home_chain_max_reorg_depth"],
+        sanity_check_transfer=make_sanity_check_transfer(
+            foreign_bridge_contract_address=to_checksum_address(
+                config["foreign_bridge_contract_address"]
+            )
+        ),
     )
 
 

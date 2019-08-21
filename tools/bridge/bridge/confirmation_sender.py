@@ -1,9 +1,10 @@
 import logging
+from typing import Callable
 
 import gevent
 import tenacity
 from eth_keys.datatypes import PrivateKey
-from eth_utils import to_checksum_address
+from eth_utils import is_checksum_address, to_checksum_address
 from gevent.queue import Queue
 from web3.contract import Contract
 from web3.datastructures import AttributeDict
@@ -19,6 +20,23 @@ from bridge.utils import compute_transfer_hash
 logger = logging.getLogger(__name__)
 
 
+def make_sanity_check_transfer(foreign_bridge_contract_address):
+    """return a function that checks the final transfer right before it is confirmed
+
+    This is the last safety net. We do check that the transfer has
+    been sent to the foreign_bridge_contract_address here.
+    """
+    assert is_checksum_address(foreign_bridge_contract_address)
+
+    def sanity_check_transfer(transfer_event):
+        if not isinstance(transfer_event, AttributeDict):
+            raise ValueError("not an AttributeDict")
+        if transfer_event.args["to"] != foreign_bridge_contract_address:
+            raise ValueError("Transfer was not sent to the foreign bridge")
+
+    return sanity_check_transfer
+
+
 class ConfirmationSender:
     """Sends confirmTransfer transactions to the home bridge contract."""
 
@@ -29,6 +47,7 @@ class ConfirmationSender:
         private_key: bytes,
         gas_price: int,
         max_reorg_depth: int,
+        sanity_check_transfer: Callable,
     ):
         self.pending_transaction_queue = Queue()
         w3 = home_bridge_contract.web3
@@ -40,6 +59,7 @@ class ConfirmationSender:
             gas_price=gas_price,
             max_reorg_depth=max_reorg_depth,
             pending_transaction_queue=self.pending_transaction_queue,
+            sanity_check_transfer=sanity_check_transfer,
         )
         self.watcher = Watcher(
             w3=w3,
@@ -76,6 +96,7 @@ class Sender:
         gas_price: int,
         max_reorg_depth: int,
         pending_transaction_queue: Queue,
+        sanity_check_transfer,
     ):
         self.private_key = private_key
         self.address = PrivateKey(self.private_key).public_key.to_canonical_address()
@@ -92,6 +113,7 @@ class Sender:
         self.max_reorg_depth = max_reorg_depth
         self.w3 = self.home_bridge_contract.web3
         self.pending_transaction_queue = pending_transaction_queue
+        self.sanity_check_transfer = sanity_check_transfer
 
     @sender_retry
     def _rpc_send_raw_transaction(self, raw_transaction):
@@ -104,7 +126,13 @@ class Sender:
     def send_confirmation_transactions(self):
         while True:
             transfer_event = self.transfer_event_queue.get()
-            assert isinstance(transfer_event, AttributeDict)
+
+            try:
+                self.sanity_check_transfer(transfer_event)
+            except Exception as exc:
+                raise SystemExit(
+                    f"Internal error: sanity check failed for {transfer_event}: {exc}"
+                ) from exc
             nonce = self.get_next_nonce()
             transaction = self.prepare_confirmation_transaction(transfer_event, nonce)
             assert transaction is not None
