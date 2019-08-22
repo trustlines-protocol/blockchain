@@ -1,10 +1,10 @@
 import logging
 import time
 
-import gevent
 from gevent.queue import Queue
 
 from bridge.event_fetcher import FetcherReachedHeadEvent
+from bridge.service import Service, run_services
 from bridge.transfer_recorder import TransferRecorder
 
 logger = logging.getLogger(__name__)
@@ -29,19 +29,14 @@ class ConfirmationTaskPlanner:
 
         self.confirmation_task_queue = confirmation_task_queue
 
+        self.services = [
+            Service("process-transfer-events", self.process_transfer_events),
+            Service("process-home-bridge-events", self.process_home_bridge_events),
+            Service("process-control-events", self.process_control_events),
+        ]
+
     def run(self):
-        logger.debug("Starting")
-        try:
-            greenlets = [
-                gevent.spawn(self.process_transfer_events),
-                gevent.spawn(self.process_home_bridge_events),
-                gevent.spawn(self.process_control_events),
-            ]
-            gevent.joinall(greenlets, raise_error=True)
-        finally:
-            logger.info("Stopping")
-            for greenlet in greenlets:
-                greenlet.kill()
+        run_services(self.services)
 
     def process_transfer_events(self) -> None:
         while True:

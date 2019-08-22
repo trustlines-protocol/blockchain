@@ -34,6 +34,7 @@ from bridge.contract_validation import (
 )
 from bridge.event_fetcher import EventFetcher
 from bridge.events import ChainRole
+from bridge.service import Service, start_services
 from bridge.validator_balance_watcher import ValidatorBalanceWatcher
 from bridge.validator_status_watcher import ValidatorStatusWatcher
 
@@ -291,29 +292,30 @@ def main(ctx, config_path: str) -> None:
 
     validator_balance_watcher = make_validator_balance_watcher(config, control_queue)
 
-    coroutines_and_args = [
-        (
-            transfer_event_fetcher.fetch_events,
-            config["foreign_chain_event_poll_interval"],
-        ),
-        (
-            home_bridge_event_fetcher.fetch_events,
-            config["home_chain_event_poll_interval"],
-        ),
-        (validator_status_watcher.run,),
-        (validator_balance_watcher.run,),
-        (confirmation_task_planner.run,),
-        (confirmation_sender.run,),
-    ]
+    services = (
+        [
+            Service(
+                "fetch-foreign-bridge-events",
+                transfer_event_fetcher.fetch_events,
+                config["foreign_chain_event_poll_interval"],
+            ),
+            Service(
+                "fetch-home-bridge-events",
+                home_bridge_event_fetcher.fetch_events,
+                config["home_chain_event_poll_interval"],
+            ),
+            Service("validator-status-watcher", validator_status_watcher.run),
+            Service("validator_balance_watcher", validator_balance_watcher.run),
+        ]
+        + confirmation_task_planner.services
+        + confirmation_sender.services
+    )
 
-    greenlets = []
+    for signum in [signal.SIGINT, signal.SIGTERM]:
+        gevent.signal(signum, stop_pool)
+
     try:
-        for coroutine_and_args in coroutines_and_args:
-            greenlets.append(pool.spawn(*coroutine_and_args))
-
-        for signum in [signal.SIGINT, signal.SIGTERM]:
-            gevent.signal(signum, stop_pool)
-
+        greenlets = start_services(services, start=pool.start)
         gevent.joinall(greenlets, raise_error=True)
     except Exception as exception:
         logger.exception("Application error", exc_info=exception)
