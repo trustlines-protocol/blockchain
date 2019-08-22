@@ -77,6 +77,9 @@ class TransferRecorder:
             elif not balance_sufficient_now and balance_sufficient_before:
                 logger.info("Account balance is below safe minimum")
 
+        else:
+            raise ValueError(f"Received unknown event {event}")
+
     def clear_transfers(self) -> None:
         transfer_hashes_to_remove = self.transfer_hashes & self.completion_hashes
 
