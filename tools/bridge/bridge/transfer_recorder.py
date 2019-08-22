@@ -10,7 +10,7 @@ from bridge.constants import (
     CONFIRMATION_EVENT_NAME,
     TRANSFER_EVENT_NAME,
 )
-from bridge.control_events import BalanceCheck, ControlEvent, IsValidatorCheck
+from bridge.events import BalanceCheck, ControlEvent, IsValidatorCheck
 from bridge.utils import compute_transfer_hash
 
 logger = logging.getLogger(__name__)

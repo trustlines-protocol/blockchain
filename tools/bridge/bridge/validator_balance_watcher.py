@@ -2,7 +2,7 @@ import logging
 
 import gevent
 
-from bridge.control_events import BalanceCheck
+from bridge.events import BalanceCheck
 
 logger = logging.getLogger(__name__)
 

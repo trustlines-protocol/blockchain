@@ -4,7 +4,7 @@ import gevent
 import tenacity
 from eth_utils import is_canonical_address, to_checksum_address
 
-from bridge.control_events import IsValidatorCheck
+from bridge.events import IsValidatorCheck
 
 logger = logging.getLogger(__name__)
 

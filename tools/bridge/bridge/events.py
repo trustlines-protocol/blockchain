@@ -3,7 +3,11 @@ from abc import ABC
 import attr
 
 
-class ControlEvent(ABC):
+class Event(ABC):
+    pass
+
+
+class ControlEvent(Event, ABC):
     pass
 
 
