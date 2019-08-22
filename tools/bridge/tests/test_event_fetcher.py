@@ -5,6 +5,7 @@ import pytest
 
 from bridge.constants import TRANSFER_EVENT_NAME
 from bridge.event_fetcher import EventFetcher, FetcherReachedHeadEvent
+from bridge.events import ChainRole
 
 
 def fetch_all_events(fetcher: EventFetcher) -> List:
@@ -55,6 +56,7 @@ def transfer_event_fetcher_init_kwargs(
         "event_queue": transfer_event_queue,
         "max_reorg_depth": foreign_chain_max_reorg_depth,
         "start_block_number": foreign_chain_event_fetch_start_block_number,
+        "chain_role": ChainRole.home,
     }
 
 

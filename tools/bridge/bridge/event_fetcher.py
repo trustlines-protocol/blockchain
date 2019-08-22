@@ -1,5 +1,5 @@
 import logging
-from time import sleep, time
+import time
 from typing import Any, Dict, List
 
 import tenacity
@@ -7,10 +7,7 @@ from web3 import Web3
 from web3.contract import Contract
 from web3.datastructures import AttributeDict
 
-
-class FetcherReachedHeadEvent:
-    def __init__(self):
-        self.timestamp = time()
+from bridge.events import ChainRole, FetcherReachedHeadEvent
 
 
 class EventFetcher:
@@ -24,7 +21,7 @@ class EventFetcher:
         event_queue: Any,
         max_reorg_depth: int,
         start_block_number: int,
-        name: str = "",
+        chain_role: ChainRole,
     ):
         if event_fetch_limit <= 0:
             raise ValueError("Can not fetch events with zero or negative limit!")
@@ -36,11 +33,8 @@ class EventFetcher:
             raise ValueError(
                 "Can not fetch events starting from a negative block number!"
             )
-        self.name = name
-        if name:
-            self.logger = logging.getLogger(f"{__name__}.{name}")
-        else:
-            self.logger = logging.getLogger(f"{__name__}")
+        self.chain_role = chain_role
+        self.logger = logging.getLogger(f"{__name__}.{chain_role.name}")
 
         self.web3 = web3
         self.contract = contract
@@ -153,5 +147,11 @@ class EventFetcher:
                 self.event_queue.put(event)
 
             if not events:
-                self.event_queue.put(FetcherReachedHeadEvent())
-                sleep(poll_interval)
+                self.event_queue.put(
+                    FetcherReachedHeadEvent(
+                        timestamp=time.time(),
+                        chain_role=self.chain_role,
+                        last_fetched_block_number=self.last_fetched_block_number,
+                    )
+                )
+                time.sleep(poll_interval)
