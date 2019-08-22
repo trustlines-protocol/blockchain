@@ -74,7 +74,7 @@ class TransferRecorder:
             balance_sufficient_now = self.is_balance_sufficient
 
             if not balance_sufficient_now:
-                logger.warn(
+                logger.warning(
                     f"Balance of validator account is only {from_wei(self.balance, 'ether')} TLC."
                     f"Transfers will only be confirmed if it is at least "
                     f"{from_wei(self.minimum_balance, 'ether')} TLC."
