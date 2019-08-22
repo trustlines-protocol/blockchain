@@ -96,10 +96,9 @@ OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
     "foreign_chain_max_reorg_depth": 10,
     "foreign_chain_event_poll_interval": 5,
     "foreign_chain_event_fetch_start_block_number": 0,
+    "balance_warn_poll_interval": 60,
     # disable type check as type hint in eth_utils is wrong, (see
     # https://github.com/ethereum/eth-utils/issues/168)
-    "balance_warn_threshold": to_wei(0.1, "ether"),  # type: ignore
-    "balance_warn_poll_interval": 60,
     "minimum_validator_balance": to_wei(0.04, "ether"),  # type: ignore
 }
 
@@ -120,7 +119,6 @@ CONFIG_ENTRY_VALIDATORS = {
     "foreign_bridge_contract_address": validate_checksum_address,
     "foreign_chain_event_fetch_start_block_number": validate_non_negative_integer,
     "validator_private_key": validate_private_key,
-    "balance_warn_threshold": validate_non_negative_integer,
     "balance_warn_poll_interval": validate_positive_float,
     "minimum_validator_balance": validate_positive_float,
 }

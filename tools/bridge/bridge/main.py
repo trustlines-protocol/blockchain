@@ -12,7 +12,7 @@ import click
 import gevent
 import gevent.pool
 from eth_keys.datatypes import PrivateKey
-from eth_utils import from_wei, to_checksum_address
+from eth_utils import to_checksum_address
 from gevent.queue import Queue
 from toml.decoder import TomlDecodeError
 from web3 import HTTPProvider, Web3
@@ -76,20 +76,6 @@ def make_w3_foreign(config):
 
 def make_validator_address(config):
     return PrivateKey(config["validator_private_key"]).public_key.to_canonical_address()
-
-
-def check_validator_balance(config, ctx):
-    w3 = make_w3_home(config)
-    validator_address = make_validator_address(config)
-    balance = w3.eth.getBalance(validator_address)
-    if balance < config["balance_warn_threshold"]:
-        ctx.fail(
-            f"The balance of the validator account at address "
-            f"{to_checksum_address(validator_address)} on the home chain is only "
-            f"{from_wei(balance, 'ether')} TLC, but at least "
-            f"{from_wei(config['balance_warn_threshold'], 'ether')} TLC are required. Either send "
-            f"some TLC to this address or configure a lower 'balance_warn_threshold'"
-        )
 
 
 def sanity_check_home_bridge_contracts(home_bridge_contract):
@@ -215,14 +201,12 @@ def make_validator_balance_watcher(config, control_queue):
 
     validator_address = make_validator_address(config)
 
-    balance_warn_threshold = config["balance_warn_threshold"]
     poll_interval = config["balance_warn_poll_interval"]
 
     return ValidatorBalanceWatcher(
         w3=w3,
         validator_address=validator_address,
         poll_interval=poll_interval,
-        balance_warn_threshold=balance_warn_threshold,
         control_queue=control_queue,
     )
 
@@ -271,8 +255,6 @@ def main(ctx, config_path: str) -> None:
         raise click.UsageError(f"Invalid config file: {value_error}") from value_error
 
     configure_logging(config)
-
-    check_validator_balance(config, ctx)
 
     validator_address = make_validator_address(config)
     logger.info(
