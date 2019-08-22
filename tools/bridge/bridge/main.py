@@ -33,6 +33,7 @@ from bridge.contract_validation import (
     validate_contract_existence,
 )
 from bridge.event_fetcher import EventFetcher
+from bridge.events import ChainRole
 from bridge.validator_balance_watcher import ValidatorBalanceWatcher
 from bridge.validator_status_watcher import ValidatorStatusWatcher
 
@@ -108,7 +109,7 @@ def make_transfer_event_fetcher(config, transfer_event_queue):
         event_queue=transfer_event_queue,
         max_reorg_depth=config["foreign_chain_max_reorg_depth"],
         start_block_number=config["foreign_chain_event_fetch_start_block_number"],
-        name="foreign",
+        chain_role=ChainRole.foreign,
     )
 
 
@@ -131,7 +132,7 @@ def make_home_bridge_event_fetcher(config, home_bridge_event_queue):
         event_queue=home_bridge_event_queue,
         max_reorg_depth=config["home_chain_max_reorg_depth"],
         start_block_number=config["home_chain_event_fetch_start_block_number"],
-        name="home",
+        chain_role=ChainRole.home,
     )
 
 
