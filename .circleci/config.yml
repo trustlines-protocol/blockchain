@@ -757,6 +757,10 @@ workflows:
             - build-docker-image
 
       - compare-bridge-image:
+          filters:
+            branches:
+              only:
+                - bridge/release
           requires:
             - build-bridge-image
 
