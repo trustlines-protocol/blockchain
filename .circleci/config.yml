@@ -811,4 +811,4 @@ workflows:
             - mypy-bridge-validator
             - pytest-bridge-validator
             - build-bridge-image
-          context: docker-credentials
+          context: docker-release-credentials
