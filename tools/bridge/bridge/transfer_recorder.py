@@ -2,6 +2,7 @@ import logging
 from typing import Dict, List, Optional, Set
 
 from eth_typing import Hash32
+from eth_utils import from_wei
 from web3.datastructures import AttributeDict
 
 from bridge.constants import (
@@ -72,10 +73,19 @@ class TransferRecorder:
             self.balance = event.balance
             balance_sufficient_now = self.is_balance_sufficient
 
-            if balance_sufficient_now and not balance_sufficient_before:
-                logger.info("Account balance is sufficiently high")
-            elif not balance_sufficient_now and balance_sufficient_before:
-                logger.info("Account balance is below safe minimum")
+            if not balance_sufficient_now:
+                logger.warn(
+                    f"Balance of validator account is only {from_wei(self.balance, 'ether')} TLC."
+                    f"Transfers will only be confirmed if it is at least "
+                    f"{from_wei(self.minimum_balance, 'ether')} TLC."
+                )
+
+            if not balance_sufficient_before and balance_sufficient_now:
+                logger.info(
+                    f"Validator account balance has increased to "
+                    f"{from_wei(self.balance, 'ether')} TLC which is above the minimum of "
+                    f"{from_wei(self.minimum_balance, 'ether')} TLC. Transfers will be confirmed."
+                )
 
         else:
             raise ValueError(f"Received unknown event {event}")
