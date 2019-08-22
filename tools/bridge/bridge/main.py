@@ -12,7 +12,7 @@ import click
 import gevent
 import gevent.pool
 from eth_keys.datatypes import PrivateKey
-from eth_utils import from_wei, to_checksum_address
+from eth_utils import to_checksum_address
 from gevent.queue import Queue
 from toml.decoder import TomlDecodeError
 from web3 import HTTPProvider, Web3
@@ -78,20 +78,6 @@ def make_validator_address(config):
     return PrivateKey(config["validator_private_key"]).public_key.to_canonical_address()
 
 
-def check_validator_balance(config, ctx):
-    w3 = make_w3_home(config)
-    validator_address = make_validator_address(config)
-    balance = w3.eth.getBalance(validator_address)
-    if balance < config["balance_warn_threshold"]:
-        ctx.fail(
-            f"The balance of the validator account at address "
-            f"{to_checksum_address(validator_address)} on the home chain is only "
-            f"{from_wei(balance, 'ether')} TLC, but at least "
-            f"{from_wei(config['balance_warn_threshold'], 'ether')} TLC are required. Either send "
-            f"some TLC to this address or configure a lower 'balance_warn_threshold'"
-        )
-
-
 def sanity_check_home_bridge_contracts(home_bridge_contract):
     validate_contract_existence(home_bridge_contract)
 
@@ -149,6 +135,25 @@ def make_home_bridge_event_fetcher(config, home_bridge_event_queue):
     )
 
 
+def make_confirmation_task_planner(
+    config,
+    control_queue,
+    transfer_event_queue,
+    home_bridge_event_queue,
+    confirmation_task_queue,
+):
+    minimum_balance = config["minimum_validator_balance"]
+
+    return ConfirmationTaskPlanner(
+        sync_persistence_time=HOME_CHAIN_STEP_DURATION,
+        minimum_balance=minimum_balance,
+        control_queue=control_queue,
+        transfer_event_queue=transfer_event_queue,
+        home_bridge_event_queue=home_bridge_event_queue,
+        confirmation_task_queue=confirmation_task_queue,
+    )
+
+
 def make_confirmation_sender(config, confirmation_task_queue):
     w3_home = make_w3_home(config)
 
@@ -171,7 +176,7 @@ def make_confirmation_sender(config, confirmation_task_queue):
     )
 
 
-def make_validator_status_watcher(config, confirmation_task_planner, stop):
+def make_validator_status_watcher(config, control_queue, stop):
     w3_home = make_w3_home(config)
 
     home_bridge_contract = w3_home.eth.contract(
@@ -186,24 +191,23 @@ def make_validator_status_watcher(config, confirmation_task_planner, stop):
         validator_proxy_contract,
         validator_address,
         poll_interval=HOME_CHAIN_STEP_DURATION,
-        start_validating_callback=confirmation_task_planner.start_validating,
+        control_queue=control_queue,
         stop_validating_callback=stop,
     )
 
 
-def make_validator_balance_watcher(config):
+def make_validator_balance_watcher(config, control_queue):
     w3 = make_w3_home(config)
 
     validator_address = make_validator_address(config)
 
-    balance_warn_threshold = config["balance_warn_threshold"]
     poll_interval = config["balance_warn_poll_interval"]
 
     return ValidatorBalanceWatcher(
         w3=w3,
         validator_address=validator_address,
         poll_interval=poll_interval,
-        balance_warn_threshold=balance_warn_threshold,
+        control_queue=control_queue,
     )
 
 
@@ -252,8 +256,6 @@ def main(ctx, config_path: str) -> None:
 
     configure_logging(config)
 
-    check_validator_balance(config, ctx)
-
     validator_address = make_validator_address(config)
     logger.info(
         f"Starting Trustlines Bridge Validation Server for address {to_checksum_address(validator_address)}"
@@ -262,6 +264,7 @@ def main(ctx, config_path: str) -> None:
     pool = gevent.pool.Pool()
     stop_pool = partial(stop, pool, APPLICATION_CLEANUP_TIMEOUT)
 
+    control_queue = Queue()
     transfer_event_queue = Queue()
     home_bridge_event_queue = Queue()
     confirmation_task_queue = Queue()
@@ -271,20 +274,21 @@ def main(ctx, config_path: str) -> None:
         config, home_bridge_event_queue
     )
 
-    confirmation_task_planner = ConfirmationTaskPlanner(
-        sync_persistence_time=HOME_CHAIN_STEP_DURATION,
+    confirmation_task_planner = make_confirmation_task_planner(
+        config,
+        control_queue=control_queue,
         transfer_event_queue=transfer_event_queue,
         home_bridge_event_queue=home_bridge_event_queue,
         confirmation_task_queue=confirmation_task_queue,
     )
 
     validator_status_watcher = make_validator_status_watcher(
-        config, confirmation_task_planner, stop_pool
+        config, control_queue, stop_pool
     )
 
     confirmation_sender = make_confirmation_sender(config, confirmation_task_queue)
 
-    validator_balance_watcher = make_validator_balance_watcher(config)
+    validator_balance_watcher = make_validator_balance_watcher(config, control_queue)
 
     coroutines_and_args = [
         (

@@ -12,6 +12,7 @@ from bridge.constants import (
     CONFIRMATION_EVENT_NAME,
     TRANSFER_EVENT_NAME,
 )
+from bridge.events import BalanceCheck, IsValidatorCheck
 from bridge.utils import compute_transfer_hash
 
 
@@ -95,10 +96,16 @@ def completion_event(completion_events):
 
 
 @pytest.fixture
-def recorder():
+def minimum_balance():
+    return 1
+
+
+@pytest.fixture
+def recorder(minimum_balance):
     """A transfer recorder."""
-    recorder = TransferRecorder()
-    recorder.start_validating()
+    recorder = TransferRecorder(minimum_balance=minimum_balance)
+    recorder.apply_control_event(BalanceCheck(minimum_balance))
+    recorder.apply_control_event(IsValidatorCheck(True))
     return recorder
 
 
@@ -137,15 +144,37 @@ def test_recorder_does_not_plan_completed_transfer(recorder, transfer_hash, hash
     assert len(recorder.pull_transfers_to_confirm()) == 0
 
 
-def test_transfer_recorder_does_not_plan_before_becoming_validator(transfer_event):
-    recorder = TransferRecorder()
+def test_recorder_does_not_plan_transfers_if_not_validating(
+    recorder, minimum_balance, transfer_event
+):
+    recorder.apply_control_event(BalanceCheck(minimum_balance - 1))
+    assert not recorder.is_validating
+
     recorder.apply_proper_event(transfer_event)
     assert len(recorder.pull_transfers_to_confirm()) == 0
-    recorder.start_validating()
+
+    recorder.apply_control_event(BalanceCheck(minimum_balance))
+    assert recorder.is_validating
     assert recorder.pull_transfers_to_confirm() == [transfer_event]
 
 
-def test_transfer_recorder_drops_completed_transfers_before_becoming_validator(hashes):
+def test_recorder_not_validating_if_balance_below_minimum(recorder, minimum_balance):
+    assert recorder.is_validating
+    recorder.apply_control_event(BalanceCheck(minimum_balance - 1))
+    assert not recorder.is_validating
+    recorder.apply_control_event(BalanceCheck(minimum_balance))
+    assert recorder.is_validating
+
+
+def test_recorder_not_validating_if_not_validator(recorder, minimum_balance):
+    assert recorder.is_validating
+    recorder.apply_control_event(IsValidatorCheck(False))
+    assert not recorder.is_validating
+    recorder.apply_control_event(IsValidatorCheck(True))
+    assert recorder.is_validating
+
+
+def test_transfer_recorder_drops_completed_transfers(recorder, hashes):
     transfer_hash = next(hashes)
     transfer_event = get_transfer_hash_event(
         TRANSFER_EVENT_NAME, transfer_hash, next(hashes)
@@ -154,8 +183,6 @@ def test_transfer_recorder_drops_completed_transfers_before_becoming_validator(h
         COMPLETION_EVENT_NAME, compute_transfer_hash(transfer_event), next(hashes)
     )
 
-    recorder = TransferRecorder()
     recorder.apply_proper_event(transfer_event)
     recorder.apply_proper_event(completion_event)
-    recorder.start_validating()
     assert len(recorder.pull_transfers_to_confirm()) == 0

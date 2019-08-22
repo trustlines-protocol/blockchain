@@ -14,24 +14,20 @@ class ConfirmationTaskPlanner:
     def __init__(
         self,
         sync_persistence_time: float,
+        minimum_balance: int,
+        control_queue: Queue,
         transfer_event_queue: Queue,
         home_bridge_event_queue: Queue,
         confirmation_task_queue: Queue,
     ) -> None:
-        self.recorder = TransferRecorder()
+        self.recorder = TransferRecorder(minimum_balance)
         self.sync_persistence_time = sync_persistence_time
 
+        self.control_queue = control_queue
         self.transfer_event_queue = transfer_event_queue
         self.home_bridge_event_queue = home_bridge_event_queue
 
         self.confirmation_task_queue = confirmation_task_queue
-
-    def start_validating(self) -> None:
-        self.recorder.start_validating()
-
-    @property
-    def is_validating(self) -> bool:
-        return self.recorder.is_validating
 
     def run(self):
         logger.debug("Starting")
@@ -39,6 +35,7 @@ class ConfirmationTaskPlanner:
             greenlets = [
                 gevent.spawn(self.process_transfer_events),
                 gevent.spawn(self.process_home_bridge_events),
+                gevent.spawn(self.process_control_events),
             ]
             gevent.joinall(greenlets, raise_error=True)
         finally:
@@ -66,6 +63,11 @@ class ConfirmationTaskPlanner:
             else:
                 logger.debug("Received home bridge event")
                 self.recorder.apply_proper_event(event)
+
+    def process_control_events(self) -> None:
+        while True:
+            event = self.control_queue.get()
+            self.recorder.apply_control_event(event)
 
     def check_for_confirmation_tasks(self) -> None:
         confirmation_tasks = self.recorder.pull_transfers_to_confirm()
