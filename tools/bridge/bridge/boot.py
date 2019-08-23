@@ -10,6 +10,7 @@ import os
 import sys
 
 import gevent
+import setproctitle
 
 LOGFORMAT = "%(asctime)-15s %(levelname)-8s[%(greenlet)s] %(name)s: %(message)s"
 
@@ -32,7 +33,7 @@ def setup_basic_logging():
 
 def main():
     setup_basic_logging()
-
+    setproctitle.setproctitle("tlbc-bridge")
     from bridge import main
 
     main.main()

@@ -6,6 +6,7 @@ toml
 web3
 validators
 tenacity
+setproctitle
 
 # --- development dependencies:
 
