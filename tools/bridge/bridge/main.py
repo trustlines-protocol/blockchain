@@ -224,6 +224,23 @@ def stop(pool, timeout):
         os._exit(os.EX_SOFTWARE)
 
 
+def reload_logging_config(config_path):
+    gevent.getcurrent().name = "sighup"
+    logger.info(
+        f"Handling sighup, trying to reload the logging configuration from {config_path}"
+    )
+    try:
+        config = load_config(config_path)
+        configure_logging(config)
+        logger.info("Logging has been reconfigured")
+    except Exception as err:
+        # this is a signal handler. make sure we don't die as this
+        # will raise the error in the main greenlet.
+        logger.warning(
+            f"Error while trying to reload the logging configuration from {config_path}: {err}"
+        )
+
+
 @click.command()
 @click.option(
     "-c",
@@ -307,6 +324,7 @@ def main(ctx, config_path: str) -> None:
         + confirmation_sender.services
     )
 
+    gevent.signal(signal.SIGHUP, reload_logging_config, config_path)
     for signum in [signal.SIGINT, signal.SIGTERM]:
         gevent.signal(signum, stop_pool)
 
