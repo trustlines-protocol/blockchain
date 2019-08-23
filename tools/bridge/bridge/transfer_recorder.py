@@ -33,6 +33,23 @@ class TransferRecorder:
         self.is_validator: Optional[bool] = None
         self.balance: Optional[int] = None
 
+    def log_current_state(self):
+        if self.is_validator:
+            validator_status = "validating"
+        else:
+            validator_status = "not validating"
+
+        balance_in_eth = (self.balance or 0) / 10 ** 18
+        logger.info(
+            f"reportinging internal state\n\n"
+            f"===== Internal state ===============================\n"
+            f"    {validator_status}, balance {balance_in_eth} coins\n"
+            f"    {len(self.transfer_events)} transfer events\n"
+            f"    {len(self.scheduled_hashes)} scheduled for confirmation\n"
+            f"    {len(self.completion_hashes)} completions seen\n"
+            f"====================================================\n"
+        )
+
     @property
     def is_validating(self):
         return self.is_validator and self.is_balance_sufficient

@@ -247,6 +247,12 @@ def install_signal_handler(signum, name, f, *args, **kwargs):
     gevent.signal(signum, handler)
 
 
+def log_internal_state(recorder):
+    while True:
+        gevent.sleep(60.0)
+        recorder.log_current_state()
+
+
 @click.command()
 @click.option(
     "-c",
@@ -303,6 +309,8 @@ def main(ctx, config_path: str) -> None:
         confirmation_task_queue=confirmation_task_queue,
     )
 
+    recorder = confirmation_task_planner.recorder
+
     validator_status_watcher = make_validator_status_watcher(
         config, control_queue, stop_pool
     )
@@ -325,9 +333,14 @@ def main(ctx, config_path: str) -> None:
             ),
             Service("validator-status-watcher", validator_status_watcher.run),
             Service("validator_balance_watcher", validator_balance_watcher.run),
+            Service("log-internal-state", log_internal_state, recorder),
         ]
         + confirmation_task_planner.services
         + confirmation_sender.services
+    )
+
+    install_signal_handler(
+        signal.SIGUSR1, "report-internal-state", recorder.log_current_state
     )
 
     install_signal_handler(
