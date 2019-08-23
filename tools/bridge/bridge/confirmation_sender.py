@@ -115,6 +115,7 @@ class Sender:
         self.w3 = self.home_bridge_contract.web3
         self.pending_transaction_queue = pending_transaction_queue
         self.sanity_check_transfer = sanity_check_transfer
+        self.chain_id = int(self.w3.net.version)
 
     @sender_retry
     def _rpc_send_raw_transaction(self, raw_transaction):
@@ -135,23 +136,28 @@ class Sender:
                     f"Internal error: sanity check failed for {transfer_event}: {exc}"
                 ) from exc
             nonce = self.get_next_nonce()
-            transaction = self.prepare_confirmation_transaction(transfer_event, nonce)
+            transaction = self.prepare_confirmation_transaction(
+                transfer_event=transfer_event, nonce=nonce, chain_id=self.chain_id
+            )
             assert transaction is not None
             self.send_confirmation_transaction(transaction)
 
-    def prepare_confirmation_transaction(self, transfer_event, nonce: int):
+    def prepare_confirmation_transaction(
+        self, transfer_event, nonce: int, chain_id: int
+    ):
         transfer_hash = compute_transfer_hash(transfer_event)
         transaction_hash = transfer_event.transactionHash
         amount = transfer_event.args.value
         recipient = transfer_event.args["from"]
 
         logger.info(
-            "confirmTransfer(transferHash=%s transactionHash=%s amount=%s recipient=%s) with nonce=%s",
+            "confirmTransfer(transferHash=%s transactionHash=%s amount=%s recipient=%s) with nonce=%s, chain_id=%s",
             transfer_hash.hex(),
             transaction_hash.hex(),
             amount,
             recipient,
             nonce,
+            chain_id,
         )
         # hard code gas limit to avoid executing the transaction (which would fail as the sender
         # address is not defined before signing the transaction, but the contract asserts that
@@ -166,9 +172,9 @@ class Sender:
                 "gasPrice": self.gas_price,
                 "nonce": nonce,
                 "gas": CONFIRMATION_TRANSACTION_GAS_LIMIT,
+                "chainId": chain_id,
             }
         )
-
         signed_transaction = self.w3.eth.account.sign_transaction(
             transaction, self.private_key
         )

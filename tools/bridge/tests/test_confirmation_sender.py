@@ -130,7 +130,7 @@ def test_transaction_preparation(
     transfer_event,
 ):
     signed_transaction = confirmation_sender.sender.prepare_confirmation_transaction(
-        transfer_event, nonce=1234
+        transfer_event, nonce=1234, chain_id=1122
     )
     transaction = rlp.decode(
         bytes(signed_transaction.rawTransaction), SpuriousDragonTransaction
@@ -140,6 +140,26 @@ def test_transaction_preparation(
     assert transaction.gas_price == gas_price
     assert transaction.value == 0
     assert transaction.nonce == 1234
+    assert transaction.chain_id == 1122
+
+
+def disallow_w3_rpc(make_request, w3):
+    def middleware(method, params):
+        raise PermissionError("web3 RPC requests are forbidden")
+
+    return middleware
+
+
+def test_transaction_preparation_no_rpc(confirmation_sender, transfer_event, w3_home):
+    w3_home.middleware_onion.add(disallow_w3_rpc)
+    signed_transaction = confirmation_sender.sender.prepare_confirmation_transaction(
+        transfer_event, nonce=1234, chain_id=456
+    )
+
+    transaction = rlp.decode(
+        bytes(signed_transaction.rawTransaction), SpuriousDragonTransaction
+    )
+    assert transaction.chain_id == 456
 
 
 def test_transaction_sending(
@@ -151,7 +171,9 @@ def test_transaction_sending(
     validator_address,
 ):
     transaction = confirmation_sender.sender.prepare_confirmation_transaction(
-        transfer_event, nonce=confirmation_sender.sender.get_next_nonce()
+        transfer_event,
+        nonce=confirmation_sender.sender.get_next_nonce(),
+        chain_id=int(w3_home.net.version),
     )
     confirmation_sender.sender.send_confirmation_transaction(transaction)
     assert transaction == confirmation_sender.pending_transaction_queue.peek()
