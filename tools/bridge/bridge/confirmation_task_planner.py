@@ -1,10 +1,11 @@
 import logging
 import time
 
-import gevent
 from gevent.queue import Queue
 
 from bridge.event_fetcher import FetcherReachedHeadEvent
+from bridge.events import ChainRole
+from bridge.service import Service, run_services
 from bridge.transfer_recorder import TransferRecorder
 
 logger = logging.getLogger(__name__)
@@ -29,45 +30,42 @@ class ConfirmationTaskPlanner:
 
         self.confirmation_task_queue = confirmation_task_queue
 
+        self.services = [
+            Service(
+                "process-transfer-events",
+                self.process_events_from_queue,
+                self.transfer_event_queue,
+            ),
+            Service(
+                "process-home-bridge-events",
+                self.process_events_from_queue,
+                self.home_bridge_event_queue,
+            ),
+            Service(
+                "process-control-events",
+                self.process_events_from_queue,
+                self.control_queue,
+            ),
+        ]
+
     def run(self):
-        logger.debug("Starting")
-        try:
-            greenlets = [
-                gevent.spawn(self.process_transfer_events),
-                gevent.spawn(self.process_home_bridge_events),
-                gevent.spawn(self.process_control_events),
-            ]
-            gevent.joinall(greenlets, raise_error=True)
-        finally:
-            logger.info("Stopping")
-            for greenlet in greenlets:
-                greenlet.kill()
+        run_services(self.services)
 
-    def process_transfer_events(self) -> None:
+    def process_events_from_queue(self, queue) -> None:
         while True:
-            event = self.transfer_event_queue.get()
-            if isinstance(event, FetcherReachedHeadEvent):
-                logger.debug("Transfer events are in sync now")
-            else:
-                logger.debug("Received transfer to confirm")
-                self.recorder.apply_proper_event(event)
-
-    def process_home_bridge_events(self) -> None:
-        while True:
-            event = self.home_bridge_event_queue.get()
-            if isinstance(event, FetcherReachedHeadEvent):
-                logger.debug("Home bridge is in sync now")
+            event = queue.get()
+            self.recorder.apply_event(event)
+            if (
+                isinstance(event, FetcherReachedHeadEvent)
+                and event.chain_role == ChainRole.home
+            ):
+                logger.debug(
+                    "Home bridge is in sync now, last fetched reorg-safe block: %s",
+                    event.last_fetched_block_number,
+                )
                 # Let's check that this has not been for too long in the queue
                 if time.time() - event.timestamp < self.sync_persistence_time:
                     self.check_for_confirmation_tasks()
-            else:
-                logger.debug("Received home bridge event")
-                self.recorder.apply_proper_event(event)
-
-    def process_control_events(self) -> None:
-        while True:
-            event = self.control_queue.get()
-            self.recorder.apply_control_event(event)
 
     def check_for_confirmation_tasks(self) -> None:
         confirmation_tasks = self.recorder.pull_transfers_to_confirm()

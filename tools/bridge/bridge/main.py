@@ -1,7 +1,3 @@
-from gevent import monkey  # isort:skip
-
-monkey.patch_all()  # noqa: E402 isort:skip
-
 import logging
 import logging.config
 import os
@@ -34,6 +30,7 @@ from bridge.contract_validation import (
 )
 from bridge.event_fetcher import EventFetcher
 from bridge.events import ChainRole
+from bridge.service import Service, start_services
 from bridge.validator_balance_watcher import ValidatorBalanceWatcher
 from bridge.validator_status_watcher import ValidatorStatusWatcher
 
@@ -43,7 +40,6 @@ logger = logging.getLogger(__name__)
 def configure_logging(config):
     """configure the logging subsystem via the 'logging' key in the TOML config"""
     try:
-        logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO").upper())
         logging.config.dictConfig(config["logging"])
     except (ValueError, TypeError, AttributeError, ImportError) as err:
         click.echo(
@@ -228,6 +224,36 @@ def stop(pool, timeout):
         os._exit(os.EX_SOFTWARE)
 
 
+def reload_logging_config(config_path):
+    logger.info(f"Trying to reload the logging configuration from {config_path}")
+    try:
+        config = load_config(config_path)
+        configure_logging(config)
+        logger.info("Logging has been reconfigured")
+    except Exception as err:
+        # this function is being called as signal handler. make sure
+        # we don't die as this would raise the error in the main
+        # greenlet.
+        logger.critical(
+            f"Error while trying to reload the logging configuration from {config_path}: {err}"
+        )
+
+
+def install_signal_handler(signum, name, f, *args, **kwargs):
+    def handler():
+        gevent.getcurrent().name = name
+        logger.info(f"Received {signal.Signals(signum).name} signal.")
+        f(*args, **kwargs)
+
+    gevent.signal(signum, handler)
+
+
+def log_internal_state(recorder):
+    while True:
+        gevent.sleep(60.0)
+        recorder.log_current_state()
+
+
 @click.command()
 @click.option(
     "-c",
@@ -249,6 +275,7 @@ def main(ctx, config_path: str) -> None:
     """
 
     try:
+        logger.info(f"Loading configuration file from {config_path}")
         config = load_config(config_path)
     except TomlDecodeError as decode_error:
         raise click.UsageError(f"Invalid config file: {decode_error}") from decode_error
@@ -283,6 +310,8 @@ def main(ctx, config_path: str) -> None:
         confirmation_task_queue=confirmation_task_queue,
     )
 
+    recorder = confirmation_task_planner.recorder
+
     validator_status_watcher = make_validator_status_watcher(
         config, control_queue, stop_pool
     )
@@ -291,29 +320,38 @@ def main(ctx, config_path: str) -> None:
 
     validator_balance_watcher = make_validator_balance_watcher(config, control_queue)
 
-    coroutines_and_args = [
-        (
-            transfer_event_fetcher.fetch_events,
-            config["foreign_chain_event_poll_interval"],
-        ),
-        (
-            home_bridge_event_fetcher.fetch_events,
-            config["home_chain_event_poll_interval"],
-        ),
-        (validator_status_watcher.run,),
-        (validator_balance_watcher.run,),
-        (confirmation_task_planner.run,),
-        (confirmation_sender.run,),
-    ]
+    services = (
+        [
+            Service(
+                "fetch-foreign-bridge-events",
+                transfer_event_fetcher.fetch_events,
+                config["foreign_chain_event_poll_interval"],
+            ),
+            Service(
+                "fetch-home-bridge-events",
+                home_bridge_event_fetcher.fetch_events,
+                config["home_chain_event_poll_interval"],
+            ),
+            Service("validator-status-watcher", validator_status_watcher.run),
+            Service("validator_balance_watcher", validator_balance_watcher.run),
+            Service("log-internal-state", log_internal_state, recorder),
+        ]
+        + confirmation_task_planner.services
+        + confirmation_sender.services
+    )
 
-    greenlets = []
+    install_signal_handler(
+        signal.SIGUSR1, "report-internal-state", recorder.log_current_state
+    )
+
+    install_signal_handler(
+        signal.SIGHUP, "reload-logging-config", reload_logging_config, config_path
+    )
+    for signum in [signal.SIGINT, signal.SIGTERM]:
+        install_signal_handler(signum, "terminator", stop_pool)
+
     try:
-        for coroutine_and_args in coroutines_and_args:
-            greenlets.append(pool.spawn(*coroutine_and_args))
-
-        for signum in [signal.SIGINT, signal.SIGTERM]:
-            gevent.signal(signum, stop_pool)
-
+        greenlets = start_services(services, start=pool.start)
         gevent.joinall(greenlets, raise_error=True)
     except Exception as exception:
         logger.exception("Application error", exc_info=exception)

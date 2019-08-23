@@ -15,6 +15,7 @@ from bridge.constants import (
     HOME_CHAIN_STEP_DURATION,
 )
 from bridge.contract_validation import is_bridge_validator
+from bridge.service import Service, run_services
 from bridge.utils import compute_transfer_hash
 
 logger = logging.getLogger(__name__)
@@ -66,18 +67,18 @@ class ConfirmationSender:
             pending_transaction_queue=self.pending_transaction_queue,
             max_reorg_depth=max_reorg_depth,
         )
+        self.services = [
+            Service(
+                "watch-pending-transactions", self.watcher.watch_pending_transactions
+            ),
+            Service(
+                "send-confirmation-transactions",
+                self.sender.send_confirmation_transactions,
+            ),
+        ]
 
     def run(self):
-        logger.debug("Starting")
-        try:
-            greenlets = [
-                gevent.spawn(self.watcher.watch_pending_transactions),
-                gevent.spawn(self.sender.send_confirmation_transactions),
-            ]
-            gevent.joinall(greenlets)
-        finally:
-            for greenlet in greenlets:
-                greenlet.kill()
+        run_services(self.services)
 
 
 sender_retry = tenacity.retry(
