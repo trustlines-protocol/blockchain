@@ -234,7 +234,7 @@ def reload_logging_config(config_path):
         # this function is being called as signal handler. make sure
         # we don't die as this would raise the error in the main
         # greenlet.
-        logger.warning(
+        logger.critical(
             f"Error while trying to reload the logging configuration from {config_path}: {err}"
         )
 

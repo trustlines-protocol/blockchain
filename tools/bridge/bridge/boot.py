@@ -12,7 +12,7 @@ import sys
 import gevent
 import setproctitle
 
-LOGFORMAT = "%(asctime)-15s %(levelname)-8s[%(greenlet)s] %(name)s: %(message)s"
+LOGFORMAT = "%(asctime)-15s %(levelname)-9s[%(greenlet)s] %(name)s: %(message)s"
 
 
 class CurrentGreenletLogger(logging.Logger):
