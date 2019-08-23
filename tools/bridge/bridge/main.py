@@ -231,8 +231,9 @@ def reload_logging_config(config_path):
         configure_logging(config)
         logger.info("Logging has been reconfigured")
     except Exception as err:
-        # this is a signal handler. make sure we don't die as this
-        # will raise the error in the main greenlet.
+        # this function is being called as signal handler. make sure
+        # we don't die as this would raise the error in the main
+        # greenlet.
         logger.warning(
             f"Error while trying to reload the logging configuration from {config_path}: {err}"
         )
