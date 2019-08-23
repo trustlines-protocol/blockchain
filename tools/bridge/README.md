@@ -173,27 +173,31 @@ Using the provided configuration files for `docker-compose` (at `./docker`)
 allows an easy setup including the blockchain nodes. Make sure
 you checked out the section regarding the [docker setup](#docker-image).
 
-### Nodes Only
+### Full Setup
 
-This approach is useful, when you intend to run the bridge client as a standalone
-application on your machine (see [pip install](#python-package-manager)). To switch between
-the test and production setup, exchange the `docker-compose` configuration file
-postfix with `development` or `production`.
+Running the whole bridge validator setup with all components via
+`docker-compose` requires a complete configuration environment file (`.env`). To
+switch between the different setup environments, exchange the `docker-compose`
+configuration file postfix by `development` or `production`. For the
+production setup the `build` does nothing and can be skipped.
 
 ```bash
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose-nodes-production.yml up
+docker-compose --project-name tlbc-bridge --file ./docker/docker-compose-base.yaml --file ./docker/docker-compose-development.yaml build
+docker-compose --project-name tlbc-bridge --file ./docker/docker-compose-base.yaml --file ./docker/docker-compose-development.yaml up
+```
+
+**Note: There is no production Trustlines chain yet!**
+
+### Nodes Only
+
+This approach is useful when it is intended to run the bridge client as
+a standalone application on your machine (see [pip
+install](#python-package-manager)). In contrast to the previous full setup the
+configuration via environment file is not necessary and has no effect.
+
+```bash
+docker-compose --project-name tlbc-bridge --file ./docker/docker-compose-base.yaml --file ./docker/docker-compose-development.yaml up node_foreign node_home
 ```
 
 The JSON-RPC endpoint of the foreign chain is linked to `http://localhost:8545`.
 The home chain can be connected via `http://localhost:8546`.
-
-### Full Setup
-
-Running the whole bridge validator setup with all components via `docker-compose` requires a complete configuration environment file (`.env`).
-
-```bash
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-production.yml build
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose.yml --file ./docker/docker-compose-nodes-production.yml up
-```
-
-**There is no production Trustlines chain yet!**

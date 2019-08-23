@@ -1,0 +1,19 @@
+version: "2.4"
+services:
+  node_foreign:
+    ports:
+      - "127.0.0.1:8545:8545"
+    environment:
+      - FOREIGN_NETWORK_NAME=ropsten
+
+  node_home:
+    image: trustlines/tlbc-testnet
+    ports:
+      - "127.0.0.1:8546:8545"
+    environment:
+      - HOME_NETWORK_NAME=laika
+
+  validator:
+    build:
+      context: ../../../
+      dockerfile: tools/bridge/Dockerfile
