@@ -10,7 +10,12 @@ from bridge.constants import (
     CONFIRMATION_EVENT_NAME,
     TRANSFER_EVENT_NAME,
 )
-from bridge.events import BalanceCheck, ControlEvent, IsValidatorCheck
+from bridge.events import (
+    BalanceCheck,
+    ControlEvent,
+    FetcherReachedHeadEvent,
+    IsValidatorCheck,
+)
 from bridge.utils import compute_transfer_hash
 
 logger = logging.getLogger(__name__)
@@ -87,6 +92,16 @@ class TransferRecorder:
                     f"{from_wei(self.minimum_balance, 'ether')} TLC. Transfers will be confirmed."
                 )
 
+        else:
+            raise ValueError(f"Received unknown event {event}")
+
+    def apply_event(self, event):
+        if isinstance(event, ControlEvent):
+            self.apply_control_event(event)
+        elif isinstance(event, FetcherReachedHeadEvent):
+            pass
+        elif isinstance(event, AttributeDict):
+            self.apply_proper_event(event)
         else:
             raise ValueError(f"Received unknown event {event}")
 
