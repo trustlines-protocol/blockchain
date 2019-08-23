@@ -10,12 +10,7 @@ from bridge.constants import (
     CONFIRMATION_EVENT_NAME,
     TRANSFER_EVENT_NAME,
 )
-from bridge.events import (
-    BalanceCheck,
-    ControlEvent,
-    FetcherReachedHeadEvent,
-    IsValidatorCheck,
-)
+from bridge.events import BalanceCheck, Event, FetcherReachedHeadEvent, IsValidatorCheck
 from bridge.utils import compute_transfer_hash
 
 logger = logging.getLogger(__name__)
@@ -45,65 +40,6 @@ class TransferRecorder:
     @property
     def is_balance_sufficient(self):
         return self.balance is not None and self.balance >= self.minimum_balance
-
-    def apply_proper_event(self, event: AttributeDict) -> None:
-        event_name = event.event
-
-        if event_name == TRANSFER_EVENT_NAME:
-            transfer_hash = compute_transfer_hash(event)
-            self.transfer_hashes.add(transfer_hash)
-            self.transfer_events[transfer_hash] = event
-        elif event_name == CONFIRMATION_EVENT_NAME:
-            transfer_hash = Hash32(bytes(event.args.transferHash))
-            assert len(transfer_hash) == 32
-            self.confirmation_hashes.add(transfer_hash)
-        elif event_name == COMPLETION_EVENT_NAME:
-            transfer_hash = Hash32(bytes(event.args.transferHash))
-            assert len(transfer_hash) == 32
-            self.completion_hashes.add(transfer_hash)
-        else:
-            raise ValueError(f"Got unknown event {event}")
-
-    def apply_control_event(self, event: ControlEvent) -> None:
-        if isinstance(event, IsValidatorCheck):
-            if event.is_validator and not self.is_validator:
-                logger.info("Account is a member of the validator set")
-                self.is_validator = True
-            elif not event.is_validator and self.is_validator:
-                logger.info("Account is not a member of the validator set")
-                self.is_validator = False
-
-        elif isinstance(event, BalanceCheck):
-            balance_sufficient_before = self.is_balance_sufficient
-            self.balance = event.balance
-            balance_sufficient_now = self.is_balance_sufficient
-
-            if not balance_sufficient_now:
-                logger.warning(
-                    f"Balance of validator account is only {from_wei(self.balance, 'ether')} TLC."
-                    f"Transfers will only be confirmed if it is at least "
-                    f"{from_wei(self.minimum_balance, 'ether')} TLC."
-                )
-
-            if not balance_sufficient_before and balance_sufficient_now:
-                logger.info(
-                    f"Validator account balance has increased to "
-                    f"{from_wei(self.balance, 'ether')} TLC which is above the minimum of "
-                    f"{from_wei(self.minimum_balance, 'ether')} TLC. Transfers will be confirmed."
-                )
-
-        else:
-            raise ValueError(f"Received unknown event {event}")
-
-    def apply_event(self, event):
-        if isinstance(event, ControlEvent):
-            self.apply_control_event(event)
-        elif isinstance(event, FetcherReachedHeadEvent):
-            pass
-        elif isinstance(event, AttributeDict):
-            self.apply_proper_event(event)
-        else:
-            raise ValueError(f"Received unknown event {event}")
 
     def clear_transfers(self) -> None:
         transfer_hashes_to_remove = self.transfer_hashes & self.completion_hashes
@@ -135,3 +71,65 @@ class TransferRecorder:
 
         self.clear_transfers()
         return confirmation_tasks
+
+    def apply_proper_event(self, event: AttributeDict) -> None:
+        event_name = event.event
+
+        if event_name == TRANSFER_EVENT_NAME:
+            transfer_hash = compute_transfer_hash(event)
+            self.transfer_hashes.add(transfer_hash)
+            self.transfer_events[transfer_hash] = event
+        elif event_name == CONFIRMATION_EVENT_NAME:
+            transfer_hash = Hash32(bytes(event.args.transferHash))
+            assert len(transfer_hash) == 32
+            self.confirmation_hashes.add(transfer_hash)
+        elif event_name == COMPLETION_EVENT_NAME:
+            transfer_hash = Hash32(bytes(event.args.transferHash))
+            assert len(transfer_hash) == 32
+            self.completion_hashes.add(transfer_hash)
+        else:
+            raise ValueError(f"Got unknown event {event}")
+
+    def _apply_is_validator_check(self, event: IsValidatorCheck):
+        if event.is_validator and not self.is_validator:
+            logger.info("Account is a member of the validator set")
+            self.is_validator = True
+        elif not event.is_validator and self.is_validator:
+            logger.info("Account is not a member of the validator set")
+            self.is_validator = False
+
+    def _apply_balance_check(self, event: BalanceCheck):
+        balance_sufficient_before = self.is_balance_sufficient
+        self.balance = event.balance
+        balance_sufficient_now = self.is_balance_sufficient
+
+        if not balance_sufficient_now:
+            logger.warning(
+                f"Balance of validator account is only {from_wei(self.balance, 'ether')} TLC."
+                f"Transfers will only be confirmed if it is at least "
+                f"{from_wei(self.minimum_balance, 'ether')} TLC."
+            )
+
+        if not balance_sufficient_before and balance_sufficient_now:
+            logger.info(
+                f"Validator account balance has increased to "
+                f"{from_wei(self.balance, 'ether')} TLC which is above the minimum of "
+                f"{from_wei(self.minimum_balance, 'ether')} TLC. Transfers will be confirmed."
+            )
+
+    def _apply_fetcher_reached_head_event(self, event: FetcherReachedHeadEvent):
+        pass
+
+    dispatch_by_event_class = {
+        BalanceCheck: _apply_balance_check,
+        IsValidatorCheck: _apply_is_validator_check,
+        FetcherReachedHeadEvent: _apply_fetcher_reached_head_event,
+        AttributeDict: apply_proper_event,
+    }
+
+    def apply_event(self, event):
+        assert isinstance(event, Event)
+        dispatch = self.dispatch_by_event_class.get(type(event), None)
+        if dispatch is None:
+            raise ValueError(f"Received unknown event {event}")
+        dispatch(self, event)
