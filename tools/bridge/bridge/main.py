@@ -1,7 +1,3 @@
-from gevent import monkey  # isort:skip
-
-monkey.patch_all()  # noqa: E402 isort:skip
-
 import logging
 import logging.config
 import os
@@ -44,7 +40,6 @@ logger = logging.getLogger(__name__)
 def configure_logging(config):
     """configure the logging subsystem via the 'logging' key in the TOML config"""
     try:
-        logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO").upper())
         logging.config.dictConfig(config["logging"])
     except (ValueError, TypeError, AttributeError, ImportError) as err:
         click.echo(
@@ -250,6 +245,7 @@ def main(ctx, config_path: str) -> None:
     """
 
     try:
+        logger.info(f"Loading configuration file from {config_path}")
         config = load_config(config_path)
     except TomlDecodeError as decode_error:
         raise click.UsageError(f"Invalid config file: {decode_error}") from decode_error
