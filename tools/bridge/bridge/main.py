@@ -225,10 +225,7 @@ def stop(pool, timeout):
 
 
 def reload_logging_config(config_path):
-    gevent.getcurrent().name = "sighup"
-    logger.info(
-        f"Handling sighup, trying to reload the logging configuration from {config_path}"
-    )
+    logger.info(f"Trying to reload the logging configuration from {config_path}")
     try:
         config = load_config(config_path)
         configure_logging(config)
@@ -239,6 +236,15 @@ def reload_logging_config(config_path):
         logger.warning(
             f"Error while trying to reload the logging configuration from {config_path}: {err}"
         )
+
+
+def install_signal_handler(signum, name, f, *args, **kwargs):
+    def handler():
+        gevent.getcurrent().name = name
+        logger.info(f"Received {signal.Signals(signum).name} signal.")
+        f(*args, **kwargs)
+
+    gevent.signal(signum, handler)
 
 
 @click.command()
@@ -324,9 +330,11 @@ def main(ctx, config_path: str) -> None:
         + confirmation_sender.services
     )
 
-    gevent.signal(signal.SIGHUP, reload_logging_config, config_path)
+    install_signal_handler(
+        signal.SIGHUP, "reload-logging-config", reload_logging_config, config_path
+    )
     for signum in [signal.SIGINT, signal.SIGTERM]:
-        gevent.signal(signum, stop_pool)
+        install_signal_handler(signum, "terminator", stop_pool)
 
     try:
         greenlets = start_services(services, start=pool.start)
