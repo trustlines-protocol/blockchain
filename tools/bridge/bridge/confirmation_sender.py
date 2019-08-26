@@ -15,7 +15,7 @@ from bridge.constants import (
     HOME_CHAIN_STEP_DURATION,
 )
 from bridge.contract_validation import is_bridge_validator
-from bridge.service import Service, run_services
+from bridge.service import Service
 from bridge.utils import compute_transfer_hash
 
 logger = logging.getLogger(__name__)
@@ -38,56 +38,13 @@ def make_sanity_check_transfer(foreign_bridge_contract_address):
     return sanity_check_transfer
 
 
-class ConfirmationSender:
-    """Sends confirmTransfer transactions to the home bridge contract."""
-
-    def __init__(
-        self,
-        transfer_event_queue: Queue,
-        home_bridge_contract: Contract,
-        private_key: bytes,
-        gas_price: int,
-        max_reorg_depth: int,
-        sanity_check_transfer: Callable,
-    ):
-        self.pending_transaction_queue = Queue()
-        w3 = home_bridge_contract.web3
-
-        self.sender = Sender(
-            transfer_event_queue=transfer_event_queue,
-            home_bridge_contract=home_bridge_contract,
-            private_key=private_key,
-            gas_price=gas_price,
-            max_reorg_depth=max_reorg_depth,
-            pending_transaction_queue=self.pending_transaction_queue,
-            sanity_check_transfer=sanity_check_transfer,
-        )
-        self.watcher = Watcher(
-            w3=w3,
-            pending_transaction_queue=self.pending_transaction_queue,
-            max_reorg_depth=max_reorg_depth,
-        )
-        self.services = [
-            Service(
-                "watch-pending-transactions", self.watcher.watch_pending_transactions
-            ),
-            Service(
-                "send-confirmation-transactions",
-                self.sender.send_confirmation_transactions,
-            ),
-        ]
-
-    def run(self):
-        run_services(self.services)
-
-
 sender_retry = tenacity.retry(
     wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
     before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
 )
 
 
-class Sender:
+class ConfirmationSender:
     def __init__(
         self,
         *,
@@ -97,7 +54,7 @@ class Sender:
         gas_price: int,
         max_reorg_depth: int,
         pending_transaction_queue: Queue,
-        sanity_check_transfer,
+        sanity_check_transfer: Callable,
     ):
         self.private_key = private_key
         self.address = PrivateKey(self.private_key).public_key.to_canonical_address()
@@ -116,6 +73,12 @@ class Sender:
         self.pending_transaction_queue = pending_transaction_queue
         self.sanity_check_transfer = sanity_check_transfer
         self.chain_id = int(self.w3.net.version)
+
+        self.services = [
+            Service(
+                "send-confirmation-transactions", self.send_confirmation_transactions
+            )
+        ]
 
     @sender_retry
     def _rpc_send_raw_transaction(self, raw_transaction):
@@ -141,6 +104,8 @@ class Sender:
             )
             assert transaction is not None
             self.send_confirmation_transaction(transaction)
+
+    run = send_confirmation_transactions
 
     def prepare_confirmation_transaction(
         self, transfer_event, nonce: int, chain_id: int
@@ -194,11 +159,15 @@ watcher_retry = tenacity.retry(
 )
 
 
-class Watcher:
+class ConfirmationWatcher:
     def __init__(self, *, w3, pending_transaction_queue: Queue, max_reorg_depth: int):
         self.w3 = w3
         self.max_reorg_depth = max_reorg_depth
         self.pending_transaction_queue = pending_transaction_queue
+
+        self.services = [
+            Service("watch-pending-transactions", self.watch_pending_transactions)
+        ]
 
     def _log_txreceipt(self, receipt):
         if receipt.status == 0:
@@ -229,6 +198,8 @@ class Watcher:
             )
             receipt = self.wait_for_transaction(oldest_pending_transaction)
             self._log_txreceipt(receipt)
+
+    run = watch_pending_transactions
 
     def wait_for_transaction(self, pending_transaction):
         while True:

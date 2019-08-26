@@ -14,7 +14,11 @@ from toml.decoder import TomlDecodeError
 from web3 import HTTPProvider, Web3
 
 from bridge.config import load_config
-from bridge.confirmation_sender import ConfirmationSender, make_sanity_check_transfer
+from bridge.confirmation_sender import (
+    ConfirmationSender,
+    ConfirmationWatcher,
+    make_sanity_check_transfer,
+)
 from bridge.confirmation_task_planner import ConfirmationTaskPlanner
 from bridge.constants import (
     APPLICATION_CLEANUP_TIMEOUT,
@@ -151,25 +155,37 @@ def make_confirmation_task_planner(
     )
 
 
-def make_confirmation_sender(config, confirmation_task_queue):
+def make_confirmation_sender(
+    *, config, pending_transaction_queue, confirmation_task_queue
+):
     w3_home = make_w3_home(config)
 
     home_bridge_contract = w3_home.eth.contract(
         address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
     )
     sanity_check_home_bridge_contracts(home_bridge_contract)
-
     return ConfirmationSender(
         transfer_event_queue=confirmation_task_queue,
         home_bridge_contract=home_bridge_contract,
         private_key=config["validator_private_key"],
         gas_price=config["home_chain_gas_price"],
         max_reorg_depth=config["home_chain_max_reorg_depth"],
+        pending_transaction_queue=pending_transaction_queue,
         sanity_check_transfer=make_sanity_check_transfer(
             foreign_bridge_contract_address=to_checksum_address(
                 config["foreign_bridge_contract_address"]
             )
         ),
+    )
+
+
+def make_confirmation_watcher(*, config, pending_transaction_queue):
+    w3_home = make_w3_home(config)
+    max_reorg_depth = config["home_chain_max_reorg_depth"]
+    return ConfirmationWatcher(
+        w3=w3_home,
+        pending_transaction_queue=pending_transaction_queue,
+        max_reorg_depth=max_reorg_depth,
     )
 
 
@@ -316,7 +332,15 @@ def main(ctx, config_path: str) -> None:
         config, control_queue, stop_pool
     )
 
-    confirmation_sender = make_confirmation_sender(config, confirmation_task_queue)
+    pending_transaction_queue = Queue()
+    sender = make_confirmation_sender(
+        config=config,
+        pending_transaction_queue=pending_transaction_queue,
+        confirmation_task_queue=confirmation_task_queue,
+    )
+    watcher = make_confirmation_watcher(
+        config=config, pending_transaction_queue=pending_transaction_queue
+    )
 
     validator_balance_watcher = make_validator_balance_watcher(config, control_queue)
 
@@ -336,8 +360,9 @@ def main(ctx, config_path: str) -> None:
             Service("validator_balance_watcher", validator_balance_watcher.run),
             Service("log-internal-state", log_internal_state, recorder),
         ]
+        + sender.services
+        + watcher.services
         + confirmation_task_planner.services
-        + confirmation_sender.services
     )
 
     install_signal_handler(
