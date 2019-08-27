@@ -72,7 +72,7 @@ class ConfirmationSender:
         self.w3 = self.home_bridge_contract.web3
         self.pending_transaction_queue = pending_transaction_queue
         self.sanity_check_transfer = sanity_check_transfer
-        self.chain_id = int(self.w3.net.version)
+        self.chain_id = int(self.w3.eth.chainId)
 
         self.services = [
             Service(

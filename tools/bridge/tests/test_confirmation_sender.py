@@ -171,7 +171,7 @@ def test_transaction_sending(
     transaction = confirmation_sender.prepare_confirmation_transaction(
         transfer_event,
         nonce=confirmation_sender.get_next_nonce(),
-        chain_id=int(w3_home.net.version),
+        chain_id=int(w3_home.eth.chainId),
     )
     confirmation_sender.send_confirmation_transaction(transaction)
     assert transaction == confirmation_sender.pending_transaction_queue.peek()
