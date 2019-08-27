@@ -31,6 +31,7 @@ from bridge.contract_validation import (
 from bridge.event_fetcher import EventFetcher
 from bridge.events import ChainRole
 from bridge.service import Service, start_services
+from bridge.utils import get_validator_private_key
 from bridge.validator_balance_watcher import ValidatorBalanceWatcher
 from bridge.validator_status_watcher import ValidatorStatusWatcher
 
@@ -72,7 +73,8 @@ def make_w3_foreign(config):
 
 
 def make_validator_address(config):
-    return PrivateKey(config["validator_private_key"]).public_key.to_canonical_address()
+    private_key_bytes = get_validator_private_key(config)
+    return PrivateKey(private_key_bytes).public_key.to_canonical_address()
 
 
 def sanity_check_home_bridge_contracts(home_bridge_contract):
@@ -162,7 +164,7 @@ def make_confirmation_sender(config, confirmation_task_queue):
     return ConfirmationSender(
         transfer_event_queue=confirmation_task_queue,
         home_bridge_contract=home_bridge_contract,
-        private_key=config["validator_private_key"],
+        private_key=get_validator_private_key(config),
         gas_price=config["home_chain_gas_price"],
         max_reorg_depth=config["home_chain_max_reorg_depth"],
         sanity_check_transfer=make_sanity_check_transfer(
@@ -349,7 +351,6 @@ def main(ctx, config_path: str) -> None:
     )
     for signum in [signal.SIGINT, signal.SIGTERM]:
         install_signal_handler(signum, "terminator", stop_pool)
-
     try:
         greenlets = start_services(services, start=pool.start)
         gevent.joinall(greenlets, raise_error=True)
