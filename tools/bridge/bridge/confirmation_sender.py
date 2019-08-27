@@ -38,10 +38,19 @@ def make_sanity_check_transfer(foreign_bridge_contract_address):
     return sanity_check_transfer
 
 
-sender_retry = tenacity.retry(
-    wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
-    before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
-)
+def is_nonce_too_low_exception(exception):
+    """check if the error thrown by web3 is a 'nonce too low' error"""
+    if not isinstance(exception, ValueError) or not isinstance(exception.args[0], dict):
+        return False
+    message = exception.args[0].get("message", "")
+    return (
+        "There is another transaction with same nonce in the queue" in message
+        or "Transaction nonce is too low" in message
+    )
+
+
+class NonceTooLowException(ValueError):
+    pass
 
 
 class ConfirmationSender:
@@ -80,30 +89,54 @@ class ConfirmationSender:
             )
         ]
 
-    @sender_retry
+    @tenacity.retry(
+        wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
+        before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
+        retry=tenacity.retry_if_exception(
+            lambda exc: not isinstance(exc, NonceTooLowException)
+        ),
+    )
     def _rpc_send_raw_transaction(self, raw_transaction):
-        return self.w3.eth.sendRawTransaction(raw_transaction)
+        try:
+            return self.w3.eth.sendRawTransaction(raw_transaction)
+        except ValueError as exc:
+            if is_nonce_too_low_exception(exc):
+                raise NonceTooLowException("nonce too low") from exc
+            else:
+                raise exc
 
-    @sender_retry
+    @tenacity.retry(
+        wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
+        before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
+    )
     def get_next_nonce(self):
         return self.w3.eth.getTransactionCount(self.address, "pending")
+
+    @tenacity.retry(
+        wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
+        before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
+        retry=tenacity.retry_if_exception(
+            lambda exc: isinstance(exc, NonceTooLowException)
+        ),
+    )
+    def send_confirmation_from_transfer_event(self, transfer_event):
+        nonce = self.get_next_nonce()
+        transaction = self.prepare_confirmation_transaction(
+            transfer_event=transfer_event, nonce=nonce, chain_id=self.chain_id
+        )
+        assert transaction is not None
+        self.send_confirmation_transaction(transaction)
 
     def send_confirmation_transactions(self):
         while True:
             transfer_event = self.transfer_event_queue.get()
-
             try:
                 self.sanity_check_transfer(transfer_event)
             except Exception as exc:
                 raise SystemExit(
                     f"Internal error: sanity check failed for {transfer_event}: {exc}"
                 ) from exc
-            nonce = self.get_next_nonce()
-            transaction = self.prepare_confirmation_transaction(
-                transfer_event=transfer_event, nonce=nonce, chain_id=self.chain_id
-            )
-            assert transaction is not None
-            self.send_confirmation_transaction(transaction)
+            self.send_confirmation_from_transfer_event(transfer_event)
 
     run = send_confirmation_transactions
 
