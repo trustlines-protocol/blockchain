@@ -91,9 +91,9 @@ def sanity_check_home_bridge_contracts(home_bridge_contract):
     try:
         validate_contract_existence(validator_proxy_contract)
     except ValueError as error:
-        raise ValueError(
-            f"Serious bridge setup error. The validator proxy contract at the address the home "
-            f"bridge property points to does not exist or is not intact!"
+        raise SetupError(
+            "Serious bridge setup error. The validator proxy contract at the address the home "
+            "bridge property points to does not exist or is not intact!"
         ) from error
 
     balance = home_bridge_contract.web3.eth.getBalance(home_bridge_contract.address)
