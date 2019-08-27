@@ -42,7 +42,7 @@ class TransferRecorder:
 
         balance_in_eth = (self.balance or 0) / 10 ** 18
         logger.info(
-            f"reportinging internal state\n\n"
+            f"reporting internal state\n\n"
             f"===== Internal state ===============================\n"
             f"    {validator_status}, balance {balance_in_eth} coins\n"
             f"    {len(self.transfer_events)} transfer events\n"
