@@ -11,7 +11,7 @@ from bridge.constants import (
     TRANSFER_EVENT_NAME,
 )
 from bridge.events import BalanceCheck, Event, FetcherReachedHeadEvent, IsValidatorCheck
-from bridge.utils import compute_transfer_hash
+from bridge.utils import compute_transfer_hash, sort_events
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +87,7 @@ class TransferRecorder:
             confirmation_tasks = []
 
         self.clear_transfers()
+        sort_events(confirmation_tasks)
         return confirmation_tasks
 
     def apply_proper_event(self, event: AttributeDict) -> None:

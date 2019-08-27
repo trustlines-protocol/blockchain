@@ -34,6 +34,9 @@ def get_transfer_event(transaction_hash: Hash32) -> AttributeDict:
             "event": TRANSFER_EVENT_NAME,
             "transactionHash": HexBytes(transaction_hash),
             "logIndex": 0,
+            "blockNumber": 1,
+            "transactionIndex": 0,
+            "logIndex": 0,
         }
     )
 
