@@ -95,7 +95,8 @@ class ConfirmationSender:
         wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
         before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
         retry=tenacity.retry_if_exception(
-            lambda exc: not isinstance(exc, NonceTooLowException)
+            lambda exc: isinstance(exc, Exception)
+            and not isinstance(exc, NonceTooLowException)
         ),
     )
     def _rpc_send_raw_transaction(self, raw_transaction):
