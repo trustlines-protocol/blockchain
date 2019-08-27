@@ -104,3 +104,9 @@ def lower_dict_keys(dictionary):
         dictionary_copy[key.lower()] = lower_dict_keys(value)
 
     return dictionary_copy
+
+
+def sort_events(events):
+    events.sort(
+        key=lambda event: (event.blockNumber, event.transactionIndex, event.logIndex)
+    )
