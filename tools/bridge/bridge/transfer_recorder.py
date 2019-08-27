@@ -40,11 +40,14 @@ class TransferRecorder:
         else:
             validator_status = "not validating"
 
-        balance_in_eth = (self.balance or 0) / 10 ** 18
+        if self.balance is None:
+            balance_str = "-unknown-"
+        else:
+            balance_str = f"{from_wei(self.balance, 'ether')}"
         logger.info(
             f"reporting internal state\n\n"
             f"===== Internal state ===============================\n"
-            f"    {validator_status}, balance {balance_in_eth} coins\n"
+            f"    {validator_status}, balance {balance_str} coins\n"
             f"    {len(self.transfer_events)} transfer events\n"
             f"    {len(self.scheduled_hashes)} scheduled for confirmation\n"
             f"    {len(self.completion_hashes)} completions seen\n"
