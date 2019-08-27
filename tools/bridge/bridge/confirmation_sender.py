@@ -67,7 +67,7 @@ class ConfirmationSender:
     ):
         self.private_key = private_key
         self.address = PrivateKey(self.private_key).public_key.to_canonical_address()
-
+        self.address_hex = PrivateKey(self.private_key).public_key.to_checksum_address()
         if not is_bridge_validator(home_bridge_contract, self.address):
             logger.warning(
                 f"The address {to_checksum_address(self.address)} is not a bridge validator to confirm "
@@ -88,6 +88,8 @@ class ConfirmationSender:
                 "send-confirmation-transactions", self.send_confirmation_transactions
             )
         ]
+
+        self.is_parity = self.w3.clientVersion.startswith("Parity")
 
     @tenacity.retry(
         wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
@@ -110,7 +112,15 @@ class ConfirmationSender:
         before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
     )
     def get_next_nonce(self):
-        return self.w3.eth.getTransactionCount(self.address, "pending")
+        if self.is_parity:
+            return int(
+                self.w3.manager.request_blocking(
+                    "parity_nextNonce", [self.address_hex]
+                ),
+                16,
+            )
+        else:
+            return self.w3.eth.getTransactionCount(self.address, "pending")
 
     @tenacity.retry(
         wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
