@@ -41,6 +41,10 @@ from bridge.validator_status_watcher import ValidatorStatusWatcher
 logger = logging.getLogger(__name__)
 
 
+class SetupError(Exception):
+    pass
+
+
 def configure_logging(config):
     """configure the logging subsystem via the 'logging' key in the TOML config"""
     try:
@@ -91,6 +95,10 @@ def sanity_check_home_bridge_contracts(home_bridge_contract):
             f"Serious bridge setup error. The validator proxy contract at the address the home "
             f"bridge property points to does not exist or is not intact!"
         ) from error
+
+    balance = home_bridge_contract.web3.eth.getBalance(home_bridge_contract.address)
+    if balance == 0:
+        raise SetupError("Serious bridge setup error. The bridge has no funds.")
 
 
 def make_transfer_event_fetcher(config, transfer_event_queue):
