@@ -178,7 +178,11 @@ class ConfirmationWatcher:
     @watcher_retry
     def _rpc_get_receipt(self, txhash):
         try:
-            return self.w3.eth.getTransactionReceipt(txhash)
+            receipt = self.w3.eth.getTransactionReceipt(txhash)
+            # handle parity's non-standard implementation
+            if receipt is None or receipt.blockHash is None:
+                return None
+            return receipt
         except TransactionNotFound:
             return None
 
