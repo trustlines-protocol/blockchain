@@ -2,13 +2,14 @@ import logging
 from typing import Dict, List, Optional, Set
 
 from eth_typing import Hash32
-from eth_utils import from_wei
+from eth_utils import from_wei, is_same_address
 from web3.datastructures import AttributeDict
 
 from bridge.constants import (
     COMPLETION_EVENT_NAME,
     CONFIRMATION_EVENT_NAME,
     TRANSFER_EVENT_NAME,
+    ZERO_ADDRESS,
 )
 from bridge.events import BalanceCheck, Event, FetcherReachedHeadEvent, IsValidatorCheck
 from bridge.utils import compute_transfer_hash, sort_events
@@ -94,6 +95,11 @@ class TransferRecorder:
         event_name = event.event
 
         if event_name == TRANSFER_EVENT_NAME:
+            if event.args.value == 0 or is_same_address(
+                event.args["from"], ZERO_ADDRESS
+            ):
+                logger.warning(f"skipping event {event}")
+                return
             transfer_hash = compute_transfer_hash(event)
             self.transfer_hashes.add(transfer_hash)
             self.transfer_events[transfer_hash] = event
