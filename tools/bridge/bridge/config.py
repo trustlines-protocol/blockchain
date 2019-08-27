@@ -15,6 +15,8 @@ from eth_utils import (
 )
 from eth_utils.toolz import merge
 
+from bridge.utils import dotted_key_dict_to_nested_dict, lower_dict_keys
+
 
 def validate_rpc_url(url: Any) -> str:
     if not validators.url(url):
@@ -185,16 +187,23 @@ assert all(
 
 def load_config_from_environment():
     result = {}
+
+    # Support "nested" environment variables with a dot in their name.
+    # Equivalent to a subsection within the TOML file.
+    nested_environment_variables = dotted_key_dict_to_nested_dict(os.environ)
+
     keys = set(
         REQUIRED_CONFIG_ENTRIES
         + list(OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS.keys())
         + list(CONFIG_ENTRY_VALIDATORS.keys())
     )
     for key in keys:
-        if os.environ.get(key.upper()):
-            result[key] = os.environ.get(key.upper())
+        if nested_environment_variables.get(key.upper()):
+            result[key] = nested_environment_variables.get(key.upper())
 
-    return result
+    # Make sure that the nested keys from the environment variables are all
+    # lower case as well.
+    return lower_dict_keys(result)
 
 
 def load_config(path: str) -> Dict[str, Any]:
