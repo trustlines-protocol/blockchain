@@ -121,6 +121,13 @@ def validate_private_key(private_key: Any) -> dict:
     return private_key
 
 
+def validate_webservice(webservice_dict: Dict) -> Dict:
+    """validate the webservice dictionary"""
+    if not isinstance(webservice_dict, dict):
+        raise ValueError("webservice must be a dictionary")
+    return webservice_dict
+
+
 def validate_logging(logging_dict: Dict) -> Dict:
     """validate the logging dictionary
 
@@ -156,9 +163,11 @@ OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
     # disable type check as type hint in eth_utils is wrong, (see
     # https://github.com/ethereum/eth-utils/issues/168)
     "minimum_validator_balance": to_wei(0.04, "ether"),  # type: ignore
+    "webservice": {},
 }
 
 CONFIG_ENTRY_VALIDATORS = {
+    "webservice": validate_webservice,
     "logging": validate_logging,
     "home_rpc_url": validate_rpc_url,
     "home_rpc_timeout": validate_non_negative_integer,

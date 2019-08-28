@@ -25,6 +25,7 @@ eth-rlp==0.1.2
 eth-tester==0.2.0b2
 eth-typing==2.1.0
 eth-utils==1.6.2
+falcon==2.0.0
 flake8==3.7.8
 flake8-polyfill==1.0.2
 gevent==1.4.0

@@ -11,7 +11,13 @@ from bridge.constants import (
     TRANSFER_EVENT_NAME,
     ZERO_ADDRESS,
 )
-from bridge.events import BalanceCheck, Event, FetcherReachedHeadEvent, IsValidatorCheck
+from bridge.events import (
+    BalanceCheck,
+    ChainRole,
+    Event,
+    FetcherReachedHeadEvent,
+    IsValidatorCheck,
+)
 from bridge.utils import compute_transfer_hash, sort_events
 
 logger = logging.getLogger(__name__)
@@ -33,6 +39,28 @@ class TransferRecorder:
 
         self.is_validator: Optional[bool] = None
         self.balance: Optional[int] = None
+        self.last_fetcher_reached_head_event: Dict[
+            ChainRole, FetcherReachedHeadEvent
+        ] = {}
+
+    def get_state_summary(self):
+        return {
+            "is-validator": self.is_validator,
+            "balance": str(self.balance or -1),
+            "num-transfer-events": len(self.transfer_events),
+            "num-scheduled-hashes": len(self.scheduled_hashes),
+            "num-completions": len(self.completion_hashes),
+            "is-validating": self.is_validating,
+            "is-balance-sufficient": self.is_balance_sufficient,
+            "last-fetcher-reached-head-event": [
+                {
+                    "last-fetched-block-number": x.last_fetched_block_number,
+                    "chain-role": x.chain_role.value,
+                    "timestamp": x.timestamp,
+                }
+                for x in self.last_fetcher_reached_head_event.values()
+            ],
+        }
 
     def log_current_state(self):
         if self.is_validator:
@@ -145,7 +173,7 @@ class TransferRecorder:
             )
 
     def _apply_fetcher_reached_head_event(self, event: FetcherReachedHeadEvent):
-        pass
+        self.last_fetcher_reached_head_event[event.chain_role] = event
 
     dispatch_by_event_class = {
         BalanceCheck: _apply_balance_check,
