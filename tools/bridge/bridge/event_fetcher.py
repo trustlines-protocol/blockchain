@@ -8,6 +8,7 @@ from web3.contract import Contract
 from web3.datastructures import AttributeDict
 
 from bridge.events import ChainRole, FetcherReachedHeadEvent
+from bridge.utils import sort_events
 
 
 class EventFetcher:
@@ -100,14 +101,7 @@ class EventFetcher:
             else:
                 self.logger.debug(f"Found {len(fetched_events)} {event_name} events.")
 
-        events.sort(
-            key=lambda event: (
-                event.blockNumber,
-                event.transactionIndex,
-                event.logIndex,
-            )
-        )
-
+        sort_events(events)
         return events
 
     def fetch_some_events(self) -> List:

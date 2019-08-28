@@ -12,3 +12,5 @@ CONFIRMATION_TRANSACTION_GAS_LIMIT = 400_000
 
 # maximum amount of time in seconds application greenlets have to cleanup before shutdown
 APPLICATION_CLEANUP_TIMEOUT = 5
+
+ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"

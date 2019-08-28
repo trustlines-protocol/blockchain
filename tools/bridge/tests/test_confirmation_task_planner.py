@@ -33,7 +33,16 @@ def get_transfer_event(transaction_hash: Hash32) -> AttributeDict:
         {
             "event": TRANSFER_EVENT_NAME,
             "transactionHash": HexBytes(transaction_hash),
+            "blockNumber": 1,
+            "transactionIndex": 0,
             "logIndex": 0,
+            "args": AttributeDict(
+                {
+                    "from": "0x345DeAd084E056dc78a0832E70B40C14B6323458",
+                    "to": "0x1ADb0A4853bf1D564BbAD7565b5D50b33D20af60",
+                    "value": 1,
+                }
+            ),
         }
     )
 
@@ -121,9 +130,8 @@ def test_recorder_does_not_plan_transfers_twice(recorder, transfer_event):
 
 
 def test_recorder_does_not_plan_confirmed_transfer(recorder, transfer_hash, hashes):
-    transfer_event = get_transfer_hash_event(
-        TRANSFER_EVENT_NAME, transfer_hash, next(hashes)
-    )
+    transfer_event = get_transfer_event(transaction_hash=next(hashes))
+
     confirmation_event = get_transfer_hash_event(
         CONFIRMATION_EVENT_NAME, compute_transfer_hash(transfer_event), next(hashes)
     )
@@ -133,9 +141,7 @@ def test_recorder_does_not_plan_confirmed_transfer(recorder, transfer_hash, hash
 
 
 def test_recorder_does_not_plan_completed_transfer(recorder, transfer_hash, hashes):
-    transfer_event = get_transfer_hash_event(
-        TRANSFER_EVENT_NAME, transfer_hash, next(hashes)
-    )
+    transfer_event = get_transfer_event(transaction_hash=next(hashes))
     completion_event = get_transfer_hash_event(
         COMPLETION_EVENT_NAME, compute_transfer_hash(transfer_event), next(hashes)
     )
@@ -175,10 +181,7 @@ def test_recorder_not_validating_if_not_validator(recorder, minimum_balance):
 
 
 def test_transfer_recorder_drops_completed_transfers(recorder, hashes):
-    transfer_hash = next(hashes)
-    transfer_event = get_transfer_hash_event(
-        TRANSFER_EVENT_NAME, transfer_hash, next(hashes)
-    )
+    transfer_event = get_transfer_event(transaction_hash=next(hashes))
     completion_event = get_transfer_hash_event(
         COMPLETION_EVENT_NAME, compute_transfer_hash(transfer_event), next(hashes)
     )

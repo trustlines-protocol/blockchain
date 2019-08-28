@@ -2,16 +2,17 @@ import logging
 from typing import Dict, List, Optional, Set
 
 from eth_typing import Hash32
-from eth_utils import from_wei
+from eth_utils import from_wei, is_same_address
 from web3.datastructures import AttributeDict
 
 from bridge.constants import (
     COMPLETION_EVENT_NAME,
     CONFIRMATION_EVENT_NAME,
     TRANSFER_EVENT_NAME,
+    ZERO_ADDRESS,
 )
 from bridge.events import BalanceCheck, Event, FetcherReachedHeadEvent, IsValidatorCheck
-from bridge.utils import compute_transfer_hash
+from bridge.utils import compute_transfer_hash, sort_events
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +40,14 @@ class TransferRecorder:
         else:
             validator_status = "not validating"
 
-        balance_in_eth = (self.balance or 0) / 10 ** 18
+        if self.balance is None:
+            balance_str = "-unknown-"
+        else:
+            balance_str = f"{from_wei(self.balance, 'ether')}"
         logger.info(
-            f"reportinging internal state\n\n"
+            f"reporting internal state\n\n"
             f"===== Internal state ===============================\n"
-            f"    {validator_status}, balance {balance_in_eth} coins\n"
+            f"    {validator_status}, balance {balance_str} coins\n"
             f"    {len(self.transfer_events)} transfer events\n"
             f"    {len(self.scheduled_hashes)} scheduled for confirmation\n"
             f"    {len(self.completion_hashes)} completions seen\n"
@@ -87,12 +91,18 @@ class TransferRecorder:
             confirmation_tasks = []
 
         self.clear_transfers()
+        sort_events(confirmation_tasks)
         return confirmation_tasks
 
     def apply_proper_event(self, event: AttributeDict) -> None:
         event_name = event.event
 
         if event_name == TRANSFER_EVENT_NAME:
+            if event.args.value == 0 or is_same_address(
+                event.args["from"], ZERO_ADDRESS
+            ):
+                logger.warning(f"skipping event {event}")
+                return
             transfer_hash = compute_transfer_hash(event)
             self.transfer_hashes.add(transfer_hash)
             self.transfer_events[transfer_hash] = event
