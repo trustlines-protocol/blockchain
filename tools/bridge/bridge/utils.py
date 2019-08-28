@@ -1,5 +1,4 @@
-from os import R_OK, access
-from os.path import isfile
+import os
 
 from eth_keyfile import extract_key_from_keyfile
 from eth_typing import Hash32
@@ -42,13 +41,13 @@ def get_validator_private_key(config: dict) -> bytes:
         keystore_path = private_key["keystore_path"]
         keystore_password_path = private_key["keystore_password_path"]
 
-        if not isfile(keystore_path) or not access(keystore_path, R_OK):
+        if not os.path.isfile(keystore_path) or not os.access(keystore_path, os.R_OK):
             raise ValueError(
                 f"The keystore file does not exist or is not readable: '{keystore_path}'"
             )
 
-        if not isfile(keystore_password_path) or not access(
-            keystore_password_path, R_OK
+        if not os.path.isfile(keystore_password_path) or not os.access(
+            keystore_password_path, os.R_OK
         ):
             raise ValueError(
                 f"The keystore password file does not exist or is not readable: '{keystore_password_path}'"

@@ -1,4 +1,4 @@
-from os import path
+import os
 
 import pytest
 
@@ -17,7 +17,7 @@ def validator_private_key_raw():
 
 @pytest.fixture
 def keystore_folder():
-    return path.dirname(path.realpath(__file__))
+    return os.path.dirname(os.path.realpath(__file__))
 
 
 @pytest.fixture
@@ -27,15 +27,15 @@ def not_existing_path():
 
 @pytest.fixture
 def validator_private_key_keystore_path(keystore_folder):
-    keystore_path = path.join(keystore_folder, "keystore.json")
-    assert path.isfile(keystore_path)
+    keystore_path = os.path.join(keystore_folder, "keystore.json")
+    assert os.path.isfile(keystore_path)
     return keystore_path
 
 
 @pytest.fixture
 def validator_private_key_keystore_password_path(keystore_folder):
-    keystore_password_path = path.join(keystore_folder, "password")
-    assert path.isfile(keystore_password_path)
+    keystore_password_path = os.path.join(keystore_folder, "password")
+    assert os.path.isfile(keystore_password_path)
     return keystore_password_path
 
 
