@@ -89,10 +89,11 @@ The bridge validator client can be configured in two different ways. Either by
 a TOML configuration file or via environment variables. Both can also be
 mixed, where the environment variables have priority. Environment variable names
 are equal to the ones in the TOML file but in upper case (e.g. `HOME_RPC_URL`).
+Special is the dot notation for [hierarchical options](#hierarchical-options).
 The `--config` (`-c`) CLI parameter allows to define the path to the
 configuration file.
 
-There are tools which make working with a set of environment variables a more pleasent experience.
+There are tools which make working with a set of environment variables a more pleasant experience.
 One of those is [dotenv](https://www.npmjs.com/package/dotenv-cli) which allows loading environment
 variables from a `.env` file, an example of which is provided [here](.env.example). To start the
 bridge with configuration from a `.env` file, run `dotenv tlbc-bridge`. Alternatively, you can
@@ -118,7 +119,26 @@ with a default value are optional.
 |  `home_chain_event_fetch_start_block_number`   |      `0`      |  block number from which on events should be fetched on home chain   |
 |             `home_chain_gas_price`             | `10000000000` |           gas price in GWei for confirmation transactions            |
 |            `validator_private_key`             |               |      section of the validators private key to confirm transfers      |
-|                   `logging`                    |               |             dictionary to configure [logging](#logging)              |
+|                   `logging`                    |               |               section to configure [logging](#logging)               |
+
+### Hierarchical Options
+
+When using hierarchical options like `logging` or `validator_private_key`, they
+must be defined as TOML sections. For the configuration with environment
+variables, the dot notation is supported. Therefore must each value contain its
+whole upper hierarchy as keys separated with dots. Outside of an `.env` file
+this will require the usage of the `env` command. The direct definition of a
+variable with dotted names is likely to not work. Multiple further example can
+be found within the following sections.
+
+```toml
+[logging.root]
+level="DEBUG"
+```
+
+```sh
+env LOGGING.ROOT.LEVEL="DEBUG" ... tlbc-bridge
+```
 
 ### Private Key
 
@@ -126,6 +146,8 @@ The private key of the validator to confirm transfers can be provided in two
 different ways. Either by its raw form as hex encoded string or in an encrypted
 keystore with an additional password file. In case both are defined, the raw
 version takes precedence.
+
+A configuration via TOML file looks like that:
 
 ```toml
 [validator_private_key]
@@ -135,10 +157,20 @@ keystore_path = "/path/to/keystore.json"
 keystore_password_path = "/path/to/keystore_password"
 ```
 
+A configuration via environment variables requires the following definitions:
+
+```sh
+VALIDATOR_PRIVATE_KEY.RAW="0x..."
+# or
+VALIDATOR_PRIVATE_KEY.KEYSTORE_PATH="/path/to/keystore.json"
+VALIDATOR_PRIVATE_KEY.KEYSTORE_PASSWORD_PATH="/path/to/keystore_password"
+```
+
 ### Logging
 
-Logging can be configured globally or for specific components by setting the
-`logging` key in the TOML configuration file:
+Logging can be configured globally or for specific components.
+
+A configuration via TOML file looks like that:
 
 ```toml
 [logging.root]
@@ -155,10 +187,22 @@ level = "INFO"
 level = "INFO"
 ```
 
+A configuration via environment variables requires the following definitions:
+
+```sh
+LOGGING.ROOT.LEVEL="DEBUG"
+LOGGING.LOGGERS.WEB3.LEVEL="INFO"
+LOGGING.LOGGERS.URLLIB3.LEVEL="INFO"
+```
+
 Internally this is using _Python_'s
 [logging.config.dictConfig](https://docs.python.org/3/library/logging.config.html#logging.config.dictConfig).
 The exact schema for this key can be found at the [configuration dictionary
 schema](https://docs.python.org/3/library/logging.config.html#logging-config-dictschema).
+
+**Note:**
+The dotted environment variable notation does not work everywhere. Values like
+`[logging.loggers."bridge.main"]` are not representable and would get split.
 
 ### Validation
 
