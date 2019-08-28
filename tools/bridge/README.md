@@ -117,8 +117,23 @@ with a default value are optional.
 | `foreign_chain_event_fetch_start_block_number` |      `0`      | block number from which on events should be fetched on foreign chain |
 |  `home_chain_event_fetch_start_block_number`   |      `0`      |  block number from which on events should be fetched on home chain   |
 |             `home_chain_gas_price`             | `10000000000` |           gas price in GWei for confirmation transactions            |
-|            `validator_private_key`             |               |   Private key of the validator to confirm transfers as hex string    |
+|            `validator_private_key`             |               |      section of the validators private key to confirm transfers      |
 |                   `logging`                    |               |             dictionary to configure [logging](#logging)              |
+
+### Private Key
+
+The private key of the validator to confirm transfers can be provided in two
+different ways. Either by its raw form as hex encoded string or in an encrypted
+keystore with an additional password file. In case both are defined, the raw
+version takes precedence.
+
+```toml
+[validator_private_key]
+raw = "0x..."
+# or
+keystore_path = "/path/to/keystore.json"
+keystore_password_path = "/path/to/keystore_password"
+```
 
 ### Logging
 
@@ -164,7 +179,8 @@ home_bridge_contract_address = "0x77E0d930cF5B5Ef75b6911B0c18f1DCC1971589C"
 foreign_chain_event_fetch_start_block_number = 6058407
 home_chain_event_fetch_start_block_number = 3586854
 
-validator_private_key = "0x..."
+[validator_private_key]
+raw = "0x..."
 ```
 
 ## Docker Compose

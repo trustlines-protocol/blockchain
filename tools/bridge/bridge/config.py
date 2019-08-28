@@ -48,21 +48,75 @@ def validate_checksum_address(address: Any) -> bytes:
     return to_canonical_address(address)
 
 
-def validate_private_key(private_key: Any) -> bytes:
-    if not isinstance(private_key, str):
-        raise ValueError(f"Private key must be a string, got {private_key}")
-    if not is_hex(private_key):
-        raise ValueError(f"Private key must be hex encoded, got {private_key}")
-    if not is_0x_prefixed(private_key):
-        raise ValueError(f"Private key must have a `0x` prefix, got {private_key}")
-    private_key_bytes = decode_hex(private_key)
-    if len(private_key_bytes) != 32:
-        raise ValueError(f"Private key must represent 32 bytes, got {private_key}")
-    private_key_int = big_endian_to_int(private_key_bytes)
-    if not 0 < private_key_int < SECPK1_N:
-        raise ValueError(f"Private key outside of allowed range: {private_key}")
+def validate_private_key(private_key: Any) -> dict:
+    """ Validate the private key section of the configuration.
 
-    return private_key_bytes
+    The private key can be provided in two different ways. First is the
+    unencrypted hex String representation of the raw private key. Alternatively
+    it can be defined by a path to an encrypted keystore plus an according
+    password file.
+    This validation does only check the structure and the syntax of the
+    configuration section. It does not include to verify correct paths nor
+    gets the key decrypted. The key extraction must happen where else, because
+    the configuration is meant to be reloadable, while the private key should
+    persist from the start.
+    """
+
+    if not isinstance(private_key, dict):
+        raise ValueError(
+            f"Private key must be a dictionary with a raw key or a private keystore!"
+        )
+
+    if "raw" in private_key:
+        raw_key = private_key["raw"]
+
+        if not isinstance(raw_key, str):
+            raise ValueError(f"Raw private key must be a string, got '{raw_key}'")
+
+        if not is_hex(raw_key):
+            raise ValueError(f"Raw private key must be hex encoded, got '{raw_key}'")
+
+        if not is_0x_prefixed(raw_key):
+            raise ValueError(
+                f"Raw private key must have a `0x` prefix, got '{raw_key}'"
+            )
+
+        raw_key_bytes = decode_hex(raw_key)
+
+        if len(raw_key_bytes) != 32:
+            raise ValueError(
+                f"Raw private key must represent 32 bytes, got '{raw_key}'"
+            )
+
+        raw_key_int = big_endian_to_int(raw_key_bytes)
+
+        if not 0 < raw_key_int < SECPK1_N:
+            raise ValueError(f"Raw private key outside of allowed range: '{raw_key}'")
+
+    else:
+        if (
+            "keystore_path" not in private_key
+            or "keystore_password_path" not in private_key
+        ):
+            raise ValueError(
+                "The private key must be either defined by a raw hex string or "
+                "by the file paths to a keystore and according password!"
+            )
+
+        keystore_path = private_key["keystore_path"]
+        keystore_password_path = private_key["keystore_password_path"]
+
+        if not isinstance(keystore_path, str) or not keystore_path:
+            raise ValueError(
+                f"Private keystore parameter seem to be no path, got '{keystore_path}'"
+            )
+
+        if not isinstance(keystore_password_path, str) or not keystore_password_path:
+            raise ValueError(
+                f"Private keystore password parameter seem to be no path, got '{keystore_password_path}'"
+            )
+
+    return private_key
 
 
 def validate_logging(logging_dict: Dict) -> Dict:
