@@ -38,7 +38,7 @@ from bridge.service import Service, start_services
 from bridge.utils import get_validator_private_key
 from bridge.validator_balance_watcher import ValidatorBalanceWatcher
 from bridge.validator_status_watcher import ValidatorStatusWatcher
-from bridge.webservice import DummyWebservice, InternalState, Webservice
+from bridge.webservice import InternalState, Webservice
 
 logger = logging.getLogger(__name__)
 
@@ -250,10 +250,10 @@ public_config_keys = (
 
 def make_webservice(*, config, recorder):
     d = config["webservice"]
-    if d["enabled"]:
+    if d and d["enabled"]:
         ws = Webservice(host=d["host"], port=d["port"])
     else:
-        ws = DummyWebservice()
+        return None
 
     def encode_address(v):
         if isinstance(v, bytes):
@@ -409,7 +409,7 @@ def main(ctx, config_path: str) -> None:
         + sender.services
         + watcher.services
         + confirmation_task_planner.services
-        + webservice.services
+        + (webservice.services if webservice is not None else [])
     )
 
     install_signal_handler(

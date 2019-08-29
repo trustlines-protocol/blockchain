@@ -81,9 +81,3 @@ class Webservice:
         http_server = WSGIServer((self.host, self.port), self.app, log=logger)
         logger.info(f"Webservice is running on http://{self.host}:{self.port}".format())
         http_server.serve_forever()
-
-
-class DummyWebservice(Webservice):
-    def __init__(self, *, host, port):
-        super()(host=host, port=port)
-        self.services = []
