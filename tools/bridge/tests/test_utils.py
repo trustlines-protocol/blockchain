@@ -2,6 +2,7 @@ import os
 
 import pytest
 
+from bridge import config
 from bridge.utils import dotted_key_dict_to_nested_dict, get_validator_private_key
 
 
@@ -49,7 +50,11 @@ def validator_private_key_keystore_password_path_not_matching(tmp_path):
 
 @pytest.fixture
 def configuration_with_validator_private_key_raw(validator_private_key_raw):
-    return {"validator_private_key": {"raw": validator_private_key_raw}}
+    return {
+        "validator_private_key": config.PrivateKeySchema().load(
+            {"raw": validator_private_key_raw}
+        )
+    }
 
 
 @pytest.fixture
