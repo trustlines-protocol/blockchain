@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 from eth_keyfile import extract_key_from_keyfile
 from eth_typing import Hash32
-from eth_utils import decode_hex, int_to_big_endian, keccak
+from eth_utils import int_to_big_endian, keccak
 from web3.datastructures import AttributeDict
 
 

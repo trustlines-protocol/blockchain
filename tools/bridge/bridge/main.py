@@ -10,9 +10,9 @@ import gevent.pool
 from eth_keys.datatypes import PrivateKey
 from eth_utils import to_checksum_address
 from gevent.queue import Queue
+from marshmallow.exceptions import ValidationError
 from toml.decoder import TomlDecodeError
 from web3 import HTTPProvider, Web3
-from marshmallow.exceptions import ValidationError
 
 from bridge.config import load_config
 from bridge.confirmation_sender import (
@@ -340,7 +340,9 @@ def main(ctx, config_path: str) -> None:
     except TomlDecodeError as decode_error:
         raise click.UsageError(f"Invalid config file: {decode_error}") from decode_error
     except ValidationError as validation_error:
-        raise click.UsageError(f"Invalid config file: {validation_error}") from validation_error
+        raise click.UsageError(
+            f"Invalid config file: {validation_error}"
+        ) from validation_error
 
     configure_logging(config)
 
