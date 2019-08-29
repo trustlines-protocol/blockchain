@@ -38,6 +38,7 @@ from bridge.service import Service, start_services
 from bridge.utils import get_validator_private_key
 from bridge.validator_balance_watcher import ValidatorBalanceWatcher
 from bridge.validator_status_watcher import ValidatorStatusWatcher
+from bridge.webservice import InternalState, Webservice
 
 logger = logging.getLogger(__name__)
 
@@ -234,6 +235,38 @@ def make_validator_balance_watcher(config, control_queue):
     )
 
 
+public_config_keys = (
+    "foreign_rpc_url",
+    "home_rpc_url",
+    "foreign_chain_max_reorg_depth",
+    "home_chain_max_reorg_depth",
+    "foreign_chain_token_contract_address",
+    "foreign_bridge_contract_address",
+    "home_bridge_contract_address",
+    "foreign_chain_event_fetch_start_block_number",
+    "home_chain_event_fetch_start_block_number",
+)
+
+
+def make_webservice(*, config, recorder):
+    d = config["webservice"]
+    if d and d["enabled"]:
+        ws = Webservice(host=d["host"], port=d["port"])
+    else:
+        return None
+
+    def encode_address(v):
+        if isinstance(v, bytes):
+            return to_checksum_address(v)
+        else:
+            return v
+
+    public_config = {k: encode_address(config[k]) for k in public_config_keys}
+
+    ws.enable_internal_state(InternalState(recorder=recorder, config=public_config))
+    return ws
+
+
 def stop(pool, timeout):
     logger.info("Stopping...")
 
@@ -353,6 +386,7 @@ def main(ctx, config_path: str) -> None:
     )
 
     validator_balance_watcher = make_validator_balance_watcher(config, control_queue)
+    webservice = make_webservice(config=config, recorder=recorder)
 
     services = (
         [
@@ -373,6 +407,7 @@ def main(ctx, config_path: str) -> None:
         + sender.services
         + watcher.services
         + confirmation_task_planner.services
+        + (webservice.services if webservice is not None else [])
     )
 
     install_signal_handler(
