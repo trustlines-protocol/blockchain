@@ -94,7 +94,7 @@ validate_non_negative = validate.Range(min=0)
 
 class WebserviceSchema(Schema):
     enabled = fields.Bool(missing=False)
-    host = fields.Url()
+    host = fields.String()
     port = fields.Integer(validate=validate_non_negative)
 
     @validates_schema
