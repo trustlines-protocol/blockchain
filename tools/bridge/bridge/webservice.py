@@ -1,3 +1,4 @@
+import functools
 import logging
 import os
 
@@ -44,23 +45,34 @@ class WelcomePage:
         resp.content_type = "text/html"
 
 
+@functools.singledispatch
+def get_internal_state_summary(obj):
+    raise NotImplementedError()
+
+
+@get_internal_state_summary.register(dict)
+def _(d):
+    return d
+
+
 class InternalState:
-    def __init__(self, *, recorder, public_config):
-        self.recorder = recorder
-        self.public_config = public_config
+    def __init__(self, **summary_reporters):
+        self.summary_reporters = summary_reporters
 
     def on_get(self, req, resp):
         resp.media = {
             "bridge": {
                 "version": pkg_resources.get_distribution("tlbc-bridge").version,
-                "config": self.public_config,
                 "process": {
                     "pid": os.getpid(),
                     "uid": os.getuid(),
                     "gid": os.getgid(),
                     "loadavg": os.getloadavg(),
                 },
-                "recorder": self.recorder.get_state_summary(),
+                **{
+                    name: get_internal_state_summary(reporter)
+                    for name, reporter in self.summary_reporters.items()
+                },
             }
         }
 

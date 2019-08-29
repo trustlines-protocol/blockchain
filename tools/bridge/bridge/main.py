@@ -263,9 +263,7 @@ def make_webservice(*, config, recorder):
 
     public_config = {k: encode_address(config[k]) for k in public_config_keys}
 
-    ws.enable_internal_state(
-        InternalState(recorder=recorder, public_config=public_config)
-    )
+    ws.enable_internal_state(InternalState(recorder=recorder, config=public_config))
     return ws
 
 

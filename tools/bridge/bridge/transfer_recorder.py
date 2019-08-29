@@ -19,6 +19,7 @@ from bridge.events import (
     IsValidatorCheck,
 )
 from bridge.utils import compute_transfer_hash, sort_events
+from bridge.webservice import get_internal_state_summary
 
 logger = logging.getLogger(__name__)
 
@@ -42,25 +43,6 @@ class TransferRecorder:
         self.last_fetcher_reached_head_event: Dict[
             ChainRole, FetcherReachedHeadEvent
         ] = {}
-
-    def get_state_summary(self):
-        return {
-            "is-validator": self.is_validator,
-            "balance": str(self.balance or -1),
-            "num-transfer-events": len(self.transfer_events),
-            "num-scheduled-hashes": len(self.scheduled_hashes),
-            "num-completions": len(self.completion_hashes),
-            "is-validating": self.is_validating,
-            "is-balance-sufficient": self.is_balance_sufficient,
-            "last-fetcher-reached-head-event": [
-                {
-                    "last-fetched-block-number": x.last_fetched_block_number,
-                    "chain-role": x.chain_role.value,
-                    "timestamp": x.timestamp,
-                }
-                for x in self.last_fetcher_reached_head_event.values()
-            ],
-        }
 
     def log_current_state(self):
         if self.is_validator:
@@ -188,3 +170,24 @@ class TransferRecorder:
         if dispatch is None:
             raise ValueError(f"Received unknown event {event}")
         dispatch(self, event)
+
+
+@get_internal_state_summary.register(TransferRecorder)
+def get_state_summary(transfer_recorder):
+    return {
+        "is_validator": transfer_recorder.is_validator,
+        "balance": str(transfer_recorder.balance or -1),
+        "num_transfer_events": len(transfer_recorder.transfer_events),
+        "num_scheduled_hashes": len(transfer_recorder.scheduled_hashes),
+        "num_completions": len(transfer_recorder.completion_hashes),
+        "is_validating": transfer_recorder.is_validating,
+        "is_balance_sufficient": transfer_recorder.is_balance_sufficient,
+        "last_fetcher_reached_head_event": [
+            {
+                "last_fetched_block_number": x.last_fetched_block_number,
+                "chain_role": x.chain_role.value,
+                "timestamp": x.timestamp,
+            }
+            for x in transfer_recorder.last_fetcher_reached_head_event.values()
+        ],
+    }
