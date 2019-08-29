@@ -34,10 +34,7 @@ def get_validator_private_key(config: dict) -> bytes:
     private_key: dict = config["validator_private_key"]
 
     if "raw" in private_key:
-        raw_key = private_key["raw"]
-        raw_key_bytes = decode_hex(raw_key)
-        return raw_key_bytes
-
+        return private_key["raw"]
     else:
         keystore_path = private_key["keystore_path"]
         keystore_password_path = private_key["keystore_password_path"]
