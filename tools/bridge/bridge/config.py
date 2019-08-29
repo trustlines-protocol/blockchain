@@ -92,6 +92,24 @@ class PrivateKeySchema(Schema):
 validate_non_negative = validate.Range(min=0)
 
 
+class WebserviceSchema(Schema):
+    enabled = fields.Bool(missing=False)
+    host = fields.Url()
+    port = fields.Integer(validate=validate_non_negative)
+
+    @validates_schema
+    def validate_host_and_port_if_enabled(self, in_data, **kwargs):
+        if in_data["enabled"]:
+            if "host" not in in_data:
+                raise ValidationError(
+                    "'webservice.host' not given even though webservice is enabled"
+                )
+            if "port" not in in_data:
+                raise ValidationError(
+                    "'webservice.port' not given even though webservice is enabled"
+                )
+
+
 class ConfigSchema(Schema):
     home_rpc_url = fields.Url(required=True)
     home_bridge_contract_address = AddressField(required=True)
@@ -133,6 +151,7 @@ class ConfigSchema(Schema):
         missing=to_wei(0.04, "ether"),  # type: ignore
         validate=validate_non_negative,
     )
+    webservice = fields.Nested(WebserviceSchema)
 
 
 config_schema = ConfigSchema()
