@@ -1,6 +1,7 @@
 import functools
 import logging
 import os
+import types
 
 import falcon
 import pkg_resources
@@ -50,29 +51,44 @@ def get_internal_state_summary(obj):
     raise NotImplementedError()
 
 
+@get_internal_state_summary.register(int)
+@get_internal_state_summary.register(str)
 @get_internal_state_summary.register(dict)
-def _(d):
+def _identity(d):
     return d
+
+
+@get_internal_state_summary.register(types.FunctionType)
+def _function_summary(f):
+    return f()
+
+
+def get_process_summary():
+    return {
+        "pid": os.getpid(),
+        "uid": os.getuid(),
+        "gid": os.getgid(),
+        "loadavg": os.getloadavg(),
+    }
+
+
+def get_bridge_version():
+    return pkg_resources.get_distribution("tlbc-bridge").version
 
 
 class InternalState:
     def __init__(self, **summary_reporters):
-        self.summary_reporters = summary_reporters
+        self.summary_reporters = {
+            **summary_reporters,
+            "process": get_process_summary,
+            "version": get_bridge_version(),
+        }
 
     def on_get(self, req, resp):
         resp.media = {
             "bridge": {
-                "version": pkg_resources.get_distribution("tlbc-bridge").version,
-                "process": {
-                    "pid": os.getpid(),
-                    "uid": os.getuid(),
-                    "gid": os.getgid(),
-                    "loadavg": os.getloadavg(),
-                },
-                **{
-                    name: get_internal_state_summary(reporter)
-                    for name, reporter in self.summary_reporters.items()
-                },
+                name: get_internal_state_summary(reporter)
+                for name, reporter in self.summary_reporters.items()
             }
         }
 
