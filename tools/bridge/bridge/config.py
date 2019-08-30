@@ -5,6 +5,7 @@ from eth_keys.constants import SECPK1_N
 from eth_utils import (
     big_endian_to_int,
     decode_hex,
+    denoms,
     encode_hex,
     is_0x_prefixed,
     is_checksum_address,
@@ -110,47 +111,42 @@ class WebserviceSchema(Schema):
                 )
 
 
-class ConfigSchema(Schema):
-    home_rpc_url = fields.Url(required=True)
-    home_bridge_contract_address = AddressField(required=True)
-    foreign_rpc_url = fields.Url(required=True)
-    foreign_chain_token_contract_address = AddressField(required=True)
-    foreign_bridge_contract_address = AddressField(required=True)
-    validator_private_key = fields.Nested(PrivateKeySchema, required=True)
+class ChainSchema(Schema):
+    rpc_url = fields.Url(required=True)
+    rpc_timeout = fields.Integer(missing=180, validate=validate_non_negative)
+    bridge_contract_address = AddressField(required=True)
+    max_reorg_depth = fields.Integer(validate=validate_non_negative)
+    event_poll_interval = fields.Float(missing=5, validate=validate_non_negative)
+    event_fetch_start_block_number = fields.Integer(
+        missing=0, validate=validate_non_negative
+    )
 
-    logging = LoggingField(missing=lambda: dict(FORCED_LOGGING_CONFIG))
-    home_rpc_timeout = fields.Integer(missing=180, validate=validate_non_negative)
-    home_chain_gas_price = fields.Integer(
-        missing=10 * 1000000000, validate=validate_non_negative
-    )  # Gas price is in GWei
-    home_chain_max_reorg_depth = fields.Integer(
-        missing=1, validate=validate_non_negative
-    )
-    home_chain_event_poll_interval = fields.Float(
-        missing=5, validate=validate_non_negative
-    )
-    home_chain_event_fetch_start_block_number = fields.Integer(
-        missing=0, validate=validate_non_negative
-    )
-    foreign_rpc_timeout = fields.Integer(missing=180, validate=validate_non_negative)
-    foreign_chain_max_reorg_depth = fields.Integer(
-        missing=10, validate=validate_non_negative
-    )
-    foreign_chain_event_poll_interval = fields.Integer(
-        missing=5, validate=validate_non_negative
-    )
-    foreign_chain_event_fetch_start_block_number = fields.Integer(
-        missing=0, validate=validate_non_negative
-    )
-    balance_warn_poll_interval = fields.Float(
-        missing=60, validate=validate_non_negative
-    )
+
+class ForeignChainSchema(ChainSchema):
+    max_reorg_depth = fields.Integer(missing=1, validate=validate_non_negative)
+    token_contract_address = AddressField(required=True)
+
+
+class HomeChainSchema(ChainSchema):
+    max_reorg_depth = fields.Integer(missing=10, validate=validate_non_negative)
+    gas_price = fields.Integer(missing=10 * denoms.gwei, validate=validate_non_negative)
     # disable type check as type hint in eth_utils is wrong, (see
     # https://github.com/ethereum/eth-utils/issues/168)
     minimum_validator_balance = fields.Integer(
         missing=to_wei(0.04, "ether"),  # type: ignore
         validate=validate_non_negative,
     )
+    balance_warn_poll_interval = fields.Float(
+        missing=60, validate=validate_non_negative
+    )
+
+
+class ConfigSchema(Schema):
+    foreign_chain = fields.Nested(ForeignChainSchema(), required=True)
+    home_chain = fields.Nested(HomeChainSchema(), required=True)
+
+    validator_private_key = fields.Nested(PrivateKeySchema, required=True)
+    logging = LoggingField(missing=lambda: dict(FORCED_LOGGING_CONFIG))
     webservice = fields.Nested(WebserviceSchema)
 
 

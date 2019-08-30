@@ -67,8 +67,8 @@ def configure_logging(config):
 def make_w3_home(config):
     return Web3(
         HTTPProvider(
-            config["home_rpc_url"],
-            request_kwargs={"timeout": config["home_rpc_timeout"]},
+            config["home_chain"]["rpc_url"],
+            request_kwargs={"timeout": config["home_chain"]["rpc_timeout"]},
         )
     )
 
@@ -76,8 +76,8 @@ def make_w3_home(config):
 def make_w3_foreign(config):
     return Web3(
         HTTPProvider(
-            config["foreign_rpc_url"],
-            request_kwargs={"timeout": config["foreign_rpc_timeout"]},
+            config["foreign_chain"]["rpc_url"],
+            request_kwargs={"timeout": config["foreign_chain"]["rpc_timeout"]},
         )
     )
 
@@ -108,7 +108,7 @@ def sanity_check_home_bridge_contracts(home_bridge_contract):
 def make_transfer_event_fetcher(config, transfer_event_queue):
     w3_foreign = make_w3_foreign(config)
     token_contract = w3_foreign.eth.contract(
-        address=config["foreign_chain_token_contract_address"],
+        address=config["foreign_chain"]["token_contract_address"],
         abi=MINIMAL_ERC20_TOKEN_ABI,
     )
     validate_contract_existence(token_contract)
@@ -116,11 +116,11 @@ def make_transfer_event_fetcher(config, transfer_event_queue):
         web3=w3_foreign,
         contract=token_contract,
         filter_definition={
-            TRANSFER_EVENT_NAME: {"to": config["foreign_bridge_contract_address"]}
+            TRANSFER_EVENT_NAME: {"to": config["foreign_bridge"]["contract_address"]}
         },
         event_queue=transfer_event_queue,
-        max_reorg_depth=config["foreign_chain_max_reorg_depth"],
-        start_block_number=config["foreign_chain_event_fetch_start_block_number"],
+        max_reorg_depth=config["foreign_chain"]["max_reorg_depth"],
+        start_block_number=config["foreign_chain"]["event_fetch_start_block_number"],
         chain_role=ChainRole.foreign,
     )
 
@@ -128,7 +128,7 @@ def make_transfer_event_fetcher(config, transfer_event_queue):
 def make_home_bridge_event_fetcher(config, home_bridge_event_queue):
     w3_home = make_w3_home(config)
     home_bridge_contract = w3_home.eth.contract(
-        address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
+        address=config["home_chain"]["bridge_contract_address"], abi=HOME_BRIDGE_ABI
     )
     sanity_check_home_bridge_contracts(home_bridge_contract)
 
@@ -142,8 +142,8 @@ def make_home_bridge_event_fetcher(config, home_bridge_event_queue):
             COMPLETION_EVENT_NAME: {},
         },
         event_queue=home_bridge_event_queue,
-        max_reorg_depth=config["home_chain_max_reorg_depth"],
-        start_block_number=config["home_chain_event_fetch_start_block_number"],
+        max_reorg_depth=config["home_chain"]["max_reorg_depth"],
+        start_block_number=config["home_chain"]["event_fetch_start_block_number"],
         chain_role=ChainRole.home,
     )
 
@@ -155,7 +155,7 @@ def make_confirmation_task_planner(
     home_bridge_event_queue,
     confirmation_task_queue,
 ):
-    minimum_balance = config["minimum_validator_balance"]
+    minimum_balance = config["home_chain"]["minimum_validator_balance"]
 
     return ConfirmationTaskPlanner(
         sync_persistence_time=HOME_CHAIN_STEP_DURATION,
@@ -173,19 +173,19 @@ def make_confirmation_sender(
     w3_home = make_w3_home(config)
 
     home_bridge_contract = w3_home.eth.contract(
-        address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
+        address=config["home_chain"]["bridge_contract_address"], abi=HOME_BRIDGE_ABI
     )
     sanity_check_home_bridge_contracts(home_bridge_contract)
     return ConfirmationSender(
         transfer_event_queue=confirmation_task_queue,
         home_bridge_contract=home_bridge_contract,
         private_key=get_validator_private_key(config),
-        gas_price=config["home_chain_gas_price"],
-        max_reorg_depth=config["home_chain_max_reorg_depth"],
+        gas_price=config["home_chain"]["gas_price"],
+        max_reorg_depth=config["home_chain"]["max_reorg_depth"],
         pending_transaction_queue=pending_transaction_queue,
         sanity_check_transfer=make_sanity_check_transfer(
             foreign_bridge_contract_address=to_checksum_address(
-                config["foreign_bridge_contract_address"]
+                config["foreign_chain"]["bridge_contract_address"]
             )
         ),
     )
@@ -193,7 +193,7 @@ def make_confirmation_sender(
 
 def make_confirmation_watcher(*, config, pending_transaction_queue):
     w3_home = make_w3_home(config)
-    max_reorg_depth = config["home_chain_max_reorg_depth"]
+    max_reorg_depth = config["home_chain"]["max_reorg_depth"]
     return ConfirmationWatcher(
         w3=w3_home,
         pending_transaction_queue=pending_transaction_queue,
@@ -205,7 +205,7 @@ def make_validator_status_watcher(config, control_queue, stop):
     w3_home = make_w3_home(config)
 
     home_bridge_contract = w3_home.eth.contract(
-        address=config["home_bridge_contract_address"], abi=HOME_BRIDGE_ABI
+        address=config["home_bridge"]["contract_address"], abi=HOME_BRIDGE_ABI
     )
     sanity_check_home_bridge_contracts(home_bridge_contract)
     validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
@@ -226,7 +226,7 @@ def make_validator_balance_watcher(config, control_queue):
 
     validator_address = make_validator_address(config)
 
-    poll_interval = config["balance_warn_poll_interval"]
+    poll_interval = config["home_chain"]["balance_warn_poll_interval"]
 
     return ValidatorBalanceWatcher(
         w3=w3,
@@ -395,12 +395,12 @@ def main(ctx, config_path: str) -> None:
             Service(
                 "fetch-foreign-bridge-events",
                 transfer_event_fetcher.fetch_events,
-                config["foreign_chain_event_poll_interval"],
+                config["foreign_chain"]["event_poll_interval"],
             ),
             Service(
                 "fetch-home-bridge-events",
                 home_bridge_event_fetcher.fetch_events,
-                config["home_chain_event_poll_interval"],
+                config["home_chain"]["event_poll_interval"],
             ),
             Service("validator-status-watcher", validator_status_watcher.run),
             Service("validator_balance_watcher", validator_balance_watcher.run),
