@@ -110,8 +110,8 @@ balance_warn_poll_interval = 60.0
 [validator_private_key]  # the private key of the validator
 raw = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 # or alternatively (but not at the same time)
-keystore_path = "~/validator_keystore.json"
-keystore_password_path = "~/validator_password"
+keystore_path = "validator_keystore.json"
+keystore_password_path = "validator_password"
 
 [logging]  # configures logging (see [logging](logging) for details)
 
