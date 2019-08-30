@@ -5,6 +5,7 @@ from eth_keys.constants import SECPK1_N
 from eth_utils import (
     big_endian_to_int,
     decode_hex,
+    denoms,
     encode_hex,
     is_0x_prefixed,
     is_checksum_address,
@@ -128,9 +129,7 @@ class ForeignChainSchema(ChainSchema):
 
 class HomeChainSchema(ChainSchema):
     max_reorg_depth = fields.Integer(missing=10, validate=validate_non_negative)
-    gas_price = fields.Integer(
-        missing=to_wei(10, "ether"), validate=validate_non_negative
-    )
+    gas_price = fields.Integer(missing=10 * denoms.gwei, validate=validate_non_negative)
     # disable type check as type hint in eth_utils is wrong, (see
     # https://github.com/ethereum/eth-utils/issues/168)
     minimum_validator_balance = fields.Integer(
