@@ -86,24 +86,29 @@ given via the `--config` (`-c`) CLI paramter.
 The following table lists all available options. Configuration entries
 with a default value are optional.
 
-|                      Name                      |    Default    |                             Description                              |
-| :--------------------------------------------: | :-----------: | :------------------------------------------------------------------: |
-|               `foreign_rpc_url`                |               |  URL to JSON-RPC endpoint of foreign chain node [HTTP(S) protocol]   |
+|                      Name                      |    Default    |                              Description                             |
+|:----------------------------------------------:|:-------------:|:--------------------------------------------------------------------:|
+|                `foreign_rpc_url`               |               |   URL to JSON-RPC endpoint of foreign chain node [HTTP(S) protocol]  |
 |                 `home_rpc_url`                 |               |    URL to JSON-RPC endpoint of home chain node [HTTP(S) protocol]    |
-|             `foreign_rpc_timeout`              |     `180`     |  timeout option of the `web3` _HTTPProvider_ for the foreign chain   |
+|              `foreign_rpc_timeout`             |     `180`     |   timeout option of the `web3` _HTTPProvider_ for the foreign chain  |
 |               `home_rpc_timeout`               |     `180`     |    timeout option of the `web3` _HTTPProvider_ for the home chain    |
-|        `foreign_chain_max_reorg_depth`         |     `10`      |     number of confirmation blocks required on the foreign chain      |
+|         `foreign_chain_max_reorg_depth`        |      `10`     |      number of confirmation blocks required on the foreign chain     |
 |          `home_chain_max_reorg_depth`          |      `1`      |       number of confirmation blocks required on the home chain       |
 |     `foreign_chain_token_contract_address`     |               |          address of the token contract on the foreign chain          |
-|       `foreign_bridge_contract_address`        |               |         address of the bridge contract on the foreign chain          |
+|        `foreign_bridge_contract_address`       |               |          address of the bridge contract on the foreign chain         |
 |         `home_bridge_contract_address`         |               |           address of the bridge contract on the home chain           |
-|      `foreign_chain_event_poll_interval`       |      `5`      |     interval in seconds to poll for new events on foreign chain      |
+|       `foreign_chain_event_poll_interval`      |      `5`      |      interval in seconds to poll for new events on foreign chain     |
 |        `home_chain_event_poll_interval`        |      `5`      |       interval in seconds to poll for new events on home chain       |
+|          `balance_warn_poll_interval`          |      `60`     |        interval in seconds to check validator account balance        |
 | `foreign_chain_event_fetch_start_block_number` |      `0`      | block number from which on events should be fetched on foreign chain |
-|  `home_chain_event_fetch_start_block_number`   |      `0`      |  block number from which on events should be fetched on home chain   |
-|             `home_chain_gas_price`             | `10000000000` |           gas price in GWei for confirmation transactions            |
-|            `validator_private_key`             |               |      section of the validators private key to confirm transfers      |
-|                   `logging`                    |               |               section to configure [logging](#logging)               |
+|   `home_chain_event_fetch_start_block_number`  |      `0`      |   block number from which on events should be fetched on home chain  |
+|   `home_chain_event_fetch_start_block_number`  |      `0`      |   block number from which on events should be fetched on home chain  |
+|              `foreign_rpc_timeout`             |     `180`     |          timeout for RPC requests to the foreign chain node          |
+|               `home_rpc_timeout`               |     `180`     |            timeout for RPC requests to the home chain node           |
+|             `home_chain_gas_price`             | `10000000000` |            gas price in GWei for confirmation transactions           |
+|             `validator_private_key`            |               |      section of the validators private key to confirm transfers      |
+|                    `logging`                   |               |               section to configure [logging](#logging)               |
+|                  `webservice`                  |               |          section to configure the [webservice](#webservice)          |
 
 ### Private Key
 
@@ -146,6 +151,19 @@ Internally this is using _Python_'s
 [logging.config.dictConfig](https://docs.python.org/3/library/logging.config.html#logging.config.dictConfig).
 The exact schema for this key can be found at the [configuration dictionary
 schema](https://docs.python.org/3/library/logging.config.html#logging-config-dictschema).
+
+
+### Webservice
+
+The webservice allows to query information about the current state of the bridge node. It is not
+running by default and must be enabled in the config file if desired:
+
+```toml
+[webservice]
+enabled = true  # false by default
+host = http://127.0.0.1  # host URL number  (required if enabled)
+port = 8640  # port number  (required if enabled)
+```
 
 ### Validation
 
