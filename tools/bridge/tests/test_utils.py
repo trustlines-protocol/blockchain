@@ -2,7 +2,8 @@ import os
 
 import pytest
 
-from bridge.utils import dotted_key_dict_to_nested_dict, get_validator_private_key
+from bridge import config
+from bridge.utils import get_validator_private_key
 
 
 @pytest.fixture
@@ -49,7 +50,11 @@ def validator_private_key_keystore_password_path_not_matching(tmp_path):
 
 @pytest.fixture
 def configuration_with_validator_private_key_raw(validator_private_key_raw):
-    return {"validator_private_key": {"raw": validator_private_key_raw}}
+    return {
+        "validator_private_key": config.PrivateKeySchema().load(
+            {"raw": validator_private_key_raw}
+        )
+    }
 
 
 @pytest.fixture
@@ -114,10 +119,3 @@ def test_get_validator_private_key_kestore_not_matching_password(
 
     with pytest.raises(ValueError):
         get_validator_private_key(configuration_with_validator_private_key_keystore)
-
-
-def test_dotted_key_dict_to_nestd_dict():
-    dotted_key_dict = {"a.b": 1, "a.c": 2, "d": 3}
-    nested_dict = {"a": {"b": 1, "c": 2}, "d": 3}
-
-    assert dotted_key_dict_to_nested_dict(dotted_key_dict) == nested_dict

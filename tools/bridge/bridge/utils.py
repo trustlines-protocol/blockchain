@@ -1,9 +1,8 @@
 import os
-from typing import Any, Dict
 
 from eth_keyfile import extract_key_from_keyfile
 from eth_typing import Hash32
-from eth_utils import decode_hex, int_to_big_endian, keccak
+from eth_utils import int_to_big_endian, keccak
 from web3.datastructures import AttributeDict
 
 
@@ -34,10 +33,7 @@ def get_validator_private_key(config: dict) -> bytes:
     private_key: dict = config["validator_private_key"]
 
     if "raw" in private_key:
-        raw_key = private_key["raw"]
-        raw_key_bytes = decode_hex(raw_key)
-        return raw_key_bytes
-
+        return private_key["raw"]
     else:
         keystore_path = private_key["keystore_path"]
         keystore_password_path = private_key["keystore_password_path"]
@@ -64,46 +60,6 @@ def get_validator_private_key(config: dict) -> bytes:
             raise ValueError(
                 f"Could not decrypt keystore. Please make sure the password is correct."
             )
-
-
-def dotted_key_dict_to_nested_dict(dotted_key_dict):
-    """Convert a dictionary with dotted keys into a nested one.
-
-    Keys which include a dot are split and get replaced with dictionaries,
-    containing further keys. The origin purpose is to support dotted environment
-    variables in relation to configuration sections.
-    E.g.: {'a.b': 1, 'a.c': 2, 'd': 3} -> {'a': {'b': 1, 'c': 2}, 'd': 3}
-    """
-
-    nested_dict: Dict[str, Any] = {}
-
-    for key, value in dotted_key_dict.items():
-        deep_nested = nested_dict
-        subkey_list = key.split(".")
-
-        for subkey in subkey_list[:-1]:
-            if subkey not in deep_nested:
-                deep_nested[subkey] = {}
-
-            deep_nested = deep_nested[subkey]
-
-        deep_nested[subkey_list[-1]] = value
-
-    return nested_dict
-
-
-def lower_dict_keys(dictionary):
-    """Recursively change all dictionary keys to lower case."""
-
-    if not isinstance(dictionary, dict):
-        return dictionary
-
-    dictionary_copy = {}
-
-    for key, value in dictionary.items():
-        dictionary_copy[key.lower()] = lower_dict_keys(value)
-
-    return dictionary_copy
 
 
 def sort_events(events):
