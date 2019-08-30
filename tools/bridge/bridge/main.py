@@ -116,7 +116,9 @@ def make_transfer_event_fetcher(config, transfer_event_queue):
         web3=w3_foreign,
         contract=token_contract,
         filter_definition={
-            TRANSFER_EVENT_NAME: {"to": config["foreign_bridge"]["contract_address"]}
+            TRANSFER_EVENT_NAME: {
+                "to": config["foreign_chain"]["bridge_contract_address"]
+            }
         },
         event_queue=transfer_event_queue,
         max_reorg_depth=config["foreign_chain"]["max_reorg_depth"],
@@ -205,7 +207,7 @@ def make_validator_status_watcher(config, control_queue, stop):
     w3_home = make_w3_home(config)
 
     home_bridge_contract = w3_home.eth.contract(
-        address=config["home_bridge"]["contract_address"], abi=HOME_BRIDGE_ABI
+        address=config["home_chain"]["bridge_contract_address"], abi=HOME_BRIDGE_ABI
     )
     sanity_check_home_bridge_contracts(home_bridge_contract)
     validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
@@ -236,17 +238,7 @@ def make_validator_balance_watcher(config, control_queue):
     )
 
 
-public_config_keys = (
-    "foreign_rpc_url",
-    "home_rpc_url",
-    "foreign_chain_max_reorg_depth",
-    "home_chain_max_reorg_depth",
-    "foreign_chain_token_contract_address",
-    "foreign_bridge_contract_address",
-    "home_bridge_contract_address",
-    "foreign_chain_event_fetch_start_block_number",
-    "home_chain_event_fetch_start_block_number",
-)
+public_config_keys = ()
 
 
 def make_webservice(*, config, recorder):
