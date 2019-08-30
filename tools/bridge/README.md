@@ -83,47 +83,42 @@ docker build --file ./Dockerfile --tag tlbc-bridge ../../
 The bridge validator client can be configured with a TOML configuration file whose path must be
 given via the `--config` (`-c`) CLI paramter.
 
-The following table lists all available options. Configuration entries
-with a default value are optional.
-
-|                      Name                      |    Default    |                              Description                             |
-|:----------------------------------------------:|:-------------:|:--------------------------------------------------------------------:|
-|                `foreign_rpc_url`               |               |   URL to JSON-RPC endpoint of foreign chain node [HTTP(S) protocol]  |
-|                 `home_rpc_url`                 |               |    URL to JSON-RPC endpoint of home chain node [HTTP(S) protocol]    |
-|              `foreign_rpc_timeout`             |     `180`     |   timeout option of the `web3` _HTTPProvider_ for the foreign chain  |
-|               `home_rpc_timeout`               |     `180`     |    timeout option of the `web3` _HTTPProvider_ for the home chain    |
-|         `foreign_chain_max_reorg_depth`        |      `10`     |      number of confirmation blocks required on the foreign chain     |
-|          `home_chain_max_reorg_depth`          |      `1`      |       number of confirmation blocks required on the home chain       |
-|     `foreign_chain_token_contract_address`     |               |          address of the token contract on the foreign chain          |
-|        `foreign_bridge_contract_address`       |               |          address of the bridge contract on the foreign chain         |
-|         `home_bridge_contract_address`         |               |           address of the bridge contract on the home chain           |
-|       `foreign_chain_event_poll_interval`      |      `5`      |      interval in seconds to poll for new events on foreign chain     |
-|        `home_chain_event_poll_interval`        |      `5`      |       interval in seconds to poll for new events on home chain       |
-|          `balance_warn_poll_interval`          |      `60`     |        interval in seconds to check validator account balance        |
-| `foreign_chain_event_fetch_start_block_number` |      `0`      | block number from which on events should be fetched on foreign chain |
-|   `home_chain_event_fetch_start_block_number`  |      `0`      |   block number from which on events should be fetched on home chain  |
-|   `home_chain_event_fetch_start_block_number`  |      `0`      |   block number from which on events should be fetched on home chain  |
-|              `foreign_rpc_timeout`             |     `180`     |          timeout for RPC requests to the foreign chain node          |
-|               `home_rpc_timeout`               |     `180`     |            timeout for RPC requests to the home chain node           |
-|             `home_chain_gas_price`             | `10000000000` |            gas price in GWei for confirmation transactions           |
-|             `validator_private_key`            |               |      section of the validators private key to confirm transfers      |
-|                    `logging`                   |               |               section to configure [logging](#logging)               |
-|                  `webservice`                  |               |          section to configure the [webservice](#webservice)          |
-
-### Private Key
-
-The private key of the validator to confirm transfers can be provided in two
-different ways. Either by its raw form as hex encoded string or in an encrypted
-keystore with an additional password file.
-
-A configuration via TOML file looks like that:
+Here is an example file with all possible entries. Optional entries are listed with their default
+value.
 
 ```toml
-[validator_private_key]
-raw = "0x..."
-# or
-keystore_path = "/path/to/keystore.json"
-keystore_password_path = "/path/to/keystore_password"
+[foreign_chain]
+rpc_url = "http://localhost:8545"  # URL to the foreign chain's JSON RPC endpoint
+rpc_timeout = 180  # timeout for JSON RPC requests to the foreign chain node
+max_reorg_depth = 1  # number of confirmation blocks required on the foreign chain
+event_poll_interval = 5.0  # interval in seconds to poll for new events
+event_fetch_start_block_number = 0  # block number from which on events should be fetched
+bridge_contract_address = "0x8d25a6C7685ca80fF110b2B3CEDbcd520FdE8Dd3"  # address of the foreign bridge contract
+token_contract_address = "0xCd7464985f3b5dbD96e12da9b018BA45a64256E6"  # address of the TLN token contract
+
+[home_chain]
+rpc_url = "http://localhost:8546"  # timeout for JSON RPC requests to the foreign chain node
+rpc_timeout = 180  # URL to JSON-RPC endpoint of home chain node [HTTP(S) protocol]
+max_reorg_depth = 10  # number of confirmation blocks required on the home chain
+event_poll_interval = 5.0  # interval in seconds to poll for new events
+event_fetch_start_block_number = 0  # block number from which on events should be fetched on home chain
+bridge_contract_address = "0x77E0d930cF5B5Ef75b6911B0c18f1DCC1971589C"  # address of the home bridge contract
+gas_price = 10000000000000000000  # gas price in Wei for confirmation transactions
+minimum_validator_balance = 40000000000000000
+balance_warn_poll_interval = 60.0
+
+[validator_private_key]  # the private key of the validator
+raw = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+# or alternatively (but not at the same time)
+keystore_path = "~/validator_keystore.json"
+keystore_password_path = "~/validator_password"
+
+[logging]  # configures logging (see [logging](logging) for details)
+
+[webservice]
+enabled = true  # enables or disables the webservice
+host = "http://127.0.0.1"  # URL of the host the webservice is running on
+port = 8640  # port number the webservice is running on
 ```
 
 ### Logging
@@ -168,25 +163,6 @@ port = 8640  # port number  (required if enabled)
 ### Validation
 
 The configuration itself as well as the provided contracts and data will be verified at startup and continously. Make sure to check the logs for errors when running your validator node.
-
-### Example
-
-A minimal example configuration file for the current test deployment (_Ropsten_
-to _Laika_) would look like this:
-
-```toml
-foreign_rpc_url = "http://localhost:8545"
-home_rpc_url = "http://localhost:8546"
-
-foreign_chain_token_contract_address = "0xCd7464985f3b5dbD96e12da9b018BA45a64256E6"
-foreign_bridge_contract_address = "0x8d25a6C7685ca80fF110b2B3CEDbcd520FdE8Dd3"
-home_bridge_contract_address = "0x77E0d930cF5B5Ef75b6911B0c18f1DCC1971589C"
-foreign_chain_event_fetch_start_block_number = 6058407
-home_chain_event_fetch_start_block_number = 3586854
-
-[validator_private_key]
-raw = "0x..."
-```
 
 ## Docker Compose
 
