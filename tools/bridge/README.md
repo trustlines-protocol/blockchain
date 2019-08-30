@@ -76,76 +76,45 @@ The following example illustrates how to do so from the current directory
 docker build --file ./Dockerfile --tag tlbc-bridge ../../
 ```
 
-As the bridge can be configured via environment variables, following the same
-naming scheme as the [TOML configuration](#configuration), you can simply use an
-`.env` file in the current directory. See the `.env.example` file as a first
-example.
-
 ---
 
 ## Configuration
 
-The bridge validator client can be configured in two different ways. Either by
-a TOML configuration file or via environment variables. Both can also be
-mixed, where the environment variables have priority. Environment variable names
-are equal to the ones in the TOML file but in upper case (e.g. `HOME_RPC_URL`).
-Special is the dot notation for [hierarchical options](#hierarchical-options).
-The `--config` (`-c`) CLI parameter allows to define the path to the
-configuration file.
-
-There are tools which make working with a set of environment variables a more pleasant experience.
-One of those is [dotenv](https://www.npmjs.com/package/dotenv-cli) which allows loading environment
-variables from a `.env` file, an example of which is provided [here](.env.example). To start the
-bridge with configuration from a `.env` file, run `dotenv tlbc-bridge`. Alternatively, you can
-also use [envdir](https://pypi.org/project/envdir/).
+The bridge validator client can be configured with a TOML configuration file whose path must be
+given via the `--config` (`-c`) CLI paramter.
 
 The following table lists all available options. Configuration entries
 with a default value are optional.
 
-|                      Name                      |    Default    |                             Description                              |
-| :--------------------------------------------: | :-----------: | :------------------------------------------------------------------: |
-|               `foreign_rpc_url`                |               |  URL to JSON-RPC endpoint of foreign chain node [HTTP(S) protocol]   |
+|                      Name                      |    Default    |                              Description                             |
+|:----------------------------------------------:|:-------------:|:--------------------------------------------------------------------:|
+|                `foreign_rpc_url`               |               |   URL to JSON-RPC endpoint of foreign chain node [HTTP(S) protocol]  |
 |                 `home_rpc_url`                 |               |    URL to JSON-RPC endpoint of home chain node [HTTP(S) protocol]    |
-|             `foreign_rpc_timeout`              |     `180`     |  timeout option of the `web3` _HTTPProvider_ for the foreign chain   |
+|              `foreign_rpc_timeout`             |     `180`     |   timeout option of the `web3` _HTTPProvider_ for the foreign chain  |
 |               `home_rpc_timeout`               |     `180`     |    timeout option of the `web3` _HTTPProvider_ for the home chain    |
-|        `foreign_chain_max_reorg_depth`         |     `10`      |     number of confirmation blocks required on the foreign chain      |
+|         `foreign_chain_max_reorg_depth`        |      `10`     |      number of confirmation blocks required on the foreign chain     |
 |          `home_chain_max_reorg_depth`          |      `1`      |       number of confirmation blocks required on the home chain       |
 |     `foreign_chain_token_contract_address`     |               |          address of the token contract on the foreign chain          |
-|       `foreign_bridge_contract_address`        |               |         address of the bridge contract on the foreign chain          |
+|        `foreign_bridge_contract_address`       |               |          address of the bridge contract on the foreign chain         |
 |         `home_bridge_contract_address`         |               |           address of the bridge contract on the home chain           |
-|      `foreign_chain_event_poll_interval`       |      `5`      |     interval in seconds to poll for new events on foreign chain      |
+|       `foreign_chain_event_poll_interval`      |      `5`      |      interval in seconds to poll for new events on foreign chain     |
 |        `home_chain_event_poll_interval`        |      `5`      |       interval in seconds to poll for new events on home chain       |
+|          `balance_warn_poll_interval`          |      `60`     |        interval in seconds to check validator account balance        |
 | `foreign_chain_event_fetch_start_block_number` |      `0`      | block number from which on events should be fetched on foreign chain |
-|  `home_chain_event_fetch_start_block_number`   |      `0`      |  block number from which on events should be fetched on home chain   |
-|             `home_chain_gas_price`             | `10000000000` |           gas price in GWei for confirmation transactions            |
-|            `validator_private_key`             |               |      section of the validators private key to confirm transfers      |
-|                   `logging`                    |               |               section to configure [logging](#logging)               |
-
-### Hierarchical Options
-
-When using hierarchical options like `logging` or `validator_private_key`, they
-must be defined as TOML sections. For the configuration with environment
-variables, the dot notation is supported. Therefore must each value contain its
-whole upper hierarchy as keys separated with dots. Outside of an `.env` file
-this will require the usage of the `env` command. The direct definition of a
-variable with dotted names is likely to not work. Multiple further example can
-be found within the following sections.
-
-```toml
-[logging.root]
-level="DEBUG"
-```
-
-```sh
-env LOGGING.ROOT.LEVEL="DEBUG" ... tlbc-bridge
-```
+|   `home_chain_event_fetch_start_block_number`  |      `0`      |   block number from which on events should be fetched on home chain  |
+|   `home_chain_event_fetch_start_block_number`  |      `0`      |   block number from which on events should be fetched on home chain  |
+|              `foreign_rpc_timeout`             |     `180`     |          timeout for RPC requests to the foreign chain node          |
+|               `home_rpc_timeout`               |     `180`     |            timeout for RPC requests to the home chain node           |
+|             `home_chain_gas_price`             | `10000000000` |            gas price in GWei for confirmation transactions           |
+|             `validator_private_key`            |               |      section of the validators private key to confirm transfers      |
+|                    `logging`                   |               |               section to configure [logging](#logging)               |
+|                  `webservice`                  |               |          section to configure the [webservice](#webservice)          |
 
 ### Private Key
 
 The private key of the validator to confirm transfers can be provided in two
 different ways. Either by its raw form as hex encoded string or in an encrypted
-keystore with an additional password file. In case both are defined, the raw
-version takes precedence.
+keystore with an additional password file.
 
 A configuration via TOML file looks like that:
 
@@ -157,20 +126,11 @@ keystore_path = "/path/to/keystore.json"
 keystore_password_path = "/path/to/keystore_password"
 ```
 
-A configuration via environment variables requires the following definitions:
-
-```sh
-VALIDATOR_PRIVATE_KEY.RAW="0x..."
-# or
-VALIDATOR_PRIVATE_KEY.KEYSTORE_PATH="/path/to/keystore.json"
-VALIDATOR_PRIVATE_KEY.KEYSTORE_PASSWORD_PATH="/path/to/keystore_password"
-```
-
 ### Logging
 
 Logging can be configured globally or for specific components.
 
-A configuration via TOML file looks like that:
+A configuration may look like that:
 
 ```toml
 [logging.root]
@@ -187,22 +147,23 @@ level = "INFO"
 level = "INFO"
 ```
 
-A configuration via environment variables requires the following definitions:
-
-```sh
-LOGGING.ROOT.LEVEL="DEBUG"
-LOGGING.LOGGERS.WEB3.LEVEL="INFO"
-LOGGING.LOGGERS.URLLIB3.LEVEL="INFO"
-```
-
 Internally this is using _Python_'s
 [logging.config.dictConfig](https://docs.python.org/3/library/logging.config.html#logging.config.dictConfig).
 The exact schema for this key can be found at the [configuration dictionary
 schema](https://docs.python.org/3/library/logging.config.html#logging-config-dictschema).
 
-**Note:**
-The dotted environment variable notation does not work everywhere. Values like
-`[logging.loggers."bridge.main"]` are not representable and would get split.
+
+### Webservice
+
+The webservice allows to query information about the current state of the bridge node. It is not
+running by default and must be enabled in the config file if desired:
+
+```toml
+[webservice]
+enabled = true  # false by default
+host = http://127.0.0.1  # host URL number  (required if enabled)
+port = 8640  # port number  (required if enabled)
+```
 
 ### Validation
 

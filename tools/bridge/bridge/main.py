@@ -328,8 +328,7 @@ def log_internal_state(recorder):
 def main(ctx, config_path: str) -> None:
     """The Trustlines Bridge Validation Server
 
-    Configuration can be made using a TOML file or via environment variables. Tools such as dotenv
-    or envdir may simplify setting environment variables. For a dotenv example, see `.env.example`.
+    Configuration can be made using a TOML file.
 
     See config.py for valid configuration options and defaults.
     """
