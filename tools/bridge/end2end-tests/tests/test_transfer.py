@@ -1,4 +1,3 @@
-import os
 import subprocess
 import time
 import warnings
@@ -6,6 +5,7 @@ from subprocess import Popen
 
 import pytest
 import requests
+import toml
 from deploy_tools import deploy_compiled_contract
 from deploy_tools.deploy import wait_for_successful_transaction_receipt
 from web3 import HTTPProvider, Web3
@@ -31,6 +31,13 @@ class Timer:
         self.start_time = None
         self.timeout = timeout
 
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
     def start(self):
         self.start_time = time.time()
 
@@ -40,7 +47,19 @@ class Timer:
         return self.time_passed > self.timeout
 
     @property
+    def is_started(self):
+        return self.start_time is not None
+
+    @property
+    def time_left(self):
+        if self.start_time is None:
+            raise ValueError("Timer is not started yet")
+        return self.timeout - self.time_passed
+
+    @property
     def time_passed(self):
+        if self.start_time is None:
+            raise ValueError("Timer is not started yet")
         return time.time() - self.start_time
 
 
@@ -51,21 +70,19 @@ def assert_within_timeout(check_function, timeout, poll_period=0.5):
     :param timeout: After this timeout non passing assertion will be raised
     :param poll_period: poll interval to check the check_function
     """
-    timer = Timer(timeout)
-    timer.start()
-
-    while True:
-        try:
-            check_function()
-        except AssertionError as e:
-            if not timer.is_timed_out():
-                time.sleep(poll_period)
+    with Timer(timeout) as timer:
+        while True:
+            try:
+                check_function()
+            except AssertionError as e:
+                if not timer.is_timed_out():
+                    time.sleep(min(poll_period, timer.time_left))
+                else:
+                    raise TimeoutException(
+                        f"Assertion did not pass after {timeout} seconds. See causing exception for more details."
+                    ) from e
             else:
-                raise TimeoutException(
-                    f"Assertion did not pass after {timeout} seconds. See causing exception for more details."
-                ) from e
-        else:
-            break
+                break
 
 
 class Service:
@@ -95,8 +112,12 @@ class Service:
     def start(self):
         """Starts the service and wait for it to be up """
         self.process = Popen(self.args, env=self.env, **self._process_settings)
-        self._wait_for_up()
-        return self.process
+        try:
+            self._wait_for_up()
+            return self.process
+        except TimeoutException:
+            self.terminate()
+            raise
 
     def is_up(self):
         """Use the uptest to determine if the service is up"""
@@ -106,27 +127,28 @@ class Service:
             return True
 
     def _wait_for_up(self):
-        start_time = time.time()
-        while True:
-            is_up = self.is_up()
+        with Timer(self.timeout) as timer:
+            while True:
+                is_up = self.is_up()
 
-            if not is_up:
-                if time.time() - start_time > self.timeout:
-                    raise TimeoutException(
-                        f"Service {self.name} did not report to be up after {self.timeout} seconds"
-                    )
-                time.sleep(self.poll_interval)
-            else:
-                break
+                if not is_up:
+                    if timer.is_timed_out():
+                        raise TimeoutException(
+                            f"Service {self.name} did not report to be up after {self.timeout} seconds"
+                        )
+                    else:
+                        time.sleep(min(self.poll_interval, timer.time_left))
+                else:
+                    break
 
     def terminate(self):
         try:
             self.process.terminate()
-            self.process.wait(timeout=10)
+            self.process.wait(timeout=5)
         except subprocess.TimeoutExpired:
             warnings.warn(f"{self.name} did not terminate in time and had to be killed")
             self.process.kill()
-            self.process.wait()
+            self.process.wait(timeout=5)
 
 
 class Node(Service):
@@ -155,6 +177,10 @@ class Node(Service):
 
 
 class Bridge(Service):
+
+    HOST = "localhost"
+    BASE_PORT = 8640
+
     def __init__(
         self,
         *,
@@ -163,39 +189,64 @@ class Bridge(Service):
         token_contract_address,
         foreign_bridge_contract_address,
         home_bridge_contract_address,
+        path,
+        port_shift=0,
     ):
-        env = {
-            "HOME_RPC_URL": HOME_RPC_URL,
-            "FOREIGN_RPC_URL": FOREIGN_RPC_URL,
-            "FOREIGN_CHAIN_TOKEN_CONTRACT_ADDRESS": str(token_contract_address),
-            "FOREIGN_BRIDGE_CONTRACT_ADDRESS": str(foreign_bridge_contract_address),
-            "FOREIGN_CHAIN_EVENT_FETCH_START_BLOCK_NUMBER": "0",
-            "HOME_BRIDGE_CONTRACT_ADDRESS": str(home_bridge_contract_address),
-            "HOME_CHAIN_EVENT_FETCH_START_BLOCK_NUMBER": "0",
-            "VALIDATOR_PRIVATE_KEY": validator_private_key.to_hex(),
-            "HOME_RPC_TIMEOUT": "10",
-            "HOME_CHAIN_MAX_REORG_DEPTH": "0",
-            "HOME_CHAIN_EVENT_POLL_INTERVAL": "1",
-            "FOREIGN_RPC_TIMEOUT": "10",
-            "FOREIGN_CHAIN_MAX_REORG_DEPTH": "3",
-            "FOREIGN_CHAIN_EVENT_POLL_INTERVAL": "1",
+        self.port_shift = port_shift
+        config = {
+            "foreign_chain": {
+                "rpc_url": FOREIGN_RPC_URL,
+                "rpc_timeout": 5,
+                "max_reorg_depth": 3,
+                "event_poll_interval": 0.5,
+                "event_fetch_start_block_number": 0,
+                "bridge_contract_address": str(foreign_bridge_contract_address),
+                "token_contract_address": str(token_contract_address),
+            },
+            "home_chain": {
+                "rpc_url": HOME_RPC_URL,
+                "rpc_timeout": 5,
+                "max_reorg_depth": 0,
+                "event_poll_interval": 0.5,
+                "event_fetch_start_block_number": 0,
+                "bridge_contract_address": str(home_bridge_contract_address),
+                "gas_price": 10_000_000_000,
+                "minimum_validator_balance": 40_000_000_000_000_000,
+                "balance_warn_poll_interval": 60.0,
+            },
+            "validator_private_key": {"raw": validator_private_key.to_hex()},
+            "webservice": {
+                "enabled": True,
+                "host": self.HOST,
+                "port": self.BASE_PORT + self.port_shift,
+            },
         }
-        env.update(os.environ)
-        super().__init__(["tlbc-bridge"], env=env, name=name)
+        with open(path, "w+") as f:
+            toml.dump(config, f)
+        super().__init__(["tlbc-bridge", "-c", path], name=name)
 
     def is_up(self):
-        # TODO write uptest for the bridge
-        return True
+        try:
+            requests.get(
+                f"http://{self.HOST}:{self.BASE_PORT+self.port_shift}/bridge/internal-state"
+            ).json()
+            # TODO check that bridge is ready
+            return True
+        except requests.exceptions.ConnectionError:
+            print("Failed")
+            return False
 
 
-def mine_blocks(web3, number_of_blocks):
-    """Mines `number_of_blocks` blocks. Works by sending out transactions, assumes the parity InstaSeal engine"""
+def mine_min_blocks(web3, number_of_blocks):
+    """
+    Mines a minimum of `number_of_blocks` blocks.
+
+    Works by sending out transactions, assumes the parity InstaSeal engine
+    """
 
     block_height = web3.eth.blockNumber
     while web3.eth.blockNumber < block_height + number_of_blocks:
         web3.eth.sendTransaction({"from": PARITY_DEV_ACCOUNT})
-
-    assert web3.eth.blockNumber == block_height + number_of_blocks
 
 
 @pytest.fixture(scope="session")
@@ -378,7 +429,11 @@ def home_bridge_contract(
 
 @pytest.fixture()
 def bridges(
-    validator_keys, token_contract, home_bridge_contract, foreign_bridge_contract
+    validator_keys,
+    token_contract,
+    home_bridge_contract,
+    foreign_bridge_contract,
+    tmp_path_factory,
 ):
     bridges = []
     for i, key in enumerate(validator_keys):
@@ -387,7 +442,9 @@ def bridges(
             token_contract_address=token_contract.address,
             foreign_bridge_contract_address=foreign_bridge_contract.address,
             home_bridge_contract_address=home_bridge_contract.address,
+            path=tmp_path_factory.mktemp("bridge", numbered=True) / "config.toml",
             name=f"Bridge {i}",
+            port_shift=i,
         )
         bridge.start()
         bridges.append(bridge)
@@ -414,13 +471,12 @@ def test_transfer(
     )
 
     # reorg depth is 3
-    mine_blocks(web3_foreign, 3)
+    mine_min_blocks(web3_foreign, 3)
 
     def check_balance():
         foreign_balance_after = token_contract.functions.balanceOf(sender).call()
         home_balance_after = web3_home.eth.getBalance(sender)
 
-        print("CHeck")
         assert foreign_balance_before - foreign_balance_after == value
         assert home_balance_before - home_balance_after == -value
 
