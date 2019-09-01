@@ -416,7 +416,7 @@ jobs:
       - run:
           name: Run mypy
           command: |
-            mypy --ignore-missing-imports tools/bridge/tests tools/bridge/bridge tools/bridge/setup.py
+            mypy --ignore-missing-imports tools/bridge/tests tools/bridge/end2end-tests/tests tools/bridge/bridge tools/bridge/setup.py
 
   install-bridge-validator:
     executor: ubuntu-builder
@@ -452,6 +452,25 @@ jobs:
           command: |
             cd tools/bridge
             make test
+            cd ../..
+
+  end2end-test-bridge-validator:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-bridge-validator-path
+      - run:
+          name: Install parity
+          command: curl -o ~/bin/parity https://releases.parity.io/ethereum/v2.3.6/x86_64-unknown-linux-gnu/parity
+      - run:
+          name: Make parity executable
+          command: chmod 755 ~/bin/parity
+      - run:
+          name: Run pytest
+          command: |
+            cd tools/bridge
+            make test-end2end
             cd ../..
 
   build-bridge-image:
@@ -702,6 +721,9 @@ workflows:
       - pytest-bridge-validator:
           requires:
             - install-bridge-validator
+      - end2end-test-bridge-validator:
+          requires:
+            - install-bridge-validator
 
       - build-bridge-image
       - build-docker-image
@@ -719,6 +741,7 @@ workflows:
             - run-flake8
             - mypy-bridge-validator
             - pytest-bridge-validator
+            - end2end-test-bridge-validator
             - build-bridge-image
           context: docker-credentials
 
