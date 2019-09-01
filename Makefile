@@ -1,10 +1,11 @@
 VIRTUAL_ENV ?= $(shell pwd)/venv
 
 SUBDIRS = tools/auction-deploy tools/bridge-deploy tools/validator-set-deploy tools/quickstart tools/bridge contracts
+SUBDIRS_E2E = tools/bridge
 
 .PHONY: help
 help:
-	@echo "You can build any of the following targets. The clean, install, lint and test targets will run those targets for all subfolders.  The clean-*, install-*, lint-*, test-* targets will will run in the respective subfolder only:\n" |fold -s
+	@echo "You can build any of the following targets. The clean, install, lint test and test-end2end targets will run those targets for all subfolders.  The clean-*, install-*, lint-*, test-*, test-end2end-* targets will run in the respective subfolder only:\n" |fold -s
 
 	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | egrep -v -e '^[^[:alnum:]]' -e '^$@$$'
 
@@ -39,6 +40,12 @@ $(SUB_TEST): test-%: setup-venv
 	$(MAKE) -C $* test
 .PHONY: test $(SUB_TEST)
 
+SUB_TEST_E2E = $(addprefix test-end2end-,$(SUBDIRS_E2E))
+test-end2end: setup-venv $(SUB_TEST_E2E)
+$(SUB_TEST_E2E): test-end2end-%: setup-venv
+	@echo "==> End2end testing $*"
+	$(MAKE) -C $* test-end2end
+.PHONY: test-end2end $(SUB_TEST_E2E)
 
 $(VIRTUAL_ENV):
 	@echo "==> Creating virtualenv in $(VIRTUAL_ENV)"

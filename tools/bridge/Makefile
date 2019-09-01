@@ -2,15 +2,18 @@ TOP_LEVEL=$(shell cd ../..; pwd)
 VIRTUAL_ENV ?= $(TOP_LEVEL)/venv
 
 lint: install-requirements
-	$(VIRTUAL_ENV)/bin/flake8 bridge tests setup.py
-	$(VIRTUAL_ENV)/bin/black --check bridge tests setup.py
-	$(VIRTUAL_ENV)/bin/mypy bridge tests setup.py --ignore-missing-imports
+	$(VIRTUAL_ENV)/bin/flake8 bridge tests end2end-tests setup.py
+	$(VIRTUAL_ENV)/bin/black --check bridge tests end2end-tests setup.py
+	$(VIRTUAL_ENV)/bin/mypy bridge tests end2end-tests/tests setup.py --ignore-missing-imports
 
 format:
-	$(VIRTUAL_ENV)/bin/black bridge tests setup.py
+	$(VIRTUAL_ENV)/bin/black bridge tests end2end-tests setup.py
 
 test: install-requirements install
 	$(VIRTUAL_ENV)/bin/python ./pytest tests
+
+test-end2end: install-requirements install
+	$(VIRTUAL_ENV)/bin/python pytest end2end-tests/tests
 
 build: install
 	$(VIRTUAL_ENV)/bin/python setup.py sdist
