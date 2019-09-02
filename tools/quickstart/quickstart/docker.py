@@ -1,3 +1,4 @@
+import os
 import subprocess
 from typing import List
 
@@ -15,6 +16,14 @@ def update_and_start() -> None:
     if not is_validator_account_prepared():
         raise click.ClickException(
             "Can not start docker services without a setup validator account!"
+        )
+
+    if not os.path.isfile("docker-compose.yaml") and not os.path.isfile(
+        "docker-compose.yml"
+    ):
+        raise click.ClickException(
+            "Expecting a docker-compose configuration file at the current directory "
+            "with a standard name. ('docker-compose.yaml' or 'docker-compose.yml')"
         )
 
     docker_service_names = get_docker_service_names()
