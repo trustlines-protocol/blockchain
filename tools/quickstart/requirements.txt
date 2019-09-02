@@ -1,4 +1,5 @@
 eth_account
 click
+requests
 # development dependencies
 -r ../../requirements-dev.txt
