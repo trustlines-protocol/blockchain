@@ -129,7 +129,8 @@ port = 8640                # port number the webservice should listen on
 
 ### Logging
 
-Logging can be configured globally or for specific components.
+Logging can be configured globally or for specific components in the
+config file under the `logging` section.
 
 A configuration may look like that:
 
@@ -153,6 +154,12 @@ Internally this is using _Python_'s
 The exact schema for this key can be found at the [configuration dictionary
 schema](https://docs.python.org/3/library/logging.config.html#logging-config-dictschema).
 
+The logging configuration can be changed at runtime. If you send a
+SIGHUP signal to the tlbc-bridge program, it will re-read the
+configuration file and apply the changed logging settings. Please be
+aware that this is the only part of the configuration that is being
+reloaded. Changing other values does not have any effect on the
+running program.
 
 ### Webservice
 
@@ -161,9 +168,9 @@ running by default and must be enabled in the config file if desired:
 
 ```toml
 [webservice]
-enabled = true  # false by default
-host = http://127.0.0.1  # host URL number  (required if enabled)
-port = 8640  # port number  (required if enabled)
+enabled = true             # false by default
+host = "127.0.0.1"         # hostname or IP address the webservice should listen on
+port = 8640                # port number the webservice should listen on
 ```
 
 ### Validation
