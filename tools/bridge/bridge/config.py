@@ -140,6 +140,11 @@ class HomeChainSchema(ChainSchema):
         missing=60, validate=validate_non_negative
     )
 
+    # maximum number of pending transactions per reorg-unsafe block
+    max_pending_transactions_per_block = fields.Integer(
+        missing=16, validate=validate.Range(min=1, max=128)
+    )
+
 
 class ConfigSchema(Schema):
     foreign_chain = fields.Nested(ForeignChainSchema(), required=True)

@@ -109,6 +109,7 @@ event_fetch_start_block_number = 0 # block number from which on events should be
 gas_price = 10000000000            # gas price in Wei for confirmation transactions (default 10 GWei)
 minimum_validator_balance = 40000000000000000
 balance_warn_poll_interval = 60.0
+max_pending_transactions_per_block = 16 # maximum number of pending transaction per reorg-unsafe block
 
 # address of the home bridge contract
 bridge_contract_address = "0x77E0d930cF5B5Ef75b6911B0c18f1DCC1971589C"

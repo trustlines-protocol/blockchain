@@ -82,6 +82,14 @@ def make_w3_foreign(config):
     )
 
 
+def get_max_pending_transactions(config):
+    return min(
+        (config["home_chain"]["max_reorg_depth"] + 1)
+        * config["home_chain"]["max_pending_transactions_per_block"],
+        512,
+    )
+
+
 def make_validator_address(config):
     private_key_bytes = get_validator_private_key(config)
     return PrivateKey(private_key_bytes).public_key.to_canonical_address()
@@ -369,7 +377,9 @@ def main(ctx, config_path: str) -> None:
         config, control_queue, stop_pool
     )
 
-    pending_transaction_queue = Queue()
+    max_pending_transactions = get_max_pending_transactions(config)
+    logger.info("maximum number of pending transactions: %s", max_pending_transactions)
+    pending_transaction_queue = Queue(max_pending_transactions)
     sender = make_confirmation_sender(
         config=config,
         pending_transaction_queue=pending_transaction_queue,
