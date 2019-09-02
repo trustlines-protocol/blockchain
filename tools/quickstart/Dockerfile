@@ -40,5 +40,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 FROM runner
+WORKDIR /data
 COPY --from=builder /opt/quickstart /opt/quickstart
+COPY ./docker/docker-compose.yaml .
 ENV PATH="/opt/quickstart/bin:${PATH}"
