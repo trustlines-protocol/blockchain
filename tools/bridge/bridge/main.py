@@ -36,6 +36,7 @@ from bridge.contract_validation import (
 from bridge.event_fetcher import EventFetcher
 from bridge.events import ChainRole
 from bridge.service import Service, start_services
+from bridge.transfer_recorder import TransferRecorder
 from bridge.utils import get_validator_private_key
 from bridge.validator_balance_watcher import ValidatorBalanceWatcher
 from bridge.validator_status_watcher import ValidatorStatusWatcher
@@ -158,18 +159,22 @@ def make_home_bridge_event_fetcher(config, home_bridge_event_queue):
     )
 
 
+def make_recorder(config):
+    minimum_balance = config["home_chain"]["minimum_validator_balance"]
+    return TransferRecorder(minimum_balance)
+
+
 def make_confirmation_task_planner(
     config,
+    recorder,
     control_queue,
     transfer_event_queue,
     home_bridge_event_queue,
     confirmation_task_queue,
 ):
-    minimum_balance = config["home_chain"]["minimum_validator_balance"]
-
     return ConfirmationTaskPlanner(
         sync_persistence_time=HOME_CHAIN_STEP_DURATION,
-        minimum_balance=minimum_balance,
+        recorder=recorder,
         control_queue=control_queue,
         transfer_event_queue=transfer_event_queue,
         home_bridge_event_queue=home_bridge_event_queue,
@@ -363,15 +368,15 @@ def main(ctx, config_path: str) -> None:
         config, home_bridge_event_queue
     )
 
+    recorder = make_recorder(config)
     confirmation_task_planner = make_confirmation_task_planner(
         config,
+        recorder=recorder,
         control_queue=control_queue,
         transfer_event_queue=transfer_event_queue,
         home_bridge_event_queue=home_bridge_event_queue,
         confirmation_task_queue=confirmation_task_queue,
     )
-
-    recorder = confirmation_task_planner.recorder
 
     validator_status_watcher = make_validator_status_watcher(
         config, control_queue, stop_pool

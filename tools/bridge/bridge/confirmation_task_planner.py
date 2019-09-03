@@ -14,14 +14,14 @@ logger = logging.getLogger(__name__)
 class ConfirmationTaskPlanner:
     def __init__(
         self,
+        recorder: TransferRecorder,
         sync_persistence_time: float,
-        minimum_balance: int,
         control_queue: Queue,
         transfer_event_queue: Queue,
         home_bridge_event_queue: Queue,
         confirmation_task_queue: Queue,
     ) -> None:
-        self.recorder = TransferRecorder(minimum_balance)
+        self.recorder = recorder
         self.sync_persistence_time = sync_persistence_time
 
         self.control_queue = control_queue
