@@ -335,9 +335,7 @@ jobs:
       - run:
           name: Install requirements and validator-set deploy tool
           command: |
-            cd tools/validator-set-deploy
-            make install
-            cd ../..
+            make -C tools/validator-set-deploy install
       - save_cache:
           key: validator-set-venv-{{ checksum "tools/validator-set-deploy/constraints.txt" }}-{{ checksum "tools/validator-set-deploy/requirements.txt" }}
           paths:
@@ -356,9 +354,7 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            cd tools/validator-set-deploy
-            make test
-            cd ../..
+            make -C tools/validator-set-deploy test
 
   mypy-bridge-deploy:
     executor: ubuntu-builder
@@ -382,9 +378,7 @@ jobs:
       - run:
           name: Install requirements and bridge deploy tool
           command: |
-            cd tools/bridge-deploy
-            make install
-            cd ../..
+            make -C tools/bridge-deploy install
       - save_cache:
           key: bridge-deploy-venv-{{ checksum "tools/bridge-deploy/constraints.txt" }}-{{ checksum "tools/bridge-deploy/requirements.txt" }}
           paths:
@@ -403,9 +397,7 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            cd tools/bridge-deploy
-            make test
-            cd ../..
+            make -C tools/bridge-deploy test
 
   mypy-bridge-validator:
     executor: ubuntu-builder
@@ -429,9 +421,7 @@ jobs:
       - run:
           name: Install requirements and bridge validator client
           command: |
-            cd tools/bridge
-            make install
-            cd ../..
+            make -C tools/bridge install
       - save_cache:
           key: bridge-validator-venv-{{ checksum "tools/bridge/constraints.txt" }}-{{ checksum "tools/bridge/requirements.txt" }}
           paths:
@@ -450,9 +440,7 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            cd tools/bridge
-            make test
-            cd ../..
+            make -C tools/bridge test
 
   end2end-test-bridge-validator:
     executor: ubuntu-builder
@@ -469,9 +457,7 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            cd tools/bridge
-            make test-end2end
-            cd ../..
+            make -C tools/bridge test-end2end
 
   build-bridge-image:
     executor: ubuntu-builder

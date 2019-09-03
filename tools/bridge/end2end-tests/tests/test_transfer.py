@@ -246,7 +246,9 @@ def mine_min_blocks(web3, number_of_blocks):
 
     block_height = web3.eth.blockNumber
     while web3.eth.blockNumber < block_height + number_of_blocks:
-        web3.eth.sendTransaction({"from": PARITY_DEV_ACCOUNT})
+        wait_for_successful_transaction_receipt(
+            web3, web3.eth.sendTransaction({"from": PARITY_DEV_ACCOUNT})
+        )
 
 
 @pytest.fixture(scope="session")
