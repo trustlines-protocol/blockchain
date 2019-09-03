@@ -80,50 +80,58 @@ docker build --file ./Dockerfile --tag tlbc-bridge ../../
 
 ## Configuration
 
-The bridge validator client can be configured with a TOML configuration file whose path must be
-given via the `--config` (`-c`) CLI paramter.
+The bridge validator client can be configured with a [TOML
+configuration file](https://github.com/toml-lang/toml#spec), whose
+path must be given via the `--config` (`-c`) CLI paramter.
 
-Here is an example file with all possible entries. Optional entries are listed with their default
-value.
+Here is an example file with all possible entries. Optional entries
+are listed with their default value.
 
 ```toml
 [foreign_chain]
 rpc_url = "http://localhost:8545"  # URL to the foreign chain's JSON RPC endpoint
-rpc_timeout = 180  # timeout for JSON RPC requests to the foreign chain node
-max_reorg_depth = 1  # number of confirmation blocks required on the foreign chain
-event_poll_interval = 5.0  # interval in seconds to poll for new events
-event_fetch_start_block_number = 0  # block number from which on events should be fetched
-bridge_contract_address = "0x8d25a6C7685ca80fF110b2B3CEDbcd520FdE8Dd3"  # address of the foreign bridge contract
-token_contract_address = "0xCd7464985f3b5dbD96e12da9b018BA45a64256E6"  # address of the TLN token contract
+rpc_timeout = 180                  # timeout for JSON RPC requests to the foreign chain node
+max_reorg_depth = 1                # number of confirmation blocks required on the foreign chain
+event_poll_interval = 5.0          # interval in seconds to poll for new events
+event_fetch_start_block_number = 0 # block number from which on events should be fetched
+
+# address of the foreign bridge contract:
+bridge_contract_address = "0x8d25a6C7685ca80fF110b2B3CEDbcd520FdE8Dd3"
+# address of the TLN token contract
+token_contract_address = "0xCd7464985f3b5dbD96e12da9b018BA45a64256E6"
 
 [home_chain]
-rpc_url = "http://localhost:8546"  # timeout for JSON RPC requests to the foreign chain node
-rpc_timeout = 180  # URL to JSON-RPC endpoint of home chain node [HTTP(S) protocol]
-max_reorg_depth = 10  # number of confirmation blocks required on the home chain
-event_poll_interval = 5.0  # interval in seconds to poll for new events
-event_fetch_start_block_number = 0  # block number from which on events should be fetched on home chain
-bridge_contract_address = "0x77E0d930cF5B5Ef75b6911B0c18f1DCC1971589C"  # address of the home bridge contract
-gas_price = 10000000000  # gas price in Wei for confirmation transactions (default 10 GWei)
+rpc_url = "http://localhost:8546"  # URL to JSON-RPC endpoint of home chain node [HTTP(S) protocol]
+rpc_timeout = 180                  # timeout for JSON RPC requests to the foreign chain node
+max_reorg_depth = 10               # number of confirmation blocks required on the home chain
+event_poll_interval = 5.0          # interval in seconds to poll for new events
+event_fetch_start_block_number = 0 # block number from which on events should be fetched on home chain
+gas_price = 10000000000            # gas price in Wei for confirmation transactions (default 10 GWei)
 minimum_validator_balance = 40000000000000000
 balance_warn_poll_interval = 60.0
+max_pending_transactions_per_block = 16 # maximum number of pending transaction per reorg-unsafe block
 
-[validator_private_key]  # the private key of the validator
+# address of the home bridge contract
+bridge_contract_address = "0x77E0d930cF5B5Ef75b6911B0c18f1DCC1971589C"
+
+[validator_private_key]
+# Configure the private key of the validator to be used. Either specify
+# the decrypted key in hex encoded format in the field 'raw'...
 raw = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-# or alternatively (but not at the same time)
-keystore_path = "validator_keystore.json"
-keystore_password_path = "validator_password"
-
-[logging]  # configures logging (see [logging](logging) for details)
+# .. or alternatively specify a path to a keystore and password file:
+keystore_path = "/path/to/validator_keystore.json"
+keystore_password_path = "/path/to/password-file"
 
 [webservice]
-enabled = true  # enables or disables the webservice
-host = "http://127.0.0.1"  # URL of the host the webservice is running on
-port = 8640  # port number the webservice is running on
+enabled = false            # enables or disables the webservice
+host = "127.0.0.1"         # hostname or IP address the webservice should listen on
+port = 8640                # port number the webservice should listen on
 ```
 
 ### Logging
 
-Logging can be configured globally or for specific components.
+Logging can be configured globally or for specific components in the
+config file under the `logging` section.
 
 A configuration may look like that:
 
@@ -147,6 +155,12 @@ Internally this is using _Python_'s
 The exact schema for this key can be found at the [configuration dictionary
 schema](https://docs.python.org/3/library/logging.config.html#logging-config-dictschema).
 
+The logging configuration can be changed at runtime. If you send a
+SIGHUP signal to the tlbc-bridge program, it will re-read the
+configuration file and apply the changed logging settings. Please be
+aware that this is the only part of the configuration that is being
+reloaded. Changing other values does not have any effect on the
+running program.
 
 ### Webservice
 
@@ -155,9 +169,9 @@ running by default and must be enabled in the config file if desired:
 
 ```toml
 [webservice]
-enabled = true  # false by default
-host = http://127.0.0.1  # host URL number  (required if enabled)
-port = 8640  # port number  (required if enabled)
+enabled = true             # false by default
+host = "127.0.0.1"         # hostname or IP address the webservice should listen on
+port = 8640                # port number the webservice should listen on
 ```
 
 ### Validation
