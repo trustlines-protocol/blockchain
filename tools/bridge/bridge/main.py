@@ -102,7 +102,8 @@ def wait_for_chain_synced_until(w3, start_block_number, timeout, chain_role):
                 )
             else:
                 logger.info(
-                    "%s node is synced until block number %d of %d and has passed the event fetch start block number %d",
+                    "%s node is synced until block number %d of %d and has passed the event fetch "
+                    "start block number %d",
                     chain_role.value,
                     current_block_number,
                     highest_block_number,
@@ -112,14 +113,16 @@ def wait_for_chain_synced_until(w3, start_block_number, timeout, chain_role):
         else:
             if fully_synced:
                 logger.info(
-                    "%s node is fully synced until head number %d, but chain hasn't reached event fetch start block number %d yet. Waiting...",
+                    "%s node is fully synced until head number %d, but chain hasn't reached event "
+                    "fetch start block number %d yet. Waiting...",
                     chain_role.value,
                     highest_block_number,
                     start_block_number,
                 )
             else:
                 logger.info(
-                    "%s node is synced until block number %d of %d, but hasn't reached event fetch start block number %d yet. Waiting...",
+                    "%s node is synced until block number %d of %d, but hasn't reached event "
+                    "fetch start block number %d yet. Waiting...",
                     chain_role.value,
                     current_block_number,
                     highest_block_number,
