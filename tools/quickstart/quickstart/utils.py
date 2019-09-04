@@ -21,13 +21,13 @@ def ensure_clean_setup():
     if os.path.isdir(KEY_DIR):
         raise click.ClickException(
             "The directory holding the keys already exists.\n"
-            "This should not happen during normal operations."
+            "This should not occur during normal operation."
         )
 
     if os.path.isfile(PASSWORD_FILE_PATH):
         raise click.ClickException(
             "The password file already exists.\n"
-            "This should not happen during normal operations."
+            "This should not occur during normal operation."
         )
 
 
@@ -80,10 +80,10 @@ def is_wrong_password_error(err):
 
 def get_keystore_path() -> str:
     click.echo(
-        "Please enter the path to the to import keystore file.\nPlease consider "
-        "that you are running within a Docker virtual file system, if started via "
-        "the quickstart script. You can access the current working directory from "
-        "'/data'. (e.g. './my-dir/keystore.json' becomes '/data/my-dir/keystore.json')"
+        "Please enter the path to the keystore file to import.\nIf you started the process via the quickstart scipt, "
+        "please consider that you are running within a Docker virtual file system. "
+        "You can access the current working directory via '/data'. "
+        "(e.g. './my-dir/keystore.json' becomes '/data/my-dir/keystore.json')"
     )
 
     while True:
@@ -96,7 +96,7 @@ def get_keystore_path() -> str:
         else:
             click.echo(
                 "The given path does not exist or is not readable. "
-                "Please try to enter it again."
+                "Please try entering it again."
             )
 
 
@@ -108,7 +108,7 @@ def read_private_key() -> str:
             return private_key
 
         click.echo(
-            "The private key muss be entered as hex encoded string. Please try again."
+            "The private key must be entered as a hex encoded string. Please try again."
         )
 
 
@@ -126,7 +126,7 @@ def read_encryption_password() -> str:
 
 
 def read_decryption_password(keyfile_dict) -> Tuple[Account, str]:
-    click.echo("Please enter the password of the keystore.")
+    click.echo("Please enter the password to decrypt the keystore.")
 
     while True:
         password = click.prompt("Password", hide_input=True)

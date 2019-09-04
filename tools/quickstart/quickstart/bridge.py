@@ -33,20 +33,19 @@ keystore_password_path = '{keystore_password_path}'
 
 def setup_interactively() -> None:
     if is_bridge_prepared():
-        click.echo("You have already a setup the bridge client.\n")
+        click.echo("You have already set the bridge client up.\n")
         return
 
     click.echo(
-        "\nWe can setup a validator bridge client that confirms bridge transfers. "
-        "Validators get rewarded for this service on each successful transfer. "
-        "Doing so requires an additional synchronizing node with the Ethereum mainnet. "
-        "This node will run in light mode to consume as little additional resource as "
+        "\nWe can set a validator bridge client up that confirms bridge transfers. "
+        "Doing so requires an additional node syncing the Ethereum mainnet. "
+        "This node will run in light mode to use as little resource as "
         "possible. Checkout the following link for more information on how the bridge "
         f"works:\n{BRIDGE_DOCUMENTATION_URL}\nThis setup will reuse the keystore "
         "of the validator node.\n"
     )
     if not click.confirm(
-        "Did you want to setup the bridge client? (highly recommended)", default=True
+        "Do you want to set the bridge client up? (highly recommended)", default=True
     ):
         # Necessary to make docker-compose not complaining about it.
         Path(BRIDGE_CONFIG_FILE_EXTERNAL).touch()
@@ -64,4 +63,4 @@ def setup_interactively() -> None:
 
     with open(BRIDGE_CONFIG_FILE_EXTERNAL, "w") as env_file:
         env_file.write(env_file_content)
-    click.echo("Bridge client setup done")
+    click.echo("Bridge client setup complete.")

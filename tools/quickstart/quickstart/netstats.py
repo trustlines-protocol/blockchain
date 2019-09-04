@@ -16,7 +16,7 @@ INSTANCE_NAME={instance_name}
 
 def setup_interactively() -> None:
     if is_netstats_prepared():
-        click.echo("You have already a setup the netstats client.\n")
+        click.echo("You have already set the netstats client up.\n")
         return
 
     click.echo(
@@ -25,7 +25,7 @@ def setup_interactively() -> None:
     )
 
     if not click.confirm(
-        "Did you already receive credentials and want to setup the netstats client?"
+        "Have you already received credentials and do you want to set the netstats client up?"
     ):
         # Necessary to make docker-compose not complaining about it.
         Path(NETSTATS_ENV_FILE_PATH).touch()
@@ -36,16 +36,17 @@ def setup_interactively() -> None:
         password = click.prompt("Password", hide_input=True)
 
         if check_credentials(username, password):
-            click.echo("The provided credentials do work.")
+            click.echo("The provided credentials are valid.")
             break
 
         else:
             click.echo(
-                "The provided credentials do not work. Please try to enter them again."
+                "The provided credentials are invalid. Please try entering again."
             )
 
     click.echo(
-        "Please enter an instance name now. You are free to choose any name you like."
+        "Please enter an instance name to identify your instance on the website.\n"
+        "You are free to choose any name you like."
     )
 
     instance_name = click.prompt("Instance name")
@@ -57,7 +58,7 @@ def setup_interactively() -> None:
             )
         )
 
-    click.echo("Netstats client setup done\n")
+    click.echo("Netstats client setup complete.\n")
 
 
 def check_credentials(username: str, password: str) -> bool:

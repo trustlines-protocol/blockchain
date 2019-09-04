@@ -25,26 +25,26 @@ from quickstart.utils import (
 
 def setup_interactively() -> None:
     if is_validator_account_prepared():
-        click.echo("You have already a setup for a validator node.\n")
+        click.echo("You have already set a validator node up.\n")
         return
 
     ensure_clean_setup()
 
-    click.echo("This script will setup a validator node for the laika testnet chain.\n")
+    click.echo("This script will setup a validator node for the Laika testnet chain.\n")
 
     os.makedirs(CONFIG_DIR, exist_ok=True)
     os.makedirs(ENODE_DIR, exist_ok=True)
     os.makedirs(DATABASE_DIR, exist_ok=True)
 
     click.echo(
-        "A validator will need a private key. This script can either import an existing"
-        " JSON keystore, import an existing private key or it can create a new key.\n"
+        "Validators need a private key. This script can either import an existing"
+        " JSON keystore, import an existing raw private key, or it can create a new key.\n"
     )
 
     if click.confirm("Do you want to import an existing keystore?"):
         import_keystore_file()
 
-    elif click.confirm("Do you want to import an existing private key?"):
+    elif click.confirm("Do you want to import an existing raw private key?"):
         import_private_key()
 
     elif click.confirm("Do you want to generate a new account?"):
@@ -53,14 +53,14 @@ def setup_interactively() -> None:
     else:
         raise click.ClickException(
             "To setup a validator node, a private key is absolutely necessary. "
-            "You need to select one of the previous options to do so."
+            "You need to select one of the previous options."
         )
 
-    click.echo("Validator account setup done")
+    click.echo("Validator account setup complete.")
 
 
 def import_keystore_file() -> None:
-    click.echo("Start to import an existing keystore")
+    click.echo("Starting to import an existing keystore...")
     keystore_path = get_keystore_path()
     keyfile_dict = json.loads(open(keystore_path, "rb").read())
     account, password = read_decryption_password(keyfile_dict)
@@ -71,7 +71,7 @@ def import_keystore_file() -> None:
 
 
 def import_private_key() -> None:
-    click.echo("Start to import an existing private key")
+    click.echo("Starting to import an existing raw private key...")
     private_key = read_private_key()
     account = Account.from_key(private_key)
     password = read_encryption_password()
@@ -82,7 +82,7 @@ def import_private_key() -> None:
 
 
 def generate_new_account() -> None:
-    click.echo("Start to generate a new private key")
+    click.echo("Starting to generate a new private key...")
     account = Account.create()
     password = read_encryption_password()
     trustlines_files = TrustlinesFiles(
