@@ -10,6 +10,7 @@ set -e
 
 # Variables
 : "${DOCKER_IMAGE_NAME:=trustlines/quickstart:master}"
+: "${DATA_DIR:=${PWD}/trustlines}"
 GREEN='\033[0;32m'
 RESET='\033[0m'
 
@@ -26,18 +27,13 @@ function printmsg() {
 # The checks can close the process with an error message or set additional options.
 #
 function sanityChecks() {
-  if ! command -v docker >/dev/null ||
-    ! command -v docker-compose; then
+  if ! command -v docker >/dev/null; then
     printmsg <<EOF
 
 ERROR
 
-The quickstart script needs the following tools to be installed:
-  - docker
-  - docker-compose
-
-At least one of the listed executables could not been found. Please ensure their
-availability and restatrt the script.
+The quickstart script needs Docker to be installed. The executable could not
+been found. Please make sure it is available.
 
 EOF
     exit 1
@@ -76,10 +72,13 @@ EOF
     docker pull "$DOCKER_IMAGE_NAME"
   fi
 
+  mkdir -p "$DATA_DIR"
+
   docker run --rm --tty --interactive \
     --volume /var/run/docker.sock:/var/run/docker.sock \
     --volume /usr/bin/docker:/usr/bin/docker \
     --volume "${PWD}":/data \
+    --volume "$DATA_DIR":/quickstart/trustlines \
     $DOCKER_IMAGE_NAME
 }
 

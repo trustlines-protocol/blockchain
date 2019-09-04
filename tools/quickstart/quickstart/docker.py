@@ -27,7 +27,10 @@ def update_and_start() -> None:
         )
 
     docker_service_names = get_docker_service_names()
-    docker_environment_variables = {"VALIDATOR_ADDRESS": get_validator_address()}
+    docker_environment_variables = {
+        **os.environ,
+        "VALIDATOR_ADDRESS": get_validator_address(),
+    }
 
     try:
         click.echo("\nShut down possibly remaining docker services...")
@@ -50,7 +53,6 @@ def update_and_start() -> None:
             ["docker-compose", "start"] + docker_service_names,
             env=docker_environment_variables,
             check=True,
-            capture_output=True,
         )
 
     except subprocess.CalledProcessError:
