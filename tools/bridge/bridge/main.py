@@ -509,6 +509,13 @@ def main(ctx, config_path: str) -> None:
     pool = gevent.pool.Pool()
     stop_pool = partial(stop, pool, APPLICATION_CLEANUP_TIMEOUT)
 
+    def handle_greenlet_exception(gr):
+        logger.exception(
+            f"Application Error: {gr.name} unexpectedly died. Shutting down.",
+            exc_info=gr.exception,
+        )
+        stop_pool()
+
     recorder = make_recorder(config)
 
     webservice = make_webservice(config=config, recorder=recorder)
@@ -528,18 +535,30 @@ def main(ctx, config_path: str) -> None:
         install_signal_handler(signum, "terminator", stop_pool)
 
     try:
-        webservice_greenlets = start_services(webservice_services, start=pool.start)
+        webservice_greenlets = start_services(
+            webservice_services,
+            start=pool.start,
+            link_exception_callback=handle_greenlet_exception,
+        )
         start_block_greenlet, = start_services(
-            [wait_for_start_blocks_service], start=pool.start
+            [wait_for_start_blocks_service],
+            start=pool.start,
+            link_exception_callback=handle_greenlet_exception,
         )
 
-        gevent.joinall([start_block_greenlet], raise_error=True)
+        gevent.joinall([start_block_greenlet])
 
         # Only continue if start_block_greenlet wasn't killed
-        if not isinstance(start_block_greenlet.value, gevent.GreenletExit):
+        if start_block_greenlet.successful() and not isinstance(
+            start_block_greenlet.value, gevent.GreenletExit
+        ):
             main_services = make_main_services(config, recorder, stop_pool)
-            main_greenlets = start_services(main_services, start=pool.start)
-            gevent.joinall(webservice_greenlets + main_greenlets, raise_error=True)
+            main_greenlets = start_services(
+                main_services,
+                start=pool.start,
+                link_exception_callback=handle_greenlet_exception,
+            )
+            gevent.joinall(webservice_greenlets + main_greenlets)
     except Exception as exception:
         logger.exception("Application error", exc_info=exception)
         stop(pool, APPLICATION_CLEANUP_TIMEOUT)
