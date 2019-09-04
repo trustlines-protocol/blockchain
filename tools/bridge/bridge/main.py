@@ -535,8 +535,8 @@ def main(ctx, config_path: str) -> None:
 
         gevent.joinall([start_block_greenlet], raise_error=True)
 
-        # Only continue if start_block_greenlet exited naturally (in particular, it wasn't killed)
-        if start_block_greenlet.successful():
+        # Only continue if start_block_greenlet wasn't killed
+        if not isinstance(start_block_greenlet.value, gevent.GreenletExit):
             main_services = make_main_services(config, recorder, stop_pool)
             main_greenlets = start_services(main_services, start=pool.start)
             gevent.joinall(webservice_greenlets + main_greenlets, raise_error=True)
