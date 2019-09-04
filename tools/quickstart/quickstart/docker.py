@@ -12,7 +12,7 @@ from quickstart.utils import (
 from quickstart.validator_account import get_validator_address
 
 
-def update_and_start() -> None:
+def update_and_start(host_base_dir: str) -> None:
     if not is_validator_account_prepared():
         raise click.ClickException(
             "Can not start docker services without having set a validator account up!"
@@ -29,6 +29,7 @@ def update_and_start() -> None:
     docker_service_names = get_docker_service_names()
     docker_environment_variables = {
         **os.environ,
+        "HOST_BASE_DIR": host_base_dir,
         "VALIDATOR_ADDRESS": get_validator_address(),
     }
 

@@ -18,8 +18,8 @@ NETSTATS_SERVER_BASE_URL = "https://laikanetstats.trustlines.foundation/"
 
 BRIDGE_CONFIG_FILE_EXTERNAL = os.path.join(BASE_DIR, "bridge-config.toml")
 BRIDGE_CONFIG_DIR_INTERNAL = "/config"
-BRIDGE_CONFIG_FOREIGN_RPC_URL = "http://laika-testnet.node:8545"
-BRIDGE_CONFIG_HOME_RPC_URL = "http://mainnet.node:8545"
+BRIDGE_CONFIG_FOREIGN_RPC_URL = "http://mainnet.node:8545"
+BRIDGE_CONFIG_HOME_RPC_URL = "http://laika-testnet.node:8545"
 BRIDGE_CONFIG_FOREIGN_TOKEN_CONTRACT_ADDRESS = (
     "0xCd7464985f3b5dbD96e12da9b018BA45a64256E6"
 )

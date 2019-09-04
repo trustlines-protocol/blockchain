@@ -1,5 +1,5 @@
-# This composition works best in usage with the quickstart script at the root of
-# this repository.
+# This composition works best in usage with the quickstart tool at
+# 'tools/quickstart' within this repository.
 #
 version: "2.4"
 services:
@@ -15,9 +15,9 @@ services:
       - 30300:30300
       - 30300:30300/udp
     volumes:
-      - ./trustlines/databases:/data
-      - ./trustlines/config:/config/custom
-      - ./trustlines/enode:/config/network
+      - ${HOST_BASE_DIR:-.}/trustlines/databases:/data
+      - ${HOST_BASE_DIR:-.}/trustlines/config:/config/custom
+      - ${HOST_BASE_DIR:-.}/trustlines/enode:/config/network
     command: >-
       --role validator
       --address ${VALIDATOR_ADDRESS}
@@ -36,7 +36,7 @@ services:
     networks:
       - mainnet
     volumes:
-      - ./trustlines/databases:/home/parity/.local/share/io.parity.ethereum/chains_light
+      - ${HOST_BASE_DIR:-.}/trustlines/databases:/home/parity/.local/share/io.parity.ethereum/chains_light
     command: >-
       --light
       --no-download
@@ -58,7 +58,7 @@ services:
     restart: always
     env_file: ./trustlines/netstats-env
     environment:
-      - RPC_HOST=laika-testnet-node
+      - RPC_HOST=laika-testnet.node
     networks:
       - laika-testnet
     depends_on:
@@ -75,8 +75,8 @@ services:
       - laika-testnet
       - mainnet
     volumes:
-      - ./trustlines/config:/config
-      - ./trustlines/bridge-config.toml:/config/config.toml
+      - ${HOST_BASE_DIR:-.}/trustlines/config:/config
+      - ${HOST_BASE_DIR:-.}/trustlines/bridge-config.toml:/config/config.toml
     depends_on:
       - trustlines-node
       - mainnet-node
@@ -84,7 +84,7 @@ services:
 
   watchtower:
     image: v2tec/watchtower
-    container_name: testnet-watchtower
+    container_name: watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:

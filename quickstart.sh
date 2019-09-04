@@ -79,7 +79,8 @@ EOF
     --volume /usr/bin/docker:/usr/bin/docker \
     --volume "${PWD}":/data \
     --volume "$DATA_DIR":/quickstart/trustlines \
-    $DOCKER_IMAGE_NAME
+    $DOCKER_IMAGE_NAME \
+    --host-base-dir "${PWD}"
 }
 
 function main() {
