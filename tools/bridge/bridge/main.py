@@ -7,6 +7,7 @@ from functools import partial
 import click
 import gevent
 import gevent.pool
+import tenacity
 from eth_keys.datatypes import PrivateKey
 from eth_utils import to_checksum_address
 from gevent.queue import Queue
@@ -36,6 +37,7 @@ from bridge.contract_validation import (
 from bridge.event_fetcher import EventFetcher
 from bridge.events import ChainRole
 from bridge.service import Service, start_services
+from bridge.transfer_recorder import TransferRecorder
 from bridge.utils import get_validator_private_key
 from bridge.validator_balance_watcher import ValidatorBalanceWatcher
 from bridge.validator_status_watcher import ValidatorStatusWatcher
@@ -61,6 +63,96 @@ def configure_logging(config):
 
     logger.debug(
         "Initialized logging system with the following config: %r", config["logging"]
+    )
+
+
+def wait_for_chain_synced_until(w3, start_block_number, timeout, chain_role):
+    retry = tenacity.retry(
+        wait=tenacity.wait_exponential(multiplier=1, min=5, max=timeout),
+        before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
+    )
+
+    @retry
+    def _rpc_syncing():
+        return w3.eth.syncing
+
+    @retry
+    def _rpc_block_number():
+        return w3.eth.blockNumber
+
+    while True:
+        syncing = _rpc_syncing()
+        if syncing is False:
+            highest_block_number = _rpc_block_number()
+            current_block_number = highest_block_number
+        else:
+            current_block_number = syncing["currentBlock"]
+            highest_block_number = syncing["highestBlock"]
+
+        fully_synced = current_block_number == highest_block_number
+        synced_to_start_block = current_block_number >= start_block_number
+
+        if synced_to_start_block:
+            if fully_synced:
+                logger.info(
+                    "%s node is fully synced to head number %d and has passed the event fetch start block number %d",
+                    chain_role.value,
+                    highest_block_number,
+                    start_block_number,
+                )
+            else:
+                logger.info(
+                    "%s node is synced until block number %d of %d and has passed the event fetch "
+                    "start block number %d",
+                    chain_role.value,
+                    current_block_number,
+                    highest_block_number,
+                    start_block_number,
+                )
+            break
+        else:
+            if fully_synced:
+                logger.info(
+                    "%s node is fully synced until head number %d, but chain hasn't reached event "
+                    "fetch start block number %d yet. Waiting...",
+                    chain_role.value,
+                    highest_block_number,
+                    start_block_number,
+                )
+            else:
+                logger.info(
+                    "%s node is synced until block number %d of %d, but hasn't reached event "
+                    "fetch start block number %d yet. Waiting...",
+                    chain_role.value,
+                    current_block_number,
+                    highest_block_number,
+                    start_block_number,
+                )
+            gevent.sleep(HOME_CHAIN_STEP_DURATION)
+
+
+def wait_for_start_blocks(config):
+    w3_home = make_w3_home(config)
+    w3_foreign = make_w3_foreign(config)
+
+    home_chain_start_block_number = config["home_chain"][
+        "event_fetch_start_block_number"
+    ]
+    foreign_chain_start_block_number = config["foreign_chain"][
+        "event_fetch_start_block_number"
+    ]
+
+    home_chain_rpc_timeout = config["home_chain"]["rpc_timeout"]
+    foreign_chain_rpc_timeout = config["home_chain"]["rpc_timeout"]
+
+    wait_for_chain_synced_until(
+        w3_home, home_chain_start_block_number, home_chain_rpc_timeout, ChainRole.home
+    )
+    wait_for_chain_synced_until(
+        w3_foreign,
+        foreign_chain_start_block_number,
+        foreign_chain_rpc_timeout,
+        ChainRole.foreign,
     )
 
 
@@ -158,18 +250,22 @@ def make_home_bridge_event_fetcher(config, home_bridge_event_queue):
     )
 
 
+def make_recorder(config):
+    minimum_balance = config["home_chain"]["minimum_validator_balance"]
+    return TransferRecorder(minimum_balance)
+
+
 def make_confirmation_task_planner(
     config,
+    recorder,
     control_queue,
     transfer_event_queue,
     home_bridge_event_queue,
     confirmation_task_queue,
 ):
-    minimum_balance = config["home_chain"]["minimum_validator_balance"]
-
     return ConfirmationTaskPlanner(
         sync_persistence_time=HOME_CHAIN_STEP_DURATION,
-        minimum_balance=minimum_balance,
+        recorder=recorder,
         control_queue=control_queue,
         transfer_event_queue=transfer_event_queue,
         home_bridge_event_queue=home_bridge_event_queue,
@@ -268,6 +364,66 @@ def make_webservice(*, config, recorder):
     return ws
 
 
+def make_main_services(config, recorder, stop_pool):
+    control_queue = Queue()
+    transfer_event_queue = Queue()
+    home_bridge_event_queue = Queue()
+    confirmation_task_queue = Queue()
+
+    transfer_event_fetcher = make_transfer_event_fetcher(config, transfer_event_queue)
+    home_bridge_event_fetcher = make_home_bridge_event_fetcher(
+        config, home_bridge_event_queue
+    )
+
+    confirmation_task_planner = make_confirmation_task_planner(
+        config,
+        recorder=recorder,
+        control_queue=control_queue,
+        transfer_event_queue=transfer_event_queue,
+        home_bridge_event_queue=home_bridge_event_queue,
+        confirmation_task_queue=confirmation_task_queue,
+    )
+
+    validator_status_watcher = make_validator_status_watcher(
+        config, control_queue, stop_pool
+    )
+
+    max_pending_transactions = get_max_pending_transactions(config)
+    logger.info("maximum number of pending transactions: %s", max_pending_transactions)
+    pending_transaction_queue = Queue(max_pending_transactions)
+    sender = make_confirmation_sender(
+        config=config,
+        pending_transaction_queue=pending_transaction_queue,
+        confirmation_task_queue=confirmation_task_queue,
+    )
+    watcher = make_confirmation_watcher(
+        config=config, pending_transaction_queue=pending_transaction_queue
+    )
+
+    validator_balance_watcher = make_validator_balance_watcher(config, control_queue)
+
+    return (
+        [
+            Service(
+                "fetch-foreign-bridge-events",
+                transfer_event_fetcher.fetch_events,
+                config["foreign_chain"]["event_poll_interval"],
+            ),
+            Service(
+                "fetch-home-bridge-events",
+                home_bridge_event_fetcher.fetch_events,
+                config["home_chain"]["event_poll_interval"],
+            ),
+            Service("validator-status-watcher", validator_status_watcher.run),
+            Service("validator_balance_watcher", validator_balance_watcher.run),
+            Service("log-internal-state", log_internal_state, recorder),
+        ]
+        + sender.services
+        + watcher.services
+        + confirmation_task_planner.services
+    )
+
+
 def stop(pool, timeout):
     logger.info("Stopping...")
 
@@ -353,66 +509,20 @@ def main(ctx, config_path: str) -> None:
     pool = gevent.pool.Pool()
     stop_pool = partial(stop, pool, APPLICATION_CLEANUP_TIMEOUT)
 
-    control_queue = Queue()
-    transfer_event_queue = Queue()
-    home_bridge_event_queue = Queue()
-    confirmation_task_queue = Queue()
+    def handle_greenlet_exception(gr):
+        logger.exception(
+            f"Application Error: {gr.name} unexpectedly died. Shutting down.",
+            exc_info=gr.exception,
+        )
+        stop_pool()
 
-    transfer_event_fetcher = make_transfer_event_fetcher(config, transfer_event_queue)
-    home_bridge_event_fetcher = make_home_bridge_event_fetcher(
-        config, home_bridge_event_queue
-    )
+    recorder = make_recorder(config)
 
-    confirmation_task_planner = make_confirmation_task_planner(
-        config,
-        control_queue=control_queue,
-        transfer_event_queue=transfer_event_queue,
-        home_bridge_event_queue=home_bridge_event_queue,
-        confirmation_task_queue=confirmation_task_queue,
-    )
-
-    recorder = confirmation_task_planner.recorder
-
-    validator_status_watcher = make_validator_status_watcher(
-        config, control_queue, stop_pool
-    )
-
-    max_pending_transactions = get_max_pending_transactions(config)
-    logger.info("maximum number of pending transactions: %s", max_pending_transactions)
-    pending_transaction_queue = Queue(max_pending_transactions)
-    sender = make_confirmation_sender(
-        config=config,
-        pending_transaction_queue=pending_transaction_queue,
-        confirmation_task_queue=confirmation_task_queue,
-    )
-    watcher = make_confirmation_watcher(
-        config=config, pending_transaction_queue=pending_transaction_queue
-    )
-
-    validator_balance_watcher = make_validator_balance_watcher(config, control_queue)
     webservice = make_webservice(config=config, recorder=recorder)
-
-    services = (
-        [
-            Service(
-                "fetch-foreign-bridge-events",
-                transfer_event_fetcher.fetch_events,
-                config["foreign_chain"]["event_poll_interval"],
-            ),
-            Service(
-                "fetch-home-bridge-events",
-                home_bridge_event_fetcher.fetch_events,
-                config["home_chain"]["event_poll_interval"],
-            ),
-            Service("validator-status-watcher", validator_status_watcher.run),
-            Service("validator_balance_watcher", validator_balance_watcher.run),
-            Service("log-internal-state", log_internal_state, recorder),
-        ]
-        + sender.services
-        + watcher.services
-        + confirmation_task_planner.services
-        + (webservice.services if webservice is not None else [])
+    wait_for_start_blocks_service = Service(
+        "wait_for_start_block", wait_for_start_blocks, config
     )
+    webservice_services = webservice.services if webservice is not None else []
 
     install_signal_handler(
         signal.SIGUSR1, "report-internal-state", recorder.log_current_state
@@ -423,9 +533,32 @@ def main(ctx, config_path: str) -> None:
     )
     for signum in [signal.SIGINT, signal.SIGTERM]:
         install_signal_handler(signum, "terminator", stop_pool)
+
     try:
-        greenlets = start_services(services, start=pool.start)
-        gevent.joinall(greenlets, raise_error=True)
+        webservice_greenlets = start_services(
+            webservice_services,
+            start=pool.start,
+            link_exception_callback=handle_greenlet_exception,
+        )
+        start_block_greenlet, = start_services(
+            [wait_for_start_blocks_service],
+            start=pool.start,
+            link_exception_callback=handle_greenlet_exception,
+        )
+
+        gevent.joinall([start_block_greenlet])
+
+        # Only continue if start_block_greenlet wasn't killed
+        if start_block_greenlet.successful() and not isinstance(
+            start_block_greenlet.value, gevent.GreenletExit
+        ):
+            main_services = make_main_services(config, recorder, stop_pool)
+            main_greenlets = start_services(
+                main_services,
+                start=pool.start,
+                link_exception_callback=handle_greenlet_exception,
+            )
+            gevent.joinall(webservice_greenlets + main_greenlets)
     except Exception as exception:
         logger.exception("Application error", exc_info=exception)
         stop(pool, APPLICATION_CLEANUP_TIMEOUT)

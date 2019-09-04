@@ -13,12 +13,14 @@ class Service:
         self.kwargs = kwargs
 
 
-def start_services(services, start=gevent.Greenlet.start):
+def start_services(services, start=gevent.Greenlet.start, link_exception_callback=None):
     greenlets = []
     for s in services:
         logger.info(f"Starting {s.name} service")
         gr = gevent.Greenlet(s.run, *s.args, **s.kwargs)
         gr.name = s.name
+        if link_exception_callback is not None:
+            gr.link_exception(link_exception_callback)
         start(gr)
         greenlets.append(gr)
     return greenlets
