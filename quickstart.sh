@@ -80,7 +80,7 @@ EOF
     --volume "${PWD}":/data \
     --volume "$DATA_DIR":/quickstart/trustlines \
     $DOCKER_IMAGE_NAME \
-    --host-base-dir "${PWD}"
+    --host-base-dir "$(dirname "$DATA_DIR")"
 }
 
 function main() {
