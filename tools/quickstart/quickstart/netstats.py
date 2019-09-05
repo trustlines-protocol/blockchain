@@ -22,7 +22,8 @@ def setup_interactively() -> None:
     click.echo(
         "\nWe can set up a client that reports to the netstats server running at\n"
         f"{NETSTATS_SERVER_BASE_URL}\nThis helps the community to observe the state of "
-        "the network.\n\nYou will need credentials to do that. They can be retrieved\n"
+        "the network.\n\nYou will need credentials to do that. Write a mail to \n"
+        "'netstats@trustlines.foundation'\nto receive some.\n"
     )
 
     if not click.confirm(
