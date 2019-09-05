@@ -152,7 +152,7 @@ class ConfigSchema(Schema):
 
     validator_private_key = fields.Nested(PrivateKeySchema, required=True)
     logging = LoggingField(missing=lambda: dict(FORCED_LOGGING_CONFIG))
-    webservice = fields.Nested(WebserviceSchema)
+    webservice = fields.Nested(WebserviceSchema, missing=dict)
 
 
 config_schema = ConfigSchema()
