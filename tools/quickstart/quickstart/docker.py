@@ -15,7 +15,7 @@ from quickstart.validator_account import get_validator_address
 def update_and_start(host_base_dir: str) -> None:
     if not is_validator_account_prepared():
         raise click.ClickException(
-            "Can not start docker services without having set a validator account up!"
+            "Can not start docker services without having set up a validator account!"
         )
 
     if not os.path.isfile("docker-compose.yaml") and not os.path.isfile(
@@ -37,7 +37,7 @@ def update_and_start(host_base_dir: str) -> None:
         click.echo("\nShutting down possibly remaining docker services...")
         subprocess.run(["docker-compose", "down"], env=docker_environment_variables)
 
-        click.echo("\nPulling recent Docker images versions...")
+        click.echo("\nPulling recent Docker image versions...")
         subprocess.run(
             ["docker-compose", "pull"] + docker_service_names,
             env=docker_environment_variables,

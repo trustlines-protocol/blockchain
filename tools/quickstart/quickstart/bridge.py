@@ -22,13 +22,13 @@ from quickstart.utils import is_bridge_prepared
 
 def setup_interactively() -> None:
     if is_bridge_prepared():
-        click.echo("You have already set the bridge client up.\n")
+        click.echo("You have already set up the bridge client.\n")
         return
 
     click.echo(
-        "\nWe can set a validator bridge client up that confirms bridge transfers. "
+        "\nWe can set up a validator bridge client that confirms bridge transfers. "
         "Doing so requires an additional node syncing the Ethereum mainnet. "
-        "This node will run in light mode to use as little resource as "
+        "This node will run in light mode to use as little resources as "
         "possible. Checkout the following link for more information on how the bridge "
         f"works:\n{BRIDGE_DOCUMENTATION_URL}\nThis setup will reuse the keystore "
         "of the validator node.\n"
@@ -36,7 +36,7 @@ def setup_interactively() -> None:
     if not click.confirm(
         "Do you want to set the bridge client up? (highly recommended)", default=True
     ):
-        # Necessary to make docker-compose not complaining about it.
+        # Necessary to make docker-compose not complain about it.
         Path(BRIDGE_CONFIG_FILE_EXTERNAL).touch()
         return
 

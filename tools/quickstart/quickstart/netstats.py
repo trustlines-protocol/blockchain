@@ -16,16 +16,18 @@ INSTANCE_NAME={instance_name}
 
 def setup_interactively() -> None:
     if is_netstats_prepared():
-        click.echo("You have already set the netstats client up.\n")
+        click.echo("You have already set up the netstats client.\n")
         return
 
     click.echo(
-        "\nWe can setup a client that reports to the netstats server running at\n"
-        f"{NETSTATS_SERVER_BASE_URL}\nYou will need credentials to do that.\n"
+        "\nWe can set up a client that reports to the netstats server running at\n"
+        f"{NETSTATS_SERVER_BASE_URL}\nThis helps the community to observe the state of "
+        "the network.\n\nYou will need credentials to do that. They can be retrieved\n"
     )
 
     if not click.confirm(
-        "Have you already received credentials and do you want to set the netstats client up?"
+        "Have you already received credentials and "
+        "do you want to set the netstats client up?"
     ):
         # Necessary to make docker-compose not complaining about it.
         Path(NETSTATS_ENV_FILE_PATH).touch()
@@ -41,12 +43,13 @@ def setup_interactively() -> None:
 
         else:
             click.echo(
-                "The provided credentials are invalid. Please try entering again."
+                "The provided credentials could not be verified.\nPlease try entering "
+                "them and make sure you are connected to the internet."
             )
 
     click.echo(
-        "Please enter an instance name to identify your instance on the website.\n"
-        "You are free to choose any name you like."
+        "Please enter a name to identify your instance on the website.\nYou are free "
+        "to choose any name you like. Note that the name will be publicly visible."
     )
 
     instance_name = click.prompt("Instance name")

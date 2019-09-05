@@ -31,31 +31,31 @@ def ensure_clean_setup():
         )
 
 
+def non_empty_file_exists(file_path: str) -> bool:
+    return (
+        os.path.isfile(file_path)
+        # Ignore touched only files (docker-compose workaround)
+        and os.stat(file_path).st_size != 0
+    )
+
+
 def is_validator_account_prepared() -> bool:
     return os.path.isfile(ADDRESS_FILE_PATH)
 
 
 def is_netstats_prepared() -> bool:
-    return (
-        os.path.isfile(NETSTATS_ENV_FILE_PATH)
-        # Ignore touched only files (docker-compose workaround)
-        and os.stat(NETSTATS_ENV_FILE_PATH).st_size != 0
-    )
+    return non_empty_file_exists(NETSTATS_ENV_FILE_PATH)
 
 
 def is_bridge_prepared() -> bool:
-    return (
-        os.path.isfile(BRIDGE_CONFIG_FILE_EXTERNAL)
-        # Ignore touched only files (docker-compose workaround)
-        and os.stat(BRIDGE_CONFIG_FILE_EXTERNAL).st_size != 0
-    )
+    return non_empty_file_exists(BRIDGE_CONFIG_FILE_EXTERNAL)
 
 
 class TrustlinesFiles:
-    def __init__(self, password_file, address_file, keystore_file):
-        self.password_file = password_file
-        self.address_file = address_file
-        self.keystore_file = keystore_file
+    def __init__(self, password_path, address_path, keystore_path):
+        self.password_path = password_path
+        self.address_path = address_path
+        self.keystore_path = keystore_path
 
     def store(self, account, password):
         # Instead of just copying the file, we encrypt it again since the
@@ -63,14 +63,14 @@ class TrustlinesFiles:
         # parity can't handle
         json_account = account.encrypt(password, kdf="pbkdf2")
 
-        os.makedirs(os.path.dirname(os.path.abspath(self.keystore_file)), exist_ok=True)
-        with open(self.keystore_file, "w") as f:
+        os.makedirs(os.path.dirname(os.path.abspath(self.keystore_path)), exist_ok=True)
+        with open(self.keystore_path, "w") as f:
             f.write(json.dumps(json_account))
 
-        with open(self.password_file, "w") as f:
+        with open(self.password_path, "w") as f:
             f.write(password)
 
-        with open(self.address_file, "w") as f:
+        with open(self.address_path, "w") as f:
             f.write(account.address)
 
 
@@ -80,10 +80,11 @@ def is_wrong_password_error(err):
 
 def get_keystore_path() -> str:
     click.echo(
-        "Please enter the path to the keystore file to import.\nIf you started the process via the quickstart scipt, "
-        "please consider that you are running within a Docker virtual file system. "
-        "You can access the current working directory via '/data'. "
-        "(e.g. './my-dir/keystore.json' becomes '/data/my-dir/keystore.json')"
+        "Please enter the path to the keystore file to import.\nIf you started the "
+        "process via the quickstart scipt, please consider that you are running "
+        "within a Docker virtual file system. You can access the current working "
+        "directory via '/data'. (e.g. './my-dir/keystore.json' becomes "
+        "'/data/my-dir/keystore.json')"
     )
 
     while True:
@@ -102,7 +103,9 @@ def get_keystore_path() -> str:
 
 def read_private_key() -> str:
     while True:
-        private_key = click.prompt("Private key (hex encodded)", hide_input=True)
+        private_key = click.prompt(
+            "Private key (hex encoded, without 0x prefix)", hide_input=True
+        )
 
         if re.fullmatch("[0-9a-fA-F]{64}", private_key):
             return private_key
@@ -139,5 +142,5 @@ def read_decryption_password(keyfile_dict) -> Tuple[Account, str]:
             if is_wrong_password_error(err):
                 click.echo("The password you entered is wrong. Please try again.")
             else:
-                click.echo(f"Error: malformed keystore file: {repr(err)}")
+                click.echo(f"Error: failed to decrypt keystore file: {repr(err)}")
                 sys.exit(1)

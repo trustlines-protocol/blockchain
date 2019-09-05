@@ -37,8 +37,8 @@ def setup_interactively() -> None:
     os.makedirs(DATABASE_DIR, exist_ok=True)
 
     click.echo(
-        "Validators need a private key. This script can either import an existing"
-        " JSON keystore, import an existing raw private key, or it can create a new key.\n"
+        "Validators need a private key. This script can either import an existing JSON "
+        "keystore, import an existing raw private key, or it can create a new key.\n"
     )
 
     if click.confirm("Do you want to import an existing keystore?"):
@@ -52,7 +52,7 @@ def setup_interactively() -> None:
 
     else:
         raise click.ClickException(
-            "To setup a validator node, a private key is absolutely necessary. "
+            "To setup a validator node, a private key is required. "
             "You need to select one of the previous options."
         )
 
