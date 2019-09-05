@@ -26,12 +26,12 @@ def setup_interactively() -> None:
         return
 
     click.echo(
-        "\nWe can set up a validator bridge client that confirms bridge transfers. "
-        "Doing so requires an additional node syncing the Ethereum mainnet. "
-        "This node will run in light mode to use as little resources as "
-        "possible. Checkout the following link for more information on how the bridge "
-        f"works:\n{BRIDGE_DOCUMENTATION_URL}\nThis setup will reuse the keystore "
-        "of the validator node.\n"
+        "\nAs a validator, you are required to run the bridge as well. We can set "
+        "everything up or you do it yourself later. A setup requires an additional "
+        "node syncing the Ethereum mainnet. This node will run in light mode to use "
+        "as little resources as possible. Checkout the following link for more "
+        f"information on how the bridge works:\n{BRIDGE_DOCUMENTATION_URL}\nThis "
+        "setup will reuse the keystore of the validator node.\n"
     )
     if not click.confirm(
         "Do you want to set the bridge client up? (highly recommended)", default=True
