@@ -1,6 +1,6 @@
 import os
 
-BASE_DIR = os.path.join(os.getcwd(), "trustlines")
+BASE_DIR = "trustlines"  # Relative to the current working directory
 CONFIG_DIR = os.path.join(BASE_DIR, "config")
 ENODE_DIR = os.path.join(BASE_DIR, "enode")
 DATABASE_DIR = os.path.join(BASE_DIR, "databases")

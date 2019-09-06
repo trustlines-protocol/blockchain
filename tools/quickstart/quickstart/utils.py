@@ -92,7 +92,7 @@ def get_keystore_path() -> str:
         absolute_path = Path(raw_path).expanduser().absolute()
 
         if os.path.isfile(absolute_path) and os.access(absolute_path, os.R_OK):
-            return absolute_path.as_posix()
+            return str(absolute_path)
 
         else:
             click.echo(

@@ -62,7 +62,10 @@ def setup_interactively() -> None:
 def import_keystore_file() -> None:
     click.echo("Starting to import an existing keystore...")
     keystore_path = get_keystore_path()
-    keyfile_dict = json.loads(open(keystore_path, "rb").read())
+
+    with open(keystore_path, "rb") as keystore_file:
+        keyfile_dict = json.load(keystore_file)
+
     account, password = read_decryption_password(keyfile_dict)
     trustlines_files = TrustlinesFiles(
         PASSWORD_FILE_PATH, ADDRESS_FILE_PATH, KEYSTORE_FILE_PATH
