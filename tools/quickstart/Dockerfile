@@ -12,7 +12,7 @@ ENV LANG C.UTF-8
 ENV PIP_DISABLE_PIP_VERSION_CHECK 1
 
 RUN apt-get update \
-    && apt-get install -y apt-utils python3 python3-distutils python3-dev python3-venv build-essential \
+    && apt-get install -y apt-utils python3 python3-distutils python3-dev python3-venv build-essential curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m venv /opt/quickstart/
@@ -33,6 +33,11 @@ COPY tools/quickstart /src/
 COPY tools/quickstart/constraints.txt /src/
 RUN pip install -c constraints.txt .
 
+# get docker-compose as standalone binary
+RUN curl -L https://github.com/docker/compose/releases/download/1.24.1/docker-compose-`uname -s`-`uname -m` \
+    -o /opt/quickstart/bin/docker-compose && \
+    chmod +x /opt/quickstart/bin/docker-compose
+
 FROM base as runner
 ENV LANG C.UTF-8
 RUN apt-get update \
@@ -40,5 +45,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 FROM runner
+WORKDIR /quickstart
 COPY --from=builder /opt/quickstart /opt/quickstart
+COPY ./docker/docker-compose.yaml .
 ENV PATH="/opt/quickstart/bin:${PATH}"
+ENTRYPOINT ["quickstart"]
