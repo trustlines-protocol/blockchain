@@ -20,7 +20,7 @@ def main(host_base_dir):
         validator_account.setup_interactively()
         bridge.setup_interactively()
     netstats.setup_interactively()
-    docker.update_and_start(host_base_dir)
+    docker.update_and_start(host_base_dir, as_validator=setup_as_validator)
 
 
 def prompt_setup_as_validator():
