@@ -11,6 +11,10 @@ from quickstart.utils import (
 )
 from quickstart.validator_account import get_validator_address
 
+# List of docker container names to stop and remove on startup in addition to the ones defined in
+# the docker compose file (for backward compatibility)
+LEGACY_CONTAINER_NAMES = ["watchtower-testnet", "trustlines-testnet"]
+
 
 def update_and_start(host_base_dir: str) -> None:
     if not is_validator_account_prepared():
@@ -36,6 +40,13 @@ def update_and_start(host_base_dir: str) -> None:
     try:
         click.echo("\nShutting down possibly remaining docker services...")
         subprocess.run(["docker-compose", "down"], env=docker_environment_variables)
+        for container_name in LEGACY_CONTAINER_NAMES:
+            subprocess.run(
+                ["docker", "stop", container_name], env=docker_environment_variables
+            )
+            subprocess.run(
+                ["docker", "rm", container_name], env=docker_environment_variables
+            )
 
         click.echo("\nPulling recent Docker image versions...")
         subprocess.run(
