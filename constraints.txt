@@ -11,9 +11,7 @@ cfgv==2.0.1
 chardet==3.0.4
 Click==7.0
 contract-deploy-tools==0.5.1
-cryptography==2.7
 cytoolz==0.10.0
-decorator==4.4.0
 entrypoints==0.3
 eth-abi==2.0.0
 eth-account==0.4.0
@@ -83,7 +81,6 @@ trie==1.4.0
 typed-ast==1.4.0
 typing-extensions==3.7.4
 urllib3==1.25.3
-validators==0.13.0
 varint==1.0.2
 virtualenv==16.7.2
 wcwidth==0.1.7
