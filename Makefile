@@ -20,7 +20,8 @@ $(SUB_INSTALL): install-%: setup-venv
 
 SUB_CLEAN = $(addprefix clean-,$(SUBDIRS))
 clean: $(SUB_CLEAN)
-	rm -rf venv
+	rm -rf venv .pytest_cache
+
 $(SUB_CLEAN): clean-%:
 	@echo "==> Cleaning $*"
 	$(MAKE) -C $* clean

@@ -2,6 +2,7 @@ import logging
 import logging.config
 import os
 import signal
+import sys
 from functools import partial
 
 import click
@@ -437,6 +438,10 @@ def stop(pool, timeout):
             logger.error("Catched wrong timeout exception, exciting anyway")
         else:
             logger.error("Bridge didn't clean up in time, doing a hard exit")
+
+        sys.stderr.flush()
+        sys.stdout.flush()
+
         os._exit(os.EX_SOFTWARE)
 
 
