@@ -33,6 +33,11 @@ COPY tools/quickstart /src/
 COPY tools/quickstart/constraints.txt /src/
 RUN pip install -c constraints.txt .
 
+# get docker as standalone binary
+RUN curl -L https://download.docker.com/`uname -s | awk '{print tolower($0)}'`/static/stable/`uname -m`/docker-19.03.2.tgz --output /tmp/docker.tgz &&  \
+    tar -xf /tmp/docker.tgz -C /tmp/ &&  \
+    mv /tmp/docker/docker /opt/quickstart/bin/docker &&  \
+    chmod +x /opt/quickstart/bin/docker
 # get docker-compose as standalone binary
 RUN curl -L https://github.com/docker/compose/releases/download/1.24.1/docker-compose-`uname -s`-`uname -m` \
     -o /opt/quickstart/bin/docker-compose && \
