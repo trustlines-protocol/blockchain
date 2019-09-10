@@ -226,14 +226,16 @@ class Bridge(Service):
         super().__init__(["tlbc-bridge", "-c", path], name=name)
 
     def is_up(self):
+        internal_state_url = (
+            f"http://{self.HOST}:{self.BASE_PORT+self.port_shift}/bridge/internal-state"
+        )
         try:
-            requests.get(
-                f"http://{self.HOST}:{self.BASE_PORT+self.port_shift}/bridge/internal-state"
-            ).json()
+            requests.get(internal_state_url).json()
             # TODO check that bridge is ready
+            print(f"{internal_state_url} is now up.")
             return True
         except requests.exceptions.ConnectionError:
-            print("Failed")
+            print(f"{internal_state_url} is not up yet.")
             return False
 
 
