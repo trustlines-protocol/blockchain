@@ -152,6 +152,11 @@ class Node(Service):
         super().__init__(
             [
                 "parity",
+                # If we don't pass the --jsonrpc-server-threads
+                # argument, the tests do fail on circle ci, because
+                # transactions will not be mined.
+                "--jsonrpc-server-threads",
+                "8",
                 "-d",
                 str(path),
                 "--config",
