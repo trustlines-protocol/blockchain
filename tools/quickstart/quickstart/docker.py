@@ -38,6 +38,7 @@ def update_and_start(host_base_dir: str, as_validator: bool) -> None:
     else:
         docker_environment_variables = {
             **base_docker_environment_variables,
+            "VALIDATOR_ADDRESS": "",
             "ROLE": "observer",
         }
 
