@@ -92,7 +92,6 @@ class Service:
         *,
         name=None,
         env=None,
-        uptest_function=None,
         timeout=5,
         poll_interval=0.2,
         process_settings=None,
@@ -102,7 +101,6 @@ class Service:
         self.env = env
         self.timeout = timeout
         self.poll_interval = poll_interval
-        self._uptest_function = uptest_function
         self.process = None
         self._process_settings = process_settings
 
@@ -120,11 +118,8 @@ class Service:
             raise
 
     def is_up(self):
-        """Use the uptest to determine if the service is up"""
-        if self._uptest_function is not None:
-            return self._uptest_function
-        else:
-            return True
+        """Determine if the service is up"""
+        return True
 
     def _wait_for_up(self):
         with Timer(self.timeout) as timer:
@@ -157,6 +152,11 @@ class Node(Service):
         super().__init__(
             [
                 "parity",
+                # If we don't pass the --jsonrpc-server-threads
+                # argument, the tests do fail on circle ci, because
+                # transactions will not be mined.
+                "--jsonrpc-server-threads",
+                "8",
                 "-d",
                 str(path),
                 "--config",
@@ -226,14 +226,16 @@ class Bridge(Service):
         super().__init__(["tlbc-bridge", "-c", path], name=name)
 
     def is_up(self):
+        internal_state_url = (
+            f"http://{self.HOST}:{self.BASE_PORT+self.port_shift}/bridge/internal-state"
+        )
         try:
-            requests.get(
-                f"http://{self.HOST}:{self.BASE_PORT+self.port_shift}/bridge/internal-state"
-            ).json()
+            requests.get(internal_state_url).json()
             # TODO check that bridge is ready
+            print(f"{internal_state_url} is now up.")
             return True
         except requests.exceptions.ConnectionError:
-            print("Failed")
+            print(f"{internal_state_url} is not up yet.")
             return False
 
 
@@ -246,7 +248,9 @@ def mine_min_blocks(web3, number_of_blocks):
 
     block_height = web3.eth.blockNumber
     while web3.eth.blockNumber < block_height + number_of_blocks:
-        web3.eth.sendTransaction({"from": PARITY_DEV_ACCOUNT})
+        wait_for_successful_transaction_receipt(
+            web3, web3.eth.sendTransaction({"from": PARITY_DEV_ACCOUNT})
+        )
 
 
 @pytest.fixture(scope="session")

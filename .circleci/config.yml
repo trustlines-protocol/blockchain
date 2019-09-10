@@ -335,9 +335,7 @@ jobs:
       - run:
           name: Install requirements and validator-set deploy tool
           command: |
-            cd tools/validator-set-deploy
-            make install
-            cd ../..
+            make -C tools/validator-set-deploy install
       - save_cache:
           key: validator-set-venv-{{ checksum "tools/validator-set-deploy/constraints.txt" }}-{{ checksum "tools/validator-set-deploy/requirements.txt" }}
           paths:
@@ -356,9 +354,7 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            cd tools/validator-set-deploy
-            make test
-            cd ../..
+            make -C tools/validator-set-deploy test
 
   mypy-bridge-deploy:
     executor: ubuntu-builder
@@ -382,9 +378,7 @@ jobs:
       - run:
           name: Install requirements and bridge deploy tool
           command: |
-            cd tools/bridge-deploy
-            make install
-            cd ../..
+            make -C tools/bridge-deploy install
       - save_cache:
           key: bridge-deploy-venv-{{ checksum "tools/bridge-deploy/constraints.txt" }}-{{ checksum "tools/bridge-deploy/requirements.txt" }}
           paths:
@@ -403,9 +397,7 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            cd tools/bridge-deploy
-            make test
-            cd ../..
+            make -C tools/bridge-deploy test
 
   mypy-bridge-validator:
     executor: ubuntu-builder
@@ -416,7 +408,7 @@ jobs:
       - run:
           name: Run mypy
           command: |
-            mypy --ignore-missing-imports tools/bridge/tests tools/bridge/bridge tools/bridge/setup.py
+            mypy --ignore-missing-imports tools/bridge/tests tools/bridge/end2end-tests/tests tools/bridge/bridge tools/bridge/setup.py
 
   install-bridge-validator:
     executor: ubuntu-builder
@@ -429,9 +421,7 @@ jobs:
       - run:
           name: Install requirements and bridge validator client
           command: |
-            cd tools/bridge
-            make install
-            cd ../..
+            make -C tools/bridge install
       - save_cache:
           key: bridge-validator-venv-{{ checksum "tools/bridge/constraints.txt" }}-{{ checksum "tools/bridge/requirements.txt" }}
           paths:
@@ -450,9 +440,24 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            cd tools/bridge
-            make test
-            cd ../..
+            make -C tools/bridge test
+
+  end2end-test-bridge-validator:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-bridge-validator-path
+      - run:
+          name: Install parity
+          command: curl -o ~/bin/parity https://releases.parity.io/ethereum/v2.3.6/x86_64-unknown-linux-gnu/parity
+      - run:
+          name: Make parity executable
+          command: chmod 755 ~/bin/parity
+      - run:
+          name: Run pytest
+          command: |
+            make -C tools/bridge test-end2end
 
   build-bridge-image:
     executor: ubuntu-builder
@@ -702,6 +707,9 @@ workflows:
       - pytest-bridge-validator:
           requires:
             - install-bridge-validator
+      - end2end-test-bridge-validator:
+          requires:
+            - install-bridge-validator
 
       - build-bridge-image
       - build-docker-image
@@ -719,6 +727,7 @@ workflows:
             - run-flake8
             - mypy-bridge-validator
             - pytest-bridge-validator
+            - end2end-test-bridge-validator
             - build-bridge-image
           context: docker-credentials
 
