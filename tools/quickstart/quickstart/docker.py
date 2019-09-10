@@ -16,11 +16,7 @@ from quickstart.validator_account import get_validator_address
 LEGACY_CONTAINER_NAMES = ["watchtower-testnet", "trustlines-testnet"]
 
 
-def update_and_start(host_base_dir: str) -> None:
-    if not is_validator_account_prepared():
-        raise click.ClickException(
-            "Can not start docker services without having set up a validator account!"
-        )
+def update_and_start(host_base_dir: str, as_validator: bool) -> None:
 
     if not os.path.isfile("docker-compose.yaml") and not os.path.isfile(
         "docker-compose.yml"
@@ -31,11 +27,24 @@ def update_and_start(host_base_dir: str) -> None:
         )
 
     docker_service_names = get_docker_service_names()
-    docker_environment_variables = {
-        **os.environ,
-        "HOST_BASE_DIR": host_base_dir,
-        "VALIDATOR_ADDRESS": get_validator_address(),
-    }
+    base_docker_environment_variables = {**os.environ, "HOST_BASE_DIR": host_base_dir}
+
+    if as_validator:
+        if not is_validator_account_prepared():
+            raise click.ClickException(
+                "Can not start docker services as validator without having set up a validator account!"
+            )
+        docker_environment_variables = {
+            **base_docker_environment_variables,
+            "VALIDATOR_ADDRESS": get_validator_address(),
+            "ROLE": "validator",
+        }
+    else:
+        docker_environment_variables = {
+            **base_docker_environment_variables,
+            "VALIDATOR_ADDRESS": "",
+            "ROLE": "observer",
+        }
 
     try:
         click.echo("\nShutting down possibly remaining docker services...")

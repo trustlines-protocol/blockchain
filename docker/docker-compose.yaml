@@ -19,7 +19,7 @@ services:
       - ${HOST_BASE_DIR:-.}/trustlines/config:/config/custom
       - ${HOST_BASE_DIR:-.}/trustlines/enode:/config/network
     command: >-
-      --role validator
+      --role ${ROLE}
       --address ${VALIDATOR_ADDRESS}
 
   mainnet-node:
