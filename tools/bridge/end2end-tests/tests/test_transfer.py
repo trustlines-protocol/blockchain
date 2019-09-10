@@ -92,7 +92,6 @@ class Service:
         *,
         name=None,
         env=None,
-        uptest_function=None,
         timeout=5,
         poll_interval=0.2,
         process_settings=None,
@@ -102,7 +101,6 @@ class Service:
         self.env = env
         self.timeout = timeout
         self.poll_interval = poll_interval
-        self._uptest_function = uptest_function
         self.process = None
         self._process_settings = process_settings
 
@@ -120,11 +118,8 @@ class Service:
             raise
 
     def is_up(self):
-        """Use the uptest to determine if the service is up"""
-        if self._uptest_function is not None:
-            return self._uptest_function
-        else:
-            return True
+        """Determine if the service is up"""
+        return True
 
     def _wait_for_up(self):
         with Timer(self.timeout) as timer:
