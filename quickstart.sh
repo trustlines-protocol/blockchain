@@ -76,7 +76,6 @@ EOF
 
   docker run --rm --tty --interactive \
     --volume /var/run/docker.sock:/var/run/docker.sock \
-    --volume /usr/bin/docker:/usr/bin/docker \
     --volume "${PWD}":/data \
     --volume "$DATA_DIR":/quickstart/trustlines \
     $DOCKER_IMAGE_NAME \
