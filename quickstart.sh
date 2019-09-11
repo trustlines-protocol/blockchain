@@ -52,7 +52,7 @@ Hint:
 You can create the group 'docker' and add your current user with the following
 commands.
 
-$ sudo goupadd docker
+$ sudo groupadd docker
 $ sudo usermod -a -G docker $USER
 
 EOF
