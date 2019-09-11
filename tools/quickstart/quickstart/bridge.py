@@ -1,4 +1,5 @@
 from pathlib import Path
+from textwrap import fill
 from typing import Dict
 
 import click
@@ -26,12 +27,21 @@ def setup_interactively() -> None:
         return
 
     click.echo(
-        "\nAs a validator, you are required to run the bridge as well. We can set "
-        "everything up or you do it yourself later. A setup requires an additional "
-        "node syncing the Ethereum mainnet. This node will run in light mode to use "
-        "as little resources as possible. Checkout the following link for more "
-        f"information on how the bridge works:\n{BRIDGE_DOCUMENTATION_URL}\nThis "
-        "setup will reuse the keystore of the validator node.\n"
+        "\n".join(
+            (
+                "",
+                fill(
+                    "As a validator, you are required to run the bridge as well. We can set "
+                    "everything up or you do it yourself later. A setup requires an additional "
+                    "node syncing the Ethereum mainnet. This node will run in light mode to use "
+                    "as little resources as possible. Checkout the following link for more "
+                    "information on how the bridge works:"
+                ),
+                BRIDGE_DOCUMENTATION_URL,
+                "This setup will reuse the keystore of the validator node.",
+                "",
+            )
+        )
     )
     if not click.confirm(
         "Do you want to set the bridge client up? (highly recommended)", default=True

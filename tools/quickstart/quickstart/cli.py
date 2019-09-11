@@ -9,8 +9,8 @@ from quickstart import bridge, docker, netstats, validator_account
 @click.option(
     "--host-base-dir",
     help=(
-        "absolute path to use for docker volumes "
-        "(only relevant when run from inside a docker container itself)"
+        "absolute path to use for docker volumes (only relevant when run from inside a docker "
+        "container itself)"
     ),
     default=os.getcwd(),
 )

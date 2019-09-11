@@ -1,5 +1,6 @@
 import os
 import subprocess
+from textwrap import fill
 from typing import List
 
 import click
@@ -22,8 +23,10 @@ def update_and_start(host_base_dir: str, as_validator: bool) -> None:
         "docker-compose.yml"
     ):
         raise click.ClickException(
-            "Expecting a docker-compose configuration file at the current directory "
-            "with a standard name. ('docker-compose.yaml' or 'docker-compose.yml')"
+            fill(
+                "Expecting a docker-compose configuration file at the current directory "
+                "with a standard name. ('docker-compose.yaml' or 'docker-compose.yml')"
+            )
         )
 
     docker_service_names = get_docker_service_names()
@@ -32,7 +35,10 @@ def update_and_start(host_base_dir: str, as_validator: bool) -> None:
     if as_validator:
         if not is_validator_account_prepared():
             raise click.ClickException(
-                "Can not start docker services as validator without having set up a validator account!"
+                fill(
+                    "Can not start docker services as validator without having set up a "
+                    "validator account!"
+                )
             )
         docker_environment_variables = {
             **base_docker_environment_variables,

@@ -1,4 +1,5 @@
 from pathlib import Path
+from textwrap import fill
 
 import click
 import requests
@@ -20,15 +21,24 @@ def setup_interactively() -> None:
         return
 
     click.echo(
-        "\nWe can set up a client that reports to the netstats server running at\n"
-        f"{NETSTATS_SERVER_BASE_URL}\nThis helps the community to observe the state of "
-        "the network.\n\nYou will need credentials to do that. Write a mail to \n"
-        "'netstats@trustlines.foundation'\nto receive some.\n"
+        "\n".join(
+            (
+                "We can set up a client that reports to the netstats server running at",
+                NETSTATS_SERVER_BASE_URL,
+                "This helps the community to observe the state of the network.",
+                "",
+                "You will need credentials to do that. Write a mail to",
+                "'netstats@trustlines.foundation'",
+                "to receive some.",
+                "",
+            )
+        )
     )
 
     if not click.confirm(
-        "Have you already received credentials and "
-        "do you want to set the netstats client up?"
+        fill(
+            "Have you already received credentials and do you want to set the netstats client up?"
+        )
     ):
         # Necessary to make docker-compose not complaining about it.
         Path(NETSTATS_ENV_FILE_PATH).touch()
@@ -44,13 +54,22 @@ def setup_interactively() -> None:
 
         else:
             click.echo(
-                "The provided credentials could not be verified.\nPlease try entering "
-                "them and make sure you are connected to the internet."
+                "\n"
+                + "\n".join(
+                    (
+                        "The provided credentials could not be verified.",
+                        "Please try entering them and make sure you are connected to the internet.",
+                    )
+                )
             )
 
     click.echo(
-        "Please enter a name to identify your instance on the website.\nYou are free "
-        "to choose any name you like. Note that the name will be publicly visible."
+        "\n".join(
+            (
+                "Please enter a name to identify your instance on the website.",
+                "You are free to choose any name you like. Note that the name will be publicly visible.",
+            )
+        )
     )
 
     instance_name = click.prompt("Instance name")

@@ -3,6 +3,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from textwrap import fill
 from typing import Tuple
 
 import click
@@ -20,14 +21,22 @@ from quickstart.constants import (
 def ensure_clean_setup():
     if os.path.isdir(KEY_DIR):
         raise click.ClickException(
-            "The directory holding the keys already exists.\n"
-            "This should not occur during normal operation."
+            "\n".join(
+                (
+                    "The directory holding the keys already exists.",
+                    "This should not occur during normal operation.",
+                )
+            )
         )
 
     if os.path.isfile(PASSWORD_FILE_PATH):
         raise click.ClickException(
-            "The password file already exists.\n"
-            "This should not occur during normal operation."
+            "\n".join(
+                (
+                    "The password file already exists.",
+                    "This should not occur during normal operation.",
+                )
+            )
         )
 
 
@@ -80,11 +89,17 @@ def is_wrong_password_error(err):
 
 def get_keystore_path() -> str:
     click.echo(
-        "Please enter the path to the keystore file to import.\nIf you started the "
-        "process via the quickstart scipt, please consider that you are running "
-        "within a Docker virtual file system. You can access the current working "
-        "directory via '/data'. (e.g. './my-dir/keystore.json' becomes "
-        "'/data/my-dir/keystore.json')"
+        "\n".join(
+            (
+                "Please enter the path to the keystore file to import.",
+                fill(
+                    "If you started the process via the quickstart scipt, please consider that you "
+                    "are running within a Docker virtual file system. You can access the current "
+                    "working directory via '/data'. (e.g. './my-dir/keystore.json' becomes "
+                    "'/data/my-dir/keystore.json')"
+                ),
+            )
+        )
     )
 
     while True:
@@ -96,8 +111,10 @@ def get_keystore_path() -> str:
 
         else:
             click.echo(
-                "The given path does not exist or is not readable. "
-                "Please try entering it again."
+                fill(
+                    "The given path does not exist or is not readable. Please try entering it "
+                    "again."
+                )
             )
 
 
@@ -111,7 +128,9 @@ def read_private_key() -> str:
             return private_key
 
         click.echo(
-            "The private key must be entered as a hex encoded string. Please try again."
+            fill(
+                "The private key must be entered as a hex encoded string. Please try again."
+            )
         )
 
 
@@ -142,5 +161,5 @@ def read_decryption_password(keyfile_dict) -> Tuple[Account, str]:
             if is_wrong_password_error(err):
                 click.echo("The password you entered is wrong. Please try again.")
             else:
-                click.echo(f"Error: failed to decrypt keystore file: {repr(err)}")
+                click.echo(fill(f"Error: failed to decrypt keystore file: {repr(err)}"))
                 sys.exit(1)
