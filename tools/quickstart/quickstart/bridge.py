@@ -68,7 +68,7 @@ def setup_interactively() -> None:
     with open(BRIDGE_CONFIG_FILE_EXTERNAL, "w") as config_file:
         toml.dump(configuration, config_file)
 
-    click.echo("Bridge client setup complete.")
+    click.echo("Bridge client setup complete.\n")
 
 
 def get_bridge_configuration(
