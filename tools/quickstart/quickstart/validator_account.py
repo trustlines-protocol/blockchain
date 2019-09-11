@@ -28,6 +28,9 @@ def setup_interactively() -> None:
     if is_validator_account_prepared():
         click.echo("You have already set a validator node up.\n")
         return
+    if not prompt_setup_as_validator():
+        click.echo("Setting up a non-validator node.\n")
+        return
 
     ensure_clean_setup()
 
@@ -63,6 +66,20 @@ def setup_interactively() -> None:
         )
 
     click.echo("Validator account setup complete.")
+
+
+def prompt_setup_as_validator():
+    choice = click.prompt(
+        "Do you want to setup a validator (1) a regular node (2)?",
+        type=click.Choice(("1", "2")),
+        show_choices=False,
+    )
+    if choice == "1":
+        return True
+    elif choice == "2":
+        return False
+    else:
+        assert False, "unreachable"
 
 
 def import_keystore_file() -> None:

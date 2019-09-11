@@ -18,12 +18,15 @@ from quickstart.constants import (
     BRIDGE_CONFIG_KEYSTORE_PATH,
     BRIDGE_DOCUMENTATION_URL,
 )
-from quickstart.utils import is_bridge_prepared
+from quickstart.utils import is_bridge_prepared, is_validator_account_prepared
 
 
 def setup_interactively() -> None:
     if is_bridge_prepared():
         click.echo("You have already set up the bridge client.\n")
+        return
+    if not is_validator_account_prepared():
+        click.echo("Not setting up a bridge node as running as a non-validator.\n")
         return
 
     click.echo(

@@ -17,8 +17,7 @@ from quickstart.validator_account import get_validator_address
 LEGACY_CONTAINER_NAMES = ["watchtower-testnet", "trustlines-testnet"]
 
 
-def update_and_start(host_base_dir: str, as_validator: bool) -> None:
-
+def update_and_start(host_base_dir: str) -> None:
     if not os.path.isfile("docker-compose.yaml") and not os.path.isfile(
         "docker-compose.yml"
     ):
@@ -32,14 +31,7 @@ def update_and_start(host_base_dir: str, as_validator: bool) -> None:
     docker_service_names = get_docker_service_names()
     base_docker_environment_variables = {**os.environ, "HOST_BASE_DIR": host_base_dir}
 
-    if as_validator:
-        if not is_validator_account_prepared():
-            raise click.ClickException(
-                fill(
-                    "Can not start docker services as validator without having set up a "
-                    "validator account!"
-                )
-            )
+    if is_validator_account_prepared():
         docker_environment_variables = {
             **base_docker_environment_variables,
             "VALIDATOR_ADDRESS": get_validator_address(),
