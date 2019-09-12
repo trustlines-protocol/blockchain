@@ -443,7 +443,8 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            make -C tools/bridge test-coverage
+            cd tools/bridge
+            make test-coverage
             codecov --flags unit
 
   end2end-test-bridge-validator:
