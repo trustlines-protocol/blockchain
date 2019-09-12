@@ -12,8 +12,14 @@ format:
 test: install-requirements install
 	$(VIRTUAL_ENV)/bin/python ./pytest tests
 
+test-coverage: install-requirements install
+	$(VIRTUAL_ENV)/bin/python ./pytest --cov=bridge tests
+
 test-end2end: install-requirements install
 	$(VIRTUAL_ENV)/bin/python pytest end2end-tests/tests
+
+test-end2end-coverage: install-requirements install
+	$(VIRTUAL_ENV)/bin/python pytest --cov=bridge end2end-tests/tests
 
 build: install
 	$(VIRTUAL_ENV)/bin/python setup.py sdist

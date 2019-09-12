@@ -192,7 +192,6 @@ jobs:
           command: |
             venv/bin/flake8 --exclude venv .
 
-
   solium-contracts:
     executor: ubuntu-builder
     steps:
@@ -419,6 +418,10 @@ jobs:
           key: bridge-validator-venv-{{ checksum "tools/bridge/constraints.txt" }}-{{ checksum "tools/bridge/requirements.txt" }}
       - create-venv
       - run:
+          name: Install codecov
+          command: |
+            pip install -c constraints.txt codecov
+      - run:
           name: Install requirements and bridge validator client
           command: |
             make -C tools/bridge install
@@ -440,7 +443,8 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            make -C tools/bridge test
+            make -C tools/bridge test-coverage
+            codecov --flags unit
 
   end2end-test-bridge-validator:
     executor: ubuntu-builder
@@ -457,7 +461,8 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            make -C tools/bridge test-end2end
+            make -C tools/bridge test-end2end-coverage
+            codecov --flags end2end
 
   build-bridge-image:
     executor: ubuntu-builder

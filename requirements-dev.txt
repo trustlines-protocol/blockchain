@@ -4,4 +4,5 @@ mypy
 pep8-naming
 pre-commit
 pytest
+pytest-cov
 setuptools_scm
