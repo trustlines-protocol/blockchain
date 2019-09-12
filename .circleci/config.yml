@@ -447,7 +447,7 @@ jobs:
             make test-coverage
             codecov --flags unit
       - store_test_results:
-          path: tools/bridge
+          path: tools/bridge/test-results
 
 
 
