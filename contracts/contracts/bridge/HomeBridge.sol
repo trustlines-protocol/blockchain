@@ -51,16 +51,6 @@ contract HomeBridge {
         uint256 amount,
         address payable recipient
     ) public {
-        require(
-            validatorProxy.isValidator(msg.sender),
-            "must be validator to confirm transfers"
-        );
-        require(
-            recipient != address(0),
-            "recipient must not be the zero address!"
-        );
-        require(amount > 0, "amount must not be zero");
-
         // We compute a keccak hash for the transfer and use that as an identifier for the transfer
         bytes32 transferStateId = keccak256(
             abi.encodePacked(transferHash, transactionHash, amount, recipient)
@@ -70,6 +60,18 @@ contract HomeBridge {
             !transferState[transferStateId].isCompleted,
             "transfer already completed"
         );
+
+        require(
+            validatorProxy.isValidator(msg.sender),
+            "must be validator to confirm transfers"
+        );
+
+        require(
+            recipient != address(0),
+            "recipient must not be the zero address!"
+        );
+
+        require(amount > 0, "amount must not be zero");
 
         if (_confirmTransfer(transferStateId, msg.sender)) {
             // We have to emit the events here, because _confirmTransfer
