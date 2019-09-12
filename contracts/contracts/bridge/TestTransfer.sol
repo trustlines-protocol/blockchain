@@ -1,9 +1,10 @@
 pragma solidity ^0.5.8;
 
 contract TestRecipient {
-    uint public numCalls;
+    event GasLeft(uint gasLeft);
+
     function() external payable {
-        numCalls += 1;
+        emit GasLeft(gasleft());
     }
 }
 
@@ -11,8 +12,12 @@ contract TestTransfer {
     function() external payable {}
 
     function doit(address payable recipient) public returns (bool) {
+        bool res = true;
+
         /* solium-disable-next-line */
-        (bool res, ) = recipient.call.value(1).gas(80000)("");
+        (res, ) = recipient.call.value(1).gas(60000)("");
+
+        // res = recipient.send(1);
         return res;
     }
 }

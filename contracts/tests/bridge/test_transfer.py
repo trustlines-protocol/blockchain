@@ -30,17 +30,30 @@ def test_transfer_contract(deploy_contract, web3, accounts):
     return contract
 
 
-@pytest.mark.parametrize("gas", [200_000, 50_700, 30_000])
-def test_transfer(test_transfer_contract, accounts, web3, recipient, gas):
+@pytest.mark.parametrize("gas", [35000, 40000, 50000, 100000])
+def test_transfer(
+    test_transfer_contract, accounts, web3, recipient, gas, test_recipient_contract
+):
+
+    get_events = test_recipient_contract.events.GasLeft.createFilter(
+        fromBlock=web3.eth.blockNumber
+    ).get_all_entries
+
     tx_hash = test_transfer_contract.functions.doit(recipient).transact({"gas": gas})
     tx_receipt = web3.eth.getTransactionReceipt(tx_hash)
 
     balance = web3.eth.getBalance(recipient)
 
     print(
-        f"gas: {gas} status: {tx_receipt.status} gas used: {tx_receipt.gasUsed} balance: {balance}"
+        f"\n\ngas: {gas} status: {tx_receipt.status} gas used: {tx_receipt.gasUsed} balance: {balance}"
     )
+    print(get_events())
 
-    assert (
-        tx_receipt.status != 1 or balance == 1
-    ), "tx succeded but internal transfer failed"
+    # print(tx_receipt)
+
+    if tx_receipt.status == 1:
+        assert balance == 1
+
+    # assert (
+    #     tx_receipt.status != 1 or balance == 1
+    # ), "tx succeded but internal transfer failed"
