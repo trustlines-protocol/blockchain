@@ -15,9 +15,9 @@ contract TestTransfer {
         bool res = true;
 
         /* solium-disable-next-line */
-        (res, ) = recipient.call.value(1).gas(60000)("");
+        /* (res, ) = recipient.call.value(1).gas(60000)(""); */
 
-        // res = recipient.send(1);
+        res = recipient.send(1);
         return res;
     }
 }

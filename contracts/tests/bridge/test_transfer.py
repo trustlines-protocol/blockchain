@@ -30,7 +30,7 @@ def test_transfer_contract(deploy_contract, web3, accounts):
     return contract
 
 
-@pytest.mark.parametrize("gas", [35000, 40000, 50000, 100000])
+@pytest.mark.parametrize("gas", range(32600, 32650))
 def test_transfer(
     test_transfer_contract, accounts, web3, recipient, gas, test_recipient_contract
 ):
@@ -47,12 +47,16 @@ def test_transfer(
     print(
         f"\n\ngas: {gas} status: {tx_receipt.status} gas used: {tx_receipt.gasUsed} balance: {balance}"
     )
-    print(get_events())
-
-    # print(tx_receipt)
-
     if tx_receipt.status == 1:
         assert balance == 1
+
+    events = get_events()
+
+    print(get_events())
+    if events:
+        assert events[0].args.gasLeft == 2277
+
+    # print(tx_receipt)
 
     # assert (
     #     tx_receipt.status != 1 or balance == 1
