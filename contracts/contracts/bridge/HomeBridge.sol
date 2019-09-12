@@ -21,7 +21,8 @@ contract HomeBridge {
         bytes32 transferHash,
         bytes32 transactionHash,
         uint256 amount,
-        address recipient
+        address recipient,
+        bool coinTransferSuccessful
     );
 
     mapping(bytes32 => TransferState) public transferState;
@@ -67,10 +68,6 @@ contract HomeBridge {
 
         bool isCompleted = _confirmTransfer(transferStateId, msg.sender);
 
-        if (isCompleted) {
-            recipient.transfer(amount);
-        }
-
         // We have to emit the events here, because _confirmTransfer
         // doesn't even receive the necessary information to do it on
         // it's own
@@ -83,11 +80,13 @@ contract HomeBridge {
             msg.sender
         );
         if (isCompleted) {
+            bool coinTransferSuccessful = recipient.send(amount);
             emit TransferCompleted(
                 transferHash,
                 transactionHash,
                 amount,
-                recipient
+                recipient,
+                coinTransferSuccessful
             );
         }
     }

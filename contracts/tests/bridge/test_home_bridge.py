@@ -3,6 +3,12 @@ from eth_tester.exceptions import TransactionFailed
 
 
 @pytest.fixture
+def non_payable_recipient(deploy_contract):
+    """non-payable contract"""
+    return deploy_contract("TestNonPayableRecipient", constructor_args=())
+
+
+@pytest.fixture
 def confirm(home_bridge_contract):
     """call confirmTransfer on the home_bridge_contract with less boilerplate"""
 
@@ -102,6 +108,8 @@ additional confirmations from validators that are late.
     assert len(transfer_completed_events) == 1
     confirm.assert_event_matches(transfer_completed_events[0])
 
+    assert transfer_completed_events[0].args.coinTransferSuccessful
+
     assert web3.eth.getBalance(confirm.recipient) == confirm.amount
     assert (
         web3.eth.getBalance(home_bridge_contract.address)
@@ -119,6 +127,43 @@ additional confirmations from validators that are late.
         with pytest.raises(TransactionFailed):
             print(validator, "tries to confirm")
             confirm().transact({"from": validator})
+
+
+def test_complete_transfer_send_fails(
+    home_bridge_contract, proxy_validators, confirm, web3, non_payable_recipient
+):
+    """send confirmations from all validators, recipient refuses to take coins
+
+This walks through a complete Transfer on the home bridge, with
+additional confirmations from validators that are late.
+"""
+    required_confirmations = 3
+    confirm.recipient = non_payable_recipient.address
+
+    get_transfer_completed_events = home_bridge_contract.events.TransferCompleted.createFilter(
+        fromBlock=web3.eth.blockNumber
+    ).get_all_entries
+
+    bridge_balance_before = web3.eth.getBalance(home_bridge_contract.address)
+    assert (
+        bridge_balance_before >= confirm.amount
+    )  # We need at least that much for the test
+
+    for validator in proxy_validators[:required_confirmations]:
+        assert not get_transfer_completed_events()
+        assert web3.eth.getBalance(confirm.recipient) == 0
+        print(validator, "confirms")
+        confirm().transact({"from": validator})
+
+    transfer_completed_events = get_transfer_completed_events()
+    print("transfer_completed_events", transfer_completed_events)
+    assert len(transfer_completed_events) == 1
+    confirm.assert_event_matches(transfer_completed_events[0])
+
+    assert not transfer_completed_events[0].args.coinTransferSuccessful
+
+    assert web3.eth.getBalance(confirm.recipient) == 0
+    assert web3.eth.getBalance(home_bridge_contract.address) == bridge_balance_before
 
 
 def test_complete_transfer_validator_set_change(
