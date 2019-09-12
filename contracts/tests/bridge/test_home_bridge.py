@@ -3,6 +3,12 @@ from eth_tester.exceptions import TransactionFailed
 
 
 @pytest.fixture
+def non_payable_recipient(deploy_contract):
+    """non-payable contract"""
+    return deploy_contract("TestNonPayableRecipient", constructor_args=())
+
+
+@pytest.fixture
 def confirm(home_bridge_contract):
     """call confirmTransfer on the home_bridge_contract with less boilerplate"""
 
@@ -42,11 +48,23 @@ def test_confirm_transfer_zero_amount_throws(home_bridge_contract, confirm):
         confirm().transact()
 
 
-def test_double_confirm_transfer(home_bridge_contract, confirm):
-    confirm().transact()
+def test_multi_confirm_transfer(home_bridge_contract, confirm, web3):
+    latest_block_number = web3.eth.blockNumber
 
-    with pytest.raises(TransactionFailed):
+    get_confirmation_events = home_bridge_contract.events.Confirmation.createFilter(
+        fromBlock=latest_block_number
+    ).get_all_entries
+    get_transfer_completed_events = home_bridge_contract.events.TransferCompleted.createFilter(
+        fromBlock=latest_block_number
+    ).get_all_entries
+
+    def confirm_and_check():
         confirm().transact()
+        assert len(get_confirmation_events()) == 1
+        assert len(get_transfer_completed_events()) == 0
+
+    for _ in range(10):
+        confirm_and_check()
 
 
 def test_confirm_transfer_emits_event(home_bridge_contract, web3, accounts, confirm):
@@ -102,6 +120,8 @@ additional confirmations from validators that are late.
     assert len(transfer_completed_events) == 1
     confirm.assert_event_matches(transfer_completed_events[0])
 
+    assert transfer_completed_events[0].args.coinTransferSuccessful
+
     assert web3.eth.getBalance(confirm.recipient) == confirm.amount
     assert (
         web3.eth.getBalance(home_bridge_contract.address)
@@ -119,6 +139,43 @@ additional confirmations from validators that are late.
         with pytest.raises(TransactionFailed):
             print(validator, "tries to confirm")
             confirm().transact({"from": validator})
+
+
+def test_complete_transfer_send_fails(
+    home_bridge_contract, proxy_validators, confirm, web3, non_payable_recipient
+):
+    """send confirmations from all validators, recipient refuses to take coins
+
+This walks through a complete Transfer on the home bridge, with
+additional confirmations from validators that are late.
+"""
+    required_confirmations = 3
+    confirm.recipient = non_payable_recipient.address
+
+    get_transfer_completed_events = home_bridge_contract.events.TransferCompleted.createFilter(
+        fromBlock=web3.eth.blockNumber
+    ).get_all_entries
+
+    bridge_balance_before = web3.eth.getBalance(home_bridge_contract.address)
+    assert (
+        bridge_balance_before >= confirm.amount
+    )  # We need at least that much for the test
+
+    for validator in proxy_validators[:required_confirmations]:
+        assert not get_transfer_completed_events()
+        assert web3.eth.getBalance(confirm.recipient) == 0
+        print(validator, "confirms")
+        confirm().transact({"from": validator})
+
+    transfer_completed_events = get_transfer_completed_events()
+    print("transfer_completed_events", transfer_completed_events)
+    assert len(transfer_completed_events) == 1
+    confirm.assert_event_matches(transfer_completed_events[0])
+
+    assert not transfer_completed_events[0].args.coinTransferSuccessful
+
+    assert web3.eth.getBalance(confirm.recipient) == 0
+    assert web3.eth.getBalance(home_bridge_contract.address) == bridge_balance_before
 
 
 def test_complete_transfer_validator_set_change(
@@ -178,3 +235,63 @@ def test_complete_transfer_validator_set_change(
 
     confirmation_events = get_confirmation_events()
     assert len(confirmation_events) == required_confirmations + 1
+
+
+def test_recheck_after_validator_set_change(
+    home_bridge_contract,
+    proxy_validators,
+    validator_proxy_with_validators,
+    confirm,
+    web3,
+    system_address,
+):
+    """send some confirmations, change the validator set in a way that
+    the transfer has enough confirmations and let a validator, that
+    already confirmed, recheck the transfer.
+"""
+    required_confirmations = 3
+
+    get_confirmation_events = home_bridge_contract.events.Confirmation.createFilter(
+        fromBlock=web3.eth.blockNumber
+    ).get_all_entries
+    get_transfer_completed_events = home_bridge_contract.events.TransferCompleted.createFilter(
+        fromBlock=web3.eth.blockNumber
+    ).get_all_entries
+
+    bridge_balance_before = web3.eth.getBalance(home_bridge_contract.address)
+    assert (
+        bridge_balance_before >= confirm.amount
+    )  # We need at least that much for the test
+
+    for validator in proxy_validators[: required_confirmations - 1]:
+        assert not get_transfer_completed_events()
+        assert web3.eth.getBalance(confirm.recipient) == 0
+        print(validator, "confirms")
+        confirm().transact({"from": validator})
+
+    new_proxy_validators = proxy_validators[: required_confirmations - 1] + [
+        "0x5413d1d9CaF79Bf01Cf821898D9B54ada014FbFA"
+    ]
+    validator_proxy_with_validators.functions.updateValidators(
+        new_proxy_validators
+    ).transact({"from": system_address})
+
+    assert not get_transfer_completed_events()
+    assert web3.eth.getBalance(confirm.recipient) == 0
+    validator = new_proxy_validators[0]
+    print(validator, "re-checks/confirms")
+    confirm().transact({"from": validator})
+
+    transfer_completed_events = get_transfer_completed_events()
+    print("transfer_completed_events", transfer_completed_events)
+    assert len(transfer_completed_events) == 1
+    confirm.assert_event_matches(transfer_completed_events[0])
+
+    assert web3.eth.getBalance(confirm.recipient) == confirm.amount
+    assert (
+        web3.eth.getBalance(home_bridge_contract.address)
+        == bridge_balance_before - confirm.amount
+    )
+
+    confirmation_events = get_confirmation_events()
+    assert len(confirmation_events) == required_confirmations - 1

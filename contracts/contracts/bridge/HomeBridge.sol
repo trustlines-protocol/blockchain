@@ -21,7 +21,8 @@ contract HomeBridge {
         bytes32 transferHash,
         bytes32 transactionHash,
         uint256 amount,
-        address recipient
+        address recipient,
+        bool coinTransferSuccessful
     );
 
     mapping(bytes32 => TransferState) public transferState;
@@ -65,29 +66,34 @@ contract HomeBridge {
             abi.encodePacked(transferHash, transactionHash, amount, recipient)
         );
 
-        bool isCompleted = _confirmTransfer(transferStateId, msg.sender);
+        require(
+            !transferState[transferStateId].isCompleted,
+            "transfer already completed"
+        );
 
-        if (isCompleted) {
-            recipient.transfer(amount);
+        if (_confirmTransfer(transferStateId, msg.sender)) {
+            // We have to emit the events here, because _confirmTransfer
+            // doesn't even receive the necessary information to do it on
+            // it's own
+
+            emit Confirmation(
+                transferHash,
+                transactionHash,
+                amount,
+                recipient,
+                msg.sender
+            );
         }
 
-        // We have to emit the events here, because _confirmTransfer
-        // doesn't even receive the necessary information to do it on
-        // it's own
-
-        emit Confirmation(
-            transferHash,
-            transactionHash,
-            amount,
-            recipient,
-            msg.sender
-        );
-        if (isCompleted) {
+        if (requiredConfirmationsReached(transferStateId)) {
+            transferState[transferStateId].isCompleted = true;
+            bool coinTransferSuccessful = recipient.send(amount);
             emit TransferCompleted(
                 transferHash,
                 transactionHash,
                 amount,
-                recipient
+                recipient,
+                coinTransferSuccessful
             );
         }
     }
@@ -127,19 +133,21 @@ contract HomeBridge {
         bytes32 transferStateId,
         address payable validator
     ) internal returns (bool) {
-        require(
-            !transferState[transferStateId].isCompleted,
-            "transfer already completed"
-        );
-        require(
-            !transferState[transferStateId].isConfirmedByValidator[validator],
-            "transfer already confirmed by validator"
-        );
+        if (transferState[transferStateId].isConfirmedByValidator[validator]) {
+            return false;
+        }
 
         transferState[transferStateId].isConfirmedByValidator[validator] = true;
         transferState[transferStateId].confirmingValidators.push(validator);
         transferState[transferStateId].numConfirmations += 1;
 
+        return true;
+    }
+
+    function requiredConfirmationsReached(bytes32 transferStateId)
+        internal
+        returns (bool)
+    {
         uint numRequired = getNumRequiredConfirmations();
 
         /* We now check if we have enough confirmations.  If that is the
@@ -168,7 +176,6 @@ contract HomeBridge {
             return false;
         }
 
-        transferState[transferStateId].isCompleted = true;
         return true;
     }
 }
