@@ -466,7 +466,8 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            make -C tools/bridge test-end2end-coverage
+            cd tools/bridge
+            make test-end2end-coverage
             codecov --flags end2end
 
   build-bridge-image:
