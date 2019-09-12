@@ -13,7 +13,7 @@ test: install-requirements install
 	$(VIRTUAL_ENV)/bin/python ./pytest tests
 
 test-coverage: install-requirements install
-	$(VIRTUAL_ENV)/bin/python ./pytest --cov=bridge tests
+	$(VIRTUAL_ENV)/bin/python ./pytest --cov=bridge --cov-report=xml --cov-report=html --cov-report=term tests
 
 test-end2end: install-requirements install
 	$(VIRTUAL_ENV)/bin/python pytest end2end-tests/tests

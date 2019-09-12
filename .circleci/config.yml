@@ -446,6 +446,10 @@ jobs:
             cd tools/bridge
             make test-coverage
             codecov --flags unit
+      - store_test_results:
+          path: tools/bridge
+
+
 
   end2end-test-bridge-validator:
     executor: ubuntu-builder
