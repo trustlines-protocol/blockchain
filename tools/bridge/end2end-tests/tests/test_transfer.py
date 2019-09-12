@@ -26,6 +26,10 @@ class TimeoutException(Exception):
     pass
 
 
+class ServiceAlreadyStarted(Exception):
+    pass
+
+
 class Timer:
     def __init__(self, timeout):
         self.start_time = None
@@ -109,6 +113,8 @@ class Service:
 
     def start(self):
         """Starts the service and wait for it to be up """
+        if self.process:
+            raise ServiceAlreadyStarted
         self.process = Popen(self.args, env=self.env, **self._process_settings)
         try:
             self._wait_for_up()
@@ -116,6 +122,9 @@ class Service:
         except TimeoutException:
             self.terminate()
             raise
+
+    def is_started(self):
+        return self.process is None
 
     def is_up(self):
         """Determine if the service is up"""
@@ -137,6 +146,8 @@ class Service:
                     break
 
     def terminate(self):
+        if self.process is None:
+            return
         try:
             self.process.terminate()
             self.process.wait(timeout=5)
@@ -253,12 +264,12 @@ def mine_min_blocks(web3, number_of_blocks):
         )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def accounts(accounts):
     return [PARITY_DEV_ACCOUNT] + list(accounts)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def account_keys(account_keys):
     return [PARITY_DEV_KEY] + list(account_keys)
 
@@ -315,7 +326,7 @@ def web3_foreign(node_foreign, accounts, account_keys):
     return web3
 
 
-@pytest.fixture
+@pytest.fixture()
 def deploy_contract_on_chain(contract_assets, account_keys):
     """A function that deploys a contract on a chain specified via a web3 instance."""
 
@@ -333,7 +344,7 @@ def deploy_contract_on_chain(contract_assets, account_keys):
     return deploy
 
 
-@pytest.fixture
+@pytest.fixture()
 def token_contract(deploy_contract_on_chain, web3_foreign, accounts):
     """The token contract on the foreign chain."""
     constructor_args = (
@@ -361,7 +372,7 @@ def token_contract(deploy_contract_on_chain, web3_foreign, accounts):
     return token_contract
 
 
-@pytest.fixture
+@pytest.fixture()
 def foreign_bridge_contract(deploy_contract_on_chain, web3_foreign, token_contract):
     """The foreign bridge contract."""
     return deploy_contract_on_chain(
@@ -379,13 +390,13 @@ def validator_keys(account_keys):
     return account_keys[7:10]
 
 
-@pytest.fixture
+@pytest.fixture()
 def system_address(accounts):
     """Address pretending to be the system address."""
     return accounts[0]
 
 
-@pytest.fixture
+@pytest.fixture()
 def validator_proxy_contract(deploy_contract_on_chain, web3_home, system_address):
     """The plain validator proxy contract."""
     contract = deploy_contract_on_chain(
@@ -397,7 +408,7 @@ def validator_proxy_contract(deploy_contract_on_chain, web3_home, system_address
     return contract
 
 
-@pytest.fixture
+@pytest.fixture()
 def validator_proxy_with_validators(
     validator_proxy_contract, system_address, validators
 ):
@@ -408,7 +419,7 @@ def validator_proxy_with_validators(
     return validator_proxy_contract
 
 
-@pytest.fixture
+@pytest.fixture()
 def home_bridge_contract(
     deploy_contract_on_chain, validator_proxy_with_validators, web3_home, accounts
 ):
@@ -450,18 +461,36 @@ def bridges(
             name=f"Bridge {i}",
             port_shift=i,
         )
-        bridge.start()
         bridges.append(bridge)
 
-    yield
+    yield bridges
 
     for bridge in bridges:
         bridge.terminate()
 
 
-def test_transfer(
-    web3_home, web3_foreign, foreign_bridge_contract, token_contract, accounts, bridges
+@pytest.fixture()
+def started_bridges(bridges):
+    for bridge in bridges:
+        bridge.start()
+
+    yield bridges
+
+    for bridge in bridges:
+        bridge.terminate()
+
+
+def test_simple_transfer(
+    web3_home,
+    web3_foreign,
+    foreign_bridge_contract,
+    token_contract,
+    accounts,
+    started_bridges,
 ):
+    """
+    Tests whether a simple transfer with all bridges online works
+    """
     sender = accounts[3]
     value = 5000
     foreign_balance_before = token_contract.functions.balanceOf(sender).call()
@@ -485,3 +514,93 @@ def test_transfer(
         assert home_balance_before - home_balance_after == -value
 
     assert_within_timeout(check_balance, 10)
+
+
+def test_offline_validators_validates_not_complete_transfer(
+    web3_home, web3_foreign, foreign_bridge_contract, token_contract, accounts, bridges
+):
+    """
+    Tests whether a transfer initiated when threshold validators are offline will be effective when enough validators turn online
+    """
+    bridges[0].start()
+
+    sender = accounts[3]
+    value = 5000
+    foreign_balance_before = token_contract.functions.balanceOf(sender).call()
+    home_balance_before = web3_home.eth.getBalance(sender)
+
+    wait_for_successful_transaction_receipt(
+        web3_foreign,
+        token_contract.functions.transfer(
+            foreign_bridge_contract.address, value
+        ).transact({"from": sender}),
+    )
+
+    # reorg depth is 3
+    mine_min_blocks(web3_foreign, 3)
+
+    def check_balances_bridge_transfer_not_complete():
+        foreign_balance_transfer_not_complete = token_contract.functions.balanceOf(
+            sender
+        ).call()
+        home_balance_transfer_not_complete = web3_home.eth.getBalance(sender)
+
+        assert foreign_balance_before - foreign_balance_transfer_not_complete == value
+        assert home_balance_before == home_balance_transfer_not_complete
+
+    assert_within_timeout(check_balances_bridge_transfer_not_complete, 10)
+
+    bridges[1].start()
+
+    def check_balance_transfer_complete():
+        home_balance_transfer_complete = web3_home.eth.getBalance(sender)
+
+        assert home_balance_transfer_complete - home_balance_before == value
+
+    assert_within_timeout(check_balance_transfer_complete, 10)
+
+
+def test_offline_validators_do_not_validates_complete_transfer(
+    web3_home,
+    web3_foreign,
+    foreign_bridge_contract,
+    token_contract,
+    accounts,
+    bridges,
+    validators,
+):
+    """
+    Tests that a transfer initiated when threshold validators are online will not be pointlessly validated when different validator turn online
+    """
+    bridge_2_address = validators[2]
+    before_tx_count = web3_home.eth.getTransactionCount(bridge_2_address)
+
+    bridges[0].start()
+    bridges[1].start()
+
+    sender = accounts[3]
+    value = 5000
+    home_balance_before = web3_home.eth.getBalance(sender)
+
+    wait_for_successful_transaction_receipt(
+        web3_foreign,
+        token_contract.functions.transfer(
+            foreign_bridge_contract.address, value
+        ).transact({"from": sender}),
+    )
+
+    # reorg depth is 3
+    mine_min_blocks(web3_foreign, 3)
+
+    def check_balance_transfer_complete():
+        home_balance_transfer_complete = web3_home.eth.getBalance(sender)
+        assert home_balance_transfer_complete - home_balance_before == value
+
+    # We need to wait for the transaction to be completed before starting bridges[2]
+    assert_within_timeout(check_balance_transfer_complete, 10)
+
+    bridges[2].start()
+
+    time.sleep(10)
+    after_tx_count = web3_home.eth.getTransactionCount(bridge_2_address)
+    assert after_tx_count == before_tx_count
