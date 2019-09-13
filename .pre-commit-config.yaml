@@ -41,7 +41,7 @@ repos:
     - id: end-of-file-fixer
       exclude: ^contracts/contracts/lib/.*\.sol|contracts/contracts/token/TrustlinesNetworkToken.sol$
     - id: flake8
-      additional_dependencies: ["flake8-string-format", "flake8-per-file-ignores"]
+      additional_dependencies: ["flake8-string-format", "pep8-naming"]
     - id: trailing-whitespace
       exclude: ^contracts/contracts/lib/.*\.sol$
     - id: no-commit-to-branch

@@ -1,7 +1,10 @@
 black
-flake8
 mypy
-pep8-naming
 pre-commit
 pytest
 setuptools_scm
+
+# flake8 and plugins, keep them in sync with pre-commit's config
+flake8
+pep8-naming
+flake8-string-format
