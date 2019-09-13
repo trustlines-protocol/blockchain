@@ -1,14 +1,8 @@
 import logging
 
-import toml
-
 import bridge.config
 import bridge.main
 import bridge.webservice
-
-
-def load_config_from_string(s):
-    return bridge.config.ConfigSchema().load(toml.loads(s))
 
 
 def test_reload_logging_config(write_config, caplog, minimal_config):
@@ -57,7 +51,7 @@ def test_reload_logging_config_does_not_throw_schema_error(write_config, caplog)
     assert caplog.records[-1].message.startswith("Error while trying to reload")
 
 
-def test_make_webservice_no_config(minimal_config):
+def test_make_webservice_no_config(minimal_config, load_config_from_string):
     config = load_config_from_string(minimal_config)
     ws = bridge.main.make_webservice(
         config=config, recorder=bridge.main.make_recorder(config)
@@ -65,7 +59,7 @@ def test_make_webservice_no_config(minimal_config):
     assert ws is None
 
 
-def test_make_webservice(minimal_config, webservice_config):
+def test_make_webservice(minimal_config, webservice_config, load_config_from_string):
     config = load_config_from_string(minimal_config + webservice_config)
     ws = bridge.main.make_webservice(
         config=config, recorder=bridge.main.make_recorder(config)

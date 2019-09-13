@@ -1,11 +1,14 @@
 import gevent.monkey
 import gevent.pool
 import pytest
+import toml
 from deploy_tools import deploy_compiled_contract
 from eth_tester import EthereumTester
 from gevent.queue import Queue
 from web3 import EthereumTesterProvider, Web3
 from web3.contract import Contract
+
+import bridge.config
 
 # check if gevent did it's monkeypatching
 if "time" not in gevent.monkey.saved:
@@ -261,3 +264,13 @@ enabled = true
 host = "127.0.0.1"
 port = 9500
 """
+
+
+@pytest.fixture
+def load_config_from_string():
+    """returns a function that loads a configuration dictionary from a string"""
+
+    def load(s):
+        return bridge.config.ConfigSchema().load(toml.loads(s))
+
+    return load
