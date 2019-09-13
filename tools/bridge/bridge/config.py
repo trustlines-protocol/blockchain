@@ -123,7 +123,7 @@ class ChainSchema(Schema):
 
 
 class ForeignChainSchema(ChainSchema):
-    max_reorg_depth = fields.Integer(missing=1, validate=validate_non_negative)
+    max_reorg_depth = fields.Integer(missing=10, validate=validate_non_negative)
     token_contract_address = AddressField(required=True)
 
 

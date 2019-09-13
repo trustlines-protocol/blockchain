@@ -218,3 +218,16 @@ def home_bridge_contract(
     )
 
     return contract
+
+
+@pytest.fixture
+def write_config(tmp_path):
+    """returns a function that writes a config file"""
+
+    def write(config):
+        p = tmp_path / "config.toml"
+        with open(p, "w") as f:
+            f.write(config)
+        return str(p)
+
+    return write
