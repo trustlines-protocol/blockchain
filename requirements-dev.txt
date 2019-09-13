@@ -2,6 +2,7 @@ black
 mypy
 pre-commit
 pytest
+pytest-cov
 setuptools_scm
 
 # flake8 and plugins, keep them in sync with pre-commit's config

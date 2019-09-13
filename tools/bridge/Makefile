@@ -12,8 +12,14 @@ format:
 test: install-requirements install
 	$(VIRTUAL_ENV)/bin/python ./pytest tests
 
+test-coverage: install-requirements install
+	$(VIRTUAL_ENV)/bin/python ./pytest --junitxml=test-results/unit/result.xml --cov=bridge --cov-report=html --cov-report=term --cov-config=.coveragerc tests
+
 test-end2end: install-requirements install
-	$(VIRTUAL_ENV)/bin/python pytest end2end-tests/tests
+	$(VIRTUAL_ENV)/bin/pytest end2end-tests/tests
+
+test-end2end-coverage: install-requirements install
+	$(VIRTUAL_ENV)/bin/pytest --cov=bridge --cov-report=html --cov-config=.coveragerc end2end-tests/tests
 
 build: install
 	$(VIRTUAL_ENV)/bin/python setup.py sdist
