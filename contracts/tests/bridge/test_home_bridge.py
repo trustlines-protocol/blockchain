@@ -33,6 +33,14 @@ def confirm(home_bridge_contract):
             assert event.args.amount == self.amount
             assert event.args.recipient == self.recipient
 
+        def reconfirm_completes_transfer(self):
+            return home_bridge_contract.functions.reconfirmCompletesTransfer(
+                transferHash=self.transfer_hash,
+                transactionHash=self.tx_hash,
+                amount=self.amount,
+                recipient=self.recipient,
+            ).call()
+
     return Confirm()
 
 
@@ -113,6 +121,7 @@ additional confirmations from validators that are late.
         assert not get_transfer_completed_events()
         assert web3.eth.getBalance(confirm.recipient) == 0
         print(validator, "confirms")
+        assert not confirm.reconfirm_completes_transfer()
         confirm().transact({"from": validator})
 
     transfer_completed_events = get_transfer_completed_events()
@@ -268,6 +277,7 @@ def test_recheck_after_validator_set_change(
         assert web3.eth.getBalance(confirm.recipient) == 0
         print(validator, "confirms")
         confirm().transact({"from": validator})
+        assert not confirm.reconfirm_completes_transfer()
 
     new_proxy_validators = proxy_validators[: required_confirmations - 1] + [
         "0x5413d1d9CaF79Bf01Cf821898D9B54ada014FbFA"
@@ -275,6 +285,8 @@ def test_recheck_after_validator_set_change(
     validator_proxy_with_validators.functions.updateValidators(
         new_proxy_validators
     ).transact({"from": system_address})
+
+    assert confirm.reconfirm_completes_transfer()
 
     assert not get_transfer_completed_events()
     assert web3.eth.getBalance(confirm.recipient) == 0
@@ -295,3 +307,6 @@ def test_recheck_after_validator_set_change(
 
     confirmation_events = get_confirmation_events()
     assert len(confirmation_events) == required_confirmations - 1
+
+    with pytest.raises(TransactionFailed):
+        confirm.reconfirm_completes_transfer()
