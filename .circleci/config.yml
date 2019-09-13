@@ -445,7 +445,7 @@ jobs:
           command: |
             cd tools/bridge
             make test-coverage
-            codecov --flags unit
+            codecov --flags bridge_unit --prefix tools/bridge/
       - store_test_results:
           path: tools/bridge/test-results
 
@@ -468,7 +468,7 @@ jobs:
           command: |
             cd tools/bridge
             make test-end2end-coverage
-            codecov --flags end2end
+            codecov --flags bridge_end2end --prefix tools/bridge/
 
   build-bridge-image:
     executor: ubuntu-builder
