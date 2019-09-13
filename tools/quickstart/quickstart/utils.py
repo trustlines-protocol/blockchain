@@ -81,13 +81,13 @@ class TrustlinesFiles:
         json_account = account.encrypt(password, kdf="pbkdf2")
 
         os.makedirs(os.path.dirname(os.path.abspath(self.keystore_path)), exist_ok=True)
-        with open(self.keystore_path, "w") as f:
+        with open(self.keystore_path, "x") as f:
             f.write(json.dumps(json_account))
 
-        with open(self.password_path, "w") as f:
+        with open(self.password_path, "x") as f:
             f.write(password)
 
-        with open(self.address_path, "w") as f:
+        with open(self.address_path, "x") as f:
             f.write(account.address)
 
 
