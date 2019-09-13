@@ -1,5 +1,6 @@
 import os
 import subprocess
+from textwrap import fill
 from typing import List
 
 import click
@@ -16,69 +17,72 @@ from quickstart.validator_account import get_validator_address
 LEGACY_CONTAINER_NAMES = ["watchtower-testnet", "trustlines-testnet"]
 
 
-def update_and_start(host_base_dir: str, as_validator: bool) -> None:
-
+def update_and_start(host_base_dir: str) -> None:
     if not os.path.isfile("docker-compose.yaml") and not os.path.isfile(
         "docker-compose.yml"
     ):
         raise click.ClickException(
-            "Expecting a docker-compose configuration file at the current directory "
-            "with a standard name. ('docker-compose.yaml' or 'docker-compose.yml')"
+            fill(
+                "Expecting a docker-compose configuration file at the current directory "
+                "with a standard name. ('docker-compose.yaml' or 'docker-compose.yml')"
+            )
         )
 
     docker_service_names = get_docker_service_names()
     base_docker_environment_variables = {**os.environ, "HOST_BASE_DIR": host_base_dir}
 
-    if as_validator:
-        if not is_validator_account_prepared():
-            raise click.ClickException(
-                "Can not start docker services as validator without having set up a validator account!"
-            )
+    if is_validator_account_prepared():
         docker_environment_variables = {
             **base_docker_environment_variables,
             "VALIDATOR_ADDRESS": get_validator_address(),
             "ROLE": "validator",
         }
+        click.echo("\nNode will run as a validator")
     else:
         docker_environment_variables = {
             **base_docker_environment_variables,
             "VALIDATOR_ADDRESS": "",
             "ROLE": "observer",
         }
+        click.echo("\nNode will run as a non-validator")
+
+    run_kwargs = {
+        "env": docker_environment_variables,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+    }
 
     try:
-        click.echo("\nShutting down possibly remaining docker services...")
-        subprocess.run(["docker-compose", "down"], env=docker_environment_variables)
+        click.echo("Shutting down possibly remaining docker services first...")
+        subprocess.run(["docker-compose", "down"], check=True, **run_kwargs)
         for container_name in LEGACY_CONTAINER_NAMES:
+            # use check=False as docker stop and docker rm fail if the container does not exist
             subprocess.run(
-                ["docker", "stop", container_name], env=docker_environment_variables
+                ["docker", "stop", container_name], check=False, **run_kwargs
             )
-            subprocess.run(
-                ["docker", "rm", container_name], env=docker_environment_variables
-            )
+            subprocess.run(["docker", "rm", container_name], check=False, **run_kwargs)
 
-        click.echo("\nPulling recent Docker image versions...")
+        click.echo("Pulling recent Docker image versions...")
         subprocess.run(
-            ["docker-compose", "pull"] + docker_service_names,
-            env=docker_environment_variables,
-            check=True,
+            ["docker-compose", "pull"] + docker_service_names, check=True, **run_kwargs
         )
 
-        click.echo("\nStarting Docker services...")
+        click.echo("Starting Docker services...")
+        subprocess.run(["docker-compose", "up", "--no-start"], check=True, **run_kwargs)
         subprocess.run(
-            ["docker-compose", "up", "--no-start"],
-            env=docker_environment_variables,
-            check=True,
-        )
-        subprocess.run(
-            ["docker-compose", "start"] + docker_service_names,
-            env=docker_environment_variables,
-            check=True,
+            ["docker-compose", "start"] + docker_service_names, check=True, **run_kwargs
         )
 
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as called_process_error:
         raise click.ClickException(
-            "Something went wrong while interacting with Docker."
+            "\n".join(
+                (
+                    fill(
+                        f"Command {' '.join(called_process_error.cmd)} failed with exit code "
+                        f"{called_process_error.returncode}."
+                    ),
+                )
+            )
         )
 
     click.echo("\nAll services are running. Congratulations!")

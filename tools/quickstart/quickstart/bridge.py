@@ -1,4 +1,5 @@
 from pathlib import Path
+from textwrap import fill
 from typing import Dict
 
 import click
@@ -17,24 +18,31 @@ from quickstart.constants import (
     BRIDGE_CONFIG_KEYSTORE_PATH,
     BRIDGE_DOCUMENTATION_URL,
 )
-from quickstart.utils import is_bridge_prepared
+from quickstart.utils import is_bridge_prepared, is_validator_account_prepared
 
 
 def setup_interactively() -> None:
     if is_bridge_prepared():
-        click.echo("You have already set up the bridge client.\n")
+        click.echo("The bridge client has already been set up.\n")
+        return
+    if not is_validator_account_prepared():
+        click.echo("No bridge node will be set up as running as a non-validator.\n")
         return
 
     click.echo(
-        "\nAs a validator, you are required to run the bridge as well. We can set "
-        "everything up or you do it yourself later. A setup requires an additional "
-        "node syncing the Ethereum mainnet. This node will run in light mode to use "
-        "as little resources as possible. Checkout the following link for more "
-        f"information on how the bridge works:\n{BRIDGE_DOCUMENTATION_URL}\nThis "
-        "setup will reuse the keystore of the validator node.\n"
+        "\n".join(
+            (
+                fill(
+                    "As a validator of the Trustlines blockchain, you are required to run a "
+                    "bridge node. Checkout the following link for more information:"
+                ),
+                BRIDGE_DOCUMENTATION_URL,
+                "",
+            )
+        )
     )
     if not click.confirm(
-        "Do you want to set the bridge client up? (highly recommended)", default=True
+        "Do you want to set up a bridge node now? (recommended)", default=True
     ):
         # Necessary to make docker-compose not complain about it.
         Path(BRIDGE_CONFIG_FILE_EXTERNAL).touch()

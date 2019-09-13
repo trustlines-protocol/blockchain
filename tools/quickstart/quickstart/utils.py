@@ -3,6 +3,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from textwrap import fill
 from typing import Tuple
 
 import click
@@ -11,23 +12,39 @@ from eth_account import Account
 from quickstart.constants import (
     ADDRESS_FILE_PATH,
     BRIDGE_CONFIG_FILE_EXTERNAL,
-    KEY_DIR,
+    KEYSTORE_FILE_PATH,
     NETSTATS_ENV_FILE_PATH,
     PASSWORD_FILE_PATH,
 )
 
 
 def ensure_clean_setup():
-    if os.path.isdir(KEY_DIR):
-        raise click.ClickException(
-            "The directory holding the keys already exists.\n"
-            "This should not occur during normal operation."
-        )
-
     if os.path.isfile(PASSWORD_FILE_PATH):
         raise click.ClickException(
-            "The password file already exists.\n"
-            "This should not occur during normal operation."
+            "\n".join(
+                (
+                    "The password file already exists.",
+                    "This should not occur during normal operation.",
+                )
+            )
+        )
+    if os.path.isfile(KEYSTORE_FILE_PATH):
+        raise click.ClickException(
+            "\n".join(
+                (
+                    "The keystore file already exists.",
+                    "This should not occur during normal operation.",
+                )
+            )
+        )
+    if os.path.isfile(ADDRESS_FILE_PATH):
+        raise click.ClickException(
+            "\n".join(
+                (
+                    "The keystore file already exists.",
+                    "This should not occur during normal operation.",
+                )
+            )
         )
 
 
@@ -64,13 +81,13 @@ class TrustlinesFiles:
         json_account = account.encrypt(password, kdf="pbkdf2")
 
         os.makedirs(os.path.dirname(os.path.abspath(self.keystore_path)), exist_ok=True)
-        with open(self.keystore_path, "w") as f:
+        with open(self.keystore_path, "x") as f:
             f.write(json.dumps(json_account))
 
-        with open(self.password_path, "w") as f:
+        with open(self.password_path, "x") as f:
             f.write(password)
 
-        with open(self.address_path, "w") as f:
+        with open(self.address_path, "x") as f:
             f.write(account.address)
 
 
@@ -80,11 +97,17 @@ def is_wrong_password_error(err):
 
 def get_keystore_path() -> str:
     click.echo(
-        "Please enter the path to the keystore file to import.\nIf you started the "
-        "process via the quickstart scipt, please consider that you are running "
-        "within a Docker virtual file system. You can access the current working "
-        "directory via '/data'. (e.g. './my-dir/keystore.json' becomes "
-        "'/data/my-dir/keystore.json')"
+        "\n".join(
+            (
+                "Please enter the path to the keystore file to import.",
+                fill(
+                    "If you started the process via the quickstart scipt, please consider that you "
+                    "are running within a Docker virtual file system. You can access the current "
+                    "working directory via '/data'. (e.g. './my-dir/keystore.json' becomes "
+                    "'/data/my-dir/keystore.json')"
+                ),
+            )
+        )
     )
 
     while True:
@@ -96,8 +119,10 @@ def get_keystore_path() -> str:
 
         else:
             click.echo(
-                "The given path does not exist or is not readable. "
-                "Please try entering it again."
+                fill(
+                    "The given path does not exist or is not readable. Please try entering it "
+                    "again."
+                )
             )
 
 
@@ -111,7 +136,9 @@ def read_private_key() -> str:
             return private_key
 
         click.echo(
-            "The private key must be entered as a hex encoded string. Please try again."
+            fill(
+                "The private key must be entered as a hex encoded string. Please try again."
+            )
         )
 
 
@@ -142,5 +169,5 @@ def read_decryption_password(keyfile_dict) -> Tuple[Account, str]:
             if is_wrong_password_error(err):
                 click.echo("The password you entered is wrong. Please try again.")
             else:
-                click.echo(f"Error: failed to decrypt keystore file: {repr(err)}")
+                click.echo(fill(f"Error: failed to decrypt keystore file: {repr(err)}"))
                 sys.exit(1)

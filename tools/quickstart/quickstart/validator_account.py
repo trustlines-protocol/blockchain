@@ -1,5 +1,6 @@
 import json
 import os
+from textwrap import fill
 
 import click
 from eth_account import Account
@@ -25,20 +26,24 @@ from quickstart.utils import (
 
 def setup_interactively() -> None:
     if is_validator_account_prepared():
-        click.echo("You have already set a validator node up.\n")
+        click.echo("A validator account has already been set up.\n")
+        return
+    if not prompt_setup_as_validator():
+        click.echo("\n")
         return
 
     ensure_clean_setup()
-
-    click.echo("This script will setup a validator node for the Laika testnet chain.\n")
 
     os.makedirs(CONFIG_DIR, exist_ok=True)
     os.makedirs(ENODE_DIR, exist_ok=True)
     os.makedirs(DATABASE_DIR, exist_ok=True)
 
     click.echo(
-        "Validators need a private key. This script can either import an existing JSON "
-        "keystore, import an existing raw private key, or it can create a new key.\n"
+        fill(
+            "Validators need a private key. This script can either import an existing JSON "
+            "keystore, import an existing raw private key, or it can create a new key."
+        )
+        + "\n"
     )
 
     if click.confirm("Do you want to import an existing keystore?"):
@@ -52,11 +57,27 @@ def setup_interactively() -> None:
 
     else:
         raise click.ClickException(
-            "To setup a validator node, a private key is required. "
-            "You need to select one of the previous options."
+            fill(
+                "To setup a validator node, a private key is required. You need to select one of "
+                "the previous options."
+            )
         )
 
-    click.echo("Validator account setup complete.")
+    click.echo("Validator account setup complete.\n")
+
+
+def prompt_setup_as_validator():
+    choice = click.prompt(
+        "Do you want to set up a validator account (1) or run a regular node (2)?",
+        type=click.Choice(("1", "2")),
+        show_choices=False,
+    )
+    if choice == "1":
+        return True
+    elif choice == "2":
+        return False
+    else:
+        assert False, "unreachable"
 
 
 def import_keystore_file() -> None:
