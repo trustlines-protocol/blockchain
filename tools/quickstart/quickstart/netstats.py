@@ -17,19 +17,26 @@ INSTANCE_NAME={instance_name}
 
 def setup_interactively() -> None:
     if is_netstats_prepared():
-        click.echo("You have already set up the netstats client.\n")
+        click.echo("\nThe netstats client has already been set up.\n")
         return
 
     click.echo(
         "\n".join(
             (
-                "We can set up a client that reports to the netstats server running at",
+                "",
+                fill(
+                    "This script can set up a client that reports to the netstats server running at"
+                ),
                 NETSTATS_SERVER_BASE_URL,
                 "This helps the community to observe the state of the network.",
                 "",
-                "You will need credentials to do that. Write a mail to",
+                fill(
+                    "You will need credentials to do that. Please feel free to send an email to"
+                ),
                 "'netstats@trustlines.foundation'",
-                "to receive some.",
+                fill(
+                    "to receive yours if you don't have any yet and would like to participate."
+                ),
                 "",
             )
         )
@@ -37,7 +44,7 @@ def setup_interactively() -> None:
 
     if not click.confirm(
         fill(
-            "Have you already received credentials and do you want to set the netstats client up?"
+            "Have you already received credentials and do you want to set up the netstats client?"
         )
     ):
         # Necessary to make docker-compose not complaining about it.
@@ -58,7 +65,9 @@ def setup_interactively() -> None:
                 + "\n".join(
                     (
                         "The provided credentials could not be verified.",
-                        "Please try entering them and make sure you are connected to the internet.",
+                        fill(
+                            "Please try entering them and make sure you are connected to the internet."
+                        ),
                     )
                 )
             )
@@ -67,7 +76,9 @@ def setup_interactively() -> None:
         "\n".join(
             (
                 "Please enter a name to identify your instance on the website.",
-                "You are free to choose any name you like. Note that the name will be publicly visible.",
+                fill(
+                    "You are free to choose any name you like. Note that the name will be publicly visible."
+                ),
             )
         )
     )

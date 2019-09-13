@@ -37,12 +37,14 @@ def update_and_start(host_base_dir: str) -> None:
             "VALIDATOR_ADDRESS": get_validator_address(),
             "ROLE": "validator",
         }
+        click.echo("\nNode will run as a validator")
     else:
         docker_environment_variables = {
             **base_docker_environment_variables,
             "VALIDATOR_ADDRESS": "",
             "ROLE": "observer",
         }
+        click.echo("\nNode will run as a non-validator")
 
     run_kwargs = {
         "env": docker_environment_variables,
@@ -51,7 +53,7 @@ def update_and_start(host_base_dir: str) -> None:
     }
 
     try:
-        click.echo("\nShutting down possibly remaining docker services...")
+        click.echo("Shutting down possibly remaining docker services first...")
         subprocess.run(["docker-compose", "down"], check=True, **run_kwargs)
         for container_name in LEGACY_CONTAINER_NAMES:
             # use check=False as docker stop and docker rm fail if the container does not exist
@@ -60,12 +62,12 @@ def update_and_start(host_base_dir: str) -> None:
             )
             subprocess.run(["docker", "rm", container_name], check=False, **run_kwargs)
 
-        click.echo("\nPulling recent Docker image versions...")
+        click.echo("Pulling recent Docker image versions...")
         subprocess.run(
             ["docker-compose", "pull"] + docker_service_names, check=True, **run_kwargs
         )
 
-        click.echo("\nStarting Docker services...")
+        click.echo("Starting Docker services...")
         subprocess.run(["docker-compose", "up", "--no-start"], check=True, **run_kwargs)
         subprocess.run(
             ["docker-compose", "start"] + docker_service_names, check=True, **run_kwargs

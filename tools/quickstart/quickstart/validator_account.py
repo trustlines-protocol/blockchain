@@ -26,15 +26,13 @@ from quickstart.utils import (
 
 def setup_interactively() -> None:
     if is_validator_account_prepared():
-        click.echo("You have already set a validator node up.\n")
+        click.echo("A validator account has already been set up.\n")
         return
     if not prompt_setup_as_validator():
-        click.echo("Setting up a non-validator node.\n")
+        click.echo("\n")
         return
 
     ensure_clean_setup()
-
-    click.echo("This script will setup a validator node for the Laika testnet chain.\n")
 
     os.makedirs(CONFIG_DIR, exist_ok=True)
     os.makedirs(ENODE_DIR, exist_ok=True)
@@ -65,12 +63,12 @@ def setup_interactively() -> None:
             )
         )
 
-    click.echo("Validator account setup complete.")
+    click.echo("Validator account setup complete.\n")
 
 
 def prompt_setup_as_validator():
     choice = click.prompt(
-        "Do you want to setup a validator (1) a regular node (2)?",
+        "Do you want to set up a validator account (1) or run a regular node (2)?",
         type=click.Choice(("1", "2")),
         show_choices=False,
     )

@@ -23,31 +23,26 @@ from quickstart.utils import is_bridge_prepared, is_validator_account_prepared
 
 def setup_interactively() -> None:
     if is_bridge_prepared():
-        click.echo("You have already set up the bridge client.\n")
+        click.echo("The bridge client has already been set up.\n")
         return
     if not is_validator_account_prepared():
-        click.echo("Not setting up a bridge node as running as a non-validator.\n")
+        click.echo("No bridge node will be set up as running as a non-validator.\n")
         return
 
     click.echo(
         "\n".join(
             (
-                "",
                 fill(
-                    "As a validator, you are required to run the bridge as well. We can set "
-                    "everything up or you do it yourself later. A setup requires an additional "
-                    "node syncing the Ethereum mainnet. This node will run in light mode to use "
-                    "as little resources as possible. Checkout the following link for more "
-                    "information on how the bridge works:"
+                    "As a validator of the Trustlines blockchain, you are required to run a "
+                    "bridge node. Checkout the following link for more information:"
                 ),
                 BRIDGE_DOCUMENTATION_URL,
-                "This setup will reuse the keystore of the validator node.",
                 "",
             )
         )
     )
     if not click.confirm(
-        "Do you want to set the bridge client up? (highly recommended)", default=True
+        "Do you want to set up a bridge node now? (recommended)", default=True
     ):
         # Necessary to make docker-compose not complain about it.
         Path(BRIDGE_CONFIG_FILE_EXTERNAL).touch()
@@ -68,7 +63,7 @@ def setup_interactively() -> None:
     with open(BRIDGE_CONFIG_FILE_EXTERNAL, "w") as config_file:
         toml.dump(configuration, config_file)
 
-    click.echo("Bridge client setup complete.\n")
+    click.echo("Bridge client setup complete.")
 
 
 def get_bridge_configuration(
