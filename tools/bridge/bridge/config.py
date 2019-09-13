@@ -155,13 +155,5 @@ class ConfigSchema(Schema):
     webservice = fields.Nested(WebserviceSchema, missing=dict)
 
 
-config_schema = ConfigSchema()
-
-
 def load_config(path: str) -> Dict[str, Any]:
-    if path is None:
-        user_config = {}
-    else:
-        user_config = toml.load(path)
-
-    return config_schema.load(user_config)
+    return ConfigSchema().load(toml.load(path))
