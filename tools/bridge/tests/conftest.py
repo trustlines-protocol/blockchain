@@ -250,3 +250,14 @@ bridge_contract_address = "0x771434486a221c6146F27B72fd160Bdf0eb1288e"
 [validator_private_key]
 raw = "0xb8dcbb8a564483279579e04bffacbd76f79df157cfbebed84079673b32d9e72f"
 """
+
+
+@pytest.fixture
+def webservice_config():
+    """webservice part of the configuration"""
+    return """
+[webservice]
+enabled = true
+host = "127.0.0.1"
+port = 9500
+"""
