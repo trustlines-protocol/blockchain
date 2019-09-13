@@ -10,7 +10,7 @@ minimal_number_of_validators = 50
 maximal_number_of_validators = 123
 
 # Keep in sync with CONFIRMATION_TRANSACTION_GAS_LIMIT in bridge/constants.py
-maximal_allowed_gas_usage = 400_000
+maximal_allowed_gas_usage = 500_000
 
 
 @pytest.fixture(params=[maximal_number_of_validators, minimal_number_of_validators])
@@ -123,3 +123,42 @@ def test_gas_cost_complete_transfer(
     gas = confirm_nth(required_confirmations, fail_ok=True)
     assert gas < 50000 < maximal_allowed_gas_usage
     print("")
+
+
+def test_gas_cost_complete_transfer_with_validator_set_changed(
+    home_bridge_contract,
+    proxy_validators,
+    confirm_nth,
+    web3,
+    number_of_validators,
+    required_confirmations,
+    system_address,
+    validator_proxy_with_validators,
+):
+    """This walks through a complete Transfer on the home bridge and
+    checks gas usage limits
+    """
+    print(
+        f"\n=====> validator set will change, {number_of_validators} validators, {required_confirmations} confirmations required"
+    )
+    get_transfer_completed_events = home_bridge_contract.events.TransferCompleted.createFilter(
+        fromBlock=web3.eth.blockNumber
+    ).get_all_entries
+
+    for i in range(required_confirmations - 1):
+        gas = confirm_nth(i)
+        assert gas < 120_000 < maximal_allowed_gas_usage
+
+    assert not get_transfer_completed_events()
+
+    # changing the validator set
+    print("Changing the validator set")
+    validator_proxy_with_validators.functions.updateValidators(
+        proxy_validators[required_confirmations - 1 : required_confirmations]
+    ).transact({"from": system_address})
+
+    # complete the transfer
+    print("Completing the transfer")
+    gas = confirm_nth(required_confirmations - 1)
+    assert gas < maximal_allowed_gas_usage
+    assert get_transfer_completed_events()
