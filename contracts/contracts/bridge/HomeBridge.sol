@@ -98,6 +98,41 @@ contract HomeBridge {
         }
     }
 
+    // check if a 2nd confirmTransfer would complete a transfer. this
+    // can happen after validator set changes.
+    function reconfirmCompletesTransfer(
+        bytes32 transferHash,
+        bytes32 transactionHash,
+        uint256 amount,
+        address payable recipient
+    ) public view returns (bool) {
+        require(
+            recipient != address(0),
+            "recipient must not be the zero address!"
+        );
+        require(amount > 0, "amount must not be zero");
+
+        // We compute a keccak hash for the transfer and use that as an identifier for the transfer
+        bytes32 transferStateId = keccak256(
+            abi.encodePacked(transferHash, transactionHash, amount, recipient)
+        );
+
+        require(
+            !transferState[transferStateId].isCompleted,
+            "transfer already completed"
+        );
+
+        address payable[] storage confirmingValidators = transferState[transferStateId]
+            .confirmingValidators;
+        uint numConfirming = 0;
+        for (uint i = 0; i < confirmingValidators.length; i++) {
+            if (validatorProxy.isValidator(confirmingValidators[i])) {
+                numConfirming += 1;
+            }
+        }
+        return numConfirming >= getNumRequiredConfirmations();
+    }
+
     function purgeConfirmationsFromExValidators(bytes32 transferStateId)
         internal
     {
