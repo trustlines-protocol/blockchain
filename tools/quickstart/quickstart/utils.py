@@ -12,28 +12,36 @@ from eth_account import Account
 from quickstart.constants import (
     ADDRESS_FILE_PATH,
     BRIDGE_CONFIG_FILE_EXTERNAL,
-    KEY_DIR,
+    KEYSTORE_FILE_PATH,
     NETSTATS_ENV_FILE_PATH,
     PASSWORD_FILE_PATH,
 )
 
 
 def ensure_clean_setup():
-    if os.path.isdir(KEY_DIR):
-        raise click.ClickException(
-            "\n".join(
-                (
-                    "The directory holding the keys already exists.",
-                    "This should not occur during normal operation.",
-                )
-            )
-        )
-
     if os.path.isfile(PASSWORD_FILE_PATH):
         raise click.ClickException(
             "\n".join(
                 (
                     "The password file already exists.",
+                    "This should not occur during normal operation.",
+                )
+            )
+        )
+    if os.path.isfile(KEYSTORE_FILE_PATH):
+        raise click.ClickException(
+            "\n".join(
+                (
+                    "The keystore file already exists.",
+                    "This should not occur during normal operation.",
+                )
+            )
+        )
+    if os.path.isfile(ADDRESS_FILE_PATH):
+        raise click.ClickException(
+            "\n".join(
+                (
+                    "The keystore file already exists.",
                     "This should not occur during normal operation.",
                 )
             )
