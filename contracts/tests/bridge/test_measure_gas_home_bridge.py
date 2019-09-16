@@ -65,6 +65,9 @@ def confirm_nth(home_bridge_contract, proxy_validators, web3):
         amount = 20000
         recipient = "0xFCB047cCD297048b6F31fbb2fef14001FefFa0f3"
 
+        def __init__(self):
+            self.total_gas = 0
+
         def __call__(self, n, fail_ok=False):
             validator = proxy_validators[n]
             transact_args = {"from": validator}
@@ -81,8 +84,9 @@ def confirm_nth(home_bridge_contract, proxy_validators, web3):
             ).transact(transact_args)
             tx_receipt = web3.eth.getTransactionReceipt(tx_hash)
             gas = tx_receipt.gasUsed
+            self.total_gas += gas
             print(
-                f"validator {n+1} {validator} confirmed, gas: {gas}, status: {tx_receipt.status}"
+                f"validator {n+1} {validator} confirmed, gas: {gas}, total_gas: {self.total_gas}, status: {tx_receipt.status}"
             )
             return gas
 
