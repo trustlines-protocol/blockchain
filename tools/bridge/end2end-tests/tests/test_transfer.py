@@ -155,6 +155,7 @@ class Service:
             warnings.warn(f"{self.name} did not terminate in time and had to be killed")
             self.process.kill()
             self.process.wait(timeout=5)
+        self.process = None
 
 
 class Node(Service):
@@ -604,3 +605,49 @@ def test_offline_validators_do_not_validates_complete_transfer(
     time.sleep(10)
     after_tx_count = web3_home.eth.getTransactionCount(bridge_2_address)
     assert after_tx_count == before_tx_count
+
+
+def test_parity_node_restarting(
+    web3_home,
+    web3_foreign,
+    foreign_bridge_contract,
+    token_contract,
+    accounts,
+    bridges,
+    node_home,
+    node_foreign,
+    validators,
+):
+    """
+    Tests that the parity node bound to the bridge can crash and restart without impacting the bridge
+    """
+    bridges[0].start()
+    bridges[1].start()
+
+    node_home.terminate()
+    node_foreign.terminate()
+
+    assert bridges[0].is_up()
+
+    node_home.start()
+    node_foreign.start()
+
+    sender = accounts[3]
+    value = 5000
+    home_balance_before = web3_home.eth.getBalance(sender)
+
+    wait_for_successful_transaction_receipt(
+        web3_foreign,
+        token_contract.functions.transfer(
+            foreign_bridge_contract.address, value
+        ).transact({"from": sender}),
+    )
+
+    # reorg depth is 3
+    mine_min_blocks(web3_foreign, 3)
+
+    def check_balance_transfer_complete():
+        home_balance_transfer_complete = web3_home.eth.getBalance(sender)
+        assert home_balance_transfer_complete - home_balance_before == value
+
+    assert_within_timeout(check_balance_transfer_complete, 10)
