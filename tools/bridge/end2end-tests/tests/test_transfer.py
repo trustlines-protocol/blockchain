@@ -18,6 +18,9 @@ PARITY_DEV_KEY = "0x4D5DB4107D237DF6A3D58EE5F70AE63D73D7658D4026F2EEFD2F204C8168
 HOME_RPC_URL = "http://localhost:8545"
 FOREIGN_RPC_URL = "http://localhost:8645"
 
+# How many blocks on the foreign chain must be mined for a transfer to be considered final by the bridge
+REORG_DEPTH = 3
+
 START_WEI_PER_ACCOUNT = 1 * 10 ** 18
 BRIDGE_FUNDS = 1_000_000 * 10 ** 18
 
@@ -89,6 +92,11 @@ def assert_within_timeout(check_function, timeout, poll_period=0.5):
                 break
 
 
+def assert_after_timout(check_function, timeout):
+    time.sleep(timeout)
+    check_function()
+
+
 class Service:
     def __init__(
         self,
@@ -122,9 +130,6 @@ class Service:
         except TimeoutException:
             self.terminate()
             raise
-
-    def is_started(self):
-        return self.process is None
 
     def is_up(self):
         """Determine if the service is up"""
@@ -209,7 +214,7 @@ class Bridge(Service):
             "foreign_chain": {
                 "rpc_url": FOREIGN_RPC_URL,
                 "rpc_timeout": 5,
-                "max_reorg_depth": 3,
+                "max_reorg_depth": REORG_DEPTH,
                 "event_poll_interval": 0.5,
                 "event_fetch_start_block_number": 0,
                 "bridge_contract_address": str(foreign_bridge_contract_address),
@@ -270,7 +275,7 @@ def accounts(accounts):
     return [PARITY_DEV_ACCOUNT] + list(accounts)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def account_keys(account_keys):
     return [PARITY_DEV_KEY] + list(account_keys)
 
@@ -392,6 +397,11 @@ def validator_keys(account_keys):
 
 
 @pytest.fixture()
+def bridge_addresses(validators):
+    return validators
+
+
+@pytest.fixture()
 def system_address(accounts):
     """Address pretending to be the system address."""
     return accounts[0]
@@ -504,8 +514,7 @@ def test_simple_transfer(
         ).transact({"from": sender}),
     )
 
-    # reorg depth is 3
-    mine_min_blocks(web3_foreign, 3)
+    mine_min_blocks(web3_foreign, REORG_DEPTH)
 
     def check_balance():
         foreign_balance_after = token_contract.functions.balanceOf(sender).call()
@@ -537,8 +546,7 @@ def test_offline_validators_validates_not_complete_transfer(
         ).transact({"from": sender}),
     )
 
-    # reorg depth is 3
-    mine_min_blocks(web3_foreign, 3)
+    mine_min_blocks(web3_foreign, REORG_DEPTH)
 
     def check_balances_bridge_transfer_not_complete():
         foreign_balance_transfer_not_complete = token_contract.functions.balanceOf(
@@ -549,7 +557,7 @@ def test_offline_validators_validates_not_complete_transfer(
         assert foreign_balance_before - foreign_balance_transfer_not_complete == value
         assert home_balance_before == home_balance_transfer_not_complete
 
-    assert_within_timeout(check_balances_bridge_transfer_not_complete, 10)
+    assert_after_timout(check_balances_bridge_transfer_not_complete, 10)
 
     bridges[1].start()
 
@@ -590,8 +598,7 @@ def test_offline_validators_do_not_validates_complete_transfer(
         ).transact({"from": sender}),
     )
 
-    # reorg depth is 3
-    mine_min_blocks(web3_foreign, 3)
+    mine_min_blocks(web3_foreign, REORG_DEPTH)
 
     def check_balance_transfer_complete():
         home_balance_transfer_complete = web3_home.eth.getBalance(sender)
@@ -602,9 +609,12 @@ def test_offline_validators_do_not_validates_complete_transfer(
 
     bridges[2].start()
 
-    time.sleep(10)
-    after_tx_count = web3_home.eth.getTransactionCount(bridge_2_address)
-    assert after_tx_count == before_tx_count
+    def check_no_transaction_sent():
+        after_tx_count = web3_home.eth.getTransactionCount(bridge_2_address)
+
+        assert after_tx_count == before_tx_count
+
+    assert_after_timout(check_no_transaction_sent, 10)
 
 
 def test_parity_node_restarting(
@@ -616,7 +626,6 @@ def test_parity_node_restarting(
     bridges,
     node_home,
     node_foreign,
-    validators,
 ):
     """
     Tests that the parity node bound to the bridge can crash and restart without impacting the bridge
@@ -643,8 +652,60 @@ def test_parity_node_restarting(
         ).transact({"from": sender}),
     )
 
-    # reorg depth is 3
-    mine_min_blocks(web3_foreign, 3)
+    mine_min_blocks(web3_foreign, REORG_DEPTH)
+
+    def check_balance_transfer_complete():
+        home_balance_transfer_complete = web3_home.eth.getBalance(sender)
+        assert home_balance_transfer_complete - home_balance_before == value
+
+    assert_within_timeout(check_balance_transfer_complete, 10)
+
+
+def test_validator_set_changes_transfer(
+    web3_home,
+    web3_foreign,
+    foreign_bridge_contract,
+    token_contract,
+    accounts,
+    bridges,
+    bridge_addresses,
+    validator_proxy_contract,
+    system_address,
+):
+    """
+    Tests that a transfer initiated when not enough validators are online to confirm it will be confirmed
+    when the validator set changes to have enough validators online
+    """
+
+    inactive_address = accounts[2]
+    assert inactive_address not in bridge_addresses
+    initial_validators = [bridge_addresses[0], inactive_address, bridge_addresses[2]]
+    validator_proxy_contract.functions.updateValidators(initial_validators).transact(
+        {"from": system_address}
+    )
+
+    # Only bridges[0] and bridges[2] are validators, so bridge transfers will not be complete with
+    # only bridges[0] and bridges[1] online
+    bridges[0].start()
+    bridges[1].start()
+
+    sender = accounts[3]
+    value = 5000
+    home_balance_before = web3_home.eth.getBalance(sender)
+
+    wait_for_successful_transaction_receipt(
+        web3_foreign,
+        token_contract.functions.transfer(
+            foreign_bridge_contract.address, value
+        ).transact({"from": sender}),
+    )
+
+    mine_min_blocks(web3_foreign, REORG_DEPTH)
+
+    # new validators include two online bridges: bridges[0] and bridges[1] and bridge transfers should be complete
+    validator_proxy_contract.functions.updateValidators(bridge_addresses).transact(
+        {"from": system_address}
+    )
 
     def check_balance_transfer_complete():
         home_balance_transfer_complete = web3_home.eth.getBalance(sender)
