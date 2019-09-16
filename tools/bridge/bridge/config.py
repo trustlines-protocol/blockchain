@@ -123,7 +123,7 @@ class ChainSchema(Schema):
 
 
 class ForeignChainSchema(ChainSchema):
-    max_reorg_depth = fields.Integer(missing=1, validate=validate_non_negative)
+    max_reorg_depth = fields.Integer(missing=10, validate=validate_non_negative)
     token_contract_address = AddressField(required=True)
 
 
@@ -155,13 +155,5 @@ class ConfigSchema(Schema):
     webservice = fields.Nested(WebserviceSchema, missing=dict)
 
 
-config_schema = ConfigSchema()
-
-
 def load_config(path: str) -> Dict[str, Any]:
-    if path is None:
-        user_config = {}
-    else:
-        user_config = toml.load(path)
-
-    return config_schema.load(user_config)
+    return ConfigSchema().load(toml.load(path))
