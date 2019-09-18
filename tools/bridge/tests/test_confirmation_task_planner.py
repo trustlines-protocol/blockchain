@@ -8,6 +8,13 @@ from bridge.confirmation_task_planner import ConfirmationTaskPlanner
 from bridge.events import ChainRole, Event, FetcherReachedHeadEvent
 
 
+def assert_events_in_queue(queue, events):
+    """Asserts that all events are in the queue in the same order.
+    This does not block, because it will examine the current items in the queue"""
+    # Queue.queue gives the underlying collections.deque
+    assert list(queue.queue) == list(events)
+
+
 class TransferRecorderMock:
     def __init__(self):
         self.events = []
@@ -89,8 +96,7 @@ def test_check_for_confirmation_tasks(
     transfer_recorder_mock.transfers_to_confirm = events
     confirmation_task_planner.check_for_confirmation_tasks()
 
-    for event in events:
-        assert event == confirmation_task_queue.get()
+    assert_events_in_queue(confirmation_task_queue, events)
 
 
 def test_wait_for_fetcher_reached_head_event(
@@ -112,9 +118,7 @@ def test_wait_for_fetcher_reached_head_event(
     control_queue.put(FetcherReachedHeadEvent(time.time(), ChainRole.home, 0))
     # give control to confirmation planner
     gevent.sleep()
-    assert len(confirmation_task_queue) == 3
-    for event in events:
-        assert event == confirmation_task_queue.get()
+    assert_events_in_queue(confirmation_task_queue, events)
 
 
 def test_too_old_fetcher_reached_head_event(
