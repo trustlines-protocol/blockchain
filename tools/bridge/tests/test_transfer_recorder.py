@@ -31,7 +31,7 @@ def hash_(hashes):
 
 
 def make_transfer_event(
-    transaction_hash: Hash32 = int_to_big_endian(12345).rjust(32, b"\x00"),
+    transaction_hash: Hash32 = Hash32(int_to_big_endian(12345).rjust(32, b"\x00")),
     from_="0x345DeAd084E056dc78a0832E70B40C14B6323458",
     to="0x1ADb0A4853bf1D564BbAD7565b5D50b33D20af60",
     value=1,
