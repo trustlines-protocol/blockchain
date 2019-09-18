@@ -104,7 +104,7 @@ class TransferRecorder:
         sort_events(confirmation_tasks)
         return confirmation_tasks
 
-    def apply_proper_event(self, event: AttributeDict) -> None:
+    def _apply_web3_event(self, event: AttributeDict) -> None:
         event_name = event.event
 
         if event_name == TRANSFER_EVENT_NAME:
@@ -161,7 +161,7 @@ class TransferRecorder:
         BalanceCheck: _apply_balance_check,
         IsValidatorCheck: _apply_is_validator_check,
         FetcherReachedHeadEvent: _apply_fetcher_reached_head_event,
-        AttributeDict: apply_proper_event,
+        AttributeDict: _apply_web3_event,
     }
 
     def apply_event(self, event):

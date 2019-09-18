@@ -1,75 +1,127 @@
 import logging
+from itertools import count
 
 import pytest
+from eth_typing import Hash32
+from eth_utils import int_to_big_endian
 from hexbytes import HexBytes
 from web3.datastructures import AttributeDict
 
-from bridge.constants import ZERO_ADDRESS
+from bridge.constants import (
+    COMPLETION_EVENT_NAME,
+    CONFIRMATION_EVENT_NAME,
+    TRANSFER_EVENT_NAME,
+    ZERO_ADDRESS,
+)
 from bridge.events import BalanceCheck, IsValidatorCheck
 from bridge.transfer_recorder import TransferRecorder
+from bridge.utils import compute_transfer_hash
 
 
-def make_event(
-    *,
-    _from="0x449458F2B2c67159A6E05166d4f80a5AC783182C",
-    _to="0xb4c79daB8f259C7Aee6E5b2Aa729821864227e84",
-    value=1200
-):
+@pytest.fixture
+def hashes():
+    """A generator that produces an infinite, non-repeatable sequence of hashes."""
+    return (int_to_big_endian(12345).rjust(32, b"\x00") for counter in count())
+
+
+@pytest.fixture
+def hash_(hashes):
+    """A single hash."""
+    return next(hashes)
+
+
+def make_transfer_event(
+    transaction_hash: Hash32 = Hash32(int_to_big_endian(12345).rjust(32, b"\x00")),
+    from_="0x345DeAd084E056dc78a0832E70B40C14B6323458",
+    to="0x1ADb0A4853bf1D564BbAD7565b5D50b33D20af60",
+    value=1,
+) -> AttributeDict:
     return AttributeDict(
         {
-            "args": AttributeDict({"from": _from, "to": _to, "value": value}),
-            "event": "Transfer",
-            "logIndex": 0,
+            "event": TRANSFER_EVENT_NAME,
+            "transactionHash": HexBytes(transaction_hash),
+            "blockNumber": 1,
             "transactionIndex": 0,
-            "transactionHash": HexBytes(
-                "0xc7452af2de5730003e4b0e0d6481338013c65299e91637c4db65923a41118339"
-            ),
-            "address": "0x731a10897d267e19B34503aD902d0A29173Ba4B1",
-            "blockHash": HexBytes(
-                "0xa16a2b925878cba9a5179e415ca3a76c44a15a103516c6263c7a151a134061f5"
-            ),
-            "blockNumber": 5574,
+            "logIndex": 0,
+            "args": AttributeDict({"from": from_, "to": to, "value": value}),
         }
     )
 
 
-@pytest.fixture()
-def transfer_event():
+def make_transfer_hash_event(
+    event_name: str, transfer_hash: Hash32, transaction_hash: Hash32
+) -> AttributeDict:
     return AttributeDict(
         {
-            "args": AttributeDict(
-                {
-                    "from": "0x449458F2B2c67159A6E05166d4f80a5AC783182C",
-                    "to": "0xb4c79daB8f259C7Aee6E5b2Aa729821864227e84",
-                    "value": 1200,
-                }
-            ),
-            "event": "Transfer",
+            "event": event_name,
+            "transactionHash": HexBytes(transaction_hash),
             "logIndex": 0,
-            "transactionIndex": 0,
-            "transactionHash": HexBytes(
-                "0xc7452af2de5730003e4b0e0d6481338013c65299e91637c4db65923a41118339"
-            ),
-            "address": "0x731a10897d267e19B34503aD902d0A29173Ba4B1",
-            "blockHash": HexBytes(
-                "0xa16a2b925878cba9a5179e415ca3a76c44a15a103516c6263c7a151a134061f5"
-            ),
-            "blockNumber": 5574,
+            "args": AttributeDict({"transferHash": HexBytes(transfer_hash)}),
         }
     )
 
 
-@pytest.fixture()
-def fresh_recorder():
-    return TransferRecorder(minimum_balance=10 ** 18)
+@pytest.fixture
+def transfer_events(hashes):
+    """A generator that produces an infinite, non-repeatable sequence of transfer events."""
+    return (make_transfer_event(transaction_hash) for transaction_hash in hashes)
 
 
-@pytest.fixture()
-def recorder():
-    recorder = TransferRecorder(minimum_balance=10 ** 18)
-    recorder.apply_event(BalanceCheck(balance=200 * 10 ** 18))
-    recorder.apply_event(IsValidatorCheck(is_validator=True))
+@pytest.fixture
+def transfer_event(transfer_events):
+    """A single transfer event."""
+    return next(transfer_events)
+
+
+@pytest.fixture
+def confirmation_events(hashes):
+    """A generator that produces an infinite, non-repeatable sequence of confirmation events."""
+    return (
+        make_transfer_hash_event(
+            CONFIRMATION_EVENT_NAME, transfer_hash, transaction_hash
+        )
+        for transfer_hash, transaction_hash in zip(hashes, hashes)
+    )
+
+
+@pytest.fixture
+def confirmation_event(confirmation_events):
+    """A single confirmation event."""
+    return next(confirmation_events)
+
+
+@pytest.fixture
+def completion_events(hashes):
+    """A generator that produces an infinite, non-repeatable sequence of completion events."""
+    return (
+        make_transfer_hash_event(COMPLETION_EVENT_NAME, transfer_hash, transaction_hash)
+        for transfer_hash, transaction_hash in zip(hashes, hashes)
+    )
+
+
+@pytest.fixture
+def completion_event(completion_events):
+    """A single completion event."""
+    return next(completion_events)
+
+
+@pytest.fixture
+def minimum_balance():
+    return 10 ** 18
+
+
+@pytest.fixture
+def recorder(minimum_balance):
+    """A transfer recorder."""
+    recorder = TransferRecorder(minimum_balance=minimum_balance)
+    recorder.apply_event(BalanceCheck(minimum_balance))
+    recorder.apply_event(IsValidatorCheck(True))
     return recorder
+
+
+@pytest.fixture()
+def fresh_recorder(minimum_balance):
+    return TransferRecorder(minimum_balance=minimum_balance)
 
 
 def test_log_current_state_fresh(fresh_recorder, caplog):
@@ -89,7 +141,7 @@ def test_log_current_state(recorder, caplog):
     message = caplog.records[0].message
     assert message.startswith("reporting internal state")
     assert "not validating" not in message
-    assert "balance 2" in message
+    assert "balance 1 coins" in message
 
 
 def test_is_balance_sufficient(fresh_recorder):
@@ -109,18 +161,18 @@ def test_is_validating(fresh_recorder):
     assert fresh_recorder.is_validating
 
 
-def test_skip_bad_transfer_zero_amount(recorder, transfer_event):
-    recorder.apply_event(make_event(value=0))
+def test_skip_bad_transfer_zero_amount(recorder):
+    recorder.apply_event(make_transfer_event(value=0))
     assert not recorder.transfer_events
 
 
-def test_skip_bad_transfer_zero_address(recorder, transfer_event):
-    recorder.apply_event(make_event(_from=ZERO_ADDRESS))
+def test_skip_bad_transfer_zero_address(recorder):
+    recorder.apply_event(make_transfer_event(from_=ZERO_ADDRESS))
     assert not recorder.transfer_events
 
 
 def test_recorder_pull_transfers(recorder):
-    event = make_event()
+    event = make_transfer_event()
     recorder.apply_event(event)
     assert recorder.transfer_events
     to_confirm = recorder.pull_transfers_to_confirm()
@@ -128,3 +180,76 @@ def test_recorder_pull_transfers(recorder):
 
     to_confirm = recorder.pull_transfers_to_confirm()
     assert to_confirm == []
+
+
+def test_recorder_plans_transfers(recorder, transfer_event):
+    recorder.apply_event(transfer_event)
+    assert recorder.pull_transfers_to_confirm() == [transfer_event]
+
+
+def test_recorder_does_not_plan_transfers_twice(recorder, transfer_event):
+    recorder.apply_event(transfer_event)
+    assert recorder.pull_transfers_to_confirm() == [transfer_event]
+    assert len(recorder.pull_transfers_to_confirm()) == 0
+
+
+def test_recorder_does_not_plan_confirmed_transfer(recorder, hashes):
+    transfer_event = make_transfer_event(transaction_hash=next(hashes))
+
+    confirmation_event = make_transfer_hash_event(
+        CONFIRMATION_EVENT_NAME, compute_transfer_hash(transfer_event), next(hashes)
+    )
+    recorder.apply_event(transfer_event)
+    recorder.apply_event(confirmation_event)
+    assert len(recorder.pull_transfers_to_confirm()) == 0
+
+
+def test_recorder_does_not_plan_completed_transfer(recorder, hashes):
+    transfer_event = make_transfer_event(transaction_hash=next(hashes))
+    completion_event = make_transfer_hash_event(
+        COMPLETION_EVENT_NAME, compute_transfer_hash(transfer_event), next(hashes)
+    )
+    recorder.apply_event(transfer_event)
+    recorder.apply_event(completion_event)
+    assert len(recorder.pull_transfers_to_confirm()) == 0
+
+
+def test_recorder_does_not_plan_transfers_if_not_validating(
+    recorder, minimum_balance, transfer_event
+):
+    recorder.apply_event(BalanceCheck(minimum_balance - 1))
+    assert not recorder.is_validating
+
+    recorder.apply_event(transfer_event)
+    assert len(recorder.pull_transfers_to_confirm()) == 0
+
+    recorder.apply_event(BalanceCheck(minimum_balance))
+    assert recorder.is_validating
+    assert recorder.pull_transfers_to_confirm() == [transfer_event]
+
+
+def test_recorder_not_validating_if_balance_below_minimum(recorder, minimum_balance):
+    assert recorder.is_validating
+    recorder.apply_event(BalanceCheck(minimum_balance - 1))
+    assert not recorder.is_validating
+    recorder.apply_event(BalanceCheck(minimum_balance))
+    assert recorder.is_validating
+
+
+def test_recorder_not_validating_if_not_validator(recorder):
+    assert recorder.is_validating
+    recorder.apply_event(IsValidatorCheck(False))
+    assert not recorder.is_validating
+    recorder.apply_event(IsValidatorCheck(True))
+    assert recorder.is_validating
+
+
+def test_transfer_recorder_drops_completed_transfers(recorder, hashes):
+    transfer_event = make_transfer_event(transaction_hash=next(hashes))
+    completion_event = make_transfer_hash_event(
+        COMPLETION_EVENT_NAME, compute_transfer_hash(transfer_event), next(hashes)
+    )
+
+    recorder.apply_event(transfer_event)
+    recorder.apply_event(completion_event)
+    assert len(recorder.pull_transfers_to_confirm()) == 0
