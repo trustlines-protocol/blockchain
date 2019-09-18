@@ -11,15 +11,24 @@ Please note that all of the functions are public.
 
 pragma solidity ^0.5.8;
 
-contract FakeNetworkToken {
-    event Transfer(address indexed from, address indexed to, uint256 value);
+import "./TrustlinesNetworkToken.sol";
 
-    function transfer(address from, address to, uint256 value) public {
+contract FakeNetworkToken is TrustlinesNetworkToken {
+    constructor()
+        public
+        TrustlinesNetworkToken("TestToken", "tt", 18, msg.sender, 1 ether)
+    {}
+
+    function mint(address account, uint256 amount) public {
+        _mint(account, amount);
+    }
+
+    function fakeTransfer(address from, address to, uint256 value) public {
         emit Transfer(from, to, value);
     }
 
     /* emit multiple events in a single transaction */
-    function transfer4(address from, address to, uint256 value) public {
+    function fakeTransfer4(address from, address to, uint256 value) public {
         emit Transfer(from, to, value);
         emit Transfer(from, to, value);
 
