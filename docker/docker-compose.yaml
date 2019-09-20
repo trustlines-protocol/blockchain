@@ -85,6 +85,23 @@ services:
       - mainnet-node
     command: -c /config/config.toml
 
+  tlbc-monitor:
+    image: trustlines/tlbc-monitor:latest  # TODO: switch to master?
+    container_name: tlbc-monitor
+    restart: unless-stopped
+    mem_limit: 512M
+    mem_reservation: 16M
+    stop_grace_period: 30s
+    networks:
+      - laika-testnet
+    volumes:
+      - ${HOST_BASE_DIR:-.}/trustlines/monitor/reports:/reports
+      - ${HOST_BASE_DIR:-.}/trustlines/monitor/state:/state
+      - ${HOST_BASE_DIR:-.}/trustlines/shared-config:/config/chain-spec
+    depends_on:
+      - trustlines-node
+    command: -r /reports -d /state -c /config/chain-spec/trustlines-spec.json -u http://laika-testnet.node:8545 -m
+
   watchtower:
     image: v2tec/watchtower
     container_name: watchtower
