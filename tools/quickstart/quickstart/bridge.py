@@ -23,15 +23,16 @@ from quickstart.utils import is_bridge_prepared, is_validator_account_prepared
 
 def setup_interactively() -> None:
     if is_bridge_prepared():
-        click.echo("The bridge client has already been set up.\n")
+        click.echo("\nThe bridge client has already been set up.")
         return
     if not is_validator_account_prepared():
-        click.echo("No bridge node will be set up as running as a non-validator.\n")
+        click.echo("\nNo bridge node will be set up as running as a non-validator.")
         return
 
     click.echo(
         "\n".join(
             (
+                "",
                 fill(
                     "As a validator of the Trustlines blockchain, you are required to run a "
                     "bridge node. Checkout the following link for more information:"

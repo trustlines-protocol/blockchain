@@ -16,7 +16,6 @@ from quickstart import bridge, docker, monitor, netstats, validator_account
     default=os.getcwd(),
 )
 def main(host_base_dir):
-    click.echo()
     click.echo(
         "\n".join(
             (

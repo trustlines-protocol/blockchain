@@ -24,7 +24,8 @@ def update_and_start(host_base_dir: str) -> None:
         "docker-compose.yml"
     ):
         raise click.ClickException(
-            fill(
+            "\n"
+            + fill(
                 "Expecting a docker-compose configuration file at the current directory "
                 "with a standard name. ('docker-compose.yaml' or 'docker-compose.yml')"
             )
