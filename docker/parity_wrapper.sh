@@ -204,11 +204,11 @@ function runParity() {
 
 function copySpecFileToSharedVolume() {
   echo "Copying trustline spec file to shared volume"
-  cp /config/trustlines-spec.json /shared-config/trustlines-spec.json
+  cp /config/trustlines-spec.json /config/chain-spec/trustlines-spec.json
 }
 
 # Getting Started
 parseArguments
 adjustConfiguration
-copySpecFileToVolume
+copySpecFileToSharedVolume
 runParity
