@@ -38,30 +38,24 @@ def setup_interactively() -> None:
     os.makedirs(ENODE_DIR, exist_ok=True)
     os.makedirs(DATABASE_DIR, exist_ok=True)
 
-    click.echo(
+    choice = click.prompt(
         fill(
-            "Validators need a private key. This script can either import an existing JSON "
-            "keystore, import an existing raw private key, or it can create a new key."
+            "Validators need a private key. Do you want to import an existing JSON "
+            "keystore (1), enter a raw private key (2), or generate a new key (3) ?"
         )
-        + "\n"
+        + "\n",
+        type=click.Choice(("1", "2", "3")),
+        show_choices=False,
     )
 
-    if click.confirm("Do you want to import an existing keystore?"):
+    if choice == "1":
         import_keystore_file()
-
-    elif click.confirm("Do you want to import an existing raw private key?"):
+    elif choice == "2":
         import_private_key()
-
-    elif click.confirm("Do you want to generate a new account?"):
+    elif choice == "3":
         generate_new_account()
-
     else:
-        raise click.ClickException(
-            fill(
-                "To setup a validator node, a private key is required. You need to select one of "
-                "the previous options."
-            )
-        )
+        assert False, "unreachable"
 
     click.echo("Validator account setup complete.\n")
 
