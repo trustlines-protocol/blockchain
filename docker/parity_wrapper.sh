@@ -202,7 +202,13 @@ function runParity() {
   exec $PARITY_BIN $PARITY_ARGS
 }
 
+function copySpecFileToSharedVolume() {
+  echo "Copying trustline spec file to shared volume"
+  cp /config/trustlines-spec.json /shared-config/trustlines-spec.json
+}
+
 # Getting Started
 parseArguments
 adjustConfiguration
+copySpecFileToVolume
 runParity

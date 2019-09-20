@@ -20,6 +20,7 @@ services:
       - ${HOST_BASE_DIR:-.}/trustlines/databases:/data
       - ${HOST_BASE_DIR:-.}/trustlines/config:/config/custom
       - ${HOST_BASE_DIR:-.}/trustlines/enode:/config/network
+      - ${HOST_BASE_DIR:-.}/shared-config:/config/chain-spec
     command: >-
       --role ${ROLE}
       --address ${VALIDATOR_ADDRESS}
