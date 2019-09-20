@@ -1,10 +1,12 @@
 import os
 import subprocess
+import time
 from textwrap import fill
 from typing import List
 
 import click
 
+from quickstart.constants import SHARED_CHAIN_SPEC_PATH
 from quickstart.utils import (
     is_bridge_prepared,
     is_netstats_prepared,
@@ -28,9 +30,13 @@ def update_and_start(host_base_dir: str) -> None:
             )
         )
 
-    docker_service_names = get_docker_service_names()
-    base_docker_environment_variables = {**os.environ, "HOST_BASE_DIR": host_base_dir}
+    main_docker_service_names = ["trustlines-node", "watchtower"]
+    optional_docker_service_names = get_optional_docker_service_names()
+    all_docker_service_names = (
+        main_docker_service_names + optional_docker_service_names + ["tlbc-monitor"]
+    )
 
+    base_docker_environment_variables = {**os.environ, "HOST_BASE_DIR": host_base_dir}
     if is_validator_account_prepared():
         docker_environment_variables = {
             **base_docker_environment_variables,
@@ -64,13 +70,25 @@ def update_and_start(host_base_dir: str) -> None:
 
         click.echo("Pulling recent Docker image versions...")
         subprocess.run(
-            ["docker-compose", "pull"] + docker_service_names, check=True, **run_kwargs
+            ["docker-compose", "pull"] + all_docker_service_names,
+            check=True,
+            **run_kwargs,
         )
 
         click.echo("Starting Docker services...")
         subprocess.run(["docker-compose", "up", "--no-start"], check=True, **run_kwargs)
         subprocess.run(
-            ["docker-compose", "start"] + docker_service_names, check=True, **run_kwargs
+            ["docker-compose", "start"]
+            + main_docker_service_names
+            + optional_docker_service_names,
+            check=True,
+            **run_kwargs,
+        )
+
+        wait_for_chain_spec()
+
+        subprocess.run(
+            ["docker-compose", "start", "tlbc-monitor"], check=True, **run_kwargs
         )
 
     except subprocess.CalledProcessError as called_process_error:
@@ -88,8 +106,14 @@ def update_and_start(host_base_dir: str) -> None:
     click.echo("\nAll services are running. Congratulations!")
 
 
-def get_docker_service_names() -> List[str]:
-    docker_service_names = ["trustlines-node", "watchtower"]
+def wait_for_chain_spec() -> None:
+    while not os.path.exists(SHARED_CHAIN_SPEC_PATH):
+        time.sleep(1)
+
+
+def get_optional_docker_service_names() -> List[str]:
+    docker_service_names = []
+
     if is_netstats_prepared():
         docker_service_names.append("netstats-client")
 

@@ -13,6 +13,7 @@ from quickstart.constants import (
     ADDRESS_FILE_PATH,
     BRIDGE_CONFIG_FILE_EXTERNAL,
     KEYSTORE_FILE_PATH,
+    MONITOR_DIR,
     NETSTATS_ENV_FILE_PATH,
     PASSWORD_FILE_PATH,
 )
@@ -66,6 +67,10 @@ def is_netstats_prepared() -> bool:
 
 def is_bridge_prepared() -> bool:
     return non_empty_file_exists(BRIDGE_CONFIG_FILE_EXTERNAL)
+
+
+def is_monitor_prepared() -> bool:
+    return os.path.isdir(MONITOR_DIR)
 
 
 class TrustlinesFiles:

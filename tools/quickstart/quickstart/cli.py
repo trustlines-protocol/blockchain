@@ -3,7 +3,7 @@ from textwrap import fill
 
 import click
 
-from quickstart import bridge, docker, netstats, validator_account
+from quickstart import bridge, docker, monitor, netstats, validator_account
 
 
 @click.command()
@@ -31,12 +31,12 @@ def main(host_base_dir):
                     "restarted and no configuration will be overwritten. It is possible to enable "
                     "additional components that you have chosen not to configure in earlier runs."
                 ),
-                "",
             )
         )
     )
 
     validator_account.setup_interactively()
+    monitor.setup_interactively()
     bridge.setup_interactively()
     netstats.setup_interactively()
     docker.update_and_start(host_base_dir)
