@@ -68,6 +68,7 @@ declare -a VALID_ROLE_LIST=(
   participant
   validator
 )
+SHARED_VOLUME_PATH="/shared/"
 
 # Configuration snippets.
 CONFIG_SNIPPET_VALIDATOR='
@@ -203,8 +204,12 @@ function runParity() {
 }
 
 function copySpecFileToSharedVolume() {
-  echo "Copying trustline spec file to shared volume"
-  cp /config/trustlines-spec.json /shared/trustlines-spec.json
+  if [[ -d "$SHARED_VOLUME_PATH" ]]; then
+    echo "Copying trustline spec file to shared volume"
+    cp /config/trustlines-spec.json "$SHARED_VOLUME_PATH/trustlines-spec.json"
+  else
+    echo "Shared volume apparently not mounted, skip copying chain spec file"
+  fi
 }
 
 # Getting Started
