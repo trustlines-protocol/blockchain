@@ -26,10 +26,9 @@ from quickstart.utils import (
 
 def setup_interactively() -> None:
     if is_validator_account_prepared():
-        click.echo("A validator account has already been set up.\n")
+        click.echo("\nA validator account has already been set up.")
         return
     if not prompt_setup_as_validator():
-        click.echo("\n")
         return
 
     ensure_clean_setup()
@@ -57,12 +56,12 @@ def setup_interactively() -> None:
     else:
         assert False, "unreachable"
 
-    click.echo("Validator account setup complete.\n")
+    click.echo("Validator account setup complete.")
 
 
 def prompt_setup_as_validator():
     choice = click.prompt(
-        "Do you want to set up a validator account (1) or run a regular node (2)?",
+        "\nDo you want to set up a validator account (1) or run a regular node (2)?",
         type=click.Choice(("1", "2")),
         show_choices=False,
     )

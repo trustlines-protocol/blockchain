@@ -17,7 +17,7 @@ INSTANCE_NAME={instance_name}
 
 def setup_interactively() -> None:
     if is_netstats_prepared():
-        click.echo("\nThe netstats client has already been set up.\n")
+        click.echo("\nThe netstats client has already been set up.")
         return
 
     click.echo(
