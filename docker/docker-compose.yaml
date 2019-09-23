@@ -20,7 +20,7 @@ services:
       - ${HOST_BASE_DIR:-.}/trustlines/databases:/data
       - ${HOST_BASE_DIR:-.}/trustlines/config:/config/custom
       - ${HOST_BASE_DIR:-.}/trustlines/enode:/config/network
-      - ${HOST_BASE_DIR:-.}/trustlines/shared-config:/config/chain-spec
+      - ${HOST_BASE_DIR:-.}/trustlines/shared:/shared/
     command: >-
       --role ${ROLE}
       --address ${VALIDATOR_ADDRESS}
@@ -97,10 +97,10 @@ services:
     volumes:
       - ${HOST_BASE_DIR:-.}/trustlines/monitor/reports:/reports
       - ${HOST_BASE_DIR:-.}/trustlines/monitor/state:/state
-      - ${HOST_BASE_DIR:-.}/trustlines/shared-config:/config/chain-spec
+      - ${HOST_BASE_DIR:-.}/trustlines/shared:/shared/
     depends_on:
       - trustlines-node
-    command: -r /reports -d /state -c /config/chain-spec/trustlines-spec.json -u http://laika-testnet.node:8545 -m
+    command: -r /reports -d /state -c /shared/trustlines-spec.json -u http://laika-testnet.node:8545 -m
 
   watchtower:
     image: v2tec/watchtower
