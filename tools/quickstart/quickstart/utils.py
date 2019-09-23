@@ -1,6 +1,5 @@
 import json
 import os
-import re
 import sys
 from pathlib import Path
 from textwrap import fill
@@ -8,6 +7,7 @@ from typing import Tuple
 
 import click
 from eth_account import Account
+from eth_utils import decode_hex, is_hex, remove_0x_prefix
 
 from quickstart.constants import (
     ADDRESS_FILE_PATH,
@@ -129,11 +129,11 @@ def get_keystore_path() -> str:
 def read_private_key() -> str:
     while True:
         private_key = click.prompt(
-            "Private key (hex encoded, without 0x prefix)", hide_input=True
+            "Private key (hex encoded, with or without 0x prefix)", hide_input=True
         )
 
-        if re.fullmatch("[0-9a-fA-F]{64}", private_key):
-            return private_key
+        if is_hex(private_key) and len(decode_hex(private_key)) == 32:
+            return remove_0x_prefix(private_key).lower()
 
         click.echo(
             fill(
