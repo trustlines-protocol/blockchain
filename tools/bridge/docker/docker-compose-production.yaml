@@ -1,0 +1,14 @@
+version: "2.4"
+services:
+  node_foreign:
+    environment:
+      - FOREIGN_NETWORK_NAME=mainnet
+
+  node_home:
+    # TODO: Add actual future production release here
+    image: trustlines/tlbc-testnet:release
+    environment:
+      - HOME_NETWORK_NAME=trustlines
+
+  validator:
+    image: trustlines/bridge

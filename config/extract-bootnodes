@@ -7,10 +7,10 @@ The nodes.json file can be found in
 ~/.local/share/io.parity.ethereum/chains/Trustlines/network/nodes.json
 """
 
-import sys
 import json
-import socket
 import re
+import socket
+import sys
 
 
 def try_socket_connect(address):

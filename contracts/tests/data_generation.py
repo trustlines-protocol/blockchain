@@ -1,11 +1,10 @@
 import random
-import rlp
-
 from collections import namedtuple
-from web3.datastructures import AttributeDict
-from eth_utils import decode_hex, keccak
-from eth_keys import keys
 
+import rlp
+from eth_keys import keys
+from eth_utils import decode_hex, keccak
+from web3.datastructures import AttributeDict
 
 SignedBlockHeader = namedtuple("SignedBlockHeader", "unsignedBlockHeader signature")
 

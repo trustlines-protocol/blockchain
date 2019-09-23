@@ -18,9 +18,7 @@ import "./DepositLockerInterface.sol";
 
 */
 
-
 contract DepositLocker is DepositLockerInterface, Ownable {
-
     bool public initialized = false;
     bool public deposited = false;
 
@@ -35,12 +33,19 @@ contract DepositLocker is DepositLockerInterface, Ownable {
     address public depositorsProxy;
     uint public releaseTimestamp;
 
-    mapping (address => bool) public canWithdraw;
+    mapping(address => bool) public canWithdraw;
     uint numberOfDepositors = 0;
     uint valuePerDepositor;
 
-    event DepositorRegistered(address depositorAddress, uint numberOfDepositors);
-    event Deposit(uint totalValue, uint valuePerDepositor, uint numberOfDepositors);
+    event DepositorRegistered(
+        address depositorAddress,
+        uint numberOfDepositors
+    );
+    event Deposit(
+        uint totalValue,
+        uint valuePerDepositor,
+        uint numberOfDepositors
+    );
     event Withdraw(address withdrawer, uint value);
     event Slash(address slashedDepositor, uint slashedValue);
 
@@ -60,17 +65,25 @@ contract DepositLocker is DepositLockerInterface, Ownable {
     }
 
     modifier onlyDepositorsProxy() {
-        require(msg.sender == depositorsProxy, "Only the depositorsProxy can call this function.");
+        require(
+            msg.sender == depositorsProxy,
+            "Only the depositorsProxy can call this function."
+        );
         _;
     }
 
     function() external {}
 
-    function init(uint _releaseTimestamp, address _slasher, address _depositorsProxy)
-        external onlyOwner
-    {
+    function init(
+        uint _releaseTimestamp,
+        address _slasher,
+        address _depositorsProxy
+    ) external onlyOwner {
         require(!initialized, "The contract is already initialised.");
-        require(_releaseTimestamp > now, "The release timestamp must be in the future");
+        require(
+            _releaseTimestamp > now,
+            "The release timestamp must be in the future"
+        );
 
         releaseTimestamp = _releaseTimestamp;
         slasher = _slasher;
@@ -79,20 +92,40 @@ contract DepositLocker is DepositLockerInterface, Ownable {
         owner = address(0);
     }
 
-    function registerDepositor(address _depositor) public isInitialised isNotDeposited onlyDepositorsProxy {
-        require(canWithdraw[_depositor] == false, "can only register Depositor once");
+    function registerDepositor(address _depositor)
+        public
+        isInitialised
+        isNotDeposited
+        onlyDepositorsProxy
+    {
+        require(
+            canWithdraw[_depositor] == false,
+            "can only register Depositor once"
+        );
         canWithdraw[_depositor] = true;
         numberOfDepositors += 1;
         emit DepositorRegistered(_depositor, numberOfDepositors);
     }
 
-    function deposit(uint _valuePerDepositor) public payable isInitialised isNotDeposited onlyDepositorsProxy {
-        require(numberOfDepositors>0, "no depositors");
-        require(_valuePerDepositor>0, "_valuePerDepositor must be positive");
+    function deposit(uint _valuePerDepositor)
+        public
+        payable
+        isInitialised
+        isNotDeposited
+        onlyDepositorsProxy
+    {
+        require(numberOfDepositors > 0, "no depositors");
+        require(_valuePerDepositor > 0, "_valuePerDepositor must be positive");
 
         uint depositAmount = numberOfDepositors * _valuePerDepositor;
-        require(_valuePerDepositor == depositAmount / numberOfDepositors, "Overflow in depositAmount calculation");
-        require(msg.value == depositAmount, "the deposit does not match the required value");
+        require(
+            _valuePerDepositor == depositAmount / numberOfDepositors,
+            "Overflow in depositAmount calculation"
+        );
+        require(
+            msg.value == depositAmount,
+            "the deposit does not match the required value"
+        );
 
         valuePerDepositor = _valuePerDepositor;
         deposited = true;
@@ -100,7 +133,10 @@ contract DepositLocker is DepositLockerInterface, Ownable {
     }
 
     function withdraw() public isInitialised isDeposited {
-        require(now >= releaseTimestamp, "The deposit cannot be withdrawn yet.");
+        require(
+            now >= releaseTimestamp,
+            "The deposit cannot be withdrawn yet."
+        );
         require(canWithdraw[msg.sender], "cannot withdraw from sender");
 
         canWithdraw[msg.sender] = false;
@@ -108,8 +144,15 @@ contract DepositLocker is DepositLockerInterface, Ownable {
         emit Withdraw(msg.sender, valuePerDepositor);
     }
 
-    function slash(address _depositorToBeSlashed) public isInitialised isDeposited {
-        require(msg.sender == slasher, "Only the slasher can call this function.");
+    function slash(address _depositorToBeSlashed)
+        public
+        isInitialised
+        isDeposited
+    {
+        require(
+            msg.sender == slasher,
+            "Only the slasher can call this function."
+        );
         require(canWithdraw[_depositorToBeSlashed], "cannot slash address");
         canWithdraw[_depositorToBeSlashed] = false;
         address(0).transfer(valuePerDepositor);

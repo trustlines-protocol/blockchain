@@ -1,5 +1,4 @@
 import pytest
-
 from click.testing import CliRunner
 
 from bridge_deploy.cli import main
@@ -10,69 +9,81 @@ def runner():
     return CliRunner()
 
 
-def test_deploy_bridge_validators(runner):
+def test_deploy_foreign(runner, abitrary_address):
+    result = runner.invoke(
+        main, args=f"deploy-foreign --jsonrpc test --token-address {abitrary_address}"
+    )
 
+    assert result.exit_code == 0
+
+
+def test_deploy_home(runner, abitrary_address):
     result = runner.invoke(
         main,
         args=(
-            "deploy-validators"
-            " --jsonrpc test"
-            " --validator-proxy-address 0x0000000000000000000000000000000000000000"
+            "deploy-home --jsonrpc test"
+            f" --validator-proxy-address {abitrary_address}"
         ),
     )
 
     assert result.exit_code == 0
 
 
-def test_deploy_home(
-    runner, chain, block_reward_contract, home_bridge_validators_contract
+def test_deploy_home_with_valid_required_percentage_argument_lower_bound(
+    runner, abitrary_address
 ):
     result = runner.invoke(
         main,
         args=(
-            "deploy-home"
-            " --jsonrpc test "
-            f" --bridge-validators-address {home_bridge_validators_contract.address}"
-            f" --owner-address {chain.get_accounts()[0]}"
+            "deploy-home --jsonrpc test"
+            f" --validator-proxy-address {abitrary_address}"
+            " --validators-required-percent 0"
         ),
     )
 
     assert result.exit_code == 0
 
 
-def test_deploy_home_custom_block_reward_amount(
-    runner, chain, block_reward_contract, home_bridge_validators_contract
+def test_deploy_home_with_valid_required_percentage_argument_upper_bound(
+    runner, abitrary_address
 ):
     result = runner.invoke(
         main,
         args=(
-            "deploy-home"
-            " --jsonrpc test "
-            f" --bridge-validators-address {home_bridge_validators_contract.address}"
-            f" --owner-address {chain.get_accounts()[0]}"
-            " --block-reward-amount 1"
+            "deploy-home --jsonrpc test"
+            f" --validator-proxy-address {abitrary_address}"
+            " --validators-required-percent 100"
         ),
     )
 
     assert result.exit_code == 0
 
 
-def test_deploy_foreign(runner):
+def test_deploy_home_with_invalid_required_percentage_argument_lower_bound(
+    runner, abitrary_address
+):
+    result = runner.invoke(
+        main,
+        args=(
+            "deploy-home --jsonrpc test"
+            f" --validator-proxy-address {abitrary_address}"
+            " --validators-required-percent -1"
+        ),
+    )
 
-    result = runner.invoke(main, args="deploy-foreign --jsonrpc test")
-
-    assert result.exit_code == 0
+    assert result.exit_code == 2
 
 
-def test_print_home(runner):
+def test_deploy_home_with_invalid_required_percentage_argument_upper_bound(
+    runner, abitrary_address
+):
+    result = runner.invoke(
+        main,
+        args=(
+            "deploy-home --jsonrpc test"
+            f" --validator-proxy-address {abitrary_address}"
+            " --validators-required-percent 101"
+        ),
+    )
 
-    result = runner.invoke(main, args="print-home --jsonrpc test")
-
-    assert result.exit_code == 0
-
-
-def test_print_foreign(runner):
-
-    result = runner.invoke(main, args="print-foreign --jsonrpc test")
-
-    assert result.exit_code == 0
+    assert result.exit_code == 2

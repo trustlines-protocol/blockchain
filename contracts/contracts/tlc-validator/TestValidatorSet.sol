@@ -4,13 +4,10 @@ pragma solidity ^0.5.8;
   The sole purpose of this file is to be able to test the internal functions of the ValidatorSet
 */
 
-
 import "./ValidatorSet.sol";
 
-
 contract TestValidatorSet is ValidatorSet {
-
-    constructor (address _systemAddress) public {
+    constructor(address _systemAddress) public {
         systemAddress = _systemAddress;
     }
 

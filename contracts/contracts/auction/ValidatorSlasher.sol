@@ -4,16 +4,14 @@ import "../lib/Ownable.sol";
 import "./DepositLockerInterface.sol";
 import "../equivocation-inspector/EquivocationInspector.sol";
 
-
 contract ValidatorSlasher is Ownable {
-
     bool public initialized = false;
     DepositLockerInterface public depositContract;
 
     function() external {}
 
     function init(address _depositContractAddress) external onlyOwner {
-        require(! initialized, "The contract is already initialized.");
+        require(!initialized, "The contract is already initialized.");
 
         depositContract = DepositLockerInterface(_depositContractAddress);
 
@@ -40,9 +38,7 @@ contract ValidatorSlasher is Ownable {
         bytes calldata _signatureOne,
         bytes calldata _rlpUnsignedHeaderTwo,
         bytes calldata _signatureTwo
-    )
-        external
-    {
+    ) external {
         EquivocationInspector.verifyEquivocationProof(
             _rlpUnsignedHeaderOne,
             _signatureOne,
