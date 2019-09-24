@@ -9,7 +9,7 @@ services:
     image: trustlines/tlbc-testnet
     # Use dotted name to pass the bridge client URL validation.
     container_name: laika-testnet.node
-    restart: on-failure
+    restart: always
     stop_grace_period: 3m
     networks:
       - laika-testnet
@@ -29,7 +29,7 @@ services:
     image: parity/parity:v2.5.5-stable
     # Use dotted name to pass the bridge client URL validation.
     container_name: mainnet.node
-    restart: unless-stopped
+    restart: always
     mem_limit: 1G
     mem_reservation: 16M
     stop_grace_period: 3m
@@ -70,7 +70,7 @@ services:
   bridge-client:
     image: trustlines/bridge-next:master # TODO: switch to 'bridge:latest'
     container_name: bridge-client
-    restart: unless-stopped
+    restart: always
     mem_limit: 512M
     mem_reservation: 16M
     stop_grace_period: 30s
@@ -88,7 +88,7 @@ services:
   tlbc-monitor:
     image: trustlines/tlbc-monitor:latest  # TODO: switch to master?
     container_name: tlbc-monitor
-    restart: unless-stopped
+    restart: always
     mem_limit: 512M
     mem_reservation: 16M
     stop_grace_period: 30s
@@ -105,6 +105,7 @@ services:
   watchtower:
     image: v2tec/watchtower
     container_name: watchtower
+    restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
