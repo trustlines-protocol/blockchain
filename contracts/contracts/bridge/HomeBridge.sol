@@ -149,7 +149,6 @@ contract HomeBridge {
                 confirmingValidators[i] = confirmingValidators[confirmingValidators
                         .length -
                     1];
-                delete confirmingValidators[confirmingValidators.length - 1];
                 confirmingValidators.length--;
                 transferState[transferStateId].numConfirmations--;
             }
