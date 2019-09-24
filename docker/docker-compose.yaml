@@ -1,0 +1,119 @@
+# This composition works best in usage with the quickstart tool at
+# 'tools/quickstart' within this repository.
+# Actually this file is also being used and included by the quickstart
+# image.
+
+version: "2.4"
+services:
+  trustlines-node:
+    image: trustlines/tlbc-testnet
+    # Use dotted name to pass the bridge client URL validation.
+    container_name: laika-testnet.node
+    restart: on-failure
+    stop_grace_period: 3m
+    networks:
+      - laika-testnet
+    ports:
+      - 30300:30300
+      - 30300:30300/udp
+    volumes:
+      - ${HOST_BASE_DIR:-.}/trustlines/databases:/data
+      - ${HOST_BASE_DIR:-.}/trustlines/config:/config/custom
+      - ${HOST_BASE_DIR:-.}/trustlines/enode:/config/network
+      - ${HOST_BASE_DIR:-.}/trustlines/shared:/shared/
+    command: >-
+      --role ${ROLE}
+      --address ${VALIDATOR_ADDRESS}
+
+  mainnet-node:
+    image: parity/parity:v2.5.5-stable
+    # Use dotted name to pass the bridge client URL validation.
+    container_name: mainnet.node
+    restart: unless-stopped
+    mem_limit: 1G
+    mem_reservation: 16M
+    stop_grace_period: 3m
+    # Root access is required here, because the trustlines node
+    # use the same database volume and does not run as 'parity' user
+    user: root
+    networks:
+      - mainnet
+    volumes:
+      - ${HOST_BASE_DIR:-.}/trustlines/databases:/home/parity/.local/share/io.parity.ethereum/chains_light
+    command: >-
+      --light
+      --no-download
+      --auto-update none
+      --chain goerli
+      --base-path /data
+      --no-hardware-wallets
+      --jsonrpc-interface all
+      --jsonrpc-apis safe
+      --jsonrpc-hosts all
+      --jsonrpc-cors all
+      --no-ipc
+      --no-secretstore
+      --no-color
+
+  netstats-client:
+    image: trustlines/netstats-client:master
+    container_name: netstats-client
+    restart: always
+    env_file: ./trustlines/netstats-env
+    environment:
+      - RPC_HOST=laika-testnet.node
+    networks:
+      - laika-testnet
+    depends_on:
+      - trustlines-node
+
+  bridge-client:
+    image: trustlines/bridge-next:master # TODO: switch to 'bridge:latest'
+    container_name: bridge-client
+    restart: unless-stopped
+    mem_limit: 512M
+    mem_reservation: 16M
+    stop_grace_period: 30s
+    networks:
+      - laika-testnet
+      - mainnet
+    volumes:
+      - ${HOST_BASE_DIR:-.}/trustlines/config:/config
+      - ${HOST_BASE_DIR:-.}/trustlines/bridge-config.toml:/config/config.toml
+    depends_on:
+      - trustlines-node
+      - mainnet-node
+    command: -c /config/config.toml
+
+  tlbc-monitor:
+    image: trustlines/tlbc-monitor:latest  # TODO: switch to master?
+    container_name: tlbc-monitor
+    restart: unless-stopped
+    mem_limit: 512M
+    mem_reservation: 16M
+    stop_grace_period: 30s
+    networks:
+      - laika-testnet
+    volumes:
+      - ${HOST_BASE_DIR:-.}/trustlines/monitor/reports:/reports
+      - ${HOST_BASE_DIR:-.}/trustlines/monitor/state:/state
+      - ${HOST_BASE_DIR:-.}/trustlines/shared:/shared/
+    depends_on:
+      - trustlines-node
+    command: -r /reports -d /state -c /shared/trustlines-spec.json -u http://laika-testnet.node:8545 -m
+
+  watchtower:
+    image: v2tec/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - laika-testnet
+      - mainnet
+
+networks:
+  laika-testnet:
+    driver: bridge
+
+  mainnet:
+    driver: bridge

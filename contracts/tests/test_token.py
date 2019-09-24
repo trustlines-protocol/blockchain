@@ -1,5 +1,5 @@
-import pytest
 import eth_tester.exceptions
+import pytest
 
 
 @pytest.fixture()

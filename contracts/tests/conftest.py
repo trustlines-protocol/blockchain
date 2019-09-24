@@ -1,18 +1,15 @@
 from collections import namedtuple
 
-import pytest
 import eth_tester
-
-from eth_utils import to_checksum_address
-
-from .deploy_util import (
-    initialize_validator_set,
-    initialize_test_validator_slasher,
-    initialize_deposit_locker,
-)
+import pytest
 from deploy_tools.deploy import wait_for_successful_transaction_receipt
 
 from .data_generation import make_block_header
+from .deploy_util import (
+    initialize_deposit_locker,
+    initialize_test_validator_slasher,
+    initialize_validator_set,
+)
 
 # increase eth_tester's GAS_LIMIT
 # Otherwise we can't whitelist enough addresses in one transaction
@@ -24,8 +21,8 @@ RELEASE_TIMESTAMP_OFFSET = 3600 * 24 * 180
 # Fix the indexes used to get addresses from the test chain.
 # Mind the difference between count and index.
 HONEST_VALIDATOR_COUNT = 2
-MALICIOUS_VALIDATOR_INDEX, MALICIOUS_NON_VALIDATOR_INDEX, BRIDGE_ADDRESS_INDEX = range(
-    HONEST_VALIDATOR_COUNT, HONEST_VALIDATOR_COUNT + 3
+MALICIOUS_VALIDATOR_INDEX, MALICIOUS_NON_VALIDATOR_INDEX = range(
+    HONEST_VALIDATOR_COUNT, HONEST_VALIDATOR_COUNT + 2
 )
 
 AUCTION_DURATION_IN_DAYS = 14
@@ -294,14 +291,13 @@ def almost_filled_validator_auction(
 
 @pytest.fixture(scope="session")
 def whitelist(chain, maximal_number_of_auction_participants):
-    """Every known accounts appart from accounts[0] is in the whitelist"""
-    new_chain = chain
-    for i in range(100, 100 + maximal_number_of_auction_participants):
-        new_chain.add_account(
-            "0x0000000000000000000000000000000000000000000000000000000000000" + str(i)
-        )
-
-    whitelist = new_chain.get_accounts()[1:]
+    """whitelisted well-funded accounts, accounts[0] is not in the whitelist"""
+    # some other tests do also call add_account and we do not want to
+    # include them (it just takes longer)
+    whitelist = list(chain.get_accounts()[1:10]) + [
+        chain.add_account(f"0x{i:064}")
+        for i in range(100, 100 + maximal_number_of_auction_participants)
+    ]
 
     send_ether_to_whitelisted_accounts(chain, whitelist)
 
@@ -313,7 +309,7 @@ def send_ether_to_whitelisted_accounts(chain, whitelist):
 
     for participant in whitelist:
         chain.send_transaction(
-            {"from": account_0, "to": participant, "gas": 21000, "value": 10000000}
+            {"from": account_0, "to": participant, "gas": 21000, "value": 10_000_000}
         )
 
 
@@ -354,7 +350,7 @@ def premint_token_address(accounts):
 
 @pytest.fixture(scope="session")
 def premint_token_value():
-    return 132456
+    return 132_456
 
 
 @pytest.fixture(scope="session")
@@ -378,7 +374,14 @@ def validator_proxy_with_validators(
     return validator_proxy_contract
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
+def foreign_bridge_contract(deploy_contract, tln_token_contract):
+    return deploy_contract(
+        "ForeignBridge", constructor_args=(tln_token_contract.address,)
+    )
+
+
+@pytest.fixture()
 def proxy_validators(accounts):
     return accounts[:5]
 
@@ -388,57 +391,19 @@ def system_address(accounts):
     return accounts[0]
 
 
-@pytest.fixture(scope="session")
-def bridge_validators_contract(
-    deploy_contract,
-    web3,
-    validator_proxy_contract,
-    bridge_required_signatures_divisor,
-    bridge_required_signatures_multiplier,
-):
+@pytest.fixture()
+def home_bridge_contract(deploy_contract, validator_proxy_with_validators, chain):
+    """ deploy a HomeBridge contract connected to the
+    validator_proxy_with_validators contract"""
+
     contract = deploy_contract(
-        "BridgeValidators",
-        constructor_args=(
-            validator_proxy_contract.address,
-            bridge_required_signatures_divisor,
-            bridge_required_signatures_multiplier,
-        ),
+        "HomeBridge", constructor_args=(validator_proxy_with_validators.address, 50)
+    )
+
+    account_0 = chain.get_accounts()[0]
+
+    contract.functions.fund().transact(
+        {"from": account_0, "to": contract.address, "gas": 100_000, "value": 1_000_000}
     )
 
     return contract
-
-
-@pytest.fixture(scope="session")
-def bridge_required_signatures_divisor():
-    return 2
-
-
-@pytest.fixture(scope="session")
-def bridge_required_signatures_multiplier():
-    return 1
-
-
-@pytest.fixture(scope="session")
-def emission_address():
-    return to_checksum_address(b"\x00" * 20)
-
-
-@pytest.fixture(scope="session")
-def bridge_address(accounts):
-    return accounts[BRIDGE_ADDRESS_INDEX]
-
-
-@pytest.fixture(scope="session")
-def block_reward():
-    # block reward of 1 eth
-    return 1 * 10 ** 18
-
-
-@pytest.fixture(scope="session")
-def reward_contract(deploy_contract, system_address, bridge_address, block_reward):
-    deployed_contract = deploy_contract(
-        "TestRewardByBlock",
-        constructor_args=(system_address, bridge_address, block_reward),
-    )
-
-    return deployed_contract

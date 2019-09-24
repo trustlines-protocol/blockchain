@@ -28,11 +28,14 @@ Please make sure you have access to a continuously running machine, if you like 
 
 ### Quickstart
 
-To make starting a validator node for the Trustlines Network as quick as possible, the _quickstart_ script can be used. Simply download and run
-the script. The script will make sure to have everything that is necessary, create a new account for you and start the _Parity_ client with all
-requested arguments. This includes the establishment of an automatic update service.
-The script can be called multiple times without problems, so it checks what is already there and will at least update all service processes.
-_Parity_ will restart automatically on fails.
+To make starting a validator node for the Trustlines Network as quick as
+possible, the _quickstart_ script can be used. Simply download and run the
+script. The script will setup everything that is necessary. This includes the
+_Parity_ client, an automated update service and more. Therefore the script will
+interact with the user to request missing information. The script can be called
+multiple times without problems. It checks what is already setup and what is
+left. At least all processes get updated and restarted on each run. The _Parity_
+client will restart automatically on failures.
 
 ```sh
 $ wget -O quickstart.sh https://github.com/trustlines-protocol/blockchain/raw/master/quickstart.sh && bash quickstart.sh
@@ -45,7 +48,7 @@ rerun the script.
 
 ### System Time
 
-Due to the way the block validation works and is synchronized, it is essential to make sure your host system has the correct time configuration. On recent Ubuntu systems, for example, this should already be the case. You can check the settings on such systems using ```timedatectl```.
+Due to the way the block validation works and is synchronized, it is essential to make sure your host system has the correct time configuration. On recent Ubuntu systems, for example, this should already be the case. You can check the settings on such systems using `timedatectl`.
 
 On other operating systems you should check if your time is synchronized with an [NTP server](https://www.pool.ntp.org/).
 
@@ -271,7 +274,6 @@ home directory (per default `~/.local/share/io.parity.ethereum`) under `keys/Tru
 in the volume bound to `/config` relative to [these instructions](#participant). When working with the quickstart script, the key is placed in
 `./trustlines/config/keys/Trustlines` relative to where you have run the script.
 
-
 ---
 
 ## Development
@@ -306,12 +308,12 @@ $ docker push trustlines/tlbc-testnet:latest
 First, download and install the solidity compiler solc into bin for compiling the
 contracts. You can follow the [official installation documentation](https://solidity.readthedocs.io/en/v0.4.24/installing-solidity.html) or type the following recommand command:
 
-``curl -L -o $HOME/bin/solc https://github.com/ethereum/solidity/releases/download/v0.4.25/solc-static-linux && chmod +x $HOME/bin/solc``
+`curl -L -o $HOME/bin/solc https://github.com/ethereum/solidity/releases/download/v0.5.8/solc-static-linux && chmod +x $HOME/bin/solc`
 
-To start developing, you should change directory to the contracts directory ``cd contracts``.
+To start developing, you should change directory to the contracts directory `cd contracts`.
 Then, install the development dependencies into a venv
-with ``pip install -c constraints.txt -r requirements.txt``
+with `pip install -c constraints.txt -r requirements.txt`
 
-You can run then run the tests with ``pytest tests/``.
-To check for linter errors in the contract code you can run ``solium --dir contracts/``.
-To check for linter errors in the python code you can run ``flake8 tests/``.
+You can run then run the tests with `pytest tests/`.
+To check for linter errors in the contract code you can run `solium --dir contracts/`.
+To check for linter errors in the python code you can run `flake8 tests/`.

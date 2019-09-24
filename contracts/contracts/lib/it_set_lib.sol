@@ -1,6 +1,5 @@
 pragma solidity ^0.5.8;
 
-
 /**
 @dev Library for a Set that can be iterated over
 */
@@ -10,7 +9,7 @@ library ItSet {
     }
 
     struct AddressSet {
-        mapping (address => SetEntry) addressToEntry;
+        mapping(address => SetEntry) addressToEntry;
         address[] list;
     }
 
@@ -22,7 +21,11 @@ library ItSet {
         }
     }
 
-    function contains(AddressSet storage self, address address_) internal view returns (bool) {
+    function contains(AddressSet storage self, address address_)
+        internal
+        view
+        returns (bool)
+    {
         return self.addressToEntry[address_].index > 0;
     }
 

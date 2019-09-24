@@ -1,16 +1,16 @@
 import csv
+import re
 
 import pytest
-
-import re
 from click.testing import CliRunner
+from deploy_tools.cli import test_json_rpc, test_provider
 from eth_utils import to_checksum_address
 
-from auction_deploy.cli import main, test_provider, test_json_rpc, AuctionState
+from auction_deploy.cli import AuctionState, main
 from auction_deploy.core import (
-    get_deployed_auction_contracts,
     DeployedAuctionContracts,
     deploy_auction_contracts,
+    get_deployed_auction_contracts,
 )
 
 

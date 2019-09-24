@@ -1,0 +1,14 @@
+attrs
+Click
+eth-utils
+gevent
+marshmallow
+toml
+web3
+tenacity
+setproctitle
+
+# --- development dependencies:
+
+contract-deploy-tools
+-r ../../requirements-dev.txt

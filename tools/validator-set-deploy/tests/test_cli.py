@@ -1,7 +1,7 @@
-import pytest
 import csv
 import re
 
+import pytest
 from click.testing import CliRunner
 from eth_utils import to_checksum_address
 

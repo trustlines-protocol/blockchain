@@ -1,11 +1,10 @@
 import pytest
-
 from eth_utils import to_checksum_address
 
 from validator_set_deploy.core import (
+    deploy_validator_proxy_contract,
     deploy_validator_set_contract,
     initialize_validator_set_contract,
-    deploy_validator_proxy_contract,
 )
 
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"

@@ -27,7 +27,7 @@ $(VIRTUAL_ENV):
 	python3 -m venv $@
 
 clean:
-	rm -rf build .tox .mypy_cache .pytest_cache */__pycache__ *.egg-info
+	rm -rf build .tox .mypy_cache .pytest_cache */__pycache__ tests/*/__pycache__ *.egg-info
 	rm -f .installed
 
 .PHONY: install install-requirements test lint compile build clean

@@ -2,41 +2,35 @@ from enum import Enum
 
 import click
 import pendulum
-from web3 import Web3, EthereumTesterProvider, Account
-from deploy_tools.deploy import send_function_call_transaction
+from deploy_tools.cli import (
+    auto_nonce_option,
+    connect_to_json_rpc,
+    gas_option,
+    gas_price_option,
+    get_nonce,
+    jsonrpc_option,
+    keystore_option,
+    nonce_option,
+    retrieve_private_key,
+    validate_address,
+)
+from deploy_tools.deploy import (
+    build_transaction_options,
+    send_function_call_transaction,
+)
+from deploy_tools.files import read_addresses_in_csv
 
 from auction_deploy.core import (
-    deploy_auction_contracts,
-    initialize_auction_contracts,
-    decrypt_private_key,
-    build_transaction_options,
-    AuctionOptions,
-    get_deployed_auction_contracts,
-    whitelist_addresses,
-    read_whitelist,
-    validate_and_format_address,
-    InvalidAddressException,
-    missing_whitelisted_addresses,
     ZERO_ADDRESS,
+    AuctionOptions,
+    deploy_auction_contracts,
+    get_deployed_auction_contracts,
+    initialize_auction_contracts,
+    missing_whitelisted_addresses,
+    whitelist_addresses,
 )
 
-# we need test_provider and test_json_rpc for running the tests in test_cli
-# they need to persist between multiple calls to runner.invoke and are
-# therefore initialized on the module level.
-test_provider = EthereumTesterProvider()
-test_json_rpc = Web3(test_provider)
-
 ETH_IN_WEI = 10 ** 18
-
-
-def validate_address(ctx, param, value):
-    """This function must be at the top of click commands using it"""
-    try:
-        return validate_and_format_address(value)
-    except InvalidAddressException as e:
-        raise click.BadParameter(
-            f"The address parameter is not recognized to be an address: {value}"
-        ) from e
 
 
 def validate_date(ctx, param, value):
@@ -57,42 +51,6 @@ class AuctionState(Enum):
     DepositPending = 2
     Ended = 3
     Failed = 4
-
-
-jsonrpc_option = click.option(
-    "--jsonrpc",
-    help="JsonRPC URL of the ethereum client",
-    default="http://127.0.0.1:8545",
-    show_default=True,
-    metavar="URL",
-    envvar="AUCTION_DEPLOY_JSONRPC",
-)
-keystore_option = click.option(
-    "--keystore",
-    help="Path to the encrypted keystore",
-    type=click.Path(exists=True, dir_okay=False),
-    default=None,
-    envvar="AUCTION_DEPLOY_KEYSTORE",
-)
-gas_option = click.option(
-    "--gas", help="Gas of the transaction to be sent", type=int, default=None
-)
-gas_price_option = click.option(
-    "--gas-price",
-    help="Gas price of the transaction to be sent",
-    type=int,
-    default=None,
-)
-nonce_option = click.option(
-    "--nonce", help="Nonce of the first transaction to be sent", type=int, default=None
-)
-auto_nonce_option = click.option(
-    "--auto-nonce",
-    help="automatically determine the nonce of first transaction to be sent",
-    default=False,
-    is_flag=True,
-    envvar="AUCTION_DEPLOY_AUTO_NONCE",
-)
 
 
 auction_address_option = click.option(
@@ -530,7 +488,7 @@ def whitelist(
 ) -> None:
 
     web3 = connect_to_json_rpc(jsonrpc)
-    whitelist = read_whitelist(whitelist_file)
+    whitelist = read_addresses_in_csv(whitelist_file)
     private_key = retrieve_private_key(keystore)
 
     nonce = get_nonce(
@@ -564,7 +522,7 @@ def whitelist(
 @jsonrpc_option
 def check_whitelist(whitelist_file: str, auction_address: str, jsonrpc: str) -> None:
     web3 = connect_to_json_rpc(jsonrpc)
-    whitelist = read_whitelist(whitelist_file)
+    whitelist = read_addresses_in_csv(whitelist_file)
     contracts = get_deployed_auction_contracts(web3, auction_address)
 
     number_of_missing_addresses = len(
@@ -577,50 +535,3 @@ def check_whitelist(whitelist_file: str, auction_address: str, jsonrpc: str) -> 
         click.echo(
             f"{number_of_missing_addresses} of {len(whitelist)} addresses have not been whitelisted yet"
         )
-
-
-def connect_to_json_rpc(jsonrpc) -> Web3:
-    if jsonrpc == "test":
-        web3 = test_json_rpc
-    else:
-        web3 = Web3(Web3.HTTPProvider(jsonrpc, request_kwargs={"timeout": 180}))
-    return web3
-
-
-def retrieve_private_key(keystore_path):
-    """
-    return the private key corresponding to keystore or none if keystore is none
-    """
-
-    private_key = None
-
-    if keystore_path is not None:
-        password = click.prompt(
-            "Please enter the password to decrypt the keystore",
-            type=str,
-            hide_input=True,
-        )
-        private_key = decrypt_private_key(keystore_path, password)
-
-    return private_key
-
-
-def get_nonce(*, web3: Web3, nonce: int, auto_nonce: bool, private_key: bytes):
-    """get the nonce to be used as specified via command line options
-
-     we do some option checking in this function. It would be better to do this
-     before doing any real work, but we would need another function then.
-    """
-    if auto_nonce and not private_key:
-        raise click.UsageError("--auto-nonce requires --keystore argument")
-    if nonce is not None and auto_nonce:
-        raise click.UsageError(
-            "--nonce and --auto-nonce cannot be used at the same time"
-        )
-
-    if auto_nonce:
-        return web3.eth.getTransactionCount(
-            Account.privateKeyToAccount(private_key).address, block_identifier="pending"
-        )
-    else:
-        return nonce

@@ -1,11 +1,13 @@
 #! pytest
 
-import attr
-import pytest
-import eth_tester.exceptions
-from .data_generation import make_block_header
 from typing import Any, List
+
+import attr
+import eth_tester.exceptions
+import pytest
 from web3.datastructures import AttributeDict
+
+from .data_generation import make_block_header
 
 
 @pytest.fixture()
