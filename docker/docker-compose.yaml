@@ -26,7 +26,7 @@ services:
       --address ${VALIDATOR_ADDRESS}
 
   mainnet-node:
-    image: parity/parity:v2.5.5-stable
+    image: parity/parity:stable
     # Use dotted name to pass the bridge client URL validation.
     container_name: mainnet.node
     restart: unless-stopped

@@ -1,7 +1,7 @@
 version: "2.4"
 services:
   node_foreign:
-    image: parity/parity:v2.5.5-stable
+    image: parity/parity:stable
     command:
       - "--light"
       - "--no-download"
