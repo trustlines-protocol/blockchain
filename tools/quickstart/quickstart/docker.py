@@ -55,8 +55,9 @@ def update_and_start(host_base_dir: str) -> None:
 
     run_kwargs = {
         "env": docker_environment_variables,
-        "stdout": subprocess.DEVNULL,
-        "stderr": subprocess.DEVNULL,
+        "stdout": subprocess.PIPE,
+        "stderr": subprocess.PIPE,
+        "universal_newlines": True,
     }
 
     try:
@@ -100,6 +101,8 @@ def update_and_start(host_base_dir: str) -> None:
                         f"Command {' '.join(called_process_error.cmd)} failed with exit code "
                         f"{called_process_error.returncode}."
                     ),
+                    fill(f"Captured stderr:"),
+                    fill(f"{called_process_error.stderr}"),
                 )
             )
         )
