@@ -84,8 +84,8 @@ contract TrustlinesNetworkToken {
         _transfer(sender, recipient, amount);
 
         uint _allowance = _allowances[sender][msg.sender];
-        uint updatedAllowance = _allowance.sub(amount);
         if (_allowance < MAX_UINT) {
+            uint updatedAllowance = _allowance.sub(amount);
             _approve(sender, msg.sender, updatedAllowance);
         }
         return true;
