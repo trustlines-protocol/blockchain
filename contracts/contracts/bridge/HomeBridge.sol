@@ -86,7 +86,7 @@ contract HomeBridge {
             );
         }
 
-        if (requiredConfirmationsReached(transferStateId)) {
+        if (_requiredConfirmationsReached(transferStateId)) {
             transferState[transferStateId].isCompleted = true;
             bool coinTransferSuccessful = recipient.send(amount);
             emit TransferCompleted(
@@ -131,10 +131,10 @@ contract HomeBridge {
                 numConfirming += 1;
             }
         }
-        return numConfirming >= getNumRequiredConfirmations();
+        return numConfirming >= _getNumRequiredConfirmations();
     }
 
-    function purgeConfirmationsFromExValidators(bytes32 transferStateId)
+    function _purgeConfirmationsFromExValidators(bytes32 transferStateId)
         internal
     {
         address payable[] storage confirmingValidators = transferState[transferStateId]
@@ -154,7 +154,7 @@ contract HomeBridge {
         }
     }
 
-    function getNumRequiredConfirmations() internal view returns (uint) {
+    function _getNumRequiredConfirmations() internal view returns (uint) {
         return
             (
                     validatorProxy.numberOfValidators() *
@@ -178,11 +178,11 @@ contract HomeBridge {
         return true;
     }
 
-    function requiredConfirmationsReached(bytes32 transferStateId)
+    function _requiredConfirmationsReached(bytes32 transferStateId)
         internal
         returns (bool)
     {
-        uint numRequired = getNumRequiredConfirmations();
+        uint numRequired = _getNumRequiredConfirmations();
 
         /* We now check if we have enough confirmations.  If that is the
            case, we purge ex-validators from the list of confirmations
@@ -197,7 +197,7 @@ contract HomeBridge {
            a 'serial number' for the validator set changes and determine if there
            was a change of the validator set between the first confirmation
            and the last confirmation and skip calling into
-           purgeConfirmationsFromExValidators if there were no changes.
+           _purgeConfirmationsFromExValidators if there were no changes.
         */
 
         if (
@@ -207,7 +207,7 @@ contract HomeBridge {
             return false;
         }
 
-        purgeConfirmationsFromExValidators(transferStateId);
+        _purgeConfirmationsFromExValidators(transferStateId);
 
         if (
             transferState[transferStateId].confirmingValidators.length <
