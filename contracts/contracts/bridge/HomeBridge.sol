@@ -6,7 +6,6 @@ contract HomeBridge {
     struct TransferState {
         mapping(address => bool) isConfirmedByValidator;
         address payable[] confirmingValidators;
-        uint16 numConfirmations;
         bool isCompleted;
     }
 
@@ -151,7 +150,6 @@ contract HomeBridge {
                     1];
                 delete confirmingValidators[confirmingValidators.length - 1];
                 confirmingValidators.length--;
-                transferState[transferStateId].numConfirmations--;
             }
         }
     }
@@ -176,7 +174,6 @@ contract HomeBridge {
 
         transferState[transferStateId].isConfirmedByValidator[validator] = true;
         transferState[transferStateId].confirmingValidators.push(validator);
-        transferState[transferStateId].numConfirmations += 1;
 
         return true;
     }
@@ -203,13 +200,19 @@ contract HomeBridge {
            purgeConfirmationsFromExValidators if there were no changes.
         */
 
-        if (transferState[transferStateId].numConfirmations < numRequired) {
+        if (
+            transferState[transferStateId].confirmingValidators.length <
+            numRequired
+        ) {
             return false;
         }
 
         purgeConfirmationsFromExValidators(transferStateId);
 
-        if (transferState[transferStateId].numConfirmations < numRequired) {
+        if (
+            transferState[transferStateId].confirmingValidators.length <
+            numRequired
+        ) {
             return false;
         }
 

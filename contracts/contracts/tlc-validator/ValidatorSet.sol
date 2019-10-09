@@ -164,5 +164,4 @@ contract ValidatorSet {
         finalized = false;
         emit InitiateChange(blockhash(block.number - 1), _newValidatorSet);
     }
-
 }
