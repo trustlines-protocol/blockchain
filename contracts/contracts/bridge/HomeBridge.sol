@@ -75,7 +75,7 @@ contract HomeBridge {
         if (_confirmTransfer(transferStateId, msg.sender)) {
             // We have to emit the events here, because _confirmTransfer
             // doesn't even receive the necessary information to do it on
-            // it's own
+            // its own
 
             emit Confirmation(
                 transferHash,
@@ -88,6 +88,7 @@ contract HomeBridge {
 
         if (requiredConfirmationsReached(transferStateId)) {
             transferState[transferStateId].isCompleted = true;
+            delete transferState[transferStateId].confirmingValidators;
             bool coinTransferSuccessful = recipient.send(amount);
             emit TransferCompleted(
                 transferHash,
@@ -190,7 +191,7 @@ contract HomeBridge {
            confirmations from ex-validators.
 
            This means that old confirmations stay valid over validator set changes given
-           that the validator doesn't loose it's validator status.
+           that the validator doesn't lose its validator status.
 
            The double check is here to save some gas. If checking the validator
            status for all confirming validators becomes too costly, we can introduce
