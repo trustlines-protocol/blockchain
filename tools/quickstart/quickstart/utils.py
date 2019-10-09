@@ -134,7 +134,7 @@ def get_keystore_path() -> str:
 def read_private_key() -> str:
     while True:
         private_key = click.prompt(
-            "Private key (hex encoded, with or without 0x prefix)", hide_input=True
+            "Private key (hex encoded, with or without 0x prefix)"
         )
 
         if is_hex(private_key) and len(decode_hex(private_key)) == 32:
