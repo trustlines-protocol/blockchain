@@ -41,12 +41,14 @@ services:
           # Use dotted name to pass the bridge client URL validation.
           - mainnet.node
     volumes:
-      - ${HOST_BASE_DIR:-.}/trustlines/databases:/home/parity/.local/share/io.parity.ethereum/chains_light
+      # Need to adjust the path if using different chain
+      - ${HOST_BASE_DIR:-.}/trustlines/databases/mainnet:/data/database
     command: >-
       --light
       --no-download
       --auto-update none
       --chain goerli
+      --db-path /data/database
       --base-path /data
       --no-hardware-wallets
       --jsonrpc-interface all
