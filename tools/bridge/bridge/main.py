@@ -67,71 +67,6 @@ def configure_logging(config):
     )
 
 
-def wait_for_chain_synced_until_block(w3, start_block_number, timeout, chain_role):
-    retry = tenacity.retry(
-        wait=tenacity.wait_exponential(multiplier=1, min=5, max=timeout),
-        before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
-    )
-
-    @retry
-    def _rpc_syncing():
-        return w3.eth.syncing
-
-    @retry
-    def _rpc_block_number():
-        return w3.eth.blockNumber
-
-    while True:
-        syncing = _rpc_syncing()
-        if syncing is False:
-            highest_block_number = _rpc_block_number()
-            current_block_number = highest_block_number
-        else:
-            current_block_number = syncing["currentBlock"]
-            highest_block_number = syncing["highestBlock"]
-
-        fully_synced = current_block_number == highest_block_number
-        synced_to_start_block = current_block_number >= start_block_number
-
-        if synced_to_start_block:
-            if fully_synced:
-                logger.info(
-                    "%s node is fully synced to head number %d and has passed the event fetch start block number %d",
-                    chain_role.value,
-                    highest_block_number,
-                    start_block_number,
-                )
-            else:
-                logger.info(
-                    "%s node is synced until block number %d of %d and has passed the event fetch "
-                    "start block number %d",
-                    chain_role.value,
-                    current_block_number,
-                    highest_block_number,
-                    start_block_number,
-                )
-            break
-        else:
-            if fully_synced:
-                logger.info(
-                    "%s node is fully synced until head number %d, but chain hasn't reached event "
-                    "fetch start block number %d yet. Waiting...",
-                    chain_role.value,
-                    highest_block_number,
-                    start_block_number,
-                )
-            else:
-                logger.info(
-                    "%s node is synced until block number %d of %d, but hasn't reached event "
-                    "fetch start block number %d yet. Waiting...",
-                    chain_role.value,
-                    current_block_number,
-                    highest_block_number,
-                    start_block_number,
-                )
-            gevent.sleep(HOME_CHAIN_STEP_DURATION)
-
-
 def wait_for_chain_fully_synced_past_block(w3, start_block_number, timeout, chain_role):
     retry = tenacity.retry(
         wait=tenacity.wait_exponential(multiplier=1, min=5, max=timeout),
@@ -200,7 +135,7 @@ def wait_for_start_blocks(config):
     home_chain_rpc_timeout = config["home_chain"]["rpc_timeout"]
     foreign_chain_rpc_timeout = config["home_chain"]["rpc_timeout"]
 
-    wait_for_chain_synced_until_block(
+    wait_for_chain_fully_synced_past_block(
         w3_home, home_chain_start_block_number, home_chain_rpc_timeout, ChainRole.home
     )
     wait_for_chain_fully_synced_past_block(
