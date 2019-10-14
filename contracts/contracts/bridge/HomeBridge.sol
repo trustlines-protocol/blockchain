@@ -5,7 +5,7 @@ import "../tlc-validator/ValidatorProxy.sol";
 contract HomeBridge {
     struct TransferState {
         mapping(address => bool) isConfirmedByValidator;
-        address payable[] confirmingValidators;
+        address[] confirmingValidators;
         bool isCompleted;
     }
 
@@ -123,7 +123,7 @@ contract HomeBridge {
             "transfer already completed"
         );
 
-        address payable[] storage confirmingValidators = transferState[transferStateId]
+        address[] storage confirmingValidators = transferState[transferStateId]
             .confirmingValidators;
         uint numConfirming = 0;
         for (uint i = 0; i < confirmingValidators.length; i++) {
@@ -137,7 +137,7 @@ contract HomeBridge {
     function _purgeConfirmationsFromExValidators(bytes32 transferStateId)
         internal
     {
-        address payable[] storage confirmingValidators = transferState[transferStateId]
+        address[] storage confirmingValidators = transferState[transferStateId]
             .confirmingValidators;
 
         uint i = 0;
@@ -148,7 +148,6 @@ contract HomeBridge {
                 confirmingValidators[i] = confirmingValidators[confirmingValidators
                         .length -
                     1];
-                delete confirmingValidators[confirmingValidators.length - 1];
                 confirmingValidators.length--;
             }
         }
@@ -164,10 +163,10 @@ contract HomeBridge {
                 100;
     }
 
-    function _confirmTransfer(
-        bytes32 transferStateId,
-        address payable validator
-    ) internal returns (bool) {
+    function _confirmTransfer(bytes32 transferStateId, address validator)
+        internal
+        returns (bool)
+    {
         if (transferState[transferStateId].isConfirmedByValidator[validator]) {
             return false;
         }
