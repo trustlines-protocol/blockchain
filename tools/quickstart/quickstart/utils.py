@@ -134,7 +134,7 @@ def get_keystore_path() -> str:
 def read_private_key() -> str:
     while True:
         private_key = click.prompt(
-            "Private key (hex encoded, with or without 0x prefix)", hide_input=True
+            "Private key (hex encoded, with or without 0x prefix)"
         )
 
         if is_hex(private_key) and len(decode_hex(private_key)) == 32:
@@ -148,7 +148,10 @@ def read_private_key() -> str:
 
 
 def read_encryption_password() -> str:
-    click.echo(f"Please enter a password to encrypt the private key.")
+    click.echo(
+        "Please enter a password to encrypt the private key. "
+        "The password will be stored in plain text to unlock the key."
+    )
 
     while True:
         password = click.prompt("Password", hide_input=True)
@@ -161,7 +164,10 @@ def read_encryption_password() -> str:
 
 
 def read_decryption_password(keyfile_dict) -> Tuple[Account, str]:
-    click.echo("Please enter the password to decrypt the keystore.")
+    click.echo(
+        "Please enter the password to decrypt the keystore. "
+        "The password will be stored in plain text to unlock the key."
+    )
 
     while True:
         password = click.prompt("Password", hide_input=True)
