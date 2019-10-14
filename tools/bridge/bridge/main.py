@@ -16,6 +16,7 @@ from marshmallow.exceptions import ValidationError
 from toml.decoder import TomlDecodeError
 from web3 import HTTPProvider, Web3
 
+import bridge.version
 from bridge.config import load_config
 from bridge.confirmation_sender import (
     ConfirmationSender,
@@ -476,6 +477,7 @@ def log_internal_state(recorder):
 
 
 @click.command()
+@click.version_option(version=bridge.version.version)
 @click.option(
     "-c",
     "--config",

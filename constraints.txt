@@ -5,6 +5,7 @@ attrdict==2.0.1
 attrs==19.1.0
 base58==1.0.3
 black==19.3b0
+bump2version==0.5.11
 cached-property==1.5.1
 certifi==2019.6.16
 cfgv==2.0.1

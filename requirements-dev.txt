@@ -4,6 +4,7 @@ pre-commit
 pytest
 pytest-cov
 setuptools_scm
+bump2version
 
 # flake8 and plugins, keep them in sync with pre-commit's config
 flake8
