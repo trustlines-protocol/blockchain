@@ -102,13 +102,14 @@ services:
     command: -r /reports -d /state -c /shared/trustlines-spec.json -u http://laika-testnet.node:8545 -m
 
   watchtower:
-    image: v2tec/watchtower
+    image: containrrr/watchtower
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - laika-testnet
       - mainnet
+    command: --api-version 1.25
 
 networks:
   laika-testnet:
