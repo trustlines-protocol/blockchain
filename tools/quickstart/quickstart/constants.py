@@ -45,4 +45,4 @@ MONITOR_DIR = os.path.join(BASE_DIR, "monitor")
 MONITOR_REPORTS_DIR = os.path.join(MONITOR_DIR, "reports")
 MONITOR_STATE_PATH = os.path.join(MONITOR_DIR, "reports")
 
-SHARED_CHAIN_SPEC_PATH = os.path.join(BASE_DIR, "shared/trustlines-spec.json")
+SHARED_CHAIN_SPEC_PATH = os.path.join(BASE_DIR, "shared/laika-spec.json")
