@@ -1,81 +1,90 @@
 # Trustlines Blockchain
 
-- [Run Local Peer](#run-local-peer)
-  - [Quickstart](#quickstart)
-  - [System Time](#system-time)
-  - [With Docker](#with-docker)
-    - [Pre-Requisites](#pre-requisites)
-    - [Usage](#Usage)
-    - [Examples](#Examples)
-    - [Observer](#Observer)
-    - [Participant](#Participant)
-    - [Validator](#Validator)
-    - [Create New Account](#create-new-account)
-  - [Without Docker](#without-docker)
-    - [Pre-Requisites](#pre-requisites)
-    - [Creating An Account](#creating-an-account)
-    - [Setup For Users Using Only CLI](#setup-for-users-using-only-cli)
-    - [Setup For Validators Using Only CLI](#setup-for-validators-using-only-cli)
-- [Backups](#backups)
+- [The Trustlines Blockchain Infrastructure](#the-trustlines-blockchain-infrastructure)
+  - [System Requirements](#system-requirements)
+  - [Backups](#backups)
+  - [Setup With the Quickstart Script](#setup-with-the-quickstart-script)
+  - [Setup With Docker](#setup-with-docker)
+    - [Blockchain Node](#blockchain-node)
+    - [Netstats Client](#netstats-client)
+    - [Monitor](#monitor)
+    - [Bridge](#bridge)
+  - [Setup Without Docker](#setup-without-docker)
 - [Development](#development)
   - [Build Own Image](#build-own-image)
   - [Upload Image](#upload-image)
   - [Running Tests on Contracts](#running-tests-on-contracts)
 
-## Run Local Peer
+## The Trustlines Blockchain Infrastructure
 
-Please make sure you have access to a continuously running machine, if you like to participate as validator to the network.
+Nodes of the Trustlines Blockchain run various applications:
 
-### Quickstart
+- The node of the blockchain itself
+- The monitor that checks if validators act honestly
+- The bridge between Ethereum and the Trustlines Blockchain (only run by validators)
+- The netstats client to report the node state to `https://netstats.trustlines.foundation`(optional)
 
-To make starting a validator node for the Trustlines Network as quick as
-possible, the _quickstart_ script can be used. Simply download and run the
-script. The script will setup everything that is necessary. This includes the
-_Parity_ client, an automated update service and more. Therefore the script will
-interact with the user to request missing information. The script can be called
-multiple times without problems. It checks what is already setup and what is
-left. At least all processes get updated and restarted on each run. The _Parity_
-client will restart automatically on failures.
+There are multiple ways to set each of these up. The most straightforward one by far is via our interactive quickstart
+script. Finer control can be achieved by starting the components individually as Docker containers. Finally, it is also
+possible to avoid Docker altogether and run everything directly on the host machine.
+
+Before starting the installation process, please have a look at the system requirements and the note on backups.
+
+### System Requirements
+
+Based on the experiences we have had on our long-running testnet, we recommend at least 2GB of memory and 10GB of SSD
+storage.
+
+Validators should make sure their node has a high uptime: Otherwise, they miss out on potential revenue and harm the
+network by increasing average block intervals and time to finality.
+
+For block validation and creation, it is essential to make sure your host system has the correct time configuration. On
+most systems, this should be the case by default. You can check the settings with `timedatectl` (look for
+`"System clock synchronized: yes"`). For more information, see for example the corresponding
+[Ubuntu help page](https://help.ubuntu.com/lts/serverguide/NTP.html).
+
+For the quickstart and Docker installation modes, [Docker](https://docker.com) needs to be installed and configured.
+Please refer to the official documentation and make sure your user is added to the `docker` user group if you cannot
+access root permissions to run containers.
+
+### Backups
+
+For validators it is crucial to safely back up their private key.
+
+### Setup With the Quickstart Script
+
+The quickstart script will set up the blockchain node and the monitor as well as optionally the bridge and netstats
+clients. It allows importing a private key in order to act as a validator. In addition, it will start a
+[watchtower](https://hub.docker.com/r/containrrr/watchtower) to automatically update the containers when newer versions
+become available (e.g. for bug fixes or network forks).
+
+To fetch the most recent version of the quickstart script and run it, execute the following command on your machine:
 
 ```sh
 $ wget -O quickstart.sh https://github.com/trustlines-protocol/blockchain/raw/master/quickstart.sh && bash quickstart.sh
 ```
 
-Follow the instructions to insert your password. If you want to restart the node or want to make sure it runs on the most recent version, just
-rerun the script.
+The script is interactive and will ask you which components to set up. Once the setup is complete, the various
+components will run in the background in the form of Docker containers. Configuration and chain data can be found in
+the `trustlines` directory placed in the current working directory.
 
----
+Executing the script again is safe: No configuration will be overridden. This allows you to add components not
+configured in earlier runs and will restart all containers.
 
-### System Time
+### Setup With Docker
 
-Due to the way the block validation works and is synchronized, it is essential to make sure your host system has the correct time configuration. On recent Ubuntu systems, for example, this should already be the case. You can check the settings on such systems using `timedatectl`.
+A more explicit way of setting up the various components is starting the Docker containers manually as described here.
+To keep commands as concise as possible, only the most basic options are provided. You might want to set additional
+ones, e.g., container names or restart policies.
 
-On other operating systems you should check if your time is synchronized with an [NTP server](https://www.pool.ntp.org/).
+#### Blockchain Node
 
----
-
-### With Docker
-
-The following instructions explain how to start a local peer with the _Docker_ image. In fact it use a pre-configured [Parity
-Ethereum](https://www.parity.io/) client, combined with a set-up wrapper, to make connecting as easy as possible. The image is prepared to be
-used in three different scenarios: as observer, to participate and connect as validator.
-
-#### Pre-Requisites
-
-To make it work, a complete [Docker](https://www.docker.com/) environment is necessary to be installed on your system. Please take a look into
-the [official documentation](https://docs.docker.com/install/#general-availability) and use the instructions for your respective OS. Some
-niche operating systems are not mentioned there but still provide packages (e.g. [ArchLinux - docker](https://www.archlinux.org/packages/community/x86_64/docker/)).
-Make sure that your user is added to the `docker` user-group on _Unix_ systems, if you can not access root permissions to run containers.
-
-#### Usage
-
-To run the parity client for the Trustlines Network you first have to pull the image from
-[DockerHub](https://hub.docker.com/r/trustlines/tlbc-testnet). It does not matter in which directory your are working this step, cause it will
-be added to _Dockers_ very own database. Afterwards calling the help should give a first basic overview how to use.
+The blockchain image is a standard Parity client but with a custom configuration for the Trustlines Blockchain. It also
+accepts a few additional command line options as described in the help message:
 
 ```
-$ docker pull trustlines/tlbc-testnet
 $ docker run trustlines/tlbc-testnet --help
+
 
  NAME
    Parity Wrapper
@@ -83,198 +92,161 @@ $ docker run trustlines/tlbc-testnet --help
  SYNOPSIS
    parity_wrapper.sh [-r] [role] [-a] [address] [-p] [arguments]
 
- DESCRIPTION
-   A wrapper for the actual Parity client to make the Docker image easy usable by preparing the Parity client for
-   a set of predefined list of roles the client can take without have to write lines of arguments on run Docker.
-
- OPTIONS
-   -r [--role]         Role the Parity client should use.
-                       Depending on the chosen role Parity gets prepared for that role.
-                       Selecting a specific role can require further arguments.
-                       Checkout ROLES for further information.
-
-   -a [--address]      The Ethereum address that parity should use.
-                       Depending on the chosen role, the address gets inserted at the right
-                       place of the configuration, so Parity is aware of it.
-                       Gets ignored if not necessary for the chosen role.
-
-   -p [--parity-args]  Additional arguments that should be forwarded to the Parity client.
-                       Make sure this is the last argument, cause everything after is
-                       forwarded to Parity.
-
- ROLES
-   The list of available roles is:
-
-   observer
-     - Is the default role
-     - Does only watch for propagated blocks.
-     - Non arguments required at all.
-
-   participant
-     - Connects to an account to being able to create transactions.
-     - Requires the address argument.
-     - Needs the password file and the key-set. (see FILES)
-
-   validator
-     - Connect as authority to the network for validating blocks.
-     - Requires the address argument.
-     - Needs the password file and the key-set. (see FILES)
-
- FILES
-   The configuration folder for Parity takes place at /home/parity/.local/share/io.parity.ethereum.
-   Alternately the shorthand symbolic link at /config can be used.
-   Parity's data base is at /home/parity/.local/share/io.parity.ethereum/chains or available trough /data as well.
-   To provide custom files in addition bind a volume through Docker to the sub-folder called 'custom'.
-   The password file is expected to be placed in the custom configuration folder names 'pass.pwd'.
-   The key-set is expected to to be placed in the custom configuration folder under 'keys/Trustlines/'
-   Besides from using the pre-defined locations, it is possible to define them manually thought the parity
-   arguments. Checkout their documentation to do so.
+ ...
 ```
 
-#### Examples
-
-Besides the original help, the following sections provide some example instructions how to get started for the different selectable roles.
-
-##### Observer
-
-For observing the Trustlines blockchain absolutely nothing has to be prepared for the client image. A simple pull and run is all that is needed.
-Since the loss of the block data when the container restarts would lead to a long startup procedure where the clients needs to sync up first, it is
-recommended to use a local volume bound in to save the data outside of the _Docker_ container. Furthermore the node should be able to explore the network and establish
-connections to other peers. Therefore the port `30300` has to be public available and mapped to the containers one.
+Before starting the node, create a Docker network to conveniently allow other containers to connect to it:
 
 ```sh
-$ mkdir ./database
-$ docker run -ti -v $(pwd)/database:/data -p 30300:30300 trustlines/tlbc-testnet
+$ docker network create network-laika
 ```
 
-##### Participant
-
-If the client should be connected with an account to sign transactions and interact with the blockchain, the help output states that the accounts
-key-pair, address and the related password is necessary to provide. To make all files accessible to the _Docker_ container needs a binded volume.
-Therefore create a new folder to do so. (The following instructions expect the folder `config` inside the current working directory. Adjust them if
-you prefer a different location.) Inside a directory for the keys with another sub-directory for the Trustlines chain is used by _Parity_. Your
-key-file has to be placed there. Afterwards the keys password has to be stored into a file directly inside the `config` folder. (To make use of the
-default configurations without adjustment, the file has to be called `pass.pwd`).
-If you have no account already or want to create a new one for this purpose checkout [this section](#create-new-account). Using so the previous
-paragraph as well as the first 2-3 instructions can be ignored. Anyways the password used there has to be stored as shown below.
-Finally the client has to be started with the volume bound, the correct role and the address to use. Be aware that _Docker_ requires absolute paths.
+When running the node, you typically want to forward necessary ports to the host so that Parity can find and connect to
+peers. Additionally, you might want to mount some volumes to persist configuration and chain data. For instance, to run
+a non-validator node:
 
 ```sh
-$ mkdir -p ./config/keys/Trustlines
-$ cp /path/to/my/key ./config/keys/Trustlines/
-$ echo "mysupersecretpassphrase" > ./config/pass.pwd
-$ mkdir ./database
-$ docker run -ti -v $(pwd)/database:/data -v $(pwd)/config:/config/custom -p 30300:30300 trustlines/tlbc-testnet --role participant --address MY_ADDRESS
+$ mkdir -p trustlines/data-laika trustlines/config trustlines/enode trustlines/shared
+$ docker run -d --name laika-node --network network-laika \
+    -v $(pwd)/trustlines/data-laika:/data \
+    -v $(pwd)/trustlines/config:/config/custom \
+    -v $(pwd)/trustlines/enode:/config/network \
+    -v $(pwd)/trustlines/shared:/shared/ \
+    -p 30300:30300 -p 30300:30300/udp \
+    trustlines/tlbc-testnet
 ```
 
-##### Validator
-
-If you are an authority of the Trustlines Network and want to use the client as validator, follow the instructions to run as
-[participant](#participant) except starting the _Docker_ container. For information how to become a validator have a look
-[here](#become-an-authority).
-As soon as you have set up the `config` folder with your account that is registered as authority, simply start the client with the role `validator`
-and the wrapper will make sure to set up everything required to do so.
+If you are a validator, this sequence of commands will supply Parity with your keystore file, password, and address so
+that it can produce blocks:
 
 ```sh
-...
-$ docker run -ti -v $(pwd)/database:/data -v $(pwd)/config:/config/custom -p 30300:30300 trustlines/tlbc-testnet --role validator --address MY_ADDRESS
+$ mkdir -p trustlines/data-laika trustlines/config/keys/Trustlines trustlines/enode trustlines/shared
+$ cp /path/to/your/keystore/file.json trustlines/config/keys/Trustlines
+$ echo "<passphrase_for_keystore_file>" > trustlines/config/pass.pwd
+$ docker run -d --name laika-node --network network-laika \
+    -v $(pwd)/trustlines/data-laika:/data \
+    -v $(pwd)/trustlines/config:/config/custom \
+    -v $(pwd)/trustlines/enode:/config/network \
+    -v $(pwd)/trustlines/shared:/shared/ \
+    -p 30300:30300 -p 30300:30300/udp \
+    trustlines/tlbc-testnet
 ```
 
-#### Create New Account
+#### Netstats Client
 
-If no already existing account is available or a new one should be created anyway, _Parity_ could be used to do so. Please consider other
-options like [MetaMask](https://metamask.io/), [Mist](https://github.com/ethereum/mist) or any other (online) wallet tool.
-In relation to the instructions for the [participant](#participant) and [validator](#validator) roles, we use the folder called `config` to
-bind as _Docker_ volume to _Parity_. Afterwards the key will be placed there and the first steps of these instructions can be skipped.
+The netstats client reports the state of your node to the
+[Laika netstats page](https://laikanetstats.trustlines.foundation/) that gives a rough overview over the current state
+of the network. It is a fully optional component which helps the community, at the cost leaks of some leakage of
+private information.
+
+To participate, you first need to request credentials managed by the Trustlines Foundation. Please email
+`netstats@trustlines.foundation` to do so.
+
+Once you have your credentials, create a file `trustlines/netstats-env` with the following contents:
 
 ```sh
-$ mkdir ./config
-$ docker run -ti -v $(pwd)/config/:/config/custom trustlines/tlbc-testnet --parity-args account new
+WS_USER=username-as-provided-by-the-foundation
+WS_PASSWORD=password-as-provided-by-the-foundation
+INSTANCE_NAME=please-choose-a-nice-name-here
 ```
 
-_Parity_ will ask for a password, that should be stored by you to `./config/pass.pwd` afterwards. The address corresponding to the generated
-private key gets printed out on the commandline at the last line starting with `0x`. Please copy it for the later use. It will be needed for
-the `--address` argument where it will be added in plain text.
-
----
-
-### Without Docker
-
-This section explains how to start a local peer without using the _Docker_ image.
-
-#### Pre-Requisites
-
-- parity version 2.0.9
-- the file: "trustlines-spec.json"
-
-#### Creating An Account
-
-To interact with the trustlines chain, one needs a private key corresponding to an address usable on the chain. If you already possess such a key, you can skip this section.
-
-To start with, create a folder to store everything related to the Trustlines chain, move the trustlines-spec.json file to this folder and change to this folder:
+If you want to be publicly displayed as a validator, add the following line at the end:
 
 ```sh
-mkdir trustlines-chain
-mv trustlines-spec.json trustlines-chain/trustlines-spec.json
-cd trustlines-chain
+HIDE_VALIDATOR_STATUS=false
 ```
 
-You can then create an account with the command:
+Now, the netstats client can be started with
 
 ```sh
-parity account new --chain trustlines-spec.json -d [path/to/node/foler]
+$ docker run --name netstats-client --network network-laika \
+    -e trustlines/netstats-env \
+    -e RPC_HOST=http://laika-node \
+    -e RPC_PORT=8545 \
+    trustlines/netstats-client:master
 ```
 
-For the rest of this documentation to become a validator we will assume you ran:
+#### Monitor
+
+The monitor watches the blockchain and makes sure that validators are online and do not equivocate. Every node in the
+network should run it and users should regularly check for reports of misbehaving validators.
+
+Assuming the blockchain node was configured as described above, this command will start the monitor:
 
 ```sh
-parity account new --chain trustlines-spec.json -d validator_node
+$ mkdir -p trustlines/monitor/reports trustlines/monitor/state
+$ docker run -d --name tlbc-monitor --network network-laika \
+    -v $(pwd)/trustlines/shared:/config \
+    -v $(pwd)/trustlines/monitor/state:/state \
+    -v $(pwd)/trustlines/monitor/reports:/reports \
+    trustlines/tlbc-monitor \
+    -c /config/trustlines-spec.json -r /reports -d /state \
+    -u http://laika-node:8545
 ```
 
-You will be prompted to enter a password twice to protect this private key. You need to remember this password and use it whenever you want to use the private key. After successfully creating an account, you will see displayed the public address corresponding to that account (in format 0x6c4cbad9865dbfda5d5c5e2e353623b07ace71e6), keep that address somewhere.
+#### Bridge
 
-For running a node as a validator, you will need to store your password in a file.
+Validators of the Trustlines Blockchain have to run the bridge that converts TLN tokens on the Ethereum chain to TLC
+tokens on the Trustlines Blockchain. Non-validators should not run a bridge node.
+
+The bridge requires an Ethereum mainnet node which can be a light client. To start one, execute
 
 ```sh
-echo [mypassword] > password.pwd
+$ docker network create network-ethereum
+$ mkdir -p trustlines/data-goerli
+$ docker run -d --name goerli-node --network network-ethereum \
+    -v $(pwd)/trustlines/data-goerli:/data \
+    -p 30303:30303 -p 30303:30303/udp \
+    --user root \
+    parity/parity:stable \
+    --light --no-download --auto-update none --chain goerli \
+    --db-path /data --base-path /data \
+    --no-hardware-wallets --jsonrpc-apis safe --jsonrpc-hosts all --jsonrpc-cors all --jsonrpc-port 8545 \
+    --no-ipc --no-secretstore --no-color
 ```
 
-#### Setup For Users Using Only CLI
+Now, write a configuration file for the bridge node and store it in `trustlines/bridge-config.toml`:
 
-These are the steps to run a node as a simple user.
+```
+[foreign_chain]
+rpc_url = "http://goerli-node:8545"
+token_contract_address = "0x54B06531214AD41DE9d771c10C0030d048d0cC67"
+bridge_contract_address = "0x2171Dd4d4F6ca30FeEA8a27b96257A67f371d87A"
+event_fetch_start_block_number = 1321331
 
-Independently of whether you created an account or not, you can start a node to sync with the trustlines chain with the following command:
+[home_chain]
+rpc_url = "http://laika-node:8545"
+bridge_contract_address = "0x854dF872BB8bfECafFB1077FCfd7aa0B7C838A60"
+event_fetch_start_block_number = 4153205
+
+[validator_private_key]
+keystore_path = "/config/keys/Trustlines/<keystore_filename.json>"
+keystore_password_path = "/config/pass.pwd"
+```
+
+Note that they keystore path is not an actual path on the host machine, but rather in the bridge container we will
+create next. The container will have to connect to both of the Docker networks and access the config directory.
+Therefore, the command looks like this:
 
 ```sh
-parity --chain trustlines-spec.json -d user_node --auto-update=none --no-download
+$ docker run -d --name bridge-client --network network-laika --network network-ethereum \
+    -v $(pwd)/trustlines/config:/config \
+    -v $(pwd)/trustlines/bridge-config.toml:/config/bridge-config.toml \
+    trustlines/bridge-next:master \
+    -c /config/bridge-config.toml
 ```
 
-#### Setup For Validators Using Only CLI
+### Setup Without Docker
 
-These are the steps to run a node as a validator, make sure you are a validator before following these steps.
+We refer to the documentation of the individual components:
 
-If you just created an account following the "Creating an account" section and stored your password in the file "password.pwd", you can start a node with the following command, replacing [address] with your address given during account creation:
+- [Parity](https://wiki.parity.io/Parity-Ethereum)
+- [Netstats](https://github.com/trustlines-protocol/ethstats-client)
+- [Monitor](https://github.com/trustlines-protocol/tlbc-monitor)
+- [Bridge](https://github.com/trustlines-protocol/blockchain/tree/master/tools/bridge)
 
-```sh
-parity --chain trustlines-spec.json -d validator_node --auto-update=none --no-download --password=password.pwd --max-peers=100 --author=[address] --engine-signer=[address] --force-sealing --reseal-on-txs=none --min-gas-price="1" --tx-queue-per-sender=100
-```
-
-Otherwise, you need to adjust some parameters. You need to provide the path to your private key in "--keys-path=[path]", the path to your password protecting this key in "--password=[path]" as well as your address in "--author=[address]" and "--engine-signer=[address]"
-
-```sh
-parity --chain trustlines-spec.json -d validator_node --auto-update=none --no-download --keys-path=[path/to/keys] --password=[path/to/password] --max-peers=100 --author=[address] --engine-signer=[address] --force-sealing --reseal-on-txs=none --min-gas-price="1" --tx-queue-per-sender=100
-```
-
----
-
-## Backups
-
-Please make sure to backup your private key and associated password! Depending on your setup, the key can be found in general in _Parity's_
-home directory (per default `~/.local/share/io.parity.ethereum`) under `keys/Trustlines/`. In case of using the docker image, it can be found
-in the volume bound to `/config` relative to [these instructions](#participant). When working with the quickstart script, the key is placed in
-`./trustlines/config/keys/Trustlines` relative to where you have run the script.
-
----
+For the Laika node, make sure it uses the correct [chain spec file](), that the right TCP and UDP ports are used
+(30300), and that the JSON RPC APIs `web3`, `eth`, and `net` are enabled.
 
 ## Development
 
