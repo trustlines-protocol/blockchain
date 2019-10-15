@@ -112,7 +112,7 @@ class WebserviceSchema(Schema):
 
 
 class ChainSchema(Schema):
-    rpc_url = fields.Url(required=True)
+    rpc_url = fields.Url(required=True, require_tld=False)
     rpc_timeout = fields.Integer(missing=180, validate=validate_non_negative)
     bridge_contract_address = AddressField(required=True)
     max_reorg_depth = fields.Integer(validate=validate_non_negative)
