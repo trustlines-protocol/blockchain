@@ -1,11 +1,14 @@
 import gevent.monkey
 import gevent.pool
 import pytest
+import toml
 from deploy_tools import deploy_compiled_contract
 from eth_tester import EthereumTester
 from gevent.queue import Queue
 from web3 import EthereumTesterProvider, Web3
 from web3.contract import Contract
+
+import bridge.config
 
 # check if gevent did it's monkeypatching
 if "time" not in gevent.monkey.saved:
@@ -218,3 +221,56 @@ def home_bridge_contract(
     )
 
     return contract
+
+
+@pytest.fixture
+def write_config(tmp_path):
+    """returns a function that writes a config file"""
+
+    def write(config):
+        p = tmp_path / "config.toml"
+        with open(p, "w") as f:
+            f.write(config)
+        return str(p)
+
+    return write
+
+
+@pytest.fixture
+def minimal_config():
+    """return a minimal configuration"""
+
+    return """
+[foreign_chain]
+rpc_url = "http://localhost:9200"
+token_contract_address = "0x731a10897d267e19B34503aD902d0A29173Ba4B1"
+bridge_contract_address = "0xb4c79daB8f259C7Aee6E5b2Aa729821864227e84"
+
+[home_chain]
+rpc_url = "http://localhost:9100"
+bridge_contract_address = "0x771434486a221c6146F27B72fd160Bdf0eb1288e"
+
+[validator_private_key]
+raw = "0xb8dcbb8a564483279579e04bffacbd76f79df157cfbebed84079673b32d9e72f"
+"""
+
+
+@pytest.fixture
+def webservice_config():
+    """webservice part of the configuration"""
+    return """
+[webservice]
+enabled = true
+host = "127.0.0.1"
+port = 9500
+"""
+
+
+@pytest.fixture
+def load_config_from_string():
+    """returns a function that loads a configuration dictionary from a string"""
+
+    def load(s):
+        return bridge.config.ConfigSchema().load(toml.loads(s))
+
+    return load

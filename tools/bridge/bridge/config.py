@@ -1,179 +1,159 @@
-import os
 from typing import Any, Dict
 
 import toml
-import validators
-from dotenv import load_dotenv
 from eth_keys.constants import SECPK1_N
 from eth_utils import (
     big_endian_to_int,
     decode_hex,
+    denoms,
+    encode_hex,
     is_0x_prefixed,
     is_checksum_address,
     is_hex,
     to_canonical_address,
+    to_checksum_address,
+    to_wei,
 )
 from eth_utils.toolz import merge
+from marshmallow import Schema, fields, validate, validates_schema
+from marshmallow.exceptions import ValidationError
 
-load_dotenv()
-
-
-def validate_rpc_url(url: Any) -> str:
-    if not validators.url(url):
-        raise ValueError(f"{url} is not a valid RPC url")
-    return url
+FORCED_LOGGING_CONFIG = {"version": 1, "incremental": True}
 
 
-def validate_non_negative_integer(number: Any) -> int:
-    if str(number) != str(int(number)):
-        raise ValueError(f"{number} is not a valid integer")
-    if not isinstance(number, int):
-        number = int(number)
-    if number < 0:
-        raise ValueError(f"{number} must be greater than or equal zero")
-    return number
+class LoggingField(fields.Mapping):
+    def _serialize(self, value: dict, attr: str, obj: Any, **kwargs) -> str:
+        return super()._serialize(value, attr, obj, **kwargs)
+
+    def _deserialize(self, value: Any, attr: str, obj: Any, **kwargs) -> bytes:
+        deserialized = super()._deserialize(value, attr, obj, **kwargs)
+        return merge(FORCED_LOGGING_CONFIG, deserialized)
 
 
-def validate_positive_float(number: Any) -> float:
-    if str(number) != str(float(number)) and str(number) != str(int(number)):
-        raise ValueError(f"{number} is not a valid float")
-    if not isinstance(number, float):
-        number = float(number)
-    if number <= 0:
-        raise ValueError(f"{number} must be positive")
-    return number
+class AddressField(fields.Field):
+    def _serialize(self, value: bytes, attr: str, obj: Any, **kwargs) -> str:
+        return to_checksum_address(value)
+
+    def _deserialize(self, value: Any, attr: str, obj: Any, **kwargs) -> bytes:
+        if not isinstance(value, str) or not is_checksum_address(value):
+            raise ValidationError(
+                f"{attr} must be a checksum formatted address, but got {value}"
+            )
+        return to_canonical_address(value)
 
 
-def validate_checksum_address(address: Any) -> bytes:
-    if not is_checksum_address(address):
-        raise ValueError(f"{address} is not a valid Ethereum checksum address")
-    return to_canonical_address(address)
+class PrivateKeyField(fields.Field):
+    def _serialize(self, value: bytes, attr: str, obj: Any, **kwargs) -> str:
+        return encode_hex(value)
+
+    def _deserialize(self, value: Any, attr: str, obj: Any, **kwargs) -> bytes:
+        if not isinstance(value, str) or not is_hex(value) or not is_0x_prefixed(value):
+            raise ValidationError(
+                f"{attr} must be a 0x prefixed hex string, but got {value}"
+            )
+
+        raw_key_bytes = decode_hex(value)
+        if len(raw_key_bytes) != 32:
+            raise ValidationError(
+                f"{attr} must be a 32 bytes private key, got {len(value)} bytes"
+            )
+
+        raw_key_int = big_endian_to_int(raw_key_bytes)
+        if not 0 < raw_key_int < SECPK1_N:
+            raise ValueError(
+                f"{attr} must be a valid private key, but it's out of range"
+            )
+
+        return raw_key_bytes
 
 
-def validate_private_key(private_key: Any) -> bytes:
-    if not isinstance(private_key, str):
-        raise ValueError(f"Private key must be a string, got {private_key}")
-    if not is_hex(private_key):
-        raise ValueError(f"Private key must be hex encoded, got {private_key}")
-    if not is_0x_prefixed(private_key):
-        raise ValueError(f"Private key must have a `0x` prefix, got {private_key}")
-    private_key_bytes = decode_hex(private_key)
-    if len(private_key_bytes) != 32:
-        raise ValueError(f"Private key must represent 32 bytes, got {private_key}")
-    private_key_int = big_endian_to_int(private_key_bytes)
-    if not 0 < private_key_int < SECPK1_N:
-        raise ValueError(f"Private key outside of allowed range: {private_key}")
+class PrivateKeySchema(Schema):
+    raw = PrivateKeyField(required=False)
+    keystore_path = fields.String(required=False)
+    keystore_password_path = fields.String(required=False)
 
-    return private_key_bytes
+    @validates_schema
+    def validate_schema(self, in_data, **kwargs):
+        raw_given = "raw" in in_data
+        keystore_given = "keystore_path" in in_data
+        password_given = "keystore_password_path" in in_data
 
-
-def validate_logging(logging_dict: Dict) -> Dict:
-    """validate the logging dictionary
-
-    We don't do much here, but instead rely on the main function to
-    catch errors from logging.config.dictConfig
-    """
-    if not isinstance(logging_dict, dict):
-        raise ValueError("logging must be a dictionary")
-    return merge({"version": 1, "incremental": True}, logging_dict)
+        if raw_given and (keystore_given or password_given):
+            raise ValidationError(
+                "Either 'raw' or 'keystore_path' in conjunction with 'keystore_password_path' "
+                "must be given, but not both"
+            )
+        elif not raw_given and (not keystore_given or not password_given):
+            raise ValidationError(
+                "If 'raw' is not given, both 'keystore_path' and 'keystore_password_path' must be "
+                "given"
+            )
 
 
-REQUIRED_CONFIG_ENTRIES = [
-    "home_rpc_url",
-    "home_bridge_contract_address",
-    "foreign_rpc_url",
-    "foreign_chain_token_contract_address",
-    "foreign_bridge_contract_address",
-    "validator_private_key",
-]
-
-OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS: Dict[str, Any] = {
-    "logging": {},
-    "home_rpc_timeout": 180,
-    "home_chain_gas_price": 10 * 1000000000,  # Gas price is in GWei
-    "home_chain_max_reorg_depth": 1,
-    "home_chain_event_poll_interval": 5,
-    "home_chain_event_fetch_start_block_number": 0,
-    "foreign_rpc_timeout": 180,
-    "foreign_chain_max_reorg_depth": 10,
-    "foreign_chain_event_poll_interval": 5,
-    "foreign_chain_event_fetch_start_block_number": 0,
-}
-
-CONFIG_ENTRY_VALIDATORS = {
-    "logging": validate_logging,
-    "home_rpc_url": validate_rpc_url,
-    "home_rpc_timeout": validate_non_negative_integer,
-    "home_chain_gas_price": validate_non_negative_integer,
-    "home_chain_max_reorg_depth": validate_non_negative_integer,
-    "home_bridge_contract_address": validate_checksum_address,
-    "home_chain_event_poll_interval": validate_non_negative_integer,
-    "home_chain_event_fetch_start_block_number": validate_non_negative_integer,
-    "foreign_rpc_url": validate_rpc_url,
-    "foreign_rpc_timeout": validate_non_negative_integer,
-    "foreign_chain_max_reorg_depth": validate_non_negative_integer,
-    "foreign_chain_event_poll_interval": validate_non_negative_integer,
-    "foreign_chain_token_contract_address": validate_checksum_address,
-    "foreign_bridge_contract_address": validate_checksum_address,
-    "foreign_chain_event_fetch_start_block_number": validate_non_negative_integer,
-    "validator_private_key": validate_private_key,
-}
-
-assert all(key in CONFIG_ENTRY_VALIDATORS for key in REQUIRED_CONFIG_ENTRIES)
-assert all(
-    key in CONFIG_ENTRY_VALIDATORS for key in OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS
-)
+validate_non_negative = validate.Range(min=0)
 
 
-def load_config_from_environment():
-    result = {}
-    keys = set(
-        REQUIRED_CONFIG_ENTRIES
-        + list(OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS.keys())
-        + list(CONFIG_ENTRY_VALIDATORS.keys())
+class WebserviceSchema(Schema):
+    enabled = fields.Bool(missing=False)
+    host = fields.String()
+    port = fields.Integer(validate=validate_non_negative)
+
+    @validates_schema
+    def validate_host_and_port_if_enabled(self, in_data, **kwargs):
+        if in_data["enabled"]:
+            if "host" not in in_data:
+                raise ValidationError(
+                    "'webservice.host' not given even though webservice is enabled"
+                )
+            if "port" not in in_data:
+                raise ValidationError(
+                    "'webservice.port' not given even though webservice is enabled"
+                )
+
+
+class ChainSchema(Schema):
+    rpc_url = fields.Url(required=True, require_tld=False)
+    rpc_timeout = fields.Integer(missing=180, validate=validate_non_negative)
+    bridge_contract_address = AddressField(required=True)
+    max_reorg_depth = fields.Integer(validate=validate_non_negative)
+    event_poll_interval = fields.Float(missing=5, validate=validate_non_negative)
+    event_fetch_start_block_number = fields.Integer(
+        missing=0, validate=validate_non_negative
     )
-    for key in keys:
-        if os.environ.get(key.upper()):
-            result[key] = os.environ.get(key.upper())
 
-    return result
+
+class ForeignChainSchema(ChainSchema):
+    max_reorg_depth = fields.Integer(missing=10, validate=validate_non_negative)
+    token_contract_address = AddressField(required=True)
+
+
+class HomeChainSchema(ChainSchema):
+    max_reorg_depth = fields.Integer(missing=10, validate=validate_non_negative)
+    gas_price = fields.Integer(missing=10 * denoms.gwei, validate=validate_non_negative)
+    # disable type check as type hint in eth_utils is wrong, (see
+    # https://github.com/ethereum/eth-utils/issues/168)
+    minimum_validator_balance = fields.Integer(
+        missing=to_wei(0.04, "ether"),  # type: ignore
+        validate=validate_non_negative,
+    )
+    balance_warn_poll_interval = fields.Float(
+        missing=60, validate=validate_non_negative
+    )
+
+    # maximum number of pending transactions per reorg-unsafe block
+    max_pending_transactions_per_block = fields.Integer(
+        missing=16, validate=validate.Range(min=1, max=128)
+    )
+
+
+class ConfigSchema(Schema):
+    foreign_chain = fields.Nested(ForeignChainSchema(), required=True)
+    home_chain = fields.Nested(HomeChainSchema(), required=True)
+
+    validator_private_key = fields.Nested(PrivateKeySchema, required=True)
+    logging = LoggingField(missing=lambda: dict(FORCED_LOGGING_CONFIG))
+    webservice = fields.Nested(WebserviceSchema, missing=dict)
 
 
 def load_config(path: str) -> Dict[str, Any]:
-    if path is None:
-        user_config = {}
-    else:
-        user_config = toml.load(path)
-
-    environment_config = load_config_from_environment()
-
-    config = merge(
-        OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS, user_config, environment_config
-    )
-
-    return validate_config(config)
-
-
-def validate_config(config: Dict[str, Any]) -> Dict[str, Any]:
-    # check for missing keys
-    for required_key in REQUIRED_CONFIG_ENTRIES:
-        if required_key not in config:
-            raise ValueError(f"Config is missing required key {required_key}")
-
-    # check for unknown keys
-    for key in config.keys():
-        if (
-            key not in REQUIRED_CONFIG_ENTRIES
-            and key not in OPTIONAL_CONFIG_ENTRIES_WITH_DEFAULTS
-        ):
-            raise ValueError(f"Config contains unknown key {key}")
-
-    # check for validity of entries
-    validated_config = {}
-    for key, value in config.items():
-        try:
-            validated_config[key] = CONFIG_ENTRY_VALIDATORS[key](value)
-        except ValueError as value_error:
-            raise ValueError(f"Invalid config entry {key}: {value_error}")
-
-    return validated_config
+    return ConfigSchema().load(toml.load(path))

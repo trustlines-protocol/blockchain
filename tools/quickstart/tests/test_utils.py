@@ -1,6 +1,6 @@
 from eth_account import Account
 
-from quickstart import cli
+from quickstart import utils
 
 
 def test_is_wrong_password():
@@ -11,4 +11,4 @@ def test_is_wrong_password():
         except Exception as err:
             return err
 
-    assert cli.is_wrong_password_error(try_wrong_password())
+    assert utils.is_wrong_password_error(try_wrong_password())

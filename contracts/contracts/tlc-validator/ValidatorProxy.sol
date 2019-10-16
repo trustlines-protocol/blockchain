@@ -1,7 +1,5 @@
 pragma solidity ^0.5.8;
 
-import "./ValidatorSet.sol";
-
 /**
     This contract gives access to an up to date validator set on chain, that can be used by any other contracts.
     Its validator set is to be updated by validators contracts when the system address calls finalizeChange().

@@ -1,15 +1,14 @@
 import logging
-from time import sleep, time
+import time
 from typing import Any, Dict, List
 
+import tenacity
 from web3 import Web3
 from web3.contract import Contract
 from web3.datastructures import AttributeDict
 
-
-class FetcherReachedHeadEvent:
-    def __init__(self):
-        self.timestamp = time()
+from bridge.events import ChainRole, FetcherReachedHeadEvent
+from bridge.utils import sort_events
 
 
 class EventFetcher:
@@ -23,7 +22,7 @@ class EventFetcher:
         event_queue: Any,
         max_reorg_depth: int,
         start_block_number: int,
-        name: str = "",
+        chain_role: ChainRole,
     ):
         if event_fetch_limit <= 0:
             raise ValueError("Can not fetch events with zero or negative limit!")
@@ -35,11 +34,8 @@ class EventFetcher:
             raise ValueError(
                 "Can not fetch events starting from a negative block number!"
             )
-        self.name = name
-        if name:
-            self.logger = logging.getLogger(f"{__name__}.{name}")
-        else:
-            self.logger = logging.getLogger(f"{__name__}")
+        self.chain_role = chain_role
+        self.logger = logging.getLogger(f"{__name__}.{chain_role.name}")
 
         self.web3 = web3
         self.contract = contract
@@ -49,13 +45,38 @@ class EventFetcher:
         self.max_reorg_depth = max_reorg_depth
         self.last_fetched_block_number = start_block_number - 1
 
+        # We can't use the tenacity decorator because we're using an
+        # instance local logger So, we instantiate the Retrying object
+        # here and use it explicitly.
+        self._retrying = tenacity.Retrying(
+            wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
+            before_sleep=tenacity.before_sleep_log(self.logger, logging.WARN),
+        )
+
+    def _rpc_latest_block(self):
+        return self._retrying.call(lambda: self.web3.eth.blockNumber)
+
+    def _rpc_get_logs(
+        self,
+        event_name: str,
+        from_block_number: int,
+        to_block_number: int,
+        argument_filters,
+    ):
+        return self._retrying.call(
+            self.contract.events[event_name].getLogs,
+            fromBlock=from_block_number,
+            toBlock=to_block_number,
+            argument_filters=argument_filters,
+        )
+
     def fetch_events_in_range(
         self, from_block_number: int, to_block_number: int
     ) -> List:
         if from_block_number < 0:
             raise ValueError("Can not fetch events from a negative block number!")
 
-        if to_block_number > self.web3.eth.blockNumber:
+        if to_block_number > self._rpc_latest_block():
             raise ValueError("Can not fetch events for blocks past the current head!")
 
         if from_block_number > to_block_number:
@@ -67,9 +88,10 @@ class EventFetcher:
 
         events: List[AttributeDict] = []
         for event_name, argument_filters in self.filter_definition.items():
-            fetched_events = self.contract.events[event_name].getLogs(
-                fromBlock=from_block_number,
-                toBlock=to_block_number,
+            fetched_events = self._rpc_get_logs(
+                event_name=event_name,
+                from_block_number=from_block_number,
+                to_block_number=to_block_number,
                 argument_filters=argument_filters,
             )
             events += fetched_events
@@ -79,14 +101,7 @@ class EventFetcher:
             else:
                 self.logger.debug(f"Found {len(fetched_events)} {event_name} events.")
 
-        events.sort(
-            key=lambda event: (
-                event.blockNumber,
-                event.transactionIndex,
-                event.logIndex,
-            )
-        )
-
+        sort_events(events)
         return events
 
     def fetch_some_events(self) -> List:
@@ -101,7 +116,7 @@ class EventFetcher:
         """
         while True:
             from_block_number = self.last_fetched_block_number + 1
-            reorg_safe_block_number = self.web3.eth.blockNumber - self.max_reorg_depth
+            reorg_safe_block_number = self._rpc_latest_block() - self.max_reorg_depth
             to_block_number = min(
                 from_block_number + self.event_fetch_limit - 1, reorg_safe_block_number
             )
@@ -126,5 +141,11 @@ class EventFetcher:
                 self.event_queue.put(event)
 
             if not events:
-                self.event_queue.put(FetcherReachedHeadEvent())
-                sleep(poll_interval)
+                self.event_queue.put(
+                    FetcherReachedHeadEvent(
+                        timestamp=time.time(),
+                        chain_role=self.chain_role,
+                        last_fetched_block_number=self.last_fetched_block_number,
+                    )
+                )
+                time.sleep(poll_interval)

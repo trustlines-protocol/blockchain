@@ -1,161 +1,159 @@
-from itertools import count
+import time
 
+import gevent
 import pytest
-from eth_typing import Hash32
-from eth_utils import int_to_big_endian
-from hexbytes import HexBytes
-from web3.datastructures import AttributeDict
+from gevent.queue import Queue
 
-from bridge.confirmation_task_planner import TransferRecorder
-from bridge.constants import (
-    COMPLETION_EVENT_NAME,
-    CONFIRMATION_EVENT_NAME,
-    TRANSFER_EVENT_NAME,
-)
-from bridge.utils import compute_transfer_hash
+from bridge.confirmation_task_planner import ConfirmationTaskPlanner
+from bridge.events import ChainRole, Event, FetcherReachedHeadEvent
 
 
-@pytest.fixture
-def hashes():
-    """A generator that produces an infinite, non-repeatable sequence of hashes."""
-    return (int_to_big_endian(counter).rjust(32, b"\x00") for counter in count())
+def assert_events_in_queue(queue, events):
+    """Asserts that all events are in the queue in the same order.
+    This does not block, because it will examine the current items in the queue"""
+    # Queue.queue gives the underlying collections.deque
+    assert list(queue.queue) == list(events)
 
 
-@pytest.fixture
-def transfer_hash(hashes):
-    """A single transfer hash."""
-    return next(hashes)
+class TransferRecorderMock:
+    def __init__(self):
+        self.events = []
+        self.transfers_to_confirm = []
+
+    def apply_event(self, event):
+        self.events.append(event)
+
+    def pull_transfers_to_confirm(self):
+        return self.transfers_to_confirm
 
 
-def get_transfer_event(transaction_hash: Hash32) -> AttributeDict:
-    return AttributeDict(
-        {
-            "event": TRANSFER_EVENT_NAME,
-            "transactionHash": HexBytes(transaction_hash),
-            "logIndex": 0,
-        }
+@pytest.fixture()
+def control_queue():
+    return Queue()
+
+
+@pytest.fixture()
+def transfer_event_queue():
+    return Queue()
+
+
+@pytest.fixture()
+def home_bridge_event_queue():
+    return Queue()
+
+
+@pytest.fixture()
+def confirmation_task_queue():
+    return Queue()
+
+
+@pytest.fixture()
+def transfer_recorder_mock():
+    return TransferRecorderMock()
+
+
+@pytest.fixture()
+def confirmation_task_planner(
+    control_queue,
+    transfer_event_queue,
+    home_bridge_event_queue,
+    confirmation_task_queue,
+    transfer_recorder_mock,
+    spawn,
+):
+    confirmation_task_planner = ConfirmationTaskPlanner(
+        transfer_recorder_mock,
+        10,
+        control_queue,
+        transfer_event_queue,
+        home_bridge_event_queue,
+        confirmation_task_queue,
     )
+    spawn(confirmation_task_planner.run)
+
+    return confirmation_task_planner
 
 
-def get_transfer_hash_event(
-    event_name: str, transfer_hash: Hash32, transaction_hash: Hash32
-) -> AttributeDict:
-    return AttributeDict(
-        {
-            "event": event_name,
-            "transactionHash": HexBytes(transaction_hash),
-            "logIndex": 0,
-            "args": AttributeDict({"transferHash": HexBytes(transfer_hash)}),
-        }
-    )
+def test_process_events_from_queue(
+    confirmation_task_planner, transfer_recorder_mock, transfer_event_queue
+):
+    events = [Event(), Event(), Event()]
+    for event in events:
+        transfer_event_queue.put(event)
+
+    # give control to confirmation planner
+    gevent.sleep(0.001)
+    assert transfer_recorder_mock.events == events
 
 
-@pytest.fixture
-def transfer_events(hashes):
-    """A generator that produces an infinite, non-repeatable sequence of transfer events."""
-    return (get_transfer_event(transaction_hash) for transaction_hash in hashes)
+def test_check_for_confirmation_tasks(
+    confirmation_task_planner, transfer_recorder_mock, confirmation_task_queue
+):
+    confirmation_task_planner.check_for_confirmation_tasks()
+    assert len(confirmation_task_queue) == 0
+
+    events = [Event(), Event(), Event()]
+    transfer_recorder_mock.transfers_to_confirm = events
+    confirmation_task_planner.check_for_confirmation_tasks()
+
+    assert_events_in_queue(confirmation_task_queue, events)
 
 
-@pytest.fixture
-def transfer_event(transfer_events):
-    """A single transfer event."""
-    return next(transfer_events)
+def test_wait_for_fetcher_reached_head_event(
+    confirmation_task_planner,
+    transfer_recorder_mock,
+    transfer_event_queue,
+    control_queue,
+    confirmation_task_queue,
+):
+    events = [Event(), Event(), Event()]
+    for event in events:
+        transfer_event_queue.put(event)
+    transfer_recorder_mock.transfers_to_confirm = events
+
+    # give control to confirmation planner
+    gevent.sleep()
+    assert len(confirmation_task_queue) == 0
+
+    control_queue.put(FetcherReachedHeadEvent(time.time(), ChainRole.home, 0))
+    # give control to confirmation planner
+    gevent.sleep()
+    assert_events_in_queue(confirmation_task_queue, events)
 
 
-@pytest.fixture
-def confirmation_events(hashes):
-    """A generator that produces an infinite, non-repeatable sequence of confirmation events."""
-    return (
-        get_transfer_hash_event(
-            CONFIRMATION_EVENT_NAME, transfer_hash, transaction_hash
-        )
-        for transfer_hash, transaction_hash in zip(hashes, hashes)
-    )
+def test_too_old_fetcher_reached_head_event(
+    confirmation_task_planner,
+    transfer_recorder_mock,
+    control_queue,
+    confirmation_task_queue,
+):
+    events = [Event(), Event(), Event()]
+    transfer_recorder_mock.transfers_to_confirm = events
+
+    # give control to confirmation planner
+    gevent.sleep()
+    assert len(confirmation_task_queue) == 0
+
+    control_queue.put(FetcherReachedHeadEvent(time.time() - 100, ChainRole.home, 0))
+    # give control to confirmation planner
+    gevent.sleep()
+    assert len(confirmation_task_queue) == 0
 
 
-@pytest.fixture
-def confirmation_event(confirmation_events):
-    """A single confirmation event."""
-    return next(confirmation_events)
+def test_wrong_chain_fetcher_reached_head_event(
+    confirmation_task_planner,
+    transfer_recorder_mock,
+    control_queue,
+    confirmation_task_queue,
+):
+    events = [Event(), Event(), Event()]
+    transfer_recorder_mock.transfers_to_confirm = events
 
+    # give control to confirmation planner
+    gevent.sleep()
+    assert len(confirmation_task_queue) == 0
 
-@pytest.fixture
-def completion_events(hashes):
-    """A generator that produces an infinite, non-repeatable sequence of completion events."""
-    return (
-        get_transfer_hash_event(COMPLETION_EVENT_NAME, transfer_hash, transaction_hash)
-        for transfer_hash, transaction_hash in zip(hashes, hashes)
-    )
-
-
-@pytest.fixture
-def completion_event(completion_events):
-    """A single completion event."""
-    return next(completion_events)
-
-
-@pytest.fixture
-def recorder():
-    """A transfer recorder."""
-    recorder = TransferRecorder()
-    recorder.start_validating()
-    return recorder
-
-
-def test_recorder_plans_transfers(recorder, transfer_event):
-    recorder.apply_proper_event(transfer_event)
-    assert recorder.pull_transfers_to_confirm() == [transfer_event]
-
-
-def test_recorder_does_not_plan_transfers_twice(recorder, transfer_event):
-    recorder.apply_proper_event(transfer_event)
-    assert recorder.pull_transfers_to_confirm() == [transfer_event]
-    assert len(recorder.pull_transfers_to_confirm()) == 0
-
-
-def test_recorder_does_not_plan_confirmed_transfer(recorder, transfer_hash, hashes):
-    transfer_event = get_transfer_hash_event(
-        TRANSFER_EVENT_NAME, transfer_hash, next(hashes)
-    )
-    confirmation_event = get_transfer_hash_event(
-        CONFIRMATION_EVENT_NAME, compute_transfer_hash(transfer_event), next(hashes)
-    )
-    recorder.apply_proper_event(transfer_event)
-    recorder.apply_proper_event(confirmation_event)
-    assert len(recorder.pull_transfers_to_confirm()) == 0
-
-
-def test_recorder_does_not_plan_completed_transfer(recorder, transfer_hash, hashes):
-    transfer_event = get_transfer_hash_event(
-        TRANSFER_EVENT_NAME, transfer_hash, next(hashes)
-    )
-    completion_event = get_transfer_hash_event(
-        COMPLETION_EVENT_NAME, compute_transfer_hash(transfer_event), next(hashes)
-    )
-    recorder.apply_proper_event(transfer_event)
-    recorder.apply_proper_event(completion_event)
-    assert len(recorder.pull_transfers_to_confirm()) == 0
-
-
-def test_transfer_recorder_does_not_plan_before_becoming_validator(transfer_event):
-    recorder = TransferRecorder()
-    recorder.apply_proper_event(transfer_event)
-    assert len(recorder.pull_transfers_to_confirm()) == 0
-    recorder.start_validating()
-    assert recorder.pull_transfers_to_confirm() == [transfer_event]
-
-
-def test_transfer_recorder_drops_completed_transfers_before_becoming_validator(hashes):
-    transfer_hash = next(hashes)
-    transfer_event = get_transfer_hash_event(
-        TRANSFER_EVENT_NAME, transfer_hash, next(hashes)
-    )
-    completion_event = get_transfer_hash_event(
-        COMPLETION_EVENT_NAME, compute_transfer_hash(transfer_event), next(hashes)
-    )
-
-    recorder = TransferRecorder()
-    recorder.apply_proper_event(transfer_event)
-    recorder.apply_proper_event(completion_event)
-    recorder.start_validating()
-    assert len(recorder.pull_transfers_to_confirm()) == 0
+    control_queue.put(FetcherReachedHeadEvent(time.time(), ChainRole.foreign, 0))
+    # give control to confirmation planner
+    gevent.sleep()
+    assert len(confirmation_task_queue) == 0
