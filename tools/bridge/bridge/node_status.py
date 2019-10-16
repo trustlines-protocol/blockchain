@@ -39,7 +39,7 @@ def get_node_status(w3):
 
     if block_gap and not is_light_node:  # warp mode syncing
         is_syncing = True
-        latest_synced_block = block_gap[0]
+        latest_synced_block = block_gap[0] - 1
     elif syncing_map:
         is_syncing = True
         latest_synced_block = syncing_map.currentBlock
@@ -59,14 +59,13 @@ def get_node_status(w3):
     )
 
 
-def wait_for_node_status(w3, predicate, sleep_time=5.0):
+def wait_for_node_status(w3, predicate, sleep_time=30.0):
     retry = tenacity.retry(
         wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
         before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
     )
     while True:
         node_status = retry(get_node_status)(w3)
-        logger.debug("wait_for_node_status, current status: %s", node_status)
         if predicate(node_status):
             return node_status
         gevent.sleep(sleep_time)

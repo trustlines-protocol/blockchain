@@ -18,6 +18,10 @@ class ChainRole(Enum):
     home = "home"
     foreign = "foreign"
 
+    @property
+    def configuration_key(self):
+        return f"{self.name}_chain"
+
 
 @attr.s(auto_attribs=True)
 class FetcherReachedHeadEvent(Event):

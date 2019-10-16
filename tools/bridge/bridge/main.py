@@ -7,7 +7,6 @@ import sys
 import click
 import gevent
 import gevent.pool
-import tenacity
 from eth_keys.datatypes import PrivateKey
 from eth_utils import to_checksum_address
 from gevent.queue import Queue
@@ -15,6 +14,7 @@ from marshmallow.exceptions import ValidationError
 from toml.decoder import TomlDecodeError
 from web3 import HTTPProvider, Web3
 
+import bridge.node_status
 import bridge.version
 from bridge.config import load_config
 from bridge.confirmation_sender import (
@@ -67,112 +67,21 @@ def configure_logging(config):
     )
 
 
-def wait_for_chain_synced_until(w3, start_block_number, timeout, chain_role):
-    retry = tenacity.retry(
-        wait=tenacity.wait_exponential(multiplier=1, min=5, max=timeout),
-        before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
-    )
-
-    @retry
-    def _rpc_syncing():
-        return w3.eth.syncing
-
-    @retry
-    def _rpc_block_number():
-        return w3.eth.blockNumber
-
-    while True:
-        syncing = _rpc_syncing()
-        if syncing is False:
-            highest_block_number = _rpc_block_number()
-            current_block_number = highest_block_number
-        else:
-            current_block_number = syncing["currentBlock"]
-            highest_block_number = syncing["highestBlock"]
-
-        fully_synced = current_block_number == highest_block_number
-        synced_to_start_block = current_block_number >= start_block_number
-
-        if synced_to_start_block:
-            if fully_synced:
-                logger.info(
-                    "%s node is fully synced to head number %d and has passed the event fetch start block number %d",
-                    chain_role.value,
-                    highest_block_number,
-                    start_block_number,
-                )
-            else:
-                logger.info(
-                    "%s node is synced until block number %d of %d and has passed the event fetch "
-                    "start block number %d",
-                    chain_role.value,
-                    current_block_number,
-                    highest_block_number,
-                    start_block_number,
-                )
-            break
-        else:
-            if fully_synced:
-                logger.info(
-                    "%s node is fully synced until head number %d, but chain hasn't reached event "
-                    "fetch start block number %d yet. Waiting...",
-                    chain_role.value,
-                    highest_block_number,
-                    start_block_number,
-                )
-            else:
-                logger.info(
-                    "%s node is synced until block number %d of %d, but hasn't reached event "
-                    "fetch start block number %d yet. Waiting...",
-                    chain_role.value,
-                    current_block_number,
-                    highest_block_number,
-                    start_block_number,
-                )
-            gevent.sleep(HOME_CHAIN_STEP_DURATION)
-
-
-def wait_for_start_blocks(config):
-    w3_home = make_w3_home(config)
-    w3_foreign = make_w3_foreign(config)
-
-    home_chain_start_block_number = config["home_chain"][
-        "event_fetch_start_block_number"
-    ]
-    foreign_chain_start_block_number = config["foreign_chain"][
-        "event_fetch_start_block_number"
-    ]
-
-    home_chain_rpc_timeout = config["home_chain"]["rpc_timeout"]
-    foreign_chain_rpc_timeout = config["home_chain"]["rpc_timeout"]
-
-    wait_for_chain_synced_until(
-        w3_home, home_chain_start_block_number, home_chain_rpc_timeout, ChainRole.home
-    )
-    wait_for_chain_synced_until(
-        w3_foreign,
-        foreign_chain_start_block_number,
-        foreign_chain_rpc_timeout,
-        ChainRole.foreign,
+def make_w3(config, chain: ChainRole):
+    chaincfg = config[chain.configuration_key]
+    return Web3(
+        HTTPProvider(
+            chaincfg["rpc_url"], request_kwargs={"timeout": chaincfg["rpc_timeout"]}
+        )
     )
 
 
 def make_w3_home(config):
-    return Web3(
-        HTTPProvider(
-            config["home_chain"]["rpc_url"],
-            request_kwargs={"timeout": config["home_chain"]["rpc_timeout"]},
-        )
-    )
+    return make_w3(config, ChainRole.home)
 
 
 def make_w3_foreign(config):
-    return Web3(
-        HTTPProvider(
-            config["foreign_chain"]["rpc_url"],
-            request_kwargs={"timeout": config["foreign_chain"]["rpc_timeout"]},
-        )
-    )
+    return make_w3(config, ChainRole.foreign)
 
 
 def get_max_pending_transactions(config):
@@ -212,7 +121,6 @@ def make_transfer_event_fetcher(config, transfer_event_queue):
         address=config["foreign_chain"]["token_contract_address"],
         abi=MINIMAL_ERC20_TOKEN_ABI,
     )
-    validate_contract_existence(token_contract)
     return EventFetcher(
         web3=w3_foreign,
         contract=token_contract,
@@ -233,8 +141,6 @@ def make_home_bridge_event_fetcher(config, home_bridge_event_queue):
     home_bridge_contract = w3_home.eth.contract(
         address=config["home_chain"]["bridge_contract_address"], abi=HOME_BRIDGE_ABI
     )
-    sanity_check_home_bridge_contracts(home_bridge_contract)
-
     validator_address = make_validator_address(config)
 
     return EventFetcher(
@@ -500,34 +406,67 @@ def start_services_in_main_pool(services):
     )
 
 
+def wait_for_node_fully_synced(config, chain):
+    w3 = make_w3(config, chain)
+    start_block = config[chain.configuration_key]["event_fetch_start_block_number"]
+
+    def is_synced(node_status):
+        syncmsg = "still syncing" if node_status.is_syncing else "fully synced"
+        start_block_reached = node_status.latest_synced_block >= start_block
+        start_block_msg = "reached" if start_block_reached else "not reached"
+        logger.info(
+            f"{chain.name} node {syncmsg}, start block {start_block} {start_block_msg}: {node_status}"
+        )
+        return not node_status.is_syncing and start_block_reached
+
+    bridge.node_status.wait_for_node_status(w3, is_synced)
+    logger.info(f"{chain.name} node is fully synced")
+
+
+def wait_until_home_node_is_ready(config):
+    wait_for_node_fully_synced(config, ChainRole.home)
+
+    w3_home = make_w3_home(config)
+    home_bridge_contract = w3_home.eth.contract(
+        address=config["home_chain"]["bridge_contract_address"], abi=HOME_BRIDGE_ABI
+    )
+    sanity_check_home_bridge_contracts(home_bridge_contract)
+    logger.info("home node has passed the sanity checks")
+
+
+def wait_until_foreign_node_is_ready(config):
+    wait_for_node_fully_synced(config, ChainRole.foreign)
+
+    w3_foreign = make_w3_foreign(config)
+    token_contract = w3_foreign.eth.contract(
+        address=config["foreign_chain"]["token_contract_address"],
+        abi=MINIMAL_ERC20_TOKEN_ABI,
+    )
+    validate_contract_existence(token_contract)
+    logger.info("foreign node has passed the sanity checks")
+
+
 def start_system(config):
     recorder = make_recorder(config)
-
-    webservice = make_webservice(config=config, recorder=recorder)
-    wait_for_start_blocks_service = Service(
-        "wait_for_start_block", wait_for_start_blocks, config
-    )
-    webservice_services = webservice.services if webservice is not None else []
-
     install_signal_handler(
         signal.SIGUSR1, "report-internal-state", recorder.log_current_state
     )
 
-    start_services_in_main_pool(webservice_services)
-    start_block_greenlet, = start_services_in_main_pool([wait_for_start_blocks_service])
+    webservice = make_webservice(config=config, recorder=recorder)
+    if webservice is not None:
+        start_services_in_main_pool(webservice.services)
 
-    gevent.joinall([start_block_greenlet])
+    wait_node_ready_services = [
+        Service("home_wait_ready", wait_until_home_node_is_ready, config),
+        Service("foreign_wait_ready", wait_until_foreign_node_is_ready, config),
+    ]
 
-    # Only continue if start_block_greenlet wasn't killed
-    if start_block_greenlet.successful() and not isinstance(
-        start_block_greenlet.value, gevent.GreenletExit
-    ):
-        main_services = make_main_services(config, recorder)
-        start_services_in_main_pool(main_services)
-    else:
-        # we need to explicitly shutdown the program here, otherwise
-        # it may keep running only serving the webservice
-        shutdown(exitcode=0)
+    gevent.joinall(
+        start_services_in_main_pool(wait_node_ready_services), raise_error=True
+    )
+
+    main_services = make_main_services(config, recorder)
+    start_services_in_main_pool(main_services)
 
 
 @click.command()
