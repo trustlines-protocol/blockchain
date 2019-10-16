@@ -60,7 +60,7 @@ IFS=' ' read -r -a ARG_VEC <<<"$@"
 # Adjustable configuration values.
 ROLE="observer"
 ADDRESS=""
-PARITY_ARGS="--no-color --jsonrpc-interface all"
+PARITY_ARGS="--no-warp --no-color --jsonrpc-interface all"
 
 # Internal stuff.
 declare -a VALID_ROLE_LIST=(
