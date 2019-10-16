@@ -1,9 +1,8 @@
 import os
 
-BASE_DIR = "trustlines"  # Relative to the current working directory
-CONFIG_DIR = os.path.join(BASE_DIR, "config")
-ENODE_DIR = os.path.join(BASE_DIR, "enode")
-DATABASE_DIR = os.path.join(BASE_DIR, "databases")
+CONFIG_DIR = "config"
+ENODE_DIR = "enode"
+DATABASE_DIR = "databases"
 KEY_DIR = os.path.join(CONFIG_DIR, "keys", "Trustlines")
 
 KEYSTORE_FILE_NAME = "account.json"
@@ -13,10 +12,10 @@ KEYSTORE_FILE_PATH = os.path.join(KEY_DIR, KEYSTORE_FILE_NAME)
 PASSWORD_FILE_PATH = os.path.join(CONFIG_DIR, PASSWORD_FILE_NAME)
 ADDRESS_FILE_PATH = os.path.join(CONFIG_DIR, "address")
 
-NETSTATS_ENV_FILE_PATH = os.path.join(BASE_DIR, "netstats-env")
+NETSTATS_ENV_FILE_PATH = "netstats-env"
 NETSTATS_SERVER_BASE_URL = "https://laikanetstats.trustlines.foundation/"
 
-BRIDGE_CONFIG_FILE_EXTERNAL = os.path.join(BASE_DIR, "bridge-config.toml")
+BRIDGE_CONFIG_FILE_EXTERNAL = "bridge-config.toml"
 BRIDGE_CONFIG_DIR_INTERNAL = "/config"
 BRIDGE_CONFIG_FOREIGN_RPC_URL = "http://mainnet.node:8545"
 BRIDGE_CONFIG_HOME_RPC_URL = "http://laika-testnet.node:8545"
@@ -41,8 +40,7 @@ BRIDGE_DOCUMENTATION_URL = (
     "https://github.com/trustlines-protocol/blockchain/tree/master/tools/bridge"
 )
 
-MONITOR_DIR = os.path.join(BASE_DIR, "monitor")
+MONITOR_DIR = "monitor"
 MONITOR_REPORTS_DIR = os.path.join(MONITOR_DIR, "reports")
-MONITOR_STATE_PATH = os.path.join(MONITOR_DIR, "reports")
 
-SHARED_CHAIN_SPEC_PATH = os.path.join(BASE_DIR, "shared/laika-spec.json")
+SHARED_CHAIN_SPEC_PATH = "shared/laika-spec.json"

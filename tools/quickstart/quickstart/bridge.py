@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from textwrap import fill
 from typing import Dict
@@ -21,11 +22,11 @@ from quickstart.constants import (
 from quickstart.utils import is_bridge_prepared, is_validator_account_prepared
 
 
-def setup_interactively() -> None:
-    if is_bridge_prepared():
+def setup_interactively(base_dir) -> None:
+    if is_bridge_prepared(base_dir):
         click.echo("\nThe bridge client has already been set up.")
         return
-    if not is_validator_account_prepared():
+    if not is_validator_account_prepared(base_dir):
         click.echo("\nNo bridge node will be set up as running as a non-validator.")
         return
 
@@ -46,7 +47,7 @@ def setup_interactively() -> None:
         "Do you want to set up a bridge node now? (recommended)", default=True
     ):
         # Necessary to make docker-compose not complain about it.
-        Path(BRIDGE_CONFIG_FILE_EXTERNAL).touch()
+        Path(os.path.join(base_dir, BRIDGE_CONFIG_FILE_EXTERNAL)).touch()
         return
 
     configuration = get_bridge_configuration(
@@ -61,7 +62,7 @@ def setup_interactively() -> None:
         BRIDGE_CONFIG_KEYSTORE_PASSWORD_PATH,
     )
 
-    with open(BRIDGE_CONFIG_FILE_EXTERNAL, "w") as config_file:
+    with open(os.path.join(base_dir, BRIDGE_CONFIG_FILE_EXTERNAL), "w") as config_file:
         toml.dump(configuration, config_file)
 
     click.echo("Bridge client setup complete.")
