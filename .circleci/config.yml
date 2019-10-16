@@ -459,7 +459,7 @@ jobs:
       - config-bridge-validator-path
       - run:
           name: Install parity
-          command: curl -o ~/bin/parity https://releases.parity.io/ethereum/v2.3.6/x86_64-unknown-linux-gnu/parity
+          command: curl -o ~/bin/parity https://releases.parity.io/ethereum/v2.6.4/x86_64-unknown-linux-gnu/parity
       - run:
           name: Make parity executable
           command: chmod 755 ~/bin/parity
