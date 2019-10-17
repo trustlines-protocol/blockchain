@@ -80,11 +80,12 @@ services:
       - laika-testnet
       - mainnet
     volumes:
-      - ${HOST_BASE_DIR:-.}/bridge-config.toml:/config/config.toml
+      - ${HOST_BASE_DIR:-.}/config:/config
+      - ${HOST_BASE_DIR:-.}/bridge-config.toml:/config.toml
     depends_on:
       - trustlines-node
       - mainnet-node
-    command: -c /config/config.toml
+    command: -c /config.toml
 
   tlbc-monitor:
     image: trustlines/tlbc-monitor:latest  # TODO: switch to master?
