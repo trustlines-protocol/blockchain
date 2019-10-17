@@ -43,4 +43,4 @@ BRIDGE_DOCUMENTATION_URL = (
 MONITOR_DIR = "monitor"
 MONITOR_REPORTS_DIR = os.path.join(MONITOR_DIR, "reports")
 
-SHARED_CHAIN_SPEC_PATH = "shared/laika-spec.json"
+SHARED_CHAIN_SPEC_PATH = "shared/trustlines-spec.json"

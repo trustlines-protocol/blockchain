@@ -100,7 +100,7 @@ services:
       - ${HOST_BASE_DIR:-.}/shared:/shared/
     depends_on:
       - trustlines-node
-    command: -r /reports -d /state -c /shared/laika-spec.json -u http://laika-testnet.node:8545 -m
+    command: -r /reports -d /state -c /shared/trustlines-spec.json -u http://laika-testnet.node:8545 -m
 
   watchtower:
     image: containrrr/watchtower

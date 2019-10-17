@@ -204,8 +204,8 @@ function runParity() {
 
 function copySpecFileToSharedVolume() {
   if [[ -d "$SHARED_VOLUME_PATH" ]]; then
-    echo "Copying laika spec file to shared volume"
-    cp /config/laika-spec.json "$SHARED_VOLUME_PATH/laika-spec.json"
+    echo "Copying chain spec file to shared volume"
+    cp /config/trustlines-spec.json "$SHARED_VOLUME_PATH/trustlines-spec.json"
   else
     echo "Shared volume apparently not mounted, skip copying chain spec file"
   fi
