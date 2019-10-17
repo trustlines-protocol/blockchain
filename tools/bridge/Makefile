@@ -32,6 +32,9 @@ install-requirements: .installed
 install: install-requirements compile
 	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -e .
 
+dist:
+	$(VIRTUAL_ENV)/bin/python3 setup.py sdist
+
 .installed: constraints.txt requirements.txt $(VIRTUAL_ENV)
 	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt pip wheel setuptools
 	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -r requirements.txt
@@ -44,4 +47,4 @@ clean:
 	rm -rf build .tox .mypy_cache .pytest_cache */__pycache__ end2end-tests/*/__pycache__ *.egg-info
 	rm -f .installed
 
-.PHONY: install install-requirements test lint compile build format clean start
+.PHONY: install install-requirements test lint compile build format clean start dist
