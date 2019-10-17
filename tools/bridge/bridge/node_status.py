@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List
+from typing import Dict, List, Optional
 
 import attr
 import gevent
@@ -10,19 +10,17 @@ logger = logging.getLogger(__name__)
 
 @attr.s(auto_attribs=True)
 class NodeStatus:
-    is_parity: bool
-    is_light_node: bool
     is_syncing: bool
-    syncing_map: Dict
     block_number: int
     latest_synced_block: int
+    syncing_map: Dict
+    client_version: str
+    is_light_node: Optional[bool]
     block_gap: List[int]
-    client_version: Any = attr.ib(repr=False)
 
 
-def get_node_status(w3):
+def get_node_status_parity(w3):
     client_version = w3.clientVersion
-    is_parity = client_version.startswith("Parity")
     block_number = w3.eth.blockNumber
 
     syncing_map = w3.eth.syncing or None
@@ -48,15 +46,37 @@ def get_node_status(w3):
         latest_synced_block = block_number
 
     return NodeStatus(
-        is_parity=is_parity,
-        is_light_node=is_light_node,
         is_syncing=is_syncing,
-        syncing_map=syncing_map,
-        block_gap=block_gap,
         block_number=block_number,
         latest_synced_block=latest_synced_block,
+        syncing_map=syncing_map,
         client_version=client_version,
+        is_light_node=is_light_node,
+        block_gap=block_gap,
     )
+
+
+def get_node_status_geth(w3):
+    client_version = w3.clientVersion
+    block_number = w3.eth.blockNumber
+    syncing_map = w3.eth.syncing or None
+    is_syncing = bool(syncing_map)
+    return NodeStatus(
+        is_syncing=is_syncing,
+        block_number=block_number,
+        latest_synced_block=block_number,
+        syncing_map=syncing_map,
+        client_version=client_version,
+        is_light_node=None,
+        block_gap=None,
+    )
+
+
+def get_node_status(w3):
+    if w3.clientVersion.startswith("Parity"):
+        return get_node_status_parity(w3)
+    else:
+        return get_node_status_geth(w3)
 
 
 def wait_for_node_status(w3, predicate, sleep_time=30.0):
