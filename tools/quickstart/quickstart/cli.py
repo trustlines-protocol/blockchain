@@ -1,4 +1,3 @@
-import os
 from textwrap import fill
 
 import click
@@ -13,9 +12,24 @@ from quickstart import bridge, docker, monitor, netstats, validator_account
         "absolute path to use for docker volumes (only relevant when run from inside a docker "
         "container itself)"
     ),
-    default=os.getcwd(),
+    type=click.Path(),  # Can not check for exist, because path is on host
+    default=None,
 )
-def main(host_base_dir):
+@click.option(
+    "--docker-compose-file",
+    help="path to the docker compose file to use",
+    type=click.Path(exists=True, dir_okay=False),
+    default="docker-compose.yaml",
+)
+@click.option(
+    "-d",
+    "--base-dir",
+    help="path where everything is installed into",
+    type=click.Path(file_okay=False),
+    default="trustlines",
+)
+@click.option("--project-name", help="project name", default="trustlines")
+def main(host_base_dir, docker_compose_file, base_dir, project_name):
     click.echo(
         "\n".join(
             (
@@ -34,11 +48,16 @@ def main(host_base_dir):
         )
     )
 
-    validator_account.setup_interactively()
-    monitor.setup_interactively()
-    bridge.setup_interactively()
-    netstats.setup_interactively()
-    docker.update_and_start(host_base_dir)
+    validator_account.setup_interactively(base_dir=base_dir)
+    monitor.setup_interactively(base_dir=base_dir)
+    bridge.setup_interactively(base_dir=base_dir)
+    netstats.setup_interactively(base_dir=base_dir)
+    docker.setup_interactivaly(
+        base_dir=base_dir, docker_compose_file=docker_compose_file
+    )
+    docker.update_and_start(
+        base_dir=base_dir, host_base_dir=host_base_dir, project_name=project_name
+    )
 
 
 if __name__ == "__main__":
