@@ -1,4 +1,5 @@
 import difflib
+import filecmp
 import os
 import shutil
 import subprocess
@@ -19,10 +20,13 @@ from quickstart.validator_account import get_validator_address
 # List of docker container names to stop and remove on startup in addition to the ones defined in
 # the docker compose file (for backward compatibility)
 LEGACY_CONTAINER_NAMES = ["watchtower-testnet", "trustlines-testnet"]
+DOCKER_COMPOSE_FILE_NAME = "docker-compose.yaml"
 
 
 def setup_interactivaly(base_dir, docker_compose_file):
-    if does_docker_compose_file_exist(base_dir):
+    if does_docker_compose_file_exist(base_dir) and not filecmp.cmp(
+        os.path.join(base_dir, DOCKER_COMPOSE_FILE_NAME), docker_compose_file
+    ):
         while True:
             choice = click.prompt(
                 fill(
@@ -59,7 +63,7 @@ def update_and_start(*, base_dir, host_base_dir, project_name) -> None:
             "\n"
             + fill(
                 "Expecting a docker-compose configuration file at the current directory "
-                "with a standard name. ('docker-compose.yaml' or 'docker-compose.yml')"
+                f"with name '{DOCKER_COMPOSE_FILE_NAME}'"
             )
         )
 
@@ -93,7 +97,7 @@ def update_and_start(*, base_dir, host_base_dir, project_name) -> None:
     runtime_env_variables = {
         **os.environ,
         **env_variables,
-        "COMPOSE_FILE": os.path.join(base_dir, "docker-compose.yaml"),
+        "COMPOSE_FILE": os.path.join(base_dir, DOCKER_COMPOSE_FILE_NAME),
     }
 
     if host_base_dir is not None:
@@ -175,9 +179,7 @@ def get_optional_docker_service_names(base_dir) -> List[str]:
 
 
 def does_docker_compose_file_exist(base_dir):
-    return os.path.isfile(
-        os.path.join(base_dir, "docker-compose.yaml")
-    ) or os.path.isfile(os.path.join(base_dir, "docker-compose.yml"))
+    return os.path.isfile(os.path.join(base_dir, DOCKER_COMPOSE_FILE_NAME))
 
 
 def copy_default_docker_file(base_dir, docker_compose_file):
@@ -188,12 +190,14 @@ def copy_default_docker_file(base_dir, docker_compose_file):
                 f"Expecting a docker-compose configuration file at {docker_compose_file}"
             )
         )
-    shutil.copyfile(docker_compose_file, os.path.join(base_dir, "docker-compose.yaml"))
+    shutil.copyfile(
+        docker_compose_file, os.path.join(base_dir, DOCKER_COMPOSE_FILE_NAME)
+    )
 
 
 def show_diff(base_dir, docker_compose_file):
     click.echo("")
-    with open(os.path.join(base_dir, "docker-compose.yaml")) as file:
+    with open(os.path.join(base_dir, DOCKER_COMPOSE_FILE_NAME)) as file:
         user_lines = file.readlines()
     with open(docker_compose_file) as file:
         default_lines = file.readlines()
@@ -202,8 +206,8 @@ def show_diff(base_dir, docker_compose_file):
     for line in difflib.unified_diff(
         user_lines,
         default_lines,
-        fromfile="Your docker-compose.yaml",
-        tofile="New default docker-compose.yaml",
+        fromfile=f"Your {DOCKER_COMPOSE_FILE_NAME}",
+        tofile=f"New default {DOCKER_COMPOSE_FILE_NAME}",
         lineterm="",
     ):
         is_same = False
