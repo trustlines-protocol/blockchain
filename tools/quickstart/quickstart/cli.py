@@ -3,6 +3,7 @@ from textwrap import fill
 import click
 
 from quickstart import bridge, docker, monitor, netstats, validator_account
+from quickstart.constants import NETSTATS_SERVER_LAIKA_BASE_URL
 
 
 @click.command()
@@ -28,8 +29,24 @@ from quickstart import bridge, docker, monitor, netstats, validator_account
     type=click.Path(file_okay=False),
     default="trustlines",
 )
+@click.option(
+    "--bridge-config",
+    help="file with bridge configuration",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+)
+@click.option(
+    "--netstats-url", help="URL to netstats server", default="laika", required=True
+)
 @click.option("--project-name", help="project name", default="trustlines")
-def main(host_base_dir, docker_compose_file, base_dir, project_name):
+def main(
+    host_base_dir,
+    docker_compose_file,
+    base_dir,
+    project_name,
+    bridge_config,
+    netstats_url,
+):
     click.echo(
         "\n".join(
             (
@@ -48,10 +65,13 @@ def main(host_base_dir, docker_compose_file, base_dir, project_name):
         )
     )
 
+    if netstats_url == "laika":
+        netstats_url = NETSTATS_SERVER_LAIKA_BASE_URL
+
     validator_account.setup_interactively(base_dir=base_dir)
     monitor.setup_interactively(base_dir=base_dir)
-    bridge.setup_interactively(base_dir=base_dir)
-    netstats.setup_interactively(base_dir=base_dir)
+    bridge.setup_interactively(base_dir=base_dir, bridge_config_file=bridge_config)
+    netstats.setup_interactively(base_dir=base_dir, netstats_url=netstats_url)
     docker.setup_interactivaly(
         base_dir=base_dir, docker_compose_file=docker_compose_file
     )

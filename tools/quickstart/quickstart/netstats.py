@@ -5,7 +5,7 @@ from textwrap import fill
 import click
 import requests
 
-from quickstart.constants import NETSTATS_ENV_FILE_PATH, NETSTATS_SERVER_BASE_URL
+from quickstart.constants import NETSTATS_ENV_FILE_PATH
 from quickstart.utils import is_netstats_prepared
 
 ENV_FILE_TEMPLATE = """\
@@ -16,7 +16,7 @@ INSTANCE_NAME={instance_name}
 """
 
 
-def setup_interactively(base_dir) -> None:
+def setup_interactively(base_dir, netstats_url) -> None:
     if is_netstats_prepared(base_dir):
         click.echo("\nThe netstats client has already been set up.")
         return
@@ -28,7 +28,7 @@ def setup_interactively(base_dir) -> None:
                 fill(
                     "This script can set up a client that reports to the netstats server running at"
                 ),
-                NETSTATS_SERVER_BASE_URL,
+                netstats_url,
                 "This helps the community to observe the state of the network.",
                 "",
                 fill(
@@ -56,7 +56,7 @@ def setup_interactively(base_dir) -> None:
         username = click.prompt("Username")
         password = click.prompt("Password", hide_input=True)
 
-        if check_credentials(username, password):
+        if check_credentials(netstats_url, username, password):
             click.echo("The provided credentials are valid.")
             break
 
@@ -96,7 +96,7 @@ def setup_interactively(base_dir) -> None:
     click.echo("Netstats client setup complete.\n")
 
 
-def check_credentials(username: str, password: str) -> bool:
-    url = f"{NETSTATS_SERVER_BASE_URL}/check"
+def check_credentials(netstats_url, username: str, password: str) -> bool:
+    url = f"{netstats_url}/check"
     response = requests.get(url, auth=(username, password), timeout=10.0)
     return response.status_code == 200
