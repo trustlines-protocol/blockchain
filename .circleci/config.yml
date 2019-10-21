@@ -429,10 +429,32 @@ jobs:
           key: bridge-validator-venv-{{ checksum "tools/bridge/constraints.txt" }}-{{ checksum "tools/bridge/requirements.txt" }}
           paths:
             - bridge-validator-venv
+      - run:
+          name: Build dist
+          command: |
+            make -C tools/bridge dist
+
       - persist_to_workspace:
           root: "~"
           paths:
             - repo
+
+  upload-pypi-bridge-validator:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-bridge-validator-path
+      - run:
+          name: Init .pypirc
+          command: |
+            echo -e "[pypi]" >> ~/.pypirc
+            echo -e "username = $PYPI_USER" >> ~/.pypirc
+            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+      - run:
+          name: Upload to pypi
+          command: |
+            twine upload tools/bridge/dist/*
 
   pytest-bridge-validator:
     executor: ubuntu-builder
@@ -832,3 +854,19 @@ workflows:
             - pytest-bridge-validator
             - build-bridge-image
           context: docker-release-credentials
+
+      - upload-pypi-bridge-validator:
+          context: pypi-credentials
+          filters:
+            branches:
+              only:
+                - bridge/pre-release
+                - bridge/release
+          requires:
+            - install-bridge-validator
+            - pre-commit-checks
+            - run-black
+            - run-flake8
+            - mypy-bridge-validator
+            - pytest-bridge-validator
+            - build-bridge-image
