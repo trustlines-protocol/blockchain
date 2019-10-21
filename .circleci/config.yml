@@ -636,6 +636,24 @@ jobs:
           paths:
             - images
 
+  smoke-test-docker-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: tlbc-testnet-next
+    steps:
+      - setup_remote_docker
+      - checkout
+      - attach_workspace:
+          at: '~'
+      - run:
+          name: Load docker image
+          command: |
+            du -hc ~/images/*
+            docker load --input ~/images/$LOCAL_IMAGE.tar
+      - run:
+          name: Smoketest docker image
+          command: ./chain/smoke-test.sh $LOCAL_IMAGE
+
   compare-docker-image:
     executor: ubuntu-builder
     environment:
@@ -764,6 +782,9 @@ workflows:
             - build-bridge-image
           context: docker-credentials
 
+      - smoke-test-docker-image:
+          requires:
+            - build-docker-image
       - deploy-docker-image:
           filters:
             branches:
@@ -778,6 +799,7 @@ workflows:
             - install-contracts
             - pytest-contracts
             - build-docker-image
+            - smoke-test-docker-image
           context: docker-credentials
 
       - deploy-quickstart-image:
