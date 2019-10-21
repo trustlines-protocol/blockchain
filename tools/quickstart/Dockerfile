@@ -52,6 +52,5 @@ RUN apt-get update \
 FROM runner
 WORKDIR /quickstart
 COPY --from=builder /opt/quickstart /opt/quickstart
-COPY ./docker/docker-compose.yaml .
 ENV PATH="/opt/quickstart/bin:${PATH}"
 ENTRYPOINT ["quickstart"]
