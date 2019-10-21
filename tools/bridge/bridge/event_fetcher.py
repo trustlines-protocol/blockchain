@@ -56,6 +56,9 @@ class EventFetcher:
     def _rpc_latest_block(self):
         return self._retrying.call(lambda: self.web3.eth.blockNumber)
 
+    def _rpc_is_syncing(self):
+        return bool(self._retrying.call(lambda: self.web3.eth.syncing))
+
     def _rpc_get_logs(
         self,
         event_name: str,
@@ -141,11 +144,13 @@ class EventFetcher:
                 self.event_queue.put(event)
 
             if not events:
-                self.event_queue.put(
-                    FetcherReachedHeadEvent(
-                        timestamp=time.time(),
-                        chain_role=self.chain_role,
-                        last_fetched_block_number=self.last_fetched_block_number,
-                    )
+                # instantiate this event here in order to use the
+                # current time as timestamp
+                reached_head_event = FetcherReachedHeadEvent(
+                    timestamp=time.time(),
+                    chain_role=self.chain_role,
+                    last_fetched_block_number=self.last_fetched_block_number,
                 )
+                if not self._rpc_is_syncing():
+                    self.event_queue.put(reached_head_event)
                 time.sleep(poll_interval)

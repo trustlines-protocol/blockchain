@@ -18,10 +18,10 @@ services:
       - 30300:30300
       - 30300:30300/udp
     volumes:
-      - ${HOST_BASE_DIR:-.}/trustlines/databases:/data
-      - ${HOST_BASE_DIR:-.}/trustlines/config:/config/custom
-      - ${HOST_BASE_DIR:-.}/trustlines/enode:/config/network
-      - ${HOST_BASE_DIR:-.}/trustlines/shared:/shared/
+      - ${HOST_BASE_DIR:-.}/databases:/data
+      - ${HOST_BASE_DIR:-.}/config:/config/custom
+      - ${HOST_BASE_DIR:-.}/enode:/config/network
+      - ${HOST_BASE_DIR:-.}/shared:/shared/
     command: >-
       --role ${ROLE}
       --address ${VALIDATOR_ADDRESS}
@@ -42,7 +42,7 @@ services:
           - mainnet.node
     volumes:
       # Need to adjust the path if using different chain
-      - ${HOST_BASE_DIR:-.}/trustlines/databases/mainnet:/data/database
+      - ${HOST_BASE_DIR:-.}/databases/mainnet:/data/database
     command: >-
       --light
       --no-download
@@ -62,7 +62,7 @@ services:
   netstats-client:
     image: trustlines/netstats-client:master
     restart: always
-    env_file: ./trustlines/netstats-env
+    env_file: ./netstats-env
     environment:
       - RPC_HOST=laika-testnet.node
     networks:
@@ -80,8 +80,7 @@ services:
       - laika-testnet
       - mainnet
     volumes:
-      - ${HOST_BASE_DIR:-.}/trustlines/config:/config
-      - ${HOST_BASE_DIR:-.}/trustlines/bridge-config.toml:/config/config.toml
+      - ${HOST_BASE_DIR:-.}/bridge-config.toml:/config/config.toml
     depends_on:
       - trustlines-node
       - mainnet-node
@@ -96,12 +95,12 @@ services:
     networks:
       - laika-testnet
     volumes:
-      - ${HOST_BASE_DIR:-.}/trustlines/monitor/reports:/reports
-      - ${HOST_BASE_DIR:-.}/trustlines/monitor/state:/state
-      - ${HOST_BASE_DIR:-.}/trustlines/shared:/shared/
+      - ${HOST_BASE_DIR:-.}/monitor/reports:/reports
+      - ${HOST_BASE_DIR:-.}/monitor/state:/state
+      - ${HOST_BASE_DIR:-.}/shared:/shared/
     depends_on:
       - trustlines-node
-    command: -r /reports -d /state -c /shared/laika-spec.json -u http://laika-testnet.node:8545 -m
+    command: -r /reports -d /state -c /shared/trustlines-spec.json -u http://laika-testnet.node:8545 -m
 
   watchtower:
     image: containrrr/watchtower
