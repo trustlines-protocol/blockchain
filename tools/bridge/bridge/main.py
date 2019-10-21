@@ -537,7 +537,7 @@ def start_system(config):
     "--config",
     "config_path",
     type=click.Path(exists=True),
-    required=False,
+    required=True,
     envvar="BRIDGE_CONFIG",
     help="Path to a config file",
 )
