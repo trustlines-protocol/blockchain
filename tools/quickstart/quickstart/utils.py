@@ -57,16 +57,16 @@ def non_empty_file_exists(file_path: str) -> bool:
     )
 
 
-def is_validator_account_prepared() -> bool:
-    return os.path.isfile(ADDRESS_FILE_PATH)
+def is_validator_account_prepared(base_dir) -> bool:
+    return os.path.isfile(os.path.join(base_dir, ADDRESS_FILE_PATH))
 
 
-def is_netstats_prepared() -> bool:
-    return non_empty_file_exists(NETSTATS_ENV_FILE_PATH)
+def is_netstats_prepared(base_dir) -> bool:
+    return non_empty_file_exists(os.path.join(base_dir, NETSTATS_ENV_FILE_PATH))
 
 
-def is_bridge_prepared() -> bool:
-    return non_empty_file_exists(BRIDGE_CONFIG_FILE_EXTERNAL)
+def is_bridge_prepared(base_dir) -> bool:
+    return non_empty_file_exists(os.path.join(base_dir, BRIDGE_CONFIG_FILE_EXTERNAL))
 
 
 def is_monitor_prepared() -> bool:
@@ -106,7 +106,7 @@ def get_keystore_path() -> str:
             (
                 "Please enter the path to the keystore file to import.",
                 fill(
-                    "If you started the process via the quickstart scipt, please consider that you "
+                    "If you started the process via the quickstart script, please consider that you "
                     "are running within a Docker virtual file system. You can access the current "
                     "working directory via '/data'. (e.g. './my-dir/keystore.json' becomes "
                     "'/data/my-dir/keystore.json')"

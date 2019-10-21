@@ -3,7 +3,6 @@ import logging.config
 import os
 import signal
 import sys
-from functools import partial
 
 import click
 import gevent
@@ -309,7 +308,7 @@ def make_confirmation_watcher(*, config, pending_transaction_queue):
     )
 
 
-def make_validator_status_watcher(config, control_queue, stop):
+def make_validator_status_watcher(config, control_queue):
     w3_home = make_w3_home(config)
 
     home_bridge_contract = w3_home.eth.contract(
@@ -325,7 +324,7 @@ def make_validator_status_watcher(config, control_queue, stop):
         validator_address,
         poll_interval=HOME_CHAIN_STEP_DURATION,
         control_queue=control_queue,
-        stop_validating_callback=stop,
+        stop_validating_callback=shutdown,
     )
 
 
@@ -366,7 +365,7 @@ def make_webservice(*, config, recorder):
     return ws
 
 
-def make_main_services(config, recorder, stop_pool):
+def make_main_services(config, recorder):
     control_queue = Queue()
     transfer_event_queue = Queue()
     home_bridge_event_queue = Queue()
@@ -386,9 +385,7 @@ def make_main_services(config, recorder, stop_pool):
         confirmation_task_queue=confirmation_task_queue,
     )
 
-    validator_status_watcher = make_validator_status_watcher(
-        config, control_queue, stop_pool
-    )
+    validator_status_watcher = make_validator_status_watcher(config, control_queue)
 
     max_pending_transactions = get_max_pending_transactions(config)
     logger.info("maximum number of pending transactions: %s", max_pending_transactions)
@@ -426,26 +423,6 @@ def make_main_services(config, recorder, stop_pool):
     )
 
 
-def stop(pool, timeout):
-    logger.info("Stopping...")
-
-    timeout = gevent.Timeout(timeout)
-    timeout.start()
-    try:
-        pool.kill()
-        pool.join()
-    except gevent.Timeout as handled_timeout:
-        if handled_timeout is not timeout:
-            logger.error("Catched wrong timeout exception, exciting anyway")
-        else:
-            logger.error("Bridge didn't clean up in time, doing a hard exit")
-
-        sys.stderr.flush()
-        sys.stdout.flush()
-
-        os._exit(os.EX_SOFTWARE)
-
-
 def reload_logging_config(config_path):
     logger.info(f"Trying to reload the logging configuration from {config_path}")
     try:
@@ -474,6 +451,83 @@ def log_internal_state(recorder):
     while True:
         gevent.sleep(60.0)
         recorder.log_current_state()
+
+
+main_pool = gevent.pool.Pool()
+
+
+def shutdown_raw(timeout=APPLICATION_CLEANUP_TIMEOUT, exitcode=0):
+    """gracefully shut down the application"""
+    logger.info("Stopping with exitcode %s", exitcode)
+
+    timeout = gevent.Timeout(timeout)
+    timeout.start()
+    try:
+        main_pool.kill()
+        main_pool.join()
+    except gevent.Timeout as handled_timeout:
+        if handled_timeout is not timeout:
+            logger.error("Catched wrong timeout exception, exciting anyway")
+        else:
+            logger.error("Bridge didn't clean up in time, doing a hard exit")
+
+        sys.stderr.flush()
+        sys.stdout.flush()
+
+        os._exit(os.EX_SOFTWARE)
+    os._exit(exitcode)
+
+
+def shutdown(timeout=APPLICATION_CLEANUP_TIMEOUT, exitcode=0):
+    """call shutdown_raw in a new greenlet. we need to call that one,
+    if the calling greenlet is running inside the main_pool"""
+    gevent.spawn(shutdown_raw, timeout=timeout, exitcode=exitcode)
+
+
+def handle_greenlet_exception(gr):
+    logger.exception(
+        f"Application Error: {gr.name} unexpectedly died. Shutting down.",
+        exc_info=gr.exception,
+    )
+    shutdown_raw(exitcode=os.EX_SOFTWARE)
+
+
+def start_services_in_main_pool(services):
+    return start_services(
+        services,
+        start=main_pool.start,
+        link_exception_callback=handle_greenlet_exception,
+    )
+
+
+def start_system(config):
+    recorder = make_recorder(config)
+
+    webservice = make_webservice(config=config, recorder=recorder)
+    wait_for_start_blocks_service = Service(
+        "wait_for_start_block", wait_for_start_blocks, config
+    )
+    webservice_services = webservice.services if webservice is not None else []
+
+    install_signal_handler(
+        signal.SIGUSR1, "report-internal-state", recorder.log_current_state
+    )
+
+    start_services_in_main_pool(webservice_services)
+    start_block_greenlet, = start_services_in_main_pool([wait_for_start_blocks_service])
+
+    gevent.joinall([start_block_greenlet])
+
+    # Only continue if start_block_greenlet wasn't killed
+    if start_block_greenlet.successful() and not isinstance(
+        start_block_greenlet.value, gevent.GreenletExit
+    ):
+        main_services = make_main_services(config, recorder)
+        start_services_in_main_pool(main_services)
+    else:
+        # we need to explicitly shutdown the program here, otherwise
+        # it may keep running only serving the webservice
+        shutdown(exitcode=0)
 
 
 @click.command()
@@ -512,60 +566,17 @@ def main(ctx, config_path: str) -> None:
     logger.info(
         f"Starting Trustlines Bridge Validation Server for address {to_checksum_address(validator_address)}"
     )
-
-    pool = gevent.pool.Pool()
-    stop_pool = partial(stop, pool, APPLICATION_CLEANUP_TIMEOUT)
-
-    def handle_greenlet_exception(gr):
-        logger.exception(
-            f"Application Error: {gr.name} unexpectedly died. Shutting down.",
-            exc_info=gr.exception,
-        )
-        stop_pool()
-
-    recorder = make_recorder(config)
-
-    webservice = make_webservice(config=config, recorder=recorder)
-    wait_for_start_blocks_service = Service(
-        "wait_for_start_block", wait_for_start_blocks, config
-    )
-    webservice_services = webservice.services if webservice is not None else []
-
-    install_signal_handler(
-        signal.SIGUSR1, "report-internal-state", recorder.log_current_state
-    )
-
     install_signal_handler(
         signal.SIGHUP, "reload-logging-config", reload_logging_config, config_path
     )
+
     for signum in [signal.SIGINT, signal.SIGTERM]:
-        install_signal_handler(signum, "terminator", stop_pool)
+        install_signal_handler(signum, "terminator", shutdown_raw, exitcode=0)
 
     try:
-        webservice_greenlets = start_services(
-            webservice_services,
-            start=pool.start,
-            link_exception_callback=handle_greenlet_exception,
-        )
-        start_block_greenlet, = start_services(
-            [wait_for_start_blocks_service],
-            start=pool.start,
-            link_exception_callback=handle_greenlet_exception,
-        )
-
-        gevent.joinall([start_block_greenlet])
-
-        # Only continue if start_block_greenlet wasn't killed
-        if start_block_greenlet.successful() and not isinstance(
-            start_block_greenlet.value, gevent.GreenletExit
-        ):
-            main_services = make_main_services(config, recorder, stop_pool)
-            main_greenlets = start_services(
-                main_services,
-                start=pool.start,
-                link_exception_callback=handle_greenlet_exception,
-            )
-            gevent.joinall(webservice_greenlets + main_greenlets)
+        start_services_in_main_pool([Service("start_system", start_system, config)])
     except Exception as exception:
         logger.exception("Application error", exc_info=exception)
-        stop(pool, APPLICATION_CLEANUP_TIMEOUT)
+        os._exit(os.EX_SOFTWARE)
+    finally:
+        gevent.hub.get_hub().join()

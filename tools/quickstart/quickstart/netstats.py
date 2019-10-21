@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from textwrap import fill
 
@@ -15,8 +16,8 @@ INSTANCE_NAME={instance_name}
 """
 
 
-def setup_interactively() -> None:
-    if is_netstats_prepared():
+def setup_interactively(base_dir) -> None:
+    if is_netstats_prepared(base_dir):
         click.echo("\nThe netstats client has already been set up.")
         return
 
@@ -48,7 +49,7 @@ def setup_interactively() -> None:
         )
     ):
         # Necessary to make docker-compose not complaining about it.
-        Path(NETSTATS_ENV_FILE_PATH).touch()
+        Path(os.path.join(base_dir, NETSTATS_ENV_FILE_PATH)).touch()
         return
 
     while True:
@@ -85,7 +86,7 @@ def setup_interactively() -> None:
 
     instance_name = click.prompt("Instance name")
 
-    with open(NETSTATS_ENV_FILE_PATH, "w") as env_file:
+    with open(os.path.join(base_dir, NETSTATS_ENV_FILE_PATH), "w") as env_file:
         env_file.write(
             ENV_FILE_TEMPLATE.format(
                 username=username, password=password, instance_name=instance_name
