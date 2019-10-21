@@ -19,8 +19,8 @@ from quickstart.constants import (
 )
 
 
-def ensure_clean_setup():
-    if os.path.isfile(PASSWORD_FILE_PATH):
+def ensure_clean_setup(base_dir):
+    if os.path.isfile(os.path.join(base_dir, PASSWORD_FILE_PATH)):
         raise click.ClickException(
             "\n".join(
                 (
@@ -29,7 +29,7 @@ def ensure_clean_setup():
                 )
             )
         )
-    if os.path.isfile(KEYSTORE_FILE_PATH):
+    if os.path.isfile(os.path.join(base_dir, KEYSTORE_FILE_PATH)):
         raise click.ClickException(
             "\n".join(
                 (
@@ -38,7 +38,7 @@ def ensure_clean_setup():
                 )
             )
         )
-    if os.path.isfile(ADDRESS_FILE_PATH):
+    if os.path.isfile(os.path.join(base_dir, ADDRESS_FILE_PATH)):
         raise click.ClickException(
             "\n".join(
                 (
@@ -69,8 +69,8 @@ def is_bridge_prepared(base_dir) -> bool:
     return non_empty_file_exists(os.path.join(base_dir, BRIDGE_CONFIG_FILE_EXTERNAL))
 
 
-def is_monitor_prepared() -> bool:
-    return os.path.isdir(MONITOR_DIR)
+def is_monitor_prepared(base_dir) -> bool:
+    return os.path.isdir(os.path.join(base_dir, MONITOR_DIR))
 
 
 class TrustlinesFiles:
