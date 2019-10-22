@@ -6,7 +6,7 @@ import pkg_resources
 
 from quickstart import bridge, docker, monitor, netstats, validator_account
 
-DEFAULT_CONFIGS = ["Laika"]
+DEFAULT_CONFIGS = ["laika"]
 LAIKA, = DEFAULT_CONFIGS
 
 LAIKA_DOCKER_COMPOSE_FILE = "laika-docker-compose.yaml"
@@ -39,15 +39,7 @@ class DefaultPathType(click.Path):
         return super().convert(value, param, ctx)
 
 
-@click.command()
-@click.option(
-    "--config",
-    "-c",
-    help="Config to use. [Default: Laika]",
-    type=click.Choice(DEFAULT_CONFIGS),
-    default=None,
-)
-@click.option(
+host_base_dir_option = click.option(
     "--host-base-dir",
     help=(
         "Absolute path to use for docker volumes (only relevant when run from inside a docker "
@@ -56,15 +48,43 @@ class DefaultPathType(click.Path):
     type=click.Path(),  # Can not check for exist, because path is on host
     default=None,
 )
+
+
+@click.group()
+def main():
+    """Script to guide you through the quick setup of a Trustlines blockchain node."""
+    pass
+
+
+@main.command()
 @click.option(
     "--docker-compose-file",
-    help="Path to the docker compose file to use, or laika for the default laika docker compose file.",
+    help=f"Path to the docker compose file to use, or '{LAIKA}' for the default Laika docker compose file.",
     type=DefaultPathType(
         exists=True,
         dir_okay=False,
         default_path_lookups={LAIKA: config_file_getter(LAIKA_DOCKER_COMPOSE_FILE)},
     ),
-    default=None,
+    required=True,
+)
+@click.option(
+    "--bridge-config",
+    help=f"Path to the bridge configuration, or '{LAIKA}' for the default Laika configuration.",
+    type=DefaultPathType(
+        exists=True,
+        dir_okay=False,
+        default_path_lookups={LAIKA: config_file_getter(LAIKA_BRIDGE_CONFIG_FILE)},
+    ),
+    required=True,
+)
+@click.option(
+    "--netstats-url", help="URL to netstats server", default=None, metavar="URL"
+)
+@click.option(
+    "--project-name",
+    help="The project name. This will be used to namespace the docker containers (<project-name>_<service-name>)",
+    default="trustlines",
+    show_default=True,
 )
 @click.option(
     "-d",
@@ -72,25 +92,10 @@ class DefaultPathType(click.Path):
     help="Path where everything is installed into",
     type=click.Path(file_okay=False),
     default="trustlines",
+    show_default=True,
 )
-@click.option(
-    "--bridge-config",
-    help="Path to the bridge configuration, or laika for the default laika configuration.",
-    type=DefaultPathType(
-        exists=True,
-        dir_okay=False,
-        default_path_lookups={LAIKA: config_file_getter(LAIKA_BRIDGE_CONFIG_FILE)},
-    ),
-    default=None,
-)
-@click.option("--netstats-url", help="URL to netstats server", default=None)
-@click.option(
-    "--project-name",
-    help="The project name. This will be used to namespace the docker containers (<project-name>_<service-name>)",
-    default="trustlines",
-)
-def main(
-    config,
+@host_base_dir_option
+def custom(
     host_base_dir,
     docker_compose_file,
     base_dir,
@@ -98,54 +103,77 @@ def main(
     bridge_config,
     netstats_url,
 ):
+    """
+    Setup with custom settings.
 
-    # if nothing is set, default to Laika
-    if docker_compose_file is None and bridge_config is None and netstats_url is None:
-        config = LAIKA
-
-    if config is not None:
-        if (
-            docker_compose_file is not None
-            or bridge_config is not None
-            or netstats_url is not None
-        ):
-            raise click.BadOptionUsage(
-                "--config",
-                "When using the config option, you can not provide "
-                "any of docker-compose-file, bridge-config or netstats-url.",
-            )
-
-        if config == LAIKA:
-            docker_compose_file = config_file_getter(LAIKA_DOCKER_COMPOSE_FILE)()
-            bridge_config = config_file_getter(LAIKA_BRIDGE_CONFIG_FILE)()
-            netstats_url = LAIKA_NETSTATS_SERVER_BASE_URL
-        else:
-            raise click.BadOptionUsage("config", f"Unexpected config option: {config}")
-    else:
-        if docker_compose_file is None:
-            raise click.BadOptionUsage(
-                "docker-compose-file",
-                "You have to provide a docker compose file if you do not use the config option.",
-            )
-        if bridge_config is None:
-            raise click.BadOptionUsage(
-                "bridge-config",
-                "You have to provide a bridge config file if you do not use the config option.",
-            )
-        if netstats_url is None:
-            raise click.BadOptionUsage(
-                "netstats-url",
-                "You have to provide a netstats url if you do not use the config option.",
-            )
+    Setup all the necessary services for the custom node setup.
+    """
 
     if netstats_url == LAIKA:
         netstats_url = LAIKA_NETSTATS_SERVER_BASE_URL
 
+    run(
+        "custom Trustlines blockchain node",
+        base_dir=base_dir,
+        bridge_config_file=bridge_config,
+        docker_compose_file=docker_compose_file,
+        netstats_url=netstats_url,
+        project_name=project_name,
+        host_base_dir=host_base_dir,
+    )
+
+
+@main.command()
+@click.option(
+    "--project-name",
+    help="The project name. This will be used to namespace the docker containers (<project-name>_<service-name>)",
+    default="trustlines",
+    show_default=True,
+)
+@click.option(
+    "-d",
+    "--base-dir",
+    help="Path where everything is installed into",
+    type=click.Path(file_okay=False),
+    default="trustlines",
+    show_default=True,
+)
+@host_base_dir_option
+def laika(host_base_dir, project_name, base_dir):
+    """
+    Setup with Laika settings.
+
+    Setup the services for the Laika testnet network with default settings.
+    """
+    docker_compose_file = config_file_getter(LAIKA_DOCKER_COMPOSE_FILE)()
+    bridge_config_file = config_file_getter(LAIKA_BRIDGE_CONFIG_FILE)()
+    netstats_url = LAIKA_NETSTATS_SERVER_BASE_URL
+    run(
+        "Laika testnet node",
+        bridge_config_file=bridge_config_file,
+        docker_compose_file=docker_compose_file,
+        netstats_url=netstats_url,
+        host_base_dir=host_base_dir,
+        project_name=project_name,
+        base_dir=base_dir,
+    )
+
+
+def run(
+    setup_name,
+    *,
+    bridge_config_file,
+    docker_compose_file,
+    base_dir,
+    project_name,
+    netstats_url=None,
+    host_base_dir=None,
+):
     click.echo(
         "\n".join(
             (
                 fill(
-                    "This script will guide you through the setup of a Laika testnet node as well as a few "
+                    f"This script will guide you through the setup of a {setup_name} as well as a few "
                     "additional services. Once it is complete, the components will run in the background as "
                     "docker containers."
                 ),
@@ -158,10 +186,9 @@ def main(
             )
         )
     )
-
     validator_account.setup_interactively(base_dir=base_dir)
     monitor.setup_interactively(base_dir=base_dir)
-    bridge.setup_interactively(base_dir=base_dir, bridge_config_file=bridge_config)
+    bridge.setup_interactively(base_dir=base_dir, bridge_config_file=bridge_config_file)
     netstats.setup_interactively(base_dir=base_dir, netstats_url=netstats_url)
     docker.setup_interactivaly(
         base_dir=base_dir, docker_compose_file=docker_compose_file
