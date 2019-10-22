@@ -3,9 +3,9 @@
 # At the moment we cannot use the latest version, because of the following issue:
 # https://github.com/paritytech/parity-ethereum/issues/10401
 #
-# You can build the image from the *parent directory* with this command:
+# You can build the image from this dir with this command:
 #
-#   docker build -f docker/Dockerfile -t tlbc-testnet-next .
+#   docker build -t tlbc-testnet-next .
 
 FROM ubuntu:18.04@sha256:f08638ec7ddc90065187e7eabdfac3c96e5ff0f6b2f1762cf31a4f49b53000a5
 
@@ -33,11 +33,11 @@ RUN chmod 755 $PARITY_BIN
 EXPOSE 30300 8545 8546 8082 5001
 
 ### Default chain and node configuration files.
-COPY config/laika-spec.json $PARITY_CONFIG_FILE_CHAIN
-COPY config/user-config.toml $PARITY_CONFIG_FILE_TEMPLATE
+COPY ./laika-spec.json $PARITY_CONFIG_FILE_CHAIN
+COPY ./user-config.toml $PARITY_CONFIG_FILE_TEMPLATE
 
 ### Wrapper script for Parity.
-COPY docker/parity_wrapper.sh $PARITY_WRAPPER_SCRIPT
+COPY ./parity_wrapper.sh $PARITY_WRAPPER_SCRIPT
 RUN chmod +x $PARITY_WRAPPER_SCRIPT
 
 ### Shorthand links

@@ -21,6 +21,10 @@ def setup_interactively(base_dir, netstats_url) -> None:
         click.echo("\nThe netstats client has already been set up.")
         return
 
+    if netstats_url is None:
+        click.echo("\nSkip setup netstats client because no netstats url was provided.")
+        return
+
     click.echo(
         "\n".join(
             (

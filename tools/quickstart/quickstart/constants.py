@@ -13,7 +13,6 @@ PASSWORD_FILE_PATH = os.path.join(CONFIG_DIR, PASSWORD_FILE_NAME)
 ADDRESS_FILE_PATH = os.path.join(CONFIG_DIR, "address")
 
 NETSTATS_ENV_FILE_PATH = "netstats-env"
-NETSTATS_SERVER_LAIKA_BASE_URL = "https://laikanetstats.trustlines.foundation/"
 
 BRIDGE_CONFIG_FILE_EXTERNAL = "bridge-config.toml"
 BRIDGE_DOCUMENTATION_URL = (

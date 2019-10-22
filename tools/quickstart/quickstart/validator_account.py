@@ -31,7 +31,7 @@ def setup_interactively(base_dir) -> None:
     if not prompt_setup_as_validator():
         return
 
-    ensure_clean_setup()
+    ensure_clean_setup(base_dir)
 
     os.makedirs(os.path.join(base_dir, CONFIG_DIR), exist_ok=True)
     os.makedirs(os.path.join(base_dir, ENODE_DIR), exist_ok=True)

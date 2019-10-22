@@ -624,7 +624,7 @@ jobs:
       - run:
           name: Build docker image
           command: |
-            docker build -f docker/Dockerfile -t $LOCAL_IMAGE .
+            docker build -t $LOCAL_IMAGE ./chain
       - run:
           name: Save docker image
           command: |
