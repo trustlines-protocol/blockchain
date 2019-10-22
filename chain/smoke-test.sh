@@ -9,19 +9,22 @@ error() {
 
 EXIT_CODE=0
 
-# Run in background and remember PID
-docker run --rm --name testrun "$1" &
-PID=$!
+docker run -d --name testrun "$1"
 
 # Give it some time
 sleep 20
+# Show logs
+docker logs testrun
 
-if [ -z "$(ps -q $PID -o state --no-headers)" ]; then
+if [ -z "$(docker ps -q -f name=testrun)" ]; then
+  # Check if the container is still running
   error "It seems like the blockchain image crashed"
   EXIT_CODE=1
 else
   echo "Everything fine"
 fi
 
+# Clean up
 docker stop testrun
+docker rm testrun
 exit $EXIT_CODE
