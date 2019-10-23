@@ -6,17 +6,24 @@ import pkg_resources
 
 from quickstart import bridge, docker, monitor, netstats, validator_account
 
-DEFAULT_CONFIGS = ["laika"]
-LAIKA, = DEFAULT_CONFIGS
+DEFAULT_CONFIGS = ["laika", "tlbc"]
+LAIKA, TLBC = DEFAULT_CONFIGS
 
-LAIKA_DOCKER_COMPOSE_FILE = "laika-docker-compose.yaml"
-LAIKA_BRIDGE_CONFIG_FILE = "laika-bridge-config.toml"
 LAIKA_NETSTATS_SERVER_BASE_URL = "https://laikanetstats.trustlines.foundation/"
+TLBC_NETSTATS_SERVER_BASE_URL = "https://netstats.trustlines.foundation/"
 
 
-def config_file_getter(filename):
+def docker_compose_file_getter(config_name):
+    return config_file_getter(config_name, "docker-compose.yaml")
+
+
+def bridge_config_file_getter(config_name):
+    return config_file_getter(config_name, "bridge-config.toml")
+
+
+def config_file_getter(config_name, filename):
     return functools.partial(
-        pkg_resources.resource_filename, __name__, f"configs/{filename}"
+        pkg_resources.resource_filename, __name__, f"configs/{config_name}/{filename}"
     )
 
 
@@ -50,50 +57,115 @@ host_base_dir_option = click.option(
 )
 
 
+def project_name_option(**kwargs):
+    return click.option(
+        "--project-name",
+        help="The project name. This will be used to namespace the docker containers (<project-name>_<service-name>)",
+        show_default=True,
+        **kwargs,
+    )
+
+
+def base_dir_option(**kwargs):
+    return click.option(
+        "-d",
+        "--base-dir",
+        help="Path where everything is installed into",
+        type=click.Path(file_okay=False),
+        show_default=True,
+        **kwargs,
+    )
+
+
 @click.group()
 def main():
-    """Script to guide you through the quick setup of a Trustlines blockchain node."""
+    """Script to guide you through the quick setup of a Trustlines Blockchain node."""
     pass
+
+
+@main.command()
+@project_name_option(default="tlbc")
+@base_dir_option(default="tlbc")
+@host_base_dir_option
+def tlbc(host_base_dir, project_name, base_dir):
+    """
+    Setup with Trustlines Blockchain settings.
+
+    Setup the services for the Trustlines Blockchain with default settings.
+    """
+    docker_compose_file = docker_compose_file_getter(TLBC)()
+    bridge_config_file = bridge_config_file_getter(TLBC)()
+    netstats_url = TLBC_NETSTATS_SERVER_BASE_URL
+    run(
+        "Trustlines Blockchain",
+        bridge_config_file=bridge_config_file,
+        docker_compose_file=docker_compose_file,
+        netstats_url=netstats_url,
+        host_base_dir=host_base_dir,
+        project_name=project_name,
+        base_dir=base_dir,
+    )
+
+
+@main.command()
+@project_name_option(default="laika")
+@base_dir_option(default="trustlines")  # for backwards compatibility
+@host_base_dir_option
+def laika(host_base_dir, project_name, base_dir):
+    """
+    Setup with Laika settings.
+
+    Setup the services for the Laika testnet network with default settings.
+    """
+    docker_compose_file = docker_compose_file_getter(LAIKA)()
+    bridge_config_file = bridge_config_file_getter(LAIKA)()
+    netstats_url = LAIKA_NETSTATS_SERVER_BASE_URL
+    run(
+        "Laika Testnet",
+        bridge_config_file=bridge_config_file,
+        docker_compose_file=docker_compose_file,
+        netstats_url=netstats_url,
+        host_base_dir=host_base_dir,
+        project_name=project_name,
+        base_dir=base_dir,
+    )
 
 
 @main.command()
 @click.option(
     "--docker-compose-file",
-    help=f"Path to the docker compose file to use, or '{LAIKA}' for the default Laika docker compose file.",
+    help=f"Path to the docker compose file to use, or one of '{TLBC}', '{LAIKA}' for the default TLBC or Laika docker compose file.",
     type=DefaultPathType(
         exists=True,
         dir_okay=False,
-        default_path_lookups={LAIKA: config_file_getter(LAIKA_DOCKER_COMPOSE_FILE)},
+        default_path_lookups={
+            LAIKA: docker_compose_file_getter(LAIKA),
+            TLBC: docker_compose_file_getter(TLBC),
+        },
     ),
     required=True,
 )
 @click.option(
     "--bridge-config",
-    help=f"Path to the bridge configuration, or '{LAIKA}' for the default Laika configuration.",
+    help=f"Path to the bridge configuration, or one of '{TLBC}', '{LAIKA}' for the default TLBC or Laika bridge config.",
     type=DefaultPathType(
         exists=True,
         dir_okay=False,
-        default_path_lookups={LAIKA: config_file_getter(LAIKA_BRIDGE_CONFIG_FILE)},
+        default_path_lookups={
+            LAIKA: bridge_config_file_getter(LAIKA),
+            TLBC: bridge_config_file_getter(TLBC),
+        },
     ),
     required=True,
 )
 @click.option(
-    "--netstats-url", help="URL to netstats server", default=None, metavar="URL"
+    "--netstats-url",
+    help="URL to netstats server, or one of '{TLBC}', '{LAIKA}' for the default TLBC or Laika netstats server.",
+    default=None,
+    metavar="URL",
 )
-@click.option(
-    "--project-name",
-    help="The project name. This will be used to namespace the docker containers (<project-name>_<service-name>)",
-    default="trustlines",
-    show_default=True,
-)
-@click.option(
-    "-d",
-    "--base-dir",
-    help="Path where everything is installed into",
-    type=click.Path(file_okay=False),
-    default="trustlines",
-    show_default=True,
-)
+@project_name_option(default="custom")
+@base_dir_option(default="custom")
 @host_base_dir_option
 def custom(
     host_base_dir,
@@ -111,51 +183,17 @@ def custom(
 
     if netstats_url == LAIKA:
         netstats_url = LAIKA_NETSTATS_SERVER_BASE_URL
+    elif netstats_url == TLBC:
+        netstats_url = TLBC_NETSTATS_SERVER_BASE_URL
 
     run(
-        "custom Trustlines blockchain node",
+        "custom blockchain node",
         base_dir=base_dir,
         bridge_config_file=bridge_config,
         docker_compose_file=docker_compose_file,
         netstats_url=netstats_url,
         project_name=project_name,
         host_base_dir=host_base_dir,
-    )
-
-
-@main.command()
-@click.option(
-    "--project-name",
-    help="The project name. This will be used to namespace the docker containers (<project-name>_<service-name>)",
-    default="trustlines",
-    show_default=True,
-)
-@click.option(
-    "-d",
-    "--base-dir",
-    help="Path where everything is installed into",
-    type=click.Path(file_okay=False),
-    default="trustlines",
-    show_default=True,
-)
-@host_base_dir_option
-def laika(host_base_dir, project_name, base_dir):
-    """
-    Setup with Laika settings.
-
-    Setup the services for the Laika testnet network with default settings.
-    """
-    docker_compose_file = config_file_getter(LAIKA_DOCKER_COMPOSE_FILE)()
-    bridge_config_file = config_file_getter(LAIKA_BRIDGE_CONFIG_FILE)()
-    netstats_url = LAIKA_NETSTATS_SERVER_BASE_URL
-    run(
-        "Laika testnet node",
-        bridge_config_file=bridge_config_file,
-        docker_compose_file=docker_compose_file,
-        netstats_url=netstats_url,
-        host_base_dir=host_base_dir,
-        project_name=project_name,
-        base_dir=base_dir,
     )
 
 
@@ -173,7 +211,7 @@ def run(
         "\n".join(
             (
                 fill(
-                    f"This script will guide you through the setup of a {setup_name} as well as a few "
+                    f"This script will guide you through the setup of a {setup_name} node as well as a few "
                     "additional services. Once it is complete, the components will run in the background as "
                     "docker containers."
                 ),

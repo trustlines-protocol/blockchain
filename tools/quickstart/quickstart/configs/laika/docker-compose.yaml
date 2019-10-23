@@ -1,0 +1,117 @@
+# This composition works best in usage with the quickstart tool at
+# 'tools/quickstart' within this repository.
+# Actually this file is also being used and included by the quickstart
+# image.
+
+version: "2.4"
+services:
+  home-node:
+    image: trustlines/tlbc-testnet
+    restart: always
+    stop_grace_period: 3m
+    networks:
+      home-net:
+        aliases:
+          - home-node
+    ports:
+      - 30300:30300
+      - 30300:30300/udp
+    volumes:
+      - ${HOST_BASE_DIR:-.}/databases:/data
+      - ${HOST_BASE_DIR:-.}/config:/config/custom
+      - ${HOST_BASE_DIR:-.}/enode:/config/network
+      - ${HOST_BASE_DIR:-.}/shared:/shared/
+    command: >-
+      --role ${ROLE}
+      --address ${VALIDATOR_ADDRESS}
+
+  foreign-node:
+    image: parity/parity:stable
+    restart: always
+    mem_limit: 1G
+    mem_reservation: 16M
+    stop_grace_period: 3m
+    # Root access is required here, because the trustlines node
+    # use the same database volume and does not run as 'parity' user
+    user: root
+    networks:
+      - foreign-net
+    volumes:
+      # Need to adjust the path if using different chain
+      - ${HOST_BASE_DIR:-.}/databases/foreign-node:/data/database
+    command: >-
+      --light
+      --no-download
+      --auto-update none
+      --chain goerli
+      --db-path /data/database
+      --base-path /data
+      --no-hardware-wallets
+      --jsonrpc-interface all
+      --jsonrpc-apis safe
+      --jsonrpc-hosts all
+      --jsonrpc-cors all
+      --no-ipc
+      --no-secretstore
+      --no-color
+
+  netstats-client:
+    image: trustlines/netstats-client:master
+    restart: always
+    env_file: ./netstats-env
+    environment:
+      - RPC_HOST=home-node
+    networks:
+      - home-net
+    depends_on:
+      - home-node
+
+  bridge-client:
+    image: trustlines/bridge-next:master # TODO: switch to 'bridge:latest'
+    restart: always
+    mem_limit: 512M
+    mem_reservation: 16M
+    stop_grace_period: 30s
+    networks:
+      - home-net
+      - foreign-net
+    volumes:
+      - ${HOST_BASE_DIR:-.}/config:/config
+      - ${HOST_BASE_DIR:-.}/bridge-config.toml:/config.toml
+    depends_on:
+      - home-node
+      - foreign-node
+    command: -c /config.toml
+
+  tlbc-monitor:
+    image: trustlines/tlbc-monitor:latest  # TODO: switch to master?
+    restart: always
+    mem_limit: 512M
+    mem_reservation: 16M
+    stop_grace_period: 30s
+    networks:
+      - home-net
+    volumes:
+      - ${HOST_BASE_DIR:-.}/monitor/reports:/reports
+      - ${HOST_BASE_DIR:-.}/monitor/state:/state
+      - ${HOST_BASE_DIR:-.}/shared:/shared/
+    depends_on:
+      - home-node
+    command: -r /reports -d /state -c /shared/trustlines-spec.json -u http://home-node:8545 -m
+
+  watchtower:
+    image: containrrr/watchtower
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - home-net
+      - foreign-net
+    command: --api-version 1.25
+
+networks:
+  home-net:
+    driver: bridge
+
+  foreign-net:
+    driver: bridge
