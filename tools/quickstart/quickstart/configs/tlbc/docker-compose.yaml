@@ -5,15 +5,14 @@
 
 version: "2.4"
 services:
-  trustlines-node:
-    image: trustlines/tlbc-testnet
+  home-node:
+    image: trustlines/tlbc:release
     restart: always
     stop_grace_period: 3m
     networks:
-      laika-testnet:
+      home-net:
         aliases:
-          # Use dotted name to pass the bridge client URL validation.
-          - laika-testnet.node
+          - home-node
     ports:
       - 30300:30300
       - 30300:30300/udp
@@ -26,7 +25,7 @@ services:
       --role ${ROLE}
       --address ${VALIDATOR_ADDRESS}
 
-  mainnet-node:
+  foreign-node:
     image: parity/parity:stable
     restart: always
     mem_limit: 1G
@@ -36,18 +35,14 @@ services:
     # use the same database volume and does not run as 'parity' user
     user: root
     networks:
-      mainnet:
-        aliases:
-          # Use dotted name to pass the bridge client URL validation.
-          - mainnet.node
+      - foreign-net
     volumes:
       # Need to adjust the path if using different chain
-      - ${HOST_BASE_DIR:-.}/databases/mainnet:/data/database
+      - ${HOST_BASE_DIR:-.}/databases/foreign-node:/data/database
     command: >-
       --light
       --no-download
       --auto-update none
-      --chain goerli
       --db-path /data/database
       --base-path /data
       --no-hardware-wallets
@@ -64,11 +59,11 @@ services:
     restart: always
     env_file: ./netstats-env
     environment:
-      - RPC_HOST=laika-testnet.node
+      - RPC_HOST=home-node
     networks:
-      - laika-testnet
+      - home-net
     depends_on:
-      - trustlines-node
+      - home-node
 
   bridge-client:
     image: trustlines/bridge-next:master # TODO: switch to 'bridge:latest'
@@ -77,14 +72,14 @@ services:
     mem_reservation: 16M
     stop_grace_period: 30s
     networks:
-      - laika-testnet
-      - mainnet
+      - home-net
+      - foreign-net
     volumes:
       - ${HOST_BASE_DIR:-.}/config:/config
       - ${HOST_BASE_DIR:-.}/bridge-config.toml:/config.toml
     depends_on:
-      - trustlines-node
-      - mainnet-node
+      - home-node
+      - foreign-node
     command: -c /config.toml
 
   tlbc-monitor:
@@ -94,14 +89,14 @@ services:
     mem_reservation: 16M
     stop_grace_period: 30s
     networks:
-      - laika-testnet
+      - home-net
     volumes:
       - ${HOST_BASE_DIR:-.}/monitor/reports:/reports
       - ${HOST_BASE_DIR:-.}/monitor/state:/state
       - ${HOST_BASE_DIR:-.}/shared:/shared/
     depends_on:
-      - trustlines-node
-    command: -r /reports -d /state -c /shared/trustlines-spec.json -u http://laika-testnet.node:8545 -m
+      - home-node
+    command: -r /reports -d /state -c /shared/trustlines-spec.json -u http://home-node:8545 -m
 
   watchtower:
     image: containrrr/watchtower
@@ -109,13 +104,13 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      - laika-testnet
-      - mainnet
+      - home-net
+      - foreign-net
     command: --api-version 1.25
 
 networks:
-  laika-testnet:
+  home-net:
     driver: bridge
 
-  mainnet:
+  foreign-net:
     driver: bridge

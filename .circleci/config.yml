@@ -624,7 +624,7 @@ jobs:
       - run:
           name: Build docker image
           command: |
-            docker build -t $LOCAL_IMAGE ./chain
+            docker build -f chain/laika/Dockerfile -t $LOCAL_IMAGE ./chain
       - run:
           name: Save docker image
           command: |
