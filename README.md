@@ -200,7 +200,7 @@ $ docker run -d --name goerli-node --network network-ethereum \
     --user root \
     parity/parity:stable \
     --light --no-download --auto-update none --chain goerli \
-    --db-path /data --base-path /data \
+    --base-path /data \
     --no-hardware-wallets --jsonrpc-apis safe --jsonrpc-hosts all --jsonrpc-cors all --jsonrpc-port 8545 \
     --no-ipc --no-secretstore --no-color
 ```
