@@ -32,7 +32,7 @@ Before starting the installation process, please have a look at the system requi
 
 ### System Requirements
 
-Based on the experiences we have had on our long-running testnet, we recommend at least 2GB of memory and 10GB of SSD
+Based on the experiences we have had on our long-running testnet, we recommend at least 4GB of memory and 20GB of SSD
 storage.
 
 Validators should make sure their node has a high uptime: Otherwise, they miss out on potential revenue and harm the
