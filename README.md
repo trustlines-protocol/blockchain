@@ -159,9 +159,9 @@ HIDE_VALIDATOR_STATUS=false
 Now, the netstats client can be started with
 
 ```sh
-$ docker run --name netstats-client --network network-laika \
-    -e trustlines/netstats-env \
-    -e RPC_HOST=http://laika-node \
+$ docker run -d --name netstats-client --network network-laika \
+    --env-file trustlines/netstats-env \
+    -e RPC_HOST=laika-node \
     -e RPC_PORT=8545 \
     trustlines/netstats-client:master
 ```
