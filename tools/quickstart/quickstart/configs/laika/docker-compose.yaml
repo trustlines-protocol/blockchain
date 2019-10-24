@@ -26,7 +26,7 @@ services:
       --address ${VALIDATOR_ADDRESS}
 
   foreign-node:
-    image: parity/parity:stable
+    image: ethereum/client-go:stable
     restart: always
     mem_limit: 1G
     mem_reservation: 16M
@@ -40,20 +40,15 @@ services:
       # Need to adjust the path if using different chain
       - ${HOST_BASE_DIR:-.}/databases/foreign-node:/data/database
     command: >-
-      --light
-      --no-download
-      --auto-update none
-      --chain goerli
-      --db-path /data/database
-      --base-path /data
-      --no-hardware-wallets
-      --jsonrpc-interface all
-      --jsonrpc-apis safe
-      --jsonrpc-hosts all
-      --jsonrpc-cors all
-      --no-ipc
-      --no-secretstore
-      --no-color
+      --rpc
+      --rpcaddr 0.0.0.0
+      --nousb
+      --ipcdisable
+      --goerli
+      --syncmode light
+      --datadir /data/database
+      --rpccorsdomain *
+      --rpcvhosts=*
 
   netstats-client:
     image: trustlines/netstats-client:master
