@@ -922,9 +922,17 @@ workflows:
             - run-flake8
           context: docker-credentials
       - compare-testnet-docker-image:
+          filters:
+            branches:
+              only:
+                - laika-node/release
           requires:
             - build-testnet-docker-image
       - compare-tlbc-docker-image:
+          filters:
+            branches:
+              only:
+                - tlbc-node/release
           requires:
             - build-tlbc-docker-image
       - compare-bridge-image:
