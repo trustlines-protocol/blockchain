@@ -6,7 +6,7 @@
 version: "2.4"
 services:
   home-node:
-    image: trustlines/tlbc-testnet
+    image: trustlines/tlbc-testnet:release
     restart: always
     stop_grace_period: 3m
     networks:
@@ -51,7 +51,7 @@ services:
       --rpcvhosts=*
 
   netstats-client:
-    image: trustlines/netstats-client:master
+    image: trustlines/netstats-client:release
     restart: always
     env_file: ./netstats-env
     environment:
@@ -62,7 +62,7 @@ services:
       - home-node
 
   bridge-client:
-    image: trustlines/bridge-next:master # TODO: switch to 'bridge:latest'
+    image: trustlines/bridge:release
     restart: always
     mem_limit: 512M
     mem_reservation: 16M
@@ -79,7 +79,7 @@ services:
     command: -c /config.toml
 
   tlbc-monitor:
-    image: trustlines/tlbc-monitor:latest  # TODO: switch to master?
+    image: trustlines/tlbc-monitor:release
     restart: always
     mem_limit: 512M
     mem_reservation: 16M
