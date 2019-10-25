@@ -132,6 +132,17 @@ jobs:
           name: Install pre-commit
           command: |
             pip install -c constraints.txt pre-commit
+      - restore_cache:
+          key: pre-commit-cache-{{ checksum ".pre-commit-config.yaml" }}
+      - run:
+          name: Install hooks
+          command: |
+            pre-commit install-hooks
+      - save_cache:
+          key: pre-commit-cache-{{ checksum ".pre-commit-config.yaml" }}
+          paths:
+            - ~/.cache/pre-commit
+
       - run:
           name: Run shfmt
           command: |
