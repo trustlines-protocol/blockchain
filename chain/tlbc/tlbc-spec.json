@@ -1,5 +1,6 @@
 {
-    "name": "Trustnet",
+    "name": "Trustlines Blockchain",
+    "dataDir": "tlbc",
     "engine": {
         "authorityRound": {
             "params": {

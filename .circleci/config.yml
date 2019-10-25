@@ -94,6 +94,26 @@ commands:
             docker tag $LOCAL_IMAGE $DOCKER_REPO:$CLEAN_BRANCH_NAME
             docker push $DOCKER_REPO:$CLEAN_BRANCH_NAME
 
+  compare-docker-image:
+    description: "Compare docker images"
+    parameters:
+      repo:
+        type: string
+    steps:
+      - run:
+          name: Fetch latest pre-release
+          command: |
+            docker pull << parameters.repo >>
+      - run:
+          name: Compute image tree summaries
+          command: |
+            .circleci/show-docker-tree << parameters.repo >> >/tmp/tree-pre-release
+            .circleci/show-docker-tree $LOCAL_IMAGE >/tmp/tree-local
+      - run:
+          name: Compare image tree summaries
+          command: |
+            diff -s /tmp/tree-pre-release /tmp/tree-local || true
+
 jobs:
   pre-commit-checks:
     executor: ubuntu-builder
@@ -471,8 +491,6 @@ jobs:
       - store_test_results:
           path: tools/bridge/test-results
 
-
-
   end2end-test-bridge-validator:
     executor: ubuntu-builder
     steps:
@@ -529,19 +547,8 @@ jobs:
           command: |
             du -hc ~/images/*
             docker load --input ~/images/$LOCAL_IMAGE.tar
-      - run:
-          name: Fetch latest pre-release
-          command: |
-            docker pull trustlines/bridge-next:pre-release
-      - run:
-          name: Compute image tree summaries
-          command: |
-            .circleci/show-docker-tree trustlines/bridge-next:pre-release >/tmp/tree-pre-release
-            .circleci/show-docker-tree $LOCAL_IMAGE >/tmp/tree-local
-      - run:
-          name: Compare image tree summaries
-          command: |
-            diff -s /tmp/tree-pre-release /tmp/tree-local || true
+      - compare-docker-image:
+          repo: "trustlines/bridge-next:pre-release"
 
   deploy-bridge-image:
     executor: ubuntu-builder
@@ -614,7 +621,7 @@ jobs:
 
       - upload-docker-image
 
-  build-docker-image:
+  build-testnet-docker-image:
     executor: ubuntu-builder
     environment:
       LOCAL_IMAGE: tlbc-testnet-next
@@ -624,7 +631,7 @@ jobs:
       - run:
           name: Build docker image
           command: |
-            docker build -f docker/Dockerfile -t $LOCAL_IMAGE .
+            docker build -f chain/laika/Dockerfile -t $LOCAL_IMAGE ./chain
       - run:
           name: Save docker image
           command: |
@@ -636,7 +643,65 @@ jobs:
           paths:
             - images
 
-  compare-docker-image:
+  build-tlbc-docker-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: tlbc-next
+    steps:
+      - setup_remote_docker
+      - checkout
+      - run:
+          name: Build docker image
+          command: |
+            docker build -f chain/tlbc/Dockerfile -t $LOCAL_IMAGE ./chain
+      - run:
+          name: Save docker image
+          command: |
+            mkdir -p ~/images
+            docker save --output ~/images/$LOCAL_IMAGE.tar $LOCAL_IMAGE
+            du -hc ~/images
+      - persist_to_workspace:
+          root: "~"
+          paths:
+            - images
+
+  smoketest-testnet-docker-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: tlbc-testnet-next
+    steps:
+      - setup_remote_docker
+      - checkout
+      - attach_workspace:
+          at: '~'
+      - run:
+          name: Load docker image
+          command: |
+            du -hc ~/images/*
+            docker load --input ~/images/$LOCAL_IMAGE.tar
+      - run:
+          name: Smoketest docker image
+          command: ./chain/smoke-test.sh $LOCAL_IMAGE
+
+  smoketest-tlbc-docker-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: tlbc-next
+    steps:
+      - setup_remote_docker
+      - checkout
+      - attach_workspace:
+          at: '~'
+      - run:
+          name: Load docker image
+          command: |
+            du -hc ~/images/*
+            docker load --input ~/images/$LOCAL_IMAGE.tar
+      - run:
+          name: Smoketest docker image
+          command: ./chain/smoke-test.sh $LOCAL_IMAGE
+
+  compare-testnet-docker-image:
     executor: ubuntu-builder
     environment:
       LOCAL_IMAGE: tlbc-testnet-next
@@ -651,21 +716,28 @@ jobs:
           command: |
             du -hc ~/images/*
             docker load --input ~/images/$LOCAL_IMAGE.tar
-      - run:
-          name: Fetch latest pre-release
-          command: |
-            docker pull trustlines/tlbc-testnet-next:pre-release
-      - run:
-          name: Compute image tree summaries
-          command: |
-            .circleci/show-docker-tree trustlines/tlbc-testnet-next:pre-release >/tmp/tree-pre-release
-            .circleci/show-docker-tree $LOCAL_IMAGE >/tmp/tree-local
-      - run:
-          name: Compare image tree summaries
-          command: |
-            diff -s /tmp/tree-pre-release /tmp/tree-local || true
+      - compare-docker-image:
+          repo: "trustlines/tlbc-testnet-next:pre-release"
 
-  deploy-docker-image:
+  compare-tlbc-docker-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: tlbc-next
+    working_directory: ~/repo
+    steps:
+      - setup_remote_docker
+      - checkout
+      - attach_workspace:
+          at: '~'
+      - run:
+          name: Load docker image
+          command: |
+            du -hc ~/images/*
+            docker load --input ~/images/$LOCAL_IMAGE.tar
+      - compare-docker-image:
+          repo: "trustlines/tlbc-node-next:pre-release"
+
+  deploy-testnet-docker-image:
     executor: ubuntu-builder
     environment:
       LOCAL_IMAGE: tlbc-testnet-next
@@ -679,7 +751,21 @@ jobs:
           # fork. makes testing easier.
       - upload-docker-image
 
-  deploy-docker-release-image:
+  deploy-tlbc-docker-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: tlbc-next
+    working_directory: ~/repo
+    steps:
+      - run:
+          name: set DOCKER_REPO
+          command: |
+            echo ': \"${DOCKER_REPO:=trustlines/tlbc-node-next}\"' >> ${BASH_ENV}
+          # this allows us to set DOCKER_REPO from circleci when building in a
+          # fork. makes testing easier.
+      - upload-docker-image
+
+  deploy-testnet-docker-release-image:
     executor: ubuntu-builder
     environment:
       LOCAL_IMAGE: tlbc-testnet-next
@@ -689,6 +775,25 @@ jobs:
           name: set DOCKER_REPO
           command: |
             echo ': \"${DOCKER_REPO:=trustlines/tlbc-testnet}\"' >> ${BASH_ENV}
+          # this allows us to set DOCKER_REPO from circleci when building in a
+          # fork. makes testing easier.
+      - upload-docker-image
+      - run:
+          name: upload latest image
+          command: |
+            docker tag $LOCAL_IMAGE $DOCKER_REPO:latest
+            docker push $DOCKER_REPO:latest
+
+  deploy-tlbc-docker-release-image:
+    executor: ubuntu-builder
+    environment:
+      LOCAL_IMAGE: tlbc-next
+    working_directory: ~/repo
+    steps:
+      - run:
+          name: set DOCKER_REPO
+          command: |
+            echo ': \"${DOCKER_REPO:=trustlines/tlbc-node}\"' >> ${BASH_ENV}
           # this allows us to set DOCKER_REPO from circleci when building in a
           # fork. makes testing easier.
       - upload-docker-image
@@ -745,7 +850,8 @@ workflows:
             - install-bridge-validator
 
       - build-bridge-image
-      - build-docker-image
+      - build-testnet-docker-image
+      - build-tlbc-docker-image
       - build-quickstart-image
       - test-quickstart
       - deploy-bridge-image:
@@ -764,12 +870,18 @@ workflows:
             - build-bridge-image
           context: docker-credentials
 
-      - deploy-docker-image:
+      - smoketest-testnet-docker-image:
+          requires:
+            - build-testnet-docker-image
+      - smoketest-tlbc-docker-image:
+          requires:
+            - build-tlbc-docker-image
+      - deploy-testnet-docker-image:
           filters:
             branches:
               only:
                 - master
-                - pre-release
+                - laika-node/pre-release
           requires:
             - solium-contracts
             - pre-commit-checks
@@ -777,15 +889,31 @@ workflows:
             - run-flake8
             - install-contracts
             - pytest-contracts
-            - build-docker-image
+            - build-testnet-docker-image
+            - smoketest-testnet-docker-image
           context: docker-credentials
 
+      - deploy-tlbc-docker-image:
+          filters:
+            branches:
+              only:
+                - master
+                - laika-node/pre-release
+          requires:
+            - solium-contracts
+            - pre-commit-checks
+            - run-black
+            - run-flake8
+            - install-contracts
+            - pytest-contracts
+            - build-tlbc-docker-image
+            - smoketest-testnet-docker-image
+          context: docker-credentials
       - deploy-quickstart-image:
           filters:
             branches:
               only:
                 - master
-                - pre-release
           requires:
             - test-quickstart
             - build-quickstart-image
@@ -793,11 +921,20 @@ workflows:
             - run-black
             - run-flake8
           context: docker-credentials
-
-      - compare-docker-image:
+      - compare-testnet-docker-image:
+          filters:
+            branches:
+              only:
+                - laika-node/release
           requires:
-            - build-docker-image
-
+            - build-testnet-docker-image
+      - compare-tlbc-docker-image:
+          filters:
+            branches:
+              only:
+                - tlbc-node/release
+          requires:
+            - build-tlbc-docker-image
       - compare-bridge-image:
           filters:
             branches:
@@ -806,15 +943,23 @@ workflows:
           requires:
             - build-bridge-image
 
-      - approve-docker-release:
+      - approve-testnet-docker-release:
           type: approval
           filters:
             branches:
               only:
-                - release
+                - laika-node/release
           requires:
-            - compare-docker-image
+            - compare-testnet-docker-image
 
+      - approve-tlbc-docker-release:
+          type: approval
+          filters:
+            branches:
+              only:
+                - tlbc-node/release
+          requires:
+            - compare-tlbc-docker-image
       - approve-bridge-release:
           type: approval
           filters:
@@ -824,22 +969,39 @@ workflows:
           requires:
             - compare-bridge-image
 
-      - deploy-docker-release-image:
+      - deploy-testnet-docker-release-image:
           filters:
             branches:
               only:
-                - release
+                - laika-node/release
           requires:
-            - approve-docker-release
+            - approve-testnet-docker-release
             - solium-contracts
             - pre-commit-checks
             - run-black
             - run-flake8
             - install-contracts
             - pytest-contracts
-            - build-docker-image
+            - build-testnet-docker-image
+            - smoketest-testnet-docker-image
           context: docker-release-credentials
 
+      - deploy-tlbc-docker-release-image:
+          filters:
+            branches:
+              only:
+                - tlbc-node/release
+          requires:
+            - approve-tlbc-docker-release
+            - solium-contracts
+            - pre-commit-checks
+            - run-black
+            - run-flake8
+            - install-contracts
+            - pytest-contracts
+            - build-tlbc-docker-image
+            - smoketest-tlbc-docker-image
+          context: docker-release-credentials
       - deploy-bridge-release-image:
           filters:
             branches:

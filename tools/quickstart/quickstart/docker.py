@@ -67,7 +67,7 @@ def update_and_start(*, base_dir, host_base_dir, project_name) -> None:
             )
         )
 
-    main_docker_service_names = ["trustlines-node", "watchtower"]
+    main_docker_service_names = ["home-node", "watchtower"]
     optional_docker_service_names = get_optional_docker_service_names(base_dir)
     all_docker_service_names = (
         main_docker_service_names + optional_docker_service_names + ["tlbc-monitor"]
@@ -173,7 +173,7 @@ def get_optional_docker_service_names(base_dir) -> List[str]:
 
     if is_bridge_prepared(base_dir=base_dir):
         docker_service_names.append("bridge-client")
-        docker_service_names.append("mainnet-node")
+        docker_service_names.append("foreign-node")
 
     return docker_service_names
 
