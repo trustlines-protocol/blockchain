@@ -7,6 +7,7 @@ from web3 import Web3
 from web3.contract import Contract
 from web3.datastructures import AttributeDict
 
+from bridge import node_status
 from bridge.events import ChainRole, FetcherReachedHeadEvent
 from bridge.utils import sort_events
 
@@ -53,11 +54,14 @@ class EventFetcher:
             before_sleep=tenacity.before_sleep_log(self.logger, logging.WARN),
         )
 
+    def _rpc_get_node_status(self):
+        return self._retrying.call(node_status.get_node_status, self.web3)
+
     def _rpc_latest_block(self):
-        return self._retrying.call(lambda: self.web3.eth.blockNumber)
+        return self._rpc_get_node_status().latest_synced_block
 
     def _rpc_is_syncing(self):
-        return bool(self._retrying.call(lambda: self.web3.eth.syncing))
+        return self._rpc_get_node_status().is_syncing
 
     def _rpc_get_logs(
         self,

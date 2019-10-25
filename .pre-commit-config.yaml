@@ -13,7 +13,7 @@ repos:
   hooks:
     - id: shfmt
     - id: shellcheck
-      exclude: ^docker/parity_wrapper.sh$
+      exclude: ^chain/parity_wrapper.sh$
 
 -   repo: https://github.com/trustlines-protocol/prettier
     rev: 804db34393002d572b49ab493ccb12248ae6cb3c
