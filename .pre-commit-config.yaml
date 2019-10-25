@@ -13,22 +13,22 @@ repos:
   hooks:
     - id: shfmt
     - id: shellcheck
-      exclude: ^docker/parity_wrapper.sh$
+      exclude: ^chain/parity_wrapper.sh$
 
 -   repo: https://github.com/trustlines-protocol/prettier
-    rev: e16e6db0fbf03e18fcf63d18c5a1479dcb6e2e75
+    rev: 804db34393002d572b49ab493ccb12248ae6cb3c
     hooks:
       - id: prettier
         entry: prettier --write --list-different
         files: "\\.sol$"
 
--   repo: https://github.com/ambv/black
+-   repo: https://github.com/psf/black
     rev: 19.3b0
     hooks:
     - id: black
 
 -   repo: git://github.com/pre-commit/pre-commit-hooks
-    rev: v2.2.3
+    rev: v2.3.0
     hooks:
     - id: check-added-large-files
     - id: check-ast
@@ -39,15 +39,15 @@ repos:
     - id: check-yaml
     - id: debug-statements
     - id: end-of-file-fixer
-      exclude: ^contracts/contracts/lib/.*\.sol|contracts/contracts/token/TrustlinesNetworkToken.sol$
+      exclude: ^contracts/contracts/lib/.*\.sol|contracts/contracts/token/TrustlinesNetworkToken.sol|tools/bridge/.bumpversion.cfg$
     - id: flake8
-      additional_dependencies: ["flake8-string-format", "flake8-per-file-ignores"]
+      additional_dependencies: ["flake8-string-format", "pep8-naming"]
     - id: trailing-whitespace
-      exclude: ^contracts/contracts/lib/.*\.sol$
+      exclude: ^(contracts/contracts/lib/.*\.sol|tools/bridge/.bumpversion.cfg)$
     - id: no-commit-to-branch
       args: [--branch, develop, --branch, master]
 -   repo: https://github.com/schmir/ethlint-pre-commit.git
-    rev: 'ceedc72aa232b9391840256c7781226a3e238b1a'
+    rev: ceedc72aa232b9391840256c7781226a3e238b1a
     hooks:
     - id: ethlint
       exclude: ^contracts/contracts/lib/|^contracts/contracts/reward-contract/

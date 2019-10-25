@@ -68,6 +68,7 @@ declare -a VALID_ROLE_LIST=(
   participant
   validator
 )
+SHARED_VOLUME_PATH="/shared/"
 
 # Configuration snippets.
 CONFIG_SNIPPET_VALIDATOR='
@@ -178,7 +179,6 @@ function adjustConfiguration() {
   "validator")
     echo "Run as validator with address ${ADDRESS}"
     printf "$template\n$CONFIG_SNIPPET_VALIDATOR" "$ADDRESS" >$PARITY_CONFIG_FILE
-    echo "Here:"
     ;;
 
   "participant")
@@ -202,7 +202,17 @@ function runParity() {
   exec $PARITY_BIN $PARITY_ARGS
 }
 
+function copySpecFileToSharedVolume() {
+  if [[ -d "$SHARED_VOLUME_PATH" ]]; then
+    echo "Copying chain spec file to shared volume"
+    cp /config/trustlines-spec.json "$SHARED_VOLUME_PATH/trustlines-spec.json"
+  else
+    echo "Shared volume apparently not mounted, skip copying chain spec file"
+  fi
+}
+
 # Getting Started
 parseArguments
 adjustConfiguration
+copySpecFileToSharedVolume
 runParity

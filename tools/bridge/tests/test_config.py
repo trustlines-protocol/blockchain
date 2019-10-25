@@ -1,87 +1,42 @@
-import pytest
-from toolz import dissoc
+import bridge.config
 
-from bridge.config import (
-    validate_checksum_address,
-    validate_config,
-    validate_non_negative_integer,
-    validate_positive_float,
-    validate_rpc_url,
-)
+example_logging_config = """
+[logging.root]
+level = "DEBUG"
 
+[logging.loggers."bridge.main"]
+level = "DEBUG"
 
-@pytest.fixture(scope="session")
-def valid_config():
-    return {
-        "home_rpc_url": "url",
-        "foreign_rpc_url": "url",
-        "token_contract_address": "0x4B0b6E093a330c00fE614B804Ad59e9b0A4FE8A9",
-        "foreign_bridge_contract_address": "0xbb1046b0fe450aa48deaff6fa474adbf972840dd",
-    }
+# web3 is too verbose with level debug
+[logging.loggers.web3]
+level = "INFO"
+
+[logging.loggers.urllib3]
+level = "INFO"
+"""
 
 
-def test_validate_missing_keys(valid_config):
-    invalid_config = dissoc(valid_config, "home_rpc_url")
+def test_load_minimal_config(write_config, minimal_config):
+    cfg = bridge.config.load_config(write_config(minimal_config))
+    print(cfg)
 
-    with pytest.raises(ValueError):
-        validate_config(invalid_config)
+    assert cfg["logging"] == bridge.config.FORCED_LOGGING_CONFIG
+    assert cfg["webservice"] == {}
 
+    # make sure we have some sensible defaults
+    assert cfg["home_chain"]["gas_price"] >= 10 ** 9
+    assert cfg["home_chain"]["event_fetch_start_block_number"] == 0
+    assert cfg["home_chain"]["max_reorg_depth"] >= 5
 
-def test_validate_unknown_keys(valid_config):
-    with pytest.raises(ValueError):
-        validate_config({**valid_config, "unknown_key": 1})
-
-
-def test_validate_rpc_url():
-    validate_rpc_url("https://localhost:8545")
-
-
-def test_validate_invalid_rpc_url():
-    with pytest.raises(TypeError):
-        validate_rpc_url(1)
+    assert cfg["foreign_chain"]["event_fetch_start_block_number"] == 0
+    assert cfg["foreign_chain"]["max_reorg_depth"] >= 10
 
 
-def test_validate_non_negative_integer():
-    validate_non_negative_integer(0)
-
-
-def test_validate_non_negative_integer_false_type():
-    with pytest.raises(ValueError):
-        validate_non_negative_integer(1.1)
-
-
-def test_validate_non_negative_integer_negative():
-    with pytest.raises(ValueError):
-        validate_non_negative_integer(-1)
-
-
-def test_validate_positive_float():
-    validate_positive_float(1.1)
-
-
-def test_validate_positive_float_int():
-    validate_positive_float(5)
-
-
-def test_validate_positive_float_false_type():
-    with pytest.raises(ValueError):
-        validate_positive_float("foo")
-
-
-def test_validate_positive_float_negative():
-    with pytest.raises(ValueError):
-        validate_positive_float(-1.1)
-
-
-def test_validate_address():
-    validate_checksum_address("0x4B0b6E093a330c00fE614B804Ad59e9b0A4FE8A9")
-
-
-def test_validate_address_invalid_format():
-    with pytest.raises(ValueError):
-        validate_checksum_address("0x0")
-
-
-def test_validate_address_no_checksum():
-    with pytest.raises(ValueError):
-        validate_checksum_address("0x4b0b6e093a330c00fe614b804ad59e9b0a4fe8a9")
+def test_logging_key(write_config, minimal_config):
+    cfg = bridge.config.load_config(
+        write_config(minimal_config + "\n" + example_logging_config)
+    )
+    print(cfg)
+    assert cfg["logging"]["version"] == 1
+    assert cfg["logging"]["incremental"] is True
+    assert cfg["logging"]["loggers"]["bridge.main"] == {"level": "DEBUG"}

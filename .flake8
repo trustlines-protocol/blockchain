@@ -8,4 +8,5 @@ ignore =
        # E203 is whitespace before ':',
        # black does it right, but flake8 wrongly complains
        E203
-[tool:pytest]
+       # E501: line too long (black will take care of this)
+       E501

@@ -1,10 +1,17 @@
 import logging
-from typing import Optional
 
 import gevent
+import tenacity
 from eth_utils import is_canonical_address, to_checksum_address
 
+from bridge.events import IsValidatorCheck
+
 logger = logging.getLogger(__name__)
+
+retry = tenacity.retry(
+    wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
+    before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
+)
 
 
 class ValidatorStatusWatcher:
@@ -13,7 +20,7 @@ class ValidatorStatusWatcher:
         validator_proxy_contract,
         validator_address,
         poll_interval,
-        start_validating_callback,
+        control_queue,
         stop_validating_callback,
     ) -> None:
         self.validator_proxy_contract = validator_proxy_contract
@@ -22,42 +29,46 @@ class ValidatorStatusWatcher:
         self.validator_address = validator_address
 
         self.poll_interval = poll_interval
-        self.start_validating_callback = start_validating_callback
+        self.control_queue = control_queue
         self.stop_validating_callback = stop_validating_callback
 
-        self.is_validating: Optional[bool] = None
-
-        self.logger = logging.getLogger(
-            "bridge.validation_status_watcher.ValidationStatusWatcher"
-        )
-
-    def run(self) -> None:
-        self.is_validating = self.check_validator_status()
-        if self.is_validating:
-            self.logger.info("The account is a member of the validator set")
-            self.start_validating_callback()
-        else:
-            self.logger.warning(
+    def _wait_for_validator_status(self):
+        """wait until address has validator status"""
+        while not self.check_validator_status():
+            logger.warning(
                 f"The account with address {to_checksum_address(self.validator_address)} is not a "
                 f"member of the validator set at the moment. This status will be checked "
                 f"periodically."
             )
-
-        while True:
             gevent.sleep(self.poll_interval)
 
-            has_been_validating_before = self.is_validating
-            self.is_validating = self.check_validator_status()
+    def _wait_for_non_validator_status(self):
+        """wait until address has lost its validator status"""
+        while self.check_validator_status():
+            gevent.sleep(self.poll_interval)
 
-            if self.is_validating and not has_been_validating_before:
-                logger.info("Account joined the validator set")
-                self.start_validating_callback()
-            elif not self.is_validating and has_been_validating_before:
-                logger.info("Account has left the validator set")
-                self.stop_validating_callback()
+    def run(self) -> None:
+        is_validator_from_beginning = self.check_validator_status()
+        self.control_queue.put(IsValidatorCheck(is_validator_from_beginning))
 
+        if not is_validator_from_beginning:
+            self._wait_for_validator_status()
+            self.control_queue.put(IsValidatorCheck(True))
+        logger.info("The account is a member of the validator set")
+
+        gevent.sleep(self.poll_interval)  # wait until we poll again
+        self._wait_for_non_validator_status()
+
+        logger.warning(
+            f"The account with address {to_checksum_address(self.validator_address)} has lost it's"
+            f"validator status. The program will be shutdown now. "
+        )
+        self.control_queue.put(IsValidatorCheck(False))
+        self.stop_validating_callback()
+
+    @retry
     def check_validator_status(self):
-        self.logger.debug("Checking validator status")
+        logger.debug("Checking validator status")
         return self.validator_proxy_contract.functions.isValidator(
             self.validator_address
         ).call()

@@ -17,7 +17,7 @@ compile: .installed .compiled
 
 CONTRACT_SOL_FILES=$(shell find $(CONTRACTS_DIRECTORY) -type f -iname '*.sol')
 .compiled: $(CONTRACT_SOL_FILES) $(VIRTUAL_ENV)
-	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d $(CONTRACTS_DIRECTORY) -o build/contracts.json
+	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg --optimize-runs 5000 -d $(CONTRACTS_DIRECTORY) -o build/contracts.json
 	@echo "This file controls for make if the contracts are up to date" > $@
 
 build: compile
