@@ -4,12 +4,12 @@
 # Please format this file with shfmt from https://github.com/mvdan/sh/releases
 # by running the following command:
 #
-# shfmt -i 2 -w quickstart.sh
+# shfmt -i 2 -w quickstart-laika.sh
 
 set -e
 
 # Variables
-: "${DOCKER_IMAGE:=trustlines/quickstart:master15208}"
+: "${DOCKER_IMAGE:=trustlines/quickstart:master16567}"
 : "${DATA_DIR:=${PWD}/trustlines}"
 GREEN='\033[0;32m'
 RESET='\033[0m'
@@ -68,9 +68,8 @@ function run_quickstart_container() {
     --volume "${PWD}":/data \
     --volume "$DATA_DIR":/quickstart/trustlines \
     $DOCKER_IMAGE \
-    --host-base-dir "$DATA_DIR" \
-    --base-dir "trustlines" \
-    --project-name "trustlines"
+    "laika" \
+    --host-base-dir "$DATA_DIR"
 }
 
 function main() {
