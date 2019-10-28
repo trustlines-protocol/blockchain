@@ -91,6 +91,12 @@ password = ["/home/parity/.local/share/io.parity.ethereum/custom/pass.pwd"]
 [[ -z "$PARITY_CONFIG_FILE_NODE" ]] && PARITY_CONFIG_FILE_NODE=/home/parity/.local/share/io.parity.ethereum/config-template.toml
 PARITY_CONFIG_FILE=/home/parity/.local/share/io.parity.ethereum/config.toml
 
+function showVersion() {
+  if [[ -e /VERSION ]]; then
+    echo "Version: $(cat /VERSION)"
+  fi
+}
+
 # Print the header of this script as help.
 # The header ends with the first empty line.
 #
@@ -212,6 +218,7 @@ function copySpecFileToSharedVolume() {
 }
 
 # Getting Started
+showVersion
 parseArguments
 adjustConfiguration
 copySpecFileToSharedVolume
