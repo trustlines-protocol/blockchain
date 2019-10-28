@@ -39,11 +39,11 @@ repos:
     - id: check-yaml
     - id: debug-statements
     - id: end-of-file-fixer
-      exclude: ^contracts/contracts/lib/.*\.sol|contracts/contracts/token/TrustlinesNetworkToken.sol|tools/bridge/.bumpversion.cfg|chain/laika/.bumpversion.cfg$
+      exclude: ^contracts/contracts/lib/.*\.sol|contracts/contracts/token/TrustlinesNetworkToken.sol|tools/bridge/.bumpversion.cfg|chain/laika/.bumpversion.cfg|chain/tlbc/.bumpversion.cfg$
     - id: flake8
       additional_dependencies: ["flake8-string-format", "pep8-naming"]
     - id: trailing-whitespace
-      exclude: ^(contracts/contracts/lib/.*\.sol|tools/bridge/.bumpversion.cfg|chain/laika/.bumpversion.cfg)$
+      exclude: ^(contracts/contracts/lib/.*\.sol|tools/bridge/.bumpversion.cfg|chain/laika/.bumpversion.cfg|chain/tlbc/.bumpversion.cfg)$
     - id: no-commit-to-branch
       args: [--branch, develop, --branch, master]
 -   repo: https://github.com/schmir/ethlint-pre-commit.git
