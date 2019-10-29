@@ -5,6 +5,9 @@ from pathlib import Path
 from textwrap import fill
 
 import click
+import toml
+from marshmallow.exceptions import ValidationError
+from marshmallow.validate import URL
 
 from quickstart.constants import BRIDGE_CONFIG_FILE_EXTERNAL, BRIDGE_DOCUMENTATION_URL
 from quickstart.utils import (
@@ -34,7 +37,7 @@ def setup_interactively(base_dir, bridge_config_file) -> None:
         return
 
     if not is_validator_account_prepared(base_dir):
-        click.echo("\nNo bridge node will be set up as running as a non-validator.")
+        click.echo("\nNo bridge node will be set up when running as a non-validator.")
         return
 
     click.echo(
@@ -56,6 +59,23 @@ def setup_interactively(base_dir, bridge_config_file) -> None:
         # Necessary to make docker-compose not complain about it.
         Path(user_file).touch()
         return
+
+    choice = click.prompt(
+        fill(
+            "The bridge client requires access to a main chain node."
+            "Do you want to run a main chain node (1) or provide a JSON RPC url (2)?"
+        )
+        + "\n",
+        type=click.Choice(("1", "2")),
+        show_choices=False,
+    )
+    if choice == "1":
+        pass
+    elif choice == "2":
+        url = read_json_rpc_url()
+        change_json_rpc_url(bridge_config_file, url)
+    else:
+        assert False, "unreachable"
 
     copy_default_bridge_config(base_dir, bridge_config_file)
 
@@ -95,3 +115,24 @@ def _show_file_override_dialog(base_dir, bridge_config_file):
             )
         else:
             assert False, "unreachable"
+
+
+def read_json_rpc_url():
+    url = click.prompt(
+        "JSON RPC url"
+    )
+    try:
+        validator = URL()
+        validator(url)
+        return url
+    except ValidationError:
+        url = click.prompt(f"The given url seems invalid {url}, please correct it or enter the same url if valid")
+        return url
+
+
+def change_json_rpc_url(config_file, url):
+    config = toml.load(config_file)
+    config['foreign_chain']['rpc_url'] = url
+
+    with open(config_file, mode="w") as file:
+        toml.dump(config, file)

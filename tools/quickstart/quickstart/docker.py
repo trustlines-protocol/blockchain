@@ -47,8 +47,8 @@ def setup_interactivaly(base_dir, docker_compose_file):
             choice = click.prompt(
                 fill(
                     "You already seem to have a docker compose file. "
-                    "If you did not change it, you can safely override it.\n"
-                    "Override with default (1), keep own (2), or show diff (3) ?"
+                    "If you did not change it, you can safely overwrite it.\n"
+                    "Overwrite with default (1), keep own (2), or show diff (3)?"
                 )
                 + "\n",
                 type=click.Choice(("1", "2", "3")),

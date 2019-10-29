@@ -2,5 +2,6 @@ eth_account
 click
 requests
 toml
+marshmallow
 # development dependencies
 -r ../../requirements-dev.txt
