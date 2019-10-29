@@ -19,7 +19,23 @@ from quickstart.validator_account import get_validator_address
 
 # List of docker container names to stop and remove on startup in addition to the ones defined in
 # the docker compose file (for backward compatibility)
-LEGACY_CONTAINER_NAMES = ["watchtower-testnet", "trustlines-testnet"]
+LEGACY_CONTAINER_NAMES = [
+    # malta quickstart version
+    "watchtower-testnet",
+    "trustlines-testnet",
+    # intermediate quickstart versions
+    "bridge-client",
+    "tlbc-monitor",
+    "mainnet.node",
+    "laika-testnet.node",
+    "netstats-client",
+    "quickstart_bridge-client_1",
+    "quickstart_tlbc-monitor_1",
+    "quickstart_trustlines-node_1",
+    "quickstart_mainnet-node_1",
+    "quickstart_netstats-client_1",
+    "quickstart_watchtower_1",
+]
 DOCKER_COMPOSE_FILE_NAME = "docker-compose.yaml"
 
 
