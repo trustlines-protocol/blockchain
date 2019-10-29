@@ -9,6 +9,7 @@ from typing import Tuple
 
 import click
 from eth_account import Account
+import toml
 from eth_utils import decode_hex, is_hex, remove_0x_prefix
 
 from quickstart.constants import (
@@ -19,6 +20,7 @@ from quickstart.constants import (
     MONITOR_DIR,
     NETSTATS_ENV_FILE_PATH,
     PASSWORD_FILE_PATH,
+    BRIDGE_CONFIG_DEFAULT_FOREIGN_RPC,
 )
 
 
@@ -70,6 +72,11 @@ def is_netstats_prepared(base_dir) -> bool:
 
 def is_bridge_prepared(base_dir) -> bool:
     return non_empty_file_exists(os.path.join(base_dir, BRIDGE_CONFIG_FILE_EXTERNAL))
+
+
+def is_bridge_using_default_json_rpc(base_dir):
+    config = toml.load(os.path.join(base_dir, BRIDGE_CONFIG_FILE_EXTERNAL))
+    return config["foreign_chain"]["rpc_url"] == BRIDGE_CONFIG_DEFAULT_FOREIGN_RPC
 
 
 def is_monitor_prepared(base_dir) -> bool:

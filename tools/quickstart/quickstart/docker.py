@@ -13,6 +13,7 @@ from quickstart.utils import (
     is_bridge_prepared,
     is_netstats_prepared,
     is_validator_account_prepared,
+    is_bridge_using_default_json_rpc,
     show_file_diff,
 )
 from quickstart.validator_account import get_validator_address
@@ -189,7 +190,8 @@ def get_optional_docker_service_names(base_dir) -> List[str]:
 
     if is_bridge_prepared(base_dir=base_dir):
         docker_service_names.append("bridge-client")
-        docker_service_names.append("foreign-node")
+        if is_bridge_using_default_json_rpc(base_dir):
+            docker_service_names.append("foreign-node")
 
     return docker_service_names
 
