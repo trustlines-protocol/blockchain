@@ -1,4 +1,3 @@
-import difflib
 import filecmp
 import os
 import shutil
@@ -14,6 +13,7 @@ from quickstart.utils import (
     is_bridge_prepared,
     is_netstats_prepared,
     is_validator_account_prepared,
+    show_file_diff,
 )
 from quickstart.validator_account import get_validator_address
 
@@ -196,32 +196,8 @@ def copy_default_docker_file(base_dir, docker_compose_file):
 
 
 def show_diff(base_dir, docker_compose_file):
-    click.echo("")
-    with open(os.path.join(base_dir, DOCKER_COMPOSE_FILE_NAME)) as file:
-        user_lines = file.readlines()
-    with open(docker_compose_file) as file:
-        default_lines = file.readlines()
-
-    is_same = True
-    for line in difflib.unified_diff(
-        user_lines,
-        default_lines,
-        fromfile=f"Your {DOCKER_COMPOSE_FILE_NAME}",
-        tofile=f"New default {DOCKER_COMPOSE_FILE_NAME}",
-        lineterm="",
-    ):
-        is_same = False
-        if len(line) > 1 and line[-1] == "\n":
-            # Remove final newline otherwise we will show two new lines
-            line = line[:-1]
-        if line.startswith("-"):
-            click.secho(line, fg="red")
-        elif line.startswith("+"):
-            click.secho(line, fg="green")
-        else:
-            click.echo(line)
-
-    if is_same:
-        click.echo("Both files are the same")
-
-    click.echo("")
+    show_file_diff(
+        os.path.join(base_dir, DOCKER_COMPOSE_FILE_NAME),
+        docker_compose_file,
+        file_name=DOCKER_COMPOSE_FILE_NAME,
+    )

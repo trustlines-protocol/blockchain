@@ -1,6 +1,8 @@
+import difflib
 import json
 import os
 import sys
+from hashlib import sha1
 from pathlib import Path
 from textwrap import fill
 from typing import Tuple
@@ -182,3 +184,43 @@ def read_decryption_password(keyfile_dict) -> Tuple[Account, str]:
             else:
                 click.echo(fill(f"Error: failed to decrypt keystore file: {repr(err)}"))
                 sys.exit(1)
+
+
+def show_file_diff(user_file: str, default_file: str, file_name="file"):
+    click.echo("")
+    with open(user_file) as file:
+        user_lines = file.readlines()
+    with open(default_file) as file:
+        default_lines = file.readlines()
+
+    is_same = True
+    for line in difflib.unified_diff(
+        user_lines,
+        default_lines,
+        fromfile=f"Your {file_name}",
+        tofile=f"New default {file_name}",
+        lineterm="",
+    ):
+        is_same = False
+        if len(line) > 1 and line[-1] == "\n":
+            # Remove final newline otherwise we will show two new lines
+            line = line[:-1]
+        if line.startswith("-"):
+            click.secho(line, fg="red")
+        elif line.startswith("+"):
+            click.secho(line, fg="green")
+        else:
+            click.echo(line)
+
+    if is_same:
+        click.echo("Both files are the same")
+
+    click.echo("")
+
+
+def file_hash(file_name: str) -> str:
+    hasher = sha1()
+    with open(file_name, "rb") as file:
+        buf = file.read()
+        hasher.update(buf)
+    return hasher.hexdigest()
