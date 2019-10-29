@@ -9,6 +9,8 @@ services:
     image: trustlines/tlbc:release
     restart: always
     stop_grace_period: 3m
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
     networks:
       home-net:
         aliases:
@@ -34,6 +36,8 @@ services:
     # Root access is required here, because the trustlines node
     # use the same database volume and does not run as 'parity' user
     user: root
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
     networks:
       - foreign-net
     volumes:
@@ -60,6 +64,8 @@ services:
     env_file: ./netstats-env
     environment:
       - RPC_HOST=home-node
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
     networks:
       - home-net
     depends_on:
@@ -77,6 +83,8 @@ services:
     volumes:
       - ${HOST_BASE_DIR:-.}/config:/config
       - ${HOST_BASE_DIR:-.}/bridge-config.toml:/config.toml
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
     depends_on:
       - home-node
       - foreign-node
@@ -88,6 +96,8 @@ services:
     mem_limit: 512M
     mem_reservation: 16M
     stop_grace_period: 30s
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
     networks:
       - home-net
     volumes:
@@ -106,7 +116,7 @@ services:
     networks:
       - home-net
       - foreign-net
-    command: --api-version 1.25
+    command: --api-version 1.25 --label-enable
 
 networks:
   home-net:
