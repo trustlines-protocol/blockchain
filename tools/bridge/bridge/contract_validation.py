@@ -1,9 +1,19 @@
+import logging
+
+import tenacity
 from eth_utils import to_checksum_address
 from web3 import Web3
 from web3._utils.abi import abi_to_signature
 from web3.contract import Contract
 
 from bridge.contract_abis import MINIMAL_VALIDATOR_PROXY_ABI
+
+logger = logging.getLogger(__name__)
+
+retrying = tenacity.retry(
+    wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
+    before_sleep=tenacity.before_sleep_log(logger, logging.WARN),
+)
 
 
 def validate_contract_existence(contract: Contract) -> None:
@@ -15,7 +25,7 @@ def validate_contract_existence(contract: Contract) -> None:
     return nothing.
     """
 
-    contract_code = contract.web3.eth.getCode(contract.address)
+    contract_code = retrying(contract.web3.eth.getCode)(contract.address)
 
     if not contract_code:
         raise ValueError(
@@ -48,7 +58,9 @@ def validate_contract_existence(contract: Contract) -> None:
 
 
 def get_validator_proxy_contract(home_bridge_contract: Contract) -> Contract:
-    validator_proxy_address = home_bridge_contract.functions.validatorProxy().call()
+    validator_proxy_address = retrying(
+        home_bridge_contract.functions.validatorProxy().call
+    )()
     return home_bridge_contract.web3.eth.contract(
         address=validator_proxy_address, abi=MINIMAL_VALIDATOR_PROXY_ABI
     )
@@ -56,4 +68,4 @@ def get_validator_proxy_contract(home_bridge_contract: Contract) -> Contract:
 
 def is_bridge_validator(home_bridge_contract: Contract, address: bytes) -> bool:
     validator_proxy_contract = get_validator_proxy_contract(home_bridge_contract)
-    return validator_proxy_contract.functions.isValidator(address).call()
+    return retrying(validator_proxy_contract.functions.isValidator(address).call)()
