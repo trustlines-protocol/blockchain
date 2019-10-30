@@ -6,7 +6,7 @@
 version: "2.4"
 services:
   home-node:
-    image: trustlines/tlbc:release
+    image: trustlines/tlbc-node:release
     restart: always
     stop_grace_period: 3m
     labels:
@@ -72,7 +72,7 @@ services:
       - home-node
 
   bridge-client:
-    image: trustlines/bridge-release
+    image: trustlines/bridge:release
     restart: always
     mem_limit: 512M
     mem_reservation: 16M
