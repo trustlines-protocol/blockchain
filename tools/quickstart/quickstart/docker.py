@@ -13,7 +13,6 @@ from quickstart.utils import (
     is_bridge_prepared,
     is_netstats_prepared,
     is_validator_account_prepared,
-    is_bridge_using_default_json_rpc,
     show_file_diff,
 )
 from quickstart.validator_account import get_validator_address
@@ -74,7 +73,9 @@ def setup_interactivaly(base_dir, docker_compose_file):
         )
 
 
-def update_and_start(*, base_dir, host_base_dir, project_name) -> None:
+def update_and_start(
+    *, base_dir, host_base_dir, project_name, start_foreign_node
+) -> None:
     if not does_docker_compose_file_exist(base_dir):
         raise click.ClickException(
             "\n"
@@ -85,7 +86,9 @@ def update_and_start(*, base_dir, host_base_dir, project_name) -> None:
         )
 
     main_docker_service_names = ["home-node", "watchtower"]
-    optional_docker_service_names = get_optional_docker_service_names(base_dir)
+    optional_docker_service_names = get_optional_docker_service_names(
+        base_dir, start_foreign_node
+    )
     all_docker_service_names = (
         main_docker_service_names + optional_docker_service_names + ["tlbc-monitor"]
     )
@@ -182,7 +185,7 @@ def wait_for_chain_spec(base_dir) -> None:
         time.sleep(1)
 
 
-def get_optional_docker_service_names(base_dir) -> List[str]:
+def get_optional_docker_service_names(base_dir, start_foreign_node) -> List[str]:
     docker_service_names = []
 
     if is_netstats_prepared(base_dir=base_dir):
@@ -190,7 +193,7 @@ def get_optional_docker_service_names(base_dir) -> List[str]:
 
     if is_bridge_prepared(base_dir=base_dir):
         docker_service_names.append("bridge-client")
-        if is_bridge_using_default_json_rpc(base_dir):
+        if start_foreign_node:
             docker_service_names.append("foreign-node")
 
     return docker_service_names

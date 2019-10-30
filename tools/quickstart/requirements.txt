@@ -2,6 +2,6 @@ eth_account
 click
 requests
 toml
-marshmallow
+web3
 # development dependencies
 -r ../../requirements-dev.txt
