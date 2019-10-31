@@ -104,6 +104,7 @@ def tlbc(host_base_dir, project_name, base_dir):
         host_base_dir=host_base_dir,
         project_name=project_name,
         base_dir=base_dir,
+        chain_dir="tlbc",
     )
 
 
@@ -128,6 +129,7 @@ def laika(host_base_dir, project_name, base_dir):
         host_base_dir=host_base_dir,
         project_name=project_name,
         base_dir=base_dir,
+        chain_dir="Trustlines",
     )
 
 
@@ -164,6 +166,11 @@ def laika(host_base_dir, project_name, base_dir):
     default=None,
     metavar="URL",
 )
+@click.option(
+    "--chain-dir",
+    help="The chain directory name as specified in the chain spec file.",
+    default="Trustlines",
+)
 @project_name_option(default="custom")
 @base_dir_option(default="custom")
 @host_base_dir_option
@@ -174,6 +181,7 @@ def custom(
     project_name,
     bridge_config,
     netstats_url,
+    chain_dir,
 ):
     """
     Setup with custom settings.
@@ -189,6 +197,7 @@ def custom(
     run(
         "custom blockchain node",
         base_dir=base_dir,
+        chain_dir=chain_dir,
         bridge_config_file=bridge_config,
         docker_compose_file=docker_compose_file,
         netstats_url=netstats_url,
@@ -204,6 +213,7 @@ def run(
     docker_compose_file,
     base_dir,
     project_name,
+    chain_dir,
     netstats_url=None,
     host_base_dir=None,
 ):
@@ -224,7 +234,7 @@ def run(
             )
         )
     )
-    validator_account.setup_interactively(base_dir=base_dir)
+    validator_account.setup_interactively(base_dir=base_dir, chain_dir=chain_dir)
     monitor.setup_interactively(base_dir=base_dir)
     bridge.setup_interactively(base_dir=base_dir, bridge_config_file=bridge_config_file)
     netstats.setup_interactively(base_dir=base_dir, netstats_url=netstats_url)
