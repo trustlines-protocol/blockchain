@@ -18,8 +18,8 @@ max_peers = 100
 interface = "all"
 
 [account]
-# File at path/to/password should contain passwords to unlock your accounts. One password per line.
-password = ["/home/parity/.local/share/io.parity.ethereum/custom/pass.pwd"]
+# File should contain passwords to unlock your accounts. One password per line.
+# password = ["/home/parity/.local/share/io.parity.ethereum/custom/pass.pwd"]
 # List of addresses to unlock for the duration of execution.
 # unlock = ["0xAddress"]
 

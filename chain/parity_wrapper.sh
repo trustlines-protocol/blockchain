@@ -177,7 +177,21 @@ function replace_configuration_placeholder() {
   # The placeholder/value could be within a list.
   # Anything could follow afterwards (comment).
   sed -i -e "s/^#\?\ *\(${key_name}\ *=\ *\[\?\"\)${placeholder}\(\"\]\?.*$\)/\1${value}\2/" "$PARITY_CONFIG_FILE_TEMPLATE"
+}
 
+# Uncomment an option for the parity configuration file.
+# The file is determined by the $PARITY_CONFIG_FILE_TEMPLATE variable.
+# If the option is already active/not commented, it remains as it is.
+#
+# Arguments:
+#   $1 - key name
+#
+function uncomment_configuration_option() {
+  key_name="$1"
+
+  # This is a simplified use-case of the replace_configuration_placeholder function
+  # Check it out for further details of the option line structure.
+  sed -i -e "s/^#\?\ *\(${key_name}.*$\)/\1/" "$PARITY_CONFIG_FILE_TEMPLATE"
 }
 
 # Adjust the configuration file for parity for the selected role.
@@ -199,11 +213,13 @@ function adjustConfiguration() {
     echo "Run as validator with account ${ADDRESS}"
     # TODO: Introduce option to specify 'author' address?
     replace_configuration_placeholder "engine_signer" "$ADDRESS"
+    uncomment_configuration_option "password"
     ;;
 
   "participant")
     echo "Run as participant with unlocked account ${ADDRESS}"
     replace_configuration_placeholder "unlock" "$ADDRESS"
+    uncomment_configuration_option "password"
     ;;
 
   "observer")
