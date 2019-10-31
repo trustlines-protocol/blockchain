@@ -10,5 +10,5 @@ bridge_contract_address = "0x0000000000000000000000000000000000000401"
 event_fetch_start_block_number = 0
 
 [validator_private_key]
-keystore_path = "/config/keys/TLBC/account.json"
+keystore_path = "/config/keys/tlbc/account.json"
 keystore_password_path = "/config/pass.pwd"

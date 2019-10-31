@@ -19,7 +19,7 @@ services:
       - 30300:30300
       - 30300:30300/udp
     volumes:
-      - ${HOST_BASE_DIR:-.}/databases:/data
+      - ${HOST_BASE_DIR:-.}/databases/home-node:/data/tlbc
       - ${HOST_BASE_DIR:-.}/config:/config/custom
       - ${HOST_BASE_DIR:-.}/enode:/config/network
       - ${HOST_BASE_DIR:-.}/shared:/shared/

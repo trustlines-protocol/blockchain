@@ -14,14 +14,15 @@ from eth_utils import decode_hex, is_hex, remove_0x_prefix
 from quickstart.constants import (
     ADDRESS_FILE_PATH,
     BRIDGE_CONFIG_FILE_EXTERNAL,
-    KEYSTORE_FILE_PATH,
+    KEY_DIR,
+    KEYSTORE_FILE_NAME,
     MONITOR_DIR,
     NETSTATS_ENV_FILE_PATH,
     PASSWORD_FILE_PATH,
 )
 
 
-def ensure_clean_setup(base_dir):
+def ensure_clean_setup(base_dir, chain_dir):
     if os.path.isfile(os.path.join(base_dir, PASSWORD_FILE_PATH)):
         raise click.ClickException(
             "\n".join(
@@ -31,7 +32,7 @@ def ensure_clean_setup(base_dir):
                 )
             )
         )
-    if os.path.isfile(os.path.join(base_dir, KEYSTORE_FILE_PATH)):
+    if os.path.isfile(os.path.join(base_dir, KEY_DIR, chain_dir, KEYSTORE_FILE_NAME)):
         raise click.ClickException(
             "\n".join(
                 (

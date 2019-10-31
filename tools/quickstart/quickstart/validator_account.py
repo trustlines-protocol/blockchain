@@ -10,7 +10,8 @@ from quickstart.constants import (
     CONFIG_DIR,
     DATABASE_DIR,
     ENODE_DIR,
-    KEYSTORE_FILE_PATH,
+    KEY_DIR,
+    KEYSTORE_FILE_NAME,
     PASSWORD_FILE_PATH,
 )
 from quickstart.utils import (
@@ -24,14 +25,14 @@ from quickstart.utils import (
 )
 
 
-def setup_interactively(base_dir) -> None:
+def setup_interactively(base_dir, chain_dir) -> None:
     if is_validator_account_prepared(base_dir):
         click.echo("\nA validator account has already been set up.")
         return
     if not prompt_setup_as_validator():
         return
 
-    ensure_clean_setup(base_dir)
+    ensure_clean_setup(base_dir, chain_dir)
 
     os.makedirs(os.path.join(base_dir, CONFIG_DIR), exist_ok=True)
     os.makedirs(os.path.join(base_dir, ENODE_DIR), exist_ok=True)
@@ -48,11 +49,11 @@ def setup_interactively(base_dir) -> None:
     )
 
     if choice == "1":
-        import_keystore_file(base_dir)
+        import_keystore_file(base_dir, chain_dir)
     elif choice == "2":
-        import_private_key(base_dir)
+        import_private_key(base_dir, chain_dir)
     elif choice == "3":
-        generate_new_account(base_dir)
+        generate_new_account(base_dir, chain_dir)
     else:
         assert False, "unreachable"
 
@@ -73,7 +74,7 @@ def prompt_setup_as_validator():
         assert False, "unreachable"
 
 
-def import_keystore_file(base_dir) -> None:
+def import_keystore_file(base_dir, chain_dir) -> None:
     click.echo("Starting to import an existing keystore...")
     keystore_path = get_keystore_path()
 
@@ -84,12 +85,12 @@ def import_keystore_file(base_dir) -> None:
     trustlines_files = TrustlinesFiles(
         os.path.join(base_dir, PASSWORD_FILE_PATH),
         os.path.join(base_dir, ADDRESS_FILE_PATH),
-        os.path.join(base_dir, KEYSTORE_FILE_PATH),
+        os.path.join(base_dir, KEY_DIR, chain_dir, KEYSTORE_FILE_NAME),
     )
     trustlines_files.store(account, password)
 
 
-def import_private_key(base_dir) -> None:
+def import_private_key(base_dir, chain_dir) -> None:
     click.echo("Starting to import an existing raw private key...")
     private_key = read_private_key()
     account = Account.from_key(private_key)
@@ -97,19 +98,19 @@ def import_private_key(base_dir) -> None:
     trustlines_files = TrustlinesFiles(
         os.path.join(base_dir, PASSWORD_FILE_PATH),
         os.path.join(base_dir, ADDRESS_FILE_PATH),
-        os.path.join(base_dir, KEYSTORE_FILE_PATH),
+        os.path.join(base_dir, KEY_DIR, chain_dir, KEYSTORE_FILE_NAME),
     )
     trustlines_files.store(account, password)
 
 
-def generate_new_account(base_dir) -> None:
+def generate_new_account(base_dir, chain_dir) -> None:
     click.echo("Starting to generate a new private key...")
     account = Account.create()
     password = read_encryption_password()
     trustlines_files = TrustlinesFiles(
         os.path.join(base_dir, PASSWORD_FILE_PATH),
         os.path.join(base_dir, ADDRESS_FILE_PATH),
-        os.path.join(base_dir, KEYSTORE_FILE_PATH),
+        os.path.join(base_dir, KEY_DIR, chain_dir, KEYSTORE_FILE_NAME),
     )
     trustlines_files.store(account, password)
 
