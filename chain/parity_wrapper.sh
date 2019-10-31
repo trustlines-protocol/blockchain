@@ -60,7 +60,7 @@ IFS=' ' read -r -a ARG_VEC <<<"$@"
 # Adjustable configuration values.
 ROLE="observer"
 ADDRESS=""
-PARITY_ARGS="--no-color --jsonrpc-interface all"
+PARITY_ARGS=""
 
 # Internal stuff.
 declare -a VALID_ROLE_LIST=(
@@ -70,26 +70,10 @@ declare -a VALID_ROLE_LIST=(
 )
 SHARED_VOLUME_PATH="/shared/"
 
-# Configuration snippets.
-CONFIG_SNIPPET_VALIDATOR='
-[account]
-password = ["/home/parity/.local/share/io.parity.ethereum/custom/pass.pwd"]
-
-[mining]
-engine_signer = "%s"
-force_sealing = true
-'
-
-CONFIG_SNIPPET_ACCOUNT='
-[account]
-unlock = ["%s"]
-password = ["/home/parity/.local/share/io.parity.ethereum/custom/pass.pwd"]
-'
-
 # Make sure some environment variables are defined.
 [[ -z "$PARITY_BIN" ]] && PARITY_BIN=/usr/local/bin/parity
-[[ -z "$PARITY_CONFIG_FILE_NODE" ]] && PARITY_CONFIG_FILE_NODE=/home/parity/.local/share/io.parity.ethereum/config-template.toml
-PARITY_CONFIG_FILE=/home/parity/.local/share/io.parity.ethereum/config.toml
+[[ -z "$PARITY_CONFIG_FILE_TEMPLATE" ]] &&
+  PARITY_CONFIG_FILE_TEMPLATE=/home/parity/.local/share/io.parity.ethereum/config.toml
 
 function showVersion() {
   if [[ -e /VERSION ]]; then
@@ -164,6 +148,36 @@ function parseArguments() {
   done
 }
 
+# Replace a option value for the parity configuration file.
+# The file is determined by the $PARITY_CONFIG_FILE_TEMPLATE variable.
+# If the options is commented, it gets activated.
+# The change of the file happens in place.
+#
+# Developer:
+#   This function makes a bunch of assumption how the configuration lines
+#   look like. Take a look into the included comments, if it still fits
+#   the use-case.
+#
+# Arguments:
+#   $1 - key name
+#   $2 - value
+#   $3 - placeholder (optional ["0xAddress"])
+#
+function replace_configuration_placeholder() {
+  key_name="$1"
+  value="$2"
+  placeholder="$3"
+  [[ -z "$placeholder" ]] && placeholder="0xAddress"
+
+  # Could be prefixed with '#' as comment.
+  # Spaces could exist in-between.
+  # The placeholder/value are quoted.
+  # The placeholder/value could be within a list.
+  # Anything could follow afterwards (comment).
+  sed -i -e "s/^#\?\ *\(${key_name}\ *=\ *\[\?\"\)${placeholder}\(\"\]\?.*$\)/\1${value}\2/" "$PARITY_CONFIG_FILE_TEMPLATE"
+
+}
+
 # Adjust the configuration file for parity for the selected role.
 # Includes some checks of the arguments constellation and hints for the user.
 # Use the predefined configuration snippets filled with the users input.
@@ -176,26 +190,22 @@ function adjustConfiguration() {
     exit 1
   fi
 
-  # Read in the template.
-  local template=$(cat $PARITY_CONFIG_FILE_TEMPLATE)
-
   # Handle the different roles.
   # Append the respective configuration snippet with the necessary variable to the default configuration file.
   case $ROLE in
   "validator")
-    echo "Run as validator with address ${ADDRESS}"
-    printf "$template\n$CONFIG_SNIPPET_VALIDATOR" "$ADDRESS" >$PARITY_CONFIG_FILE
+    echo "Run as validator with account ${ADDRESS}"
+    # TODO: Introduce option to specify 'author' address?
+    replace_configuration_placeholder "engine_signer" "$ADDRESS"
     ;;
 
   "participant")
-    echo "Run as participant with address ${ADDRESS}"
-    printf "$template\n$CONFIG_SNIPPET_ACCOUNT" "$ADDRESS" >$PARITY_CONFIG_FILE
+    echo "Run as participant with unlocked account ${ADDRESS}"
+    replace_configuration_placeholder "unlock" "$ADDRESS"
     ;;
 
-  \
-    "observer")
-    echo "Run as observer without any account."
-    printf "$template" >$PARITY_CONFIG_FILE
+  "observer")
+    echo "Run as observer without an account."
     ;;
   esac
 }
@@ -204,8 +214,14 @@ function adjustConfiguration() {
 # The provided arguments by the user gets forwarded.
 #
 function runParity() {
-  echo "Start Parity with the following arguments: '${PARITY_ARGS}'"
-  exec $PARITY_BIN $PARITY_ARGS
+  printf "\nStart Parity"
+  if [[ -n "$PARITY_ARGS" ]]; then
+    printf " with the additional arguments: %s\n" "$PARITY_ARGS"
+    exec $PARITY_BIN "$PARITY_ARGS"
+  else
+    printf "\n"
+    exec $PARITY_BIN
+  fi
 }
 
 function copySpecFileToSharedVolume() {
