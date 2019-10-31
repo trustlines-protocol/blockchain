@@ -3,7 +3,7 @@
 # Actually this file is also being used and included by the quickstart
 # image.
 
-version: "2.4"
+version: "2.2"
 services:
   home-node:
     image: trustlines/tlbc-node-next:master
