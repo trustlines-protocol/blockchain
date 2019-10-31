@@ -54,6 +54,8 @@
 #   arguments. Checkout their documentation to do so.
 #
 
+set -e
+
 # Create an array by the argument string.
 IFS=' ' read -r -a ARG_VEC <<<"$@"
 
@@ -86,7 +88,7 @@ function showVersion() {
 #
 function printHelp() {
   local file="${BASH_SOURCE[0]}"
-  cat "$file" | sed -e '/^$/,$d; s/^#//; s/^\!\/bin\/bash//'
+  sed -e '/^$/,$d; s/^#//; s/^\!\/bin\/bash//' "$file"
 }
 
 # Check if the defined role for the client is valid.
@@ -96,12 +98,12 @@ function printHelp() {
 function checkRoleArgument() {
   # Check each known role and end if it match.
   for i in "${VALID_ROLE_LIST[@]}"; do
-    [[ $i == $ROLE ]] && return
+    [[ $i == "$ROLE" ]] && return
   done
 
   # Error report to the user with the correct usage.
   echo "The defined role ('$ROLE') is invalid."
-  echo "Please choose of the following: ${VALID_ROLE_LIST[@]}"
+  echo "Please choose of the following: ${VALID_ROLE_LIST[*]}"
   exit 1
 }
 
@@ -137,12 +139,12 @@ function parseArguments() {
     # Additional arguments for the Parity client.
     # Use all remain arguments for parity.
     elif [[ $arg == --parity-args ]] || [[ $arg == -p ]]; then
-      PARITY_ARGS="$PARITY_ARGS ${ARG_VEC[@]:$nextIndex}"
+      PARITY_ARGS="$PARITY_ARGS ${ARG_VEC[*]:$nextIndex}"
       i=${#ARG_VEC[@]}
 
     # A not known argument.
     else
-      echo Unkown argument: $arg
+      echo "Unkown argument: $arg"
       exit 1
     fi
   done
@@ -184,7 +186,7 @@ function replace_configuration_placeholder() {
 #
 function adjustConfiguration() {
   # Make sure an address is given if needed.
-  if ([[ $ROLE == 'participant' ]] || [[ $ROLE == 'validator' ]]) && [[ -z "$ADDRESS" ]]; then
+  if { [[ $ROLE == 'participant' ]] || [[ $ROLE == 'validator' ]]; } && [[ -z "$ADDRESS" ]]; then
     echo "Missing or empty address but required by selected role!"
     echo "Make sure the argument order is correct (parity arguments at the end)."
     exit 1
