@@ -20,7 +20,7 @@
 Nodes of the Trustlines Blockchain run various applications:
 
 - The node of the blockchain itself
-- The monitor that checks if validators act honestly
+- The monitor that checks if validators act honestly (optional)
 - The bridge between Ethereum and the Trustlines Blockchain (only run by validators)
 - The netstats client to report the node state to `https://netstats.trustlines.foundation`(optional)
 
@@ -55,7 +55,7 @@ For validators it is crucial to safely back up their private key.
 
 The quickstart script will set up the blockchain node and the monitor as well as optionally the bridge and netstats
 clients. It allows importing a private key in order to act as a validator. In addition, it will start a
-[watchtower](https://hub.docker.com/r/containrrr/watchtower) to automatically update the containers when newer versions
+[watchtower](https://hub.docker.com/r/containrrr/watchtower) to automatically update the Docker containers when newer versions
 become available (e.g. for bug fixes or network forks).
 
 To fetch the most recent version of the quickstart script and run it, execute the following command on your machine:
@@ -64,18 +64,29 @@ To fetch the most recent version of the quickstart script and run it, execute th
 $ wget -O quickstart.sh https://github.com/trustlines-protocol/blockchain/raw/master/quickstart.sh && bash quickstart.sh
 ```
 
-The script is interactive and will ask you which components to set up. Once the setup is complete, the various
-components will run in the background in the form of Docker containers. Configuration and chain data can be found in
-the `trustlines` directory placed in the current working directory.
+The script is interactive and will ask you which components to set up. Once the
+setup is complete, the various components will run in the background in the form
+of Docker containers. Configuration and chain data can be found in the
+`trustlines` directory placed in the current working directory. It is possible
+to customize the own setup by editing those configuration files. This goes for
+the configuration of the different components, as well as the composition of the
+Docker containers. If an optional component has not been setup on an earlier
+run, it can be added later by executing the quickstart script again.
 
-Executing the script again is safe: No configuration will be overridden. This allows you to add components not
-configured in earlier runs and will restart all containers.
+Executing the script again is safe: No configuration will be overridden without
+asking, in case the user has changed them itself. If conflicting configuration
+updates occur, they are shown to the user who can ask to see a diff of the
+changes.
 
 ### Setup With Docker
 
 A more explicit way of setting up the various components is starting the Docker containers manually as described here.
 To keep commands as concise as possible, only the most basic options are provided. You might want to set additional
-ones, e.g., container names or restart policies.
+ones, e.g., container names or restart policies. Notice that we intent to
+rebuild to setup of the quickstart script within the following sections. It is
+meant to get an idea how the components work and interact with each other. For
+a complete setup you could also first use the quickstart and adjust the setup
+afterwards, as it is fully customizable.
 
 #### Blockchain Node
 
@@ -95,7 +106,7 @@ $ docker run trustlines/tlbc-testnet --help
  ...
 ```
 
-Before starting the node, create a Docker network to conveniently allow other containers to connect to it:
+Before starting the node, create a Docker network to conveniently allow other containers to easily connect to it:
 
 ```sh
 $ docker network create network-laika
@@ -135,8 +146,8 @@ $ docker run -d --name laika-node --network network-laika \
 #### Netstats Client
 
 The netstats client reports the state of your node to the
-[Laika netstats page](https://laikanetstats.trustlines.foundation/) that gives a rough overview over the current state
-of the network. It is a fully optional component which helps the community, at the cost leaks of some leakage of
+[Laika netstats page](https://laikanetstats.trustlines.foundation/) that gives a rough overview of the current network state.
+It is a fully optional component which helps the community, at the cost leaks of some leakage of
 private information.
 
 To participate, you first need to request credentials managed by the Trustlines Foundation. Please email
@@ -195,14 +206,12 @@ The bridge requires an Ethereum mainnet node which can be a light client. To sta
 $ docker network create network-ethereum
 $ mkdir -p trustlines/data-goerli
 $ docker run -d --name goerli-node --network network-ethereum \
-    -v $(pwd)/trustlines/data-goerli:/data \
-    -p 30303:30303 -p 30303:30303/udp \
+    -v $(pwd)/trustlines/data-goerli:/data/database \
     --user root \
-    parity/parity:stable \
-    --light --no-download --auto-update none --chain goerli \
-    --base-path /data \
-    --no-hardware-wallets --jsonrpc-apis safe --jsonrpc-hosts all --jsonrpc-cors all --jsonrpc-port 8545 \
-    --no-ipc --no-secretstore --no-color
+    ethereum/client-go:stable \
+    --rpc --rpcaddr 0.0.0.0 --nousb --ipcdisable --goerli \
+    --syncmode light --datadir /data/database --rpccorsdomain * \
+    --rpcvhosts=*
 ```
 
 Now, write a configuration file for the bridge node and store it in `trustlines/bridge-config.toml`:
