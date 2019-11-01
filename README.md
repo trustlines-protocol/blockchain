@@ -70,7 +70,7 @@ of Docker containers. Configuration and chain data can be found in the
 `trustlines` directory placed in the current working directory. It is possible
 to customize the own setup by editing those configuration files. This goes for
 the configuration of the different components, as well as the composition of the
-Docker containers. If an optional component has not been setup on an earlier
+Docker containers. If an optional component has not been set up on an earlier
 run, it can be added later by executing the quickstart script again.
 
 Executing the script again is safe: No configuration will be overridden without
@@ -82,15 +82,14 @@ changes.
 
 A more explicit way of setting up the various components is starting the Docker containers manually as described here.
 To keep commands as concise as possible, only the most basic options are provided. You might want to set additional
-ones, e.g., container names or restart policies. Notice that we intent to
-rebuild to setup of the quickstart script within the following sections. It is
-meant to get an idea how the components work and interact with each other. For
-a complete setup you could also first use the quickstart and adjust the setup
-afterwards, as it is fully customizable.
+ones, e.g., container names or restart policies.
+
+Alternatively, you could also use the quickstart script and adjust the setup afterwards with commands similar to the
+following ones.
 
 #### Blockchain Node
 
-The blockchain image is a standard Parity client but with a custom configuration for the Trustlines Blockchain. It also
+The blockchain image is a standard Parity client with a custom configuration for the Trustlines Blockchain. It also
 accepts a few additional command line options as described in the help message:
 
 ```
@@ -147,8 +146,7 @@ $ docker run -d --name laika-node --network network-laika \
 
 The netstats client reports the state of your node to the
 [Laika netstats page](https://laikanetstats.trustlines.foundation/) that gives a rough overview of the current network state.
-It is a fully optional component which helps the community, at the cost leaks of some leakage of
-private information.
+It is an optional component which helps the community by providing information on your running node to a central server.
 
 To participate, you first need to request credentials managed by the Trustlines Foundation. Please email
 `netstats@trustlines.foundation` to do so.
@@ -233,7 +231,7 @@ keystore_path = "/config/keys/Trustlines/<keystore_filename.json>"
 keystore_password_path = "/config/pass.pwd"
 ```
 
-Note that they keystore path is not an actual path on the host machine, but rather in the bridge container we will
+Note that the keystore path is not an actual path on the host machine, but rather in the bridge container we will
 create next. The container will have to connect to both of the Docker networks and access the config directory.
 Therefore, the command looks like this:
 
