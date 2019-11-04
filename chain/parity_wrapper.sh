@@ -56,13 +56,10 @@
 
 set -e
 
-# Create an array by the argument string.
-IFS=' ' read -r -a ARG_VEC <<<"$@"
-
 # Adjustable configuration values.
 ROLE="observer"
 ADDRESS=""
-PARITY_ARGS=""
+PARITY_ARGS_ARRAY=()
 
 # Internal stuff.
 declare -a VALID_ROLE_LIST=(
@@ -115,9 +112,8 @@ function checkRoleArgument() {
 #   $1 - all arguments by the caller
 #
 function parseArguments() {
-  for ((i = 0; i < ${#ARG_VEC[@]}; i++)); do
-    arg="${ARG_VEC[i]}"
-    nextIndex=$((i + 1))
+  while [[ $# -gt 0 ]]; do
+    arg="$1"
 
     # Print help and exit if requested.
     if [[ $arg == --help ]] || [[ $arg == -h ]]; then
@@ -126,25 +122,28 @@ function parseArguments() {
 
     # Define the role for the client.
     elif [[ $arg == --role ]] || [[ $arg == -r ]]; then
-      ROLE="${ARG_VEC[$nextIndex]}"
+      ROLE="$2"
       checkRoleArgument # Make sure to have a valid role.
-      i=$nextIndex
+      shift             # arg
+      shift             # value
 
     # Define the address to bind.
     elif [[ $arg == --address ]] || [[ $arg == -a ]]; then
       # Take the next argument as the address and jump other it.
-      ADDRESS="${ARG_VEC[$nextIndex]}"
-      i=$nextIndex
+      ADDRESS="$2"
+      shift # arg
+      shift # value
 
     # Additional arguments for the Parity client.
     # Use all remain arguments for parity.
     elif [[ $arg == --parity-args ]] || [[ $arg == -p ]]; then
-      PARITY_ARGS="$PARITY_ARGS ${ARG_VEC[*]:$nextIndex}"
-      i=${#ARG_VEC[@]}
+      shift # arg
+      PARITY_ARGS_ARRAY=("$@")
+      break
 
     # A not known argument.
     else
-      echo "Unkown argument: $arg"
+      echo "Unknown argument: $arg"
       exit 1
     fi
   done
@@ -233,12 +232,11 @@ function adjustConfiguration() {
 #
 function runParity() {
   printf "\nStart Parity"
-  [[ -n "$PARITY_ARGS" ]] && printf " with the additional arguments: %s" "$PARITY_ARGS"
+  number_parity_args=${#PARITY_ARGS_ARRAY[@]}
+  [[ $number_parity_args -gt 0 ]] && printf " with the additional %d arguments: %-s" "$number_parity_args" "${PARITY_ARGS_ARRAY[*]}"
   printf "\n"
 
-  # Split the additional argument to make them get correctly recognized.
-  IFS=' ' read -r -a parity_args_array <<<"$PARITY_ARGS"
-  exec $PARITY_BIN "${parity_args_array[@]}"
+  exec $PARITY_BIN "${PARITY_ARGS_ARRAY[@]}"
 }
 
 function copySpecFileToSharedVolume() {
@@ -252,7 +250,7 @@ function copySpecFileToSharedVolume() {
 
 # Getting Started
 showVersion
-parseArguments
+parseArguments "$@"
 adjustConfiguration
 copySpecFileToSharedVolume
 runParity
