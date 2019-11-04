@@ -107,6 +107,17 @@ function checkRoleArgument() {
   exit 1
 }
 
+# Check if the set address is a valid address
+# Does not do a checksum test
+#
+function checkAddressArgument() {
+  [[ $ADDRESS =~ ^0x[0-9a-fA-F]{40}$ ]] && return
+
+  # Error report to the user with the correct usage.
+  echo "The defined address ('$ADDRESS') is invalid."
+  exit 1
+}
+
 # Parse the arguments, given to the script by the caller.
 # Not defined configuration values stay with their default values.
 # A not known argument leads to an exit with status code 1.
@@ -134,6 +145,7 @@ function parseArguments() {
     elif [[ $arg == --address ]] || [[ $arg == -a ]]; then
       # Take the next argument as the address and jump other it.
       ADDRESS="${ARG_VEC[$nextIndex]}"
+      checkAddressArgument # Make sure to have a valid address.
       i=$nextIndex
 
     # Additional arguments for the Parity client.
