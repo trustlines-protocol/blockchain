@@ -103,7 +103,7 @@ function checkRoleArgument() {
 
   # Error report to the user with the correct usage.
   echo "The defined role ('$ROLE') is invalid."
-  echo "Please choose of the following: ${VALID_ROLE_LIST[*]}"
+  echo "Please choose one of the following values: ${VALID_ROLE_LIST[*]}"
   exit 1
 }
 
