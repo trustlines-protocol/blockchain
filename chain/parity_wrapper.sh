@@ -233,13 +233,12 @@ function adjustConfiguration() {
 #
 function runParity() {
   printf "\nStart Parity"
-  if [[ -n "$PARITY_ARGS" ]]; then
-    printf " with the additional arguments: %s\n" "$PARITY_ARGS"
-    exec $PARITY_BIN "$PARITY_ARGS"
-  else
-    printf "\n"
-    exec $PARITY_BIN
-  fi
+  [[ -n "$PARITY_ARGS" ]] && printf " with the additional arguments: %s" "$PARITY_ARGS"
+  printf "\n"
+
+  # Split the additional argument to make them get correctly recognized.
+  IFS=' ' read -r -a parity_args_array <<<"$PARITY_ARGS"
+  exec $PARITY_BIN "${parity_args_array[@]}"
 }
 
 function copySpecFileToSharedVolume() {
