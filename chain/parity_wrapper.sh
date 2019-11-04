@@ -54,13 +54,15 @@
 #   arguments. Checkout their documentation to do so.
 #
 
+set -e
+
 # Create an array by the argument string.
 IFS=' ' read -r -a ARG_VEC <<<"$@"
 
 # Adjustable configuration values.
 ROLE="observer"
 ADDRESS=""
-PARITY_ARGS="--no-color --jsonrpc-interface all"
+PARITY_ARGS=""
 
 # Internal stuff.
 declare -a VALID_ROLE_LIST=(
@@ -70,26 +72,10 @@ declare -a VALID_ROLE_LIST=(
 )
 SHARED_VOLUME_PATH="/shared/"
 
-# Configuration snippets.
-CONFIG_SNIPPET_VALIDATOR='
-[account]
-password = ["/home/parity/.local/share/io.parity.ethereum/custom/pass.pwd"]
-
-[mining]
-engine_signer = "%s"
-force_sealing = true
-'
-
-CONFIG_SNIPPET_ACCOUNT='
-[account]
-unlock = ["%s"]
-password = ["/home/parity/.local/share/io.parity.ethereum/custom/pass.pwd"]
-'
-
 # Make sure some environment variables are defined.
 [[ -z "$PARITY_BIN" ]] && PARITY_BIN=/usr/local/bin/parity
-[[ -z "$PARITY_CONFIG_FILE_NODE" ]] && PARITY_CONFIG_FILE_NODE=/home/parity/.local/share/io.parity.ethereum/config-template.toml
-PARITY_CONFIG_FILE=/home/parity/.local/share/io.parity.ethereum/config.toml
+[[ -z "$PARITY_CONFIG_FILE_TEMPLATE" ]] &&
+  PARITY_CONFIG_FILE_TEMPLATE=/home/parity/.local/share/io.parity.ethereum/config.toml
 
 function showVersion() {
   if [[ -e /VERSION ]]; then
@@ -102,7 +88,7 @@ function showVersion() {
 #
 function printHelp() {
   local file="${BASH_SOURCE[0]}"
-  cat "$file" | sed -e '/^$/,$d; s/^#//; s/^\!\/bin\/bash//'
+  sed -e '/^$/,$d; s/^#//; s/^\!\/bin\/bash//' "$file"
 }
 
 # Check if the defined role for the client is valid.
@@ -112,12 +98,12 @@ function printHelp() {
 function checkRoleArgument() {
   # Check each known role and end if it match.
   for i in "${VALID_ROLE_LIST[@]}"; do
-    [[ $i == $ROLE ]] && return
+    [[ $i == "$ROLE" ]] && return
   done
 
   # Error report to the user with the correct usage.
   echo "The defined role ('$ROLE') is invalid."
-  echo "Please choose of the following: ${VALID_ROLE_LIST[@]}"
+  echo "Please choose one of the following values: ${VALID_ROLE_LIST[*]}"
   exit 1
 }
 
@@ -153,15 +139,59 @@ function parseArguments() {
     # Additional arguments for the Parity client.
     # Use all remain arguments for parity.
     elif [[ $arg == --parity-args ]] || [[ $arg == -p ]]; then
-      PARITY_ARGS="$PARITY_ARGS ${ARG_VEC[@]:$nextIndex}"
+      PARITY_ARGS="$PARITY_ARGS ${ARG_VEC[*]:$nextIndex}"
       i=${#ARG_VEC[@]}
 
     # A not known argument.
     else
-      echo Unkown argument: $arg
+      echo "Unkown argument: $arg"
       exit 1
     fi
   done
+}
+
+# Replace a option value for the parity configuration file.
+# The file is determined by the $PARITY_CONFIG_FILE_TEMPLATE variable.
+# If the options is commented, it gets activated.
+# The change of the file happens in place.
+#
+# Developer:
+#   This function makes a bunch of assumption how the configuration lines
+#   look like. Take a look into the included comments, if it still fits
+#   the use-case.
+#
+# Arguments:
+#   $1 - key name
+#   $2 - value
+#   $3 - placeholder (optional ["0xAddress"])
+#
+function replace_configuration_placeholder() {
+  key_name="$1"
+  value="$2"
+  placeholder="$3"
+  [[ -z "$placeholder" ]] && placeholder="0xAddress"
+
+  # Could be prefixed with '#' as comment.
+  # Spaces could exist in-between.
+  # The placeholder/value are quoted.
+  # The placeholder/value could be within a list.
+  # Anything could follow afterwards (comment).
+  sed -i -e "s/^#\?\ *\(${key_name}\ *=\ *\[\?\"\)${placeholder}\(\"\]\?.*$\)/\1${value}\2/" "$PARITY_CONFIG_FILE_TEMPLATE"
+}
+
+# Uncomment an option for the parity configuration file.
+# The file is determined by the $PARITY_CONFIG_FILE_TEMPLATE variable.
+# If the option is already active/not commented, it remains as it is.
+#
+# Arguments:
+#   $1 - key name
+#
+function uncomment_configuration_option() {
+  key_name="$1"
+
+  # This is a simplified use-case of the replace_configuration_placeholder function
+  # Check it out for further details of the option line structure.
+  sed -i -e "s/^#\?\ *\(${key_name}.*$\)/\1/" "$PARITY_CONFIG_FILE_TEMPLATE"
 }
 
 # Adjust the configuration file for parity for the selected role.
@@ -170,32 +200,30 @@ function parseArguments() {
 #
 function adjustConfiguration() {
   # Make sure an address is given if needed.
-  if ([[ $ROLE == 'participant' ]] || [[ $ROLE == 'validator' ]]) && [[ -z "$ADDRESS" ]]; then
+  if { [[ $ROLE == 'participant' ]] || [[ $ROLE == 'validator' ]]; } && [[ -z "$ADDRESS" ]]; then
     echo "Missing or empty address but required by selected role!"
     echo "Make sure the argument order is correct (parity arguments at the end)."
     exit 1
   fi
 
-  # Read in the template.
-  local template=$(cat $PARITY_CONFIG_FILE_TEMPLATE)
-
   # Handle the different roles.
   # Append the respective configuration snippet with the necessary variable to the default configuration file.
   case $ROLE in
   "validator")
-    echo "Run as validator with address ${ADDRESS}"
-    printf "$template\n$CONFIG_SNIPPET_VALIDATOR" "$ADDRESS" >$PARITY_CONFIG_FILE
+    echo "Run as validator with account ${ADDRESS}"
+    # TODO: Introduce option to specify 'author' address?
+    replace_configuration_placeholder "engine_signer" "$ADDRESS"
+    uncomment_configuration_option "password"
     ;;
 
   "participant")
-    echo "Run as participant with address ${ADDRESS}"
-    printf "$template\n$CONFIG_SNIPPET_ACCOUNT" "$ADDRESS" >$PARITY_CONFIG_FILE
+    echo "Run as participant with unlocked account ${ADDRESS}"
+    replace_configuration_placeholder "unlock" "$ADDRESS"
+    uncomment_configuration_option "password"
     ;;
 
-  \
-    "observer")
-    echo "Run as observer without any account."
-    printf "$template" >$PARITY_CONFIG_FILE
+  "observer")
+    echo "Run as observer without an account."
     ;;
   esac
 }
@@ -204,8 +232,14 @@ function adjustConfiguration() {
 # The provided arguments by the user gets forwarded.
 #
 function runParity() {
-  echo "Start Parity with the following arguments: '${PARITY_ARGS}'"
-  exec $PARITY_BIN $PARITY_ARGS
+  printf "\nStart Parity"
+  if [[ -n "$PARITY_ARGS" ]]; then
+    printf " with the additional arguments: %s\n" "$PARITY_ARGS"
+    exec $PARITY_BIN "$PARITY_ARGS"
+  else
+    printf "\n"
+    exec $PARITY_BIN
+  fi
 }
 
 function copySpecFileToSharedVolume() {
