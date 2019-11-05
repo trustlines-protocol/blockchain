@@ -26,6 +26,7 @@ services:
     command: >-
       --role ${ROLE}
       --address ${VALIDATOR_ADDRESS}
+      --author ${AUTHOR_ADDRESS}
 
   foreign-node:
     image: ethereum/client-go:stable
