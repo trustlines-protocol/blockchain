@@ -22,3 +22,5 @@ MONITOR_DIR = "monitor"
 MONITOR_REPORTS_DIR = os.path.join(MONITOR_DIR, "reports")
 
 SHARED_CHAIN_SPEC_PATH = "shared/trustlines-spec.json"
+
+ZERO_ADDRESS = "0x" + "00" * 20
