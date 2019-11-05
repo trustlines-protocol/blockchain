@@ -15,7 +15,7 @@ from quickstart.utils import (
     is_validator_account_prepared,
     show_file_diff,
 )
-from quickstart.validator_account import get_validator_address
+from quickstart.validator_account import get_author_address, get_validator_address
 
 # List of docker container names to stop and remove on startup in addition to the ones defined in
 # the docker compose file (for backward compatibility)
@@ -94,6 +94,7 @@ def update_and_start(*, base_dir, host_base_dir, project_name) -> None:
         env_variables = {
             **default_env_vars,
             "VALIDATOR_ADDRESS": get_validator_address(base_dir),
+            "AUTHOR_ADDRESS": get_author_address(base_dir),
             "ROLE": "validator",
         }
         click.echo("\nNode will run as a validator")
@@ -101,6 +102,7 @@ def update_and_start(*, base_dir, host_base_dir, project_name) -> None:
         env_variables = {
             **default_env_vars,
             "VALIDATOR_ADDRESS": "",
+            "AUTHOR_ADDRESS": "",
             "ROLE": "observer",
         }
         click.echo("\nNode will run as a non-validator")
