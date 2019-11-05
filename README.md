@@ -2,7 +2,7 @@
 
 - [The Trustlines Blockchain Infrastructure](#the-trustlines-blockchain-infrastructure)
   - [System Requirements](#system-requirements)
-  - [Backups](#backups)
+  - [Security](#security)
   - [Setup With the Quickstart Script](#setup-with-the-quickstart-script)
   - [Setup With Docker](#setup-with-docker)
     - [Blockchain Node](#blockchain-node)
@@ -28,7 +28,7 @@ There are multiple ways to set each of these up. The most straightforward one by
 script. Finer control can be achieved by starting the components individually as Docker containers. Finally, it is also
 possible to avoid Docker altogether and run everything directly on the host machine.
 
-Before starting the installation process, please have a look at the system requirements and the note on backups.
+Before starting the installation process, please have a look at the system requirements and the note on security.
 
 ### System Requirements
 
@@ -47,9 +47,23 @@ For the quickstart and Docker installation modes, [Docker](https://docker.com) n
 Please refer to the official documentation and make sure your user is added to the `docker` user group if you cannot
 access root permissions to run containers.
 
-### Backups
+### Security
 
-For validators it is crucial to safely back up their private key.
+For validators it is crucial to safely back up their private key. If they lose their key, they will not be able to
+
+- create any blocks or earn block rewards or
+- withdraw their stake on the main chain once it is unlocked.
+
+Furthermore, it is advisable to configure validating nodes in such a way that mining rewards are not sent to the
+validator account (the default), but to a separate one. The corresponding private key can be kept in a cold wallet and
+even on a different machine, protecting it from attacks on the validator node itself.
+
+The quickstart script provides an option to set a designated reward address. Please make sure that you have full
+control over the reward account (in particular, it is not a contract-based wallet on the Ethereum chain). Otherwise
+you will not be able to access your rewards.
+
+If you do not use the quickstart script, use the `--author` option of Parity.
+
 
 ### Setup With the Quickstart Script
 
