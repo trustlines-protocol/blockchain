@@ -60,7 +60,7 @@ class ValidatorStatusWatcher:
         self._wait_for_non_validator_status()
 
         logger.warning(
-            f"The account with address {to_checksum_address(self.validator_address)} has lost it's "
+            f"The account with address {to_checksum_address(self.validator_address)} has lost its "
             f"validator status. The program will shutdown now."
         )
         self.control_queue.put(IsValidatorCheck(False))
