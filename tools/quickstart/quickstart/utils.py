@@ -9,7 +9,7 @@ from typing import Tuple
 
 import click
 from eth_account import Account
-from eth_utils import decode_hex, is_hex, remove_0x_prefix
+from eth_utils import decode_hex, is_checksum_address, is_hex, remove_0x_prefix
 
 from quickstart.constants import (
     ADDRESS_FILE_PATH,
@@ -148,6 +148,19 @@ def read_private_key() -> str:
                 "The private key must be entered as a hex encoded string. Please try again."
             )
         )
+
+
+def read_address() -> str:
+    while True:
+        address = click.prompt("Address (checksummed)")
+        if is_checksum_address(address):
+            return address
+        else:
+            click.echo(
+                fill(
+                    "Invalid address (must be in hex encoded, 0x prefixed, checksummed format). Please try again"
+                )
+            )
 
 
 def read_encryption_password() -> str:
