@@ -239,6 +239,7 @@ def run(
         )
     )
     validator_account.setup_interactively(base_dir=base_dir, chain_dir=chain_dir)
+    validator_account.setup_author_address(setup_name=setup_name, base_dir=base_dir)
     monitor.setup_interactively(base_dir=base_dir)
     bridge.setup_interactively(
         base_dir=base_dir,
