@@ -13,6 +13,7 @@ from eth_utils import decode_hex, is_checksum_address, is_hex, remove_0x_prefix
 
 from quickstart.constants import (
     ADDRESS_FILE_PATH,
+    AUTHOR_ADDRESS_FILE_PATH,
     BRIDGE_CONFIG_FILE_EXTERNAL,
     KEY_DIR,
     KEYSTORE_FILE_NAME,
@@ -62,6 +63,10 @@ def non_empty_file_exists(file_path: str) -> bool:
 
 def is_validator_account_prepared(base_dir) -> bool:
     return os.path.isfile(os.path.join(base_dir, ADDRESS_FILE_PATH))
+
+
+def is_author_address_prepared(base_dir) -> bool:
+    return os.path.isfile(os.path.join(base_dir, AUTHOR_ADDRESS_FILE_PATH))
 
 
 def is_netstats_prepared(base_dir) -> bool:
