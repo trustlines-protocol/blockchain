@@ -7,6 +7,7 @@ from eth_account import Account
 
 from quickstart.constants import (
     ADDRESS_FILE_PATH,
+    AUTHOR_ADDRESS_FILE_PATH,
     CONFIG_DIR,
     DATABASE_DIR,
     ENODE_DIR,
@@ -18,7 +19,9 @@ from quickstart.utils import (
     TrustlinesFiles,
     ensure_clean_setup,
     get_keystore_path,
+    is_author_address_prepared,
     is_validator_account_prepared,
+    read_address,
     read_decryption_password,
     read_encryption_password,
     read_private_key,
@@ -58,6 +61,28 @@ def setup_interactively(base_dir, chain_dir) -> None:
         assert False, "unreachable"
 
     click.echo("Validator account setup complete.")
+
+
+def setup_author_address(setup_name, base_dir):
+    if is_author_address_prepared(base_dir):
+        click.echo("\nAn author address has already been configured.")
+        return
+
+    if click.confirm(
+        "\n"
+        + fill(
+            "Do you want to receive your mining rewards to a dedicated account instead of your "
+            "validator account? This would increase security of your funds (for more information, "
+            "see https://github.com/trustlines-protocol/blockchain/blob/master/README.md)."
+        )
+    ):
+        click.echo(f"Please enter a {setup_name} address you have full control over")
+        address = read_address()
+
+        path = os.path.join(base_dir, AUTHOR_ADDRESS_FILE_PATH)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "x") as f:
+            f.write(address)
 
 
 def prompt_setup_as_validator():
@@ -121,3 +146,16 @@ def get_validator_address(base_dir) -> str:
 
     with open(os.path.join(base_dir, ADDRESS_FILE_PATH), "r") as address_file:
         return address_file.read()
+
+
+def get_author_address(base_dir) -> str:
+    if not is_validator_account_prepared(base_dir):
+        raise ValueError("Validator account is not prepared! Can not read its address.")
+
+    try:
+        with open(
+            os.path.join(base_dir, AUTHOR_ADDRESS_FILE_PATH), "r"
+        ) as author_address_file:
+            return author_address_file.read()
+    except FileNotFoundError:
+        return get_validator_address(base_dir)
