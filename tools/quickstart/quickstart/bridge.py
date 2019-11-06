@@ -6,7 +6,7 @@ from textwrap import fill
 
 import click
 import toml
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError, HTTPError
 from web3 import HTTPProvider, Web3
 
 from quickstart.constants import BRIDGE_CONFIG_FILE_EXTERNAL, BRIDGE_DOCUMENTATION_URL
@@ -63,15 +63,18 @@ def setup_interactively(base_dir, bridge_config_file, foreign_chain_name) -> Non
     choice = click.prompt(
         fill(
             f"The bridge needs a a connection to a(n) {foreign_chain_name} node.\n"
-            f"Do you want to run a light node (1) (recommended) "
+            f"Do you want to run a light node (1) (default) "
             f"or do you already have a node running and want to connect via JSON rpc (2) ?"
         )
         + "\n",
         type=click.Choice(("1", "2")),
         show_choices=False,
+        default="1",
+        show_default=False,
     )
     if choice == "1":
         copy_default_bridge_config(base_dir, bridge_config_file)
+        assert is_bridge_using_template_json_rpc_url(base_dir, bridge_config_file)
     elif choice == "2":
         url = read_json_rpc_url(bridge_config_file)
         # We want to ask for the URL before we copy the default config in case the user exits while entering the url
@@ -120,36 +123,38 @@ def _show_file_override_dialog(base_dir, bridge_config_file):
 
 
 def read_json_rpc_url(bridge_config_file):
-    url = click.prompt("JSON RPC url")
-
-    # If the given url matches the one in the template, we cannot gracefully handle whether we should run the foreign node ourselves
-    config = toml.load(bridge_config_file)
-    if url == config["foreign_chain"]["rpc_url"]:
-        click.echo(
-            "The given url clashes with the default rpc url. "
-            "Please enter a different url"
-        )
-        url = read_json_rpc_url(bridge_config_file)
-
-    web3 = Web3(HTTPProvider(url))
-    try:
-        web3.eth.blockNumber
-        return url
-    except (ConnectionError, ValueError) as e:
-        choice = click.prompt(
-            f"We could not connect to the given url: \n"
-            + fill(str(e))
-            + f"\ndo you want to proceed (1) or provide a different url (2) ?\n",
-            type=click.Choice(("1", "2")),
-            show_choices=False,
-        )
-        if choice == "1":
-            pass
-        elif choice == "2":
-            url = read_json_rpc_url(bridge_config_file)
-        else:
-            assert False, "unreachable"
+    while True:
+        url = click.prompt("JSON RPC url")
+        # If the given url matches the one in the template, we cannot gracefully handle
+        # whether we should run the foreign node ourselves
+        if is_default_json_url(bridge_config_file, url):
+            click.echo(
+                fill(
+                    "The given url clashes with the default rpc url. "
+                    "Please enter a different url"
+                )
+            )
+            continue
+        try:
+            Web3(HTTPProvider(url)).eth.blockNumber
+            break
+        except (ConnectionError, HTTPError, ValueError) as e:
+            click.echo("Error: \n" + fill(str(e)))
+            choice = click.confirm(
+                f"We could not properly connect to the given url\n"
+                f"Do you want to proceed anyways?\n",
+                default=False,
+            )
+            if choice:
+                break
+            else:
+                continue
     return url
+
+
+def is_default_json_url(template_path, url):
+    config = toml.load(template_path)
+    return url == config["foreign_chain"]["rpc_url"]
 
 
 def change_json_rpc_url(config_file, url):
@@ -161,6 +166,5 @@ def change_json_rpc_url(config_file, url):
 
 
 def is_bridge_using_template_json_rpc_url(base_dir, template_path):
-    config = toml.load(os.path.join(base_dir, BRIDGE_CONFIG_FILE_EXTERNAL))
-    template = toml.load(template_path)
-    return config["foreign_chain"]["rpc_url"] == template["foreign_chain"]["rpc_url"]
+    user_config = toml.load(os.path.join(base_dir, BRIDGE_CONFIG_FILE_EXTERNAL))
+    return is_default_json_url(template_path, user_config["foreign_chain"]["rpc_url"])
