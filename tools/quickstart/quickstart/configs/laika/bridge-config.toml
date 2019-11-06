@@ -1,13 +1,13 @@
 [foreign_chain]
 rpc_url = "http://foreign-node:8545"
-token_contract_address = "0x54B06531214AD41DE9d771c10C0030d048d0cC67"
-bridge_contract_address = "0x2171Dd4d4F6ca30FeEA8a27b96257A67f371d87A"
-event_fetch_start_block_number = 1321331
+token_contract_address = "0xc59636130365C6723e760Dd55436BE54495c6133"
+bridge_contract_address = "0x22bB53A8dC4EbeFE66451E0B65878afe8Aa13B29"
+event_fetch_start_block_number = 1596703
 
 [home_chain]
 rpc_url = "http://home-node:8545"
-bridge_contract_address = "0x854dF872BB8bfECafFB1077FCfd7aa0B7C838A60"
-event_fetch_start_block_number = 4153205
+bridge_contract_address = "0x18CDa4391dFA429A4E13AD685cd7b15e37c4DC44"
+event_fetch_start_block_number = 4763393
 
 [validator_private_key]
 keystore_path = "/config/keys/Trustlines/account.json"
