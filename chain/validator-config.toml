@@ -6,36 +6,26 @@ keys_path = "/home/parity/.local/share/io.parity.ethereum/custom/keys"
 auto_update = "none"
 # Disables auto downloading of new releases. Not recommended.
 no_download = true
-# Save pending local transactions to disk to be restored whenever the node restarts.
-no_persistent_txqueue = false
 
 [network]
 port = 30300
-# Parity will maintain at most 100 peers.
-max_peers = 100
 
 [rpc]
 interface = "all"
 
 [account]
 # File should contain passwords to unlock your accounts. One password per line.
-# password = ["/home/parity/.local/share/io.parity.ethereum/custom/pass.pwd"]
-# List of addresses to unlock for the duration of execution.
-# unlock = ["0xAddress"]
+password = ["/home/parity/.local/share/io.parity.ethereum/custom/pass.pwd"]
 
 [mining]
-# Account address to receive reward when block is mined.
-# author = "0xAddress"
 # Account to sign consensus messages and issue blocks for non-PoW chains.
-# engine_signer = "0xAddress"
+engine_signer = "0xAddress"
 # Prepare a block to seal even when there are no miners connected.
 force_sealing = true
-# New transactions will not cause a new pending block to be created.
-reseal_on_txs = "none"
 # Minimum amount of Wei per GAS to be paid for a transaction to be accepted for mining. Overrides --usd-per-tx.
-min_gas_price = 1
+min_gas_price = 1000000000
 # Maximum number of transactions per sender in the queue. By default it's 1% of the entire queue, but not less than 16.
-tx_queue_per_sender = 100
+tx_queue_per_sender = 200
 
 [misc]
 color = false

@@ -1,0 +1,13 @@
+[parity]
+# Custom chain
+chain = "/home/parity/.local/share/io.parity.ethereum/trustlines-spec.json"
+# No updates will be auto-installed
+auto_update = "none"
+# Disables auto downloading of new releases. Not recommended.
+no_download = true
+
+[network]
+port = 30300
+
+[rpc]
+interface = "all"
