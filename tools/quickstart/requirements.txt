@@ -2,5 +2,6 @@ eth_account
 click
 requests
 toml
+web3
 # development dependencies
 -r ../../requirements-dev.txt

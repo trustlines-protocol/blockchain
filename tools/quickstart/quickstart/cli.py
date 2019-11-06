@@ -4,7 +4,7 @@ from textwrap import fill
 import click
 import pkg_resources
 
-from quickstart import bridge, docker, monitor, netstats, validator_account
+from quickstart import bridge, docker, monitor, netstats, utils, validator_account
 
 DEFAULT_CONFIGS = ["laika", "tlbc"]
 LAIKA, TLBC = DEFAULT_CONFIGS
@@ -98,6 +98,7 @@ def tlbc(host_base_dir, project_name, base_dir):
     netstats_url = TLBC_NETSTATS_SERVER_BASE_URL
     run(
         "Trustlines Blockchain",
+        foreign_chain_name="Ethereum mainnet",
         bridge_config_file=bridge_config_file,
         docker_compose_file=docker_compose_file,
         netstats_url=netstats_url,
@@ -123,6 +124,7 @@ def laika(host_base_dir, project_name, base_dir):
     netstats_url = LAIKA_NETSTATS_SERVER_BASE_URL
     run(
         "Laika Testnet",
+        foreign_chain_name="Görli testnet",
         bridge_config_file=bridge_config_file,
         docker_compose_file=docker_compose_file,
         netstats_url=netstats_url,
@@ -196,6 +198,7 @@ def custom(
 
     run(
         "custom blockchain node",
+        foreign_chain_name="foreign chain",
         base_dir=base_dir,
         chain_dir=chain_dir,
         bridge_config_file=bridge_config,
@@ -209,6 +212,7 @@ def custom(
 def run(
     setup_name,
     *,
+    foreign_chain_name,
     bridge_config_file,
     docker_compose_file,
     base_dir,
@@ -236,14 +240,32 @@ def run(
     )
     validator_account.setup_interactively(base_dir=base_dir, chain_dir=chain_dir)
     monitor.setup_interactively(base_dir=base_dir)
-    bridge.setup_interactively(base_dir=base_dir, bridge_config_file=bridge_config_file)
+    bridge.setup_interactively(
+        base_dir=base_dir,
+        bridge_config_file=bridge_config_file,
+        foreign_chain_name=foreign_chain_name,
+    )
     netstats.setup_interactively(base_dir=base_dir, netstats_url=netstats_url)
     docker.setup_interactivaly(
         base_dir=base_dir, docker_compose_file=docker_compose_file
     )
     docker.update_and_start(
-        base_dir=base_dir, host_base_dir=host_base_dir, project_name=project_name
+        base_dir=base_dir,
+        host_base_dir=host_base_dir,
+        project_name=project_name,
+        start_foreign_node=should_foreign_node_be_started(
+            base_dir=base_dir, bridge_config_file=bridge_config_file
+        ),
     )
+
+
+def should_foreign_node_be_started(*, base_dir, bridge_config_file):
+    if not utils.is_bridge_prepared(base_dir=base_dir):
+        return False
+    else:
+        return bridge.is_bridge_using_template_json_rpc_url(
+            base_dir, bridge_config_file
+        )
 
 
 if __name__ == "__main__":
