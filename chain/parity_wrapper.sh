@@ -72,7 +72,7 @@ SHARED_VOLUME_PATH="/shared/"
 # Make sure some environment variables are defined.
 [[ -z "$PARITY_BIN" ]] && PARITY_BIN=/usr/local/bin/parity
 [[ -z "$PARITY_CONFIG_DIR" ]] &&
-  PARITY_CONFIG_DIR=/home/parity/.local/share/io.parity.ethereum/
+  PARITY_CONFIG_DIR=/home/parity/.local/share/io.parity.ethereum
 PARITY_CONFIG_FILE="${PARITY_CONFIG_DIR}/config.toml"
 
 function showVersion() {
