@@ -9,7 +9,6 @@ from typing import Tuple
 
 import click
 from eth_account import Account
-import toml
 from eth_utils import decode_hex, is_hex, remove_0x_prefix
 
 from quickstart.constants import (
