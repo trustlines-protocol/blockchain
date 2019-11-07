@@ -9,7 +9,7 @@
 set -e
 
 # Variables
-: "${DOCKER_IMAGE:=trustlines/quickstart:master17502}"
+: "${DOCKER_IMAGE:=trustlines/quickstart:master19077}"
 : "${DATA_DIR:=${PWD}/tlbc}"
 GREEN='\033[0;32m'
 RESET='\033[0m'
