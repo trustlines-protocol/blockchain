@@ -32,14 +32,13 @@ def setup_interactively(base_dir, chain_dir) -> None:
     if is_validator_account_prepared(base_dir):
         click.echo("\nA validator account has already been set up.")
         return
+
+    make_required_dirs(base_dir, chain_dir)
+
     if not prompt_setup_as_validator():
         return
 
     ensure_clean_setup(base_dir, chain_dir)
-
-    os.makedirs(os.path.join(base_dir, CONFIG_DIR), exist_ok=True)
-    os.makedirs(os.path.join(base_dir, ENODE_DIR), exist_ok=True)
-    os.makedirs(os.path.join(base_dir, DATABASE_DIR), exist_ok=True)
 
     choice = click.prompt(
         fill(
@@ -61,6 +60,15 @@ def setup_interactively(base_dir, chain_dir) -> None:
         assert False, "unreachable"
 
     click.echo("Validator account setup complete.")
+
+
+def make_required_dirs(base_dir, chain_dir):
+    """Make the directory with which the quickstart could interact before parity makes them
+    to have write access"""
+    os.makedirs(os.path.join(base_dir, CONFIG_DIR), exist_ok=True)
+    os.makedirs(os.path.join(base_dir, ENODE_DIR), exist_ok=True)
+    os.makedirs(os.path.join(base_dir, DATABASE_DIR), exist_ok=True)
+    os.makedirs(os.path.join(base_dir, KEY_DIR, chain_dir), exist_ok=True)
 
 
 def setup_author_address(setup_name, base_dir):

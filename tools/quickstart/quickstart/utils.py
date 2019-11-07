@@ -93,7 +93,6 @@ class TrustlinesFiles:
         # parity can't handle
         json_account = account.encrypt(password, kdf="pbkdf2")
 
-        os.makedirs(os.path.dirname(os.path.abspath(self.keystore_path)), exist_ok=True)
         with open(self.keystore_path, "x") as f:
             f.write(json.dumps(json_account))
 
