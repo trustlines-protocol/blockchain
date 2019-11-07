@@ -10,6 +10,7 @@ PASSWORD_FILE_NAME = "pass.pwd"
 
 PASSWORD_FILE_PATH = os.path.join(CONFIG_DIR, PASSWORD_FILE_NAME)
 ADDRESS_FILE_PATH = os.path.join(CONFIG_DIR, "address")
+AUTHOR_ADDRESS_FILE_PATH = os.path.join(CONFIG_DIR, "author-address")
 
 NETSTATS_ENV_FILE_PATH = "netstats-env"
 
