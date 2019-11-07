@@ -11,7 +11,6 @@ FROM ubuntu:18.04@sha256:f08638ec7ddc90065187e7eabdfac3c96e5ff0f6b2f1762cf31a4f4
 ENV HOME=/home/parity
 ENV PARITY_HOME_DIR=$HOME/.local/share/io.parity.ethereum
 ENV PARITY_CONFIG_FILE_CHAIN=$PARITY_HOME_DIR/trustlines-spec.json
-ENV PARITY_CONFIG_FILE_TEMPLATE=$PARITY_HOME_DIR/config.toml
 ENV PARITY_DATA_DIR=$PARITY_HOME_DIR/chains
 ENV PARITY_BIN=/usr/local/bin/parity
 ENV PARITY_WRAPPER_SCRIPT=$HOME/parity_wrapper.sh
@@ -32,7 +31,8 @@ EXPOSE 30300 8545 8546 8082 5001
 
 ### Default chain and node configuration files.
 COPY ./laika/laika-spec.json $PARITY_CONFIG_FILE_CHAIN
-COPY ./config.toml $PARITY_CONFIG_FILE_TEMPLATE
+COPY ./laika/config.toml $PARITY_HOME_DIR/chain.toml
+COPY ./node-config/*.toml $PARITY_HOME_DIR/
 
 ### Wrapper script for Parity.
 COPY ./parity_wrapper.sh $PARITY_WRAPPER_SCRIPT
