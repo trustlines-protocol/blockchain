@@ -909,7 +909,7 @@ workflows:
             branches:
               only:
                 - master
-                - laika-node/pre-release
+                - tlbc-node/pre-release
           requires:
             - solium-contracts
             - pre-commit-checks
