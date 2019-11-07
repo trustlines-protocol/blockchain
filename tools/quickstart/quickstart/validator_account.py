@@ -68,6 +68,10 @@ def setup_author_address(setup_name, base_dir):
         click.echo("\nAn author address has already been configured.")
         return
 
+    if not is_validator_account_prepared(base_dir):
+        click.echo("\nSkip reward account setup for non validating node.")
+        return
+
     if click.confirm(
         "\n"
         + fill(

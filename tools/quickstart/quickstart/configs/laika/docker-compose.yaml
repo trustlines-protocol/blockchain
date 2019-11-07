@@ -25,8 +25,9 @@ services:
       - ${HOST_BASE_DIR:-.}/shared:/shared/
     command: >-
       --role ${ROLE}
-      --address ${VALIDATOR_ADDRESS}
-      --author ${AUTHOR_ADDRESS}
+      ${ADDRESS_ARG:-}
+      --parity-args
+      ${AUTHOR_ARG:-}
 
   foreign-node:
     image: ethereum/client-go:stable

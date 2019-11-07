@@ -8,7 +8,7 @@ from typing import List
 
 import click
 
-from quickstart.constants import SHARED_CHAIN_SPEC_PATH, ZERO_ADDRESS
+from quickstart.constants import SHARED_CHAIN_SPEC_PATH
 from quickstart.utils import (
     is_bridge_prepared,
     is_netstats_prepared,
@@ -97,18 +97,13 @@ def update_and_start(
     if is_validator_account_prepared(base_dir):
         env_variables = {
             **default_env_vars,
-            "VALIDATOR_ADDRESS": get_validator_address(base_dir),
-            "AUTHOR_ADDRESS": get_author_address(base_dir),
+            "ADDRESS_ARG": f"--address {get_validator_address(base_dir)}",
+            "AUTHOR_ARG": f"--author {get_author_address(base_dir)}",
             "ROLE": "validator",
         }
         click.echo("\nNode will run as a validator")
     else:
-        env_variables = {
-            **default_env_vars,
-            "VALIDATOR_ADDRESS": ZERO_ADDRESS,
-            "AUTHOR_ADDRESS": ZERO_ADDRESS,
-            "ROLE": "observer",
-        }
+        env_variables = {**default_env_vars, "ROLE": "observer"}
         click.echo("\nNode will run as a non-validator")
 
     with open(os.path.join(base_dir, ".env"), mode="w") as env_file:

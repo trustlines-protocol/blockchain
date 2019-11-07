@@ -197,7 +197,7 @@ def custom(
         netstats_url = TLBC_NETSTATS_SERVER_BASE_URL
 
     run(
-        "custom blockchain node",
+        "custom home blockchain",
         foreign_chain_name="foreign chain",
         base_dir=base_dir,
         chain_dir=chain_dir,
