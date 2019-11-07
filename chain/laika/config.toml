@@ -1,0 +1,3 @@
+# Laika specific parity config
+[network]
+  port = 30300

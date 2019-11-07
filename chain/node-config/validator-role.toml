@@ -1,17 +1,5 @@
-[parity]
-# Custom chain
-chain = "/home/parity/.local/share/io.parity.ethereum/trustlines-spec.json"
-keys_path = "/home/parity/.local/share/io.parity.ethereum/custom/keys"
-# No updates will be auto-installed
-auto_update = "none"
-# Disables auto downloading of new releases. Not recommended.
-no_download = true
-
-[network]
-port = 30300
-
-[rpc]
-interface = "all"
+# validator specific config
+# combine this with base.toml to get a valid config
 
 [account]
 # File should contain passwords to unlock your accounts. One password per line.
@@ -26,6 +14,3 @@ force_sealing = true
 min_gas_price = 1000000000
 # Maximum number of transactions per sender in the queue. By default it's 1% of the entire queue, but not less than 16.
 tx_queue_per_sender = 100
-
-[misc]
-color = false

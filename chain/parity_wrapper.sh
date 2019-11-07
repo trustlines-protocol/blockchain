@@ -202,8 +202,16 @@ function adjustConfiguration() {
     exit 1
   fi
 
-  # Choose the correct configuration template for the selected role.
-  cp "${PARITY_CONFIG_DIR}/${ROLE}-config.toml" ${PARITY_CONFIG_FILE}
+  # Copy base config file
+  cp "${PARITY_CONFIG_DIR}/base.toml" ${PARITY_CONFIG_FILE}
+  {
+    # Append the correct configuration template for the selected role.
+    cat "${PARITY_CONFIG_DIR}/${ROLE}-role.toml"
+    # Append docker specific config
+    cat "${PARITY_CONFIG_DIR}/docker.toml"
+    # Append chainspecific config
+    cat "${PARITY_CONFIG_DIR}/chain.toml"
+  } >>${PARITY_CONFIG_FILE}
 
   # Handle the different roles.
   # Append the respective configuration snippet with the necessary variable to the default configuration file.

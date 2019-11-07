@@ -31,7 +31,8 @@ EXPOSE 30300 8545 8546 8082 5001
 
 ### Default chain and node configuration files.
 COPY ./laika/laika-spec.json $PARITY_CONFIG_FILE_CHAIN
-COPY ./*-config.toml $PARITY_HOME_DIR/
+COPY ./laika/config.toml $PARITY_HOME_DIR/chain.toml
+COPY ./node-config/*.toml $PARITY_HOME_DIR/
 
 ### Wrapper script for Parity.
 COPY ./parity_wrapper.sh $PARITY_WRAPPER_SCRIPT

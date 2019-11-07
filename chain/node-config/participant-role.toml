@@ -1,0 +1,7 @@
+# participant specific config
+# combine this with base.toml to get a valid config
+[account]
+# File should contain passwords to unlock your accounts. One password per line.
+password = ["/home/parity/.local/share/io.parity.ethereum/custom/pass.pwd"]
+# List of addresses to unlock for the duration of execution.
+unlock = ["0xAddress"]
