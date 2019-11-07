@@ -57,3 +57,26 @@ and open a PR for that branch.
 
 After a release has been made, we should upgrade the version on the
 master branch with `bumpversion patch`.
+
+## Release Checklist
+
+0. Prerequsisite: The master branch contains the version to be
+   released
+1. Open and merge a PR master -> pre-release (no review needed). This
+   will built the docker image and push it to Docker Hub under
+   `trustlines/bridge-next:pre-release`.
+2. Test the pre-release:
+   - Pull the newly built image from Docker Hub.
+   - Run the bridge worker and connected to a home and foreign chain
+     node without any pre-existing state and check that it does not
+     crash and starts to sync properly.
+   - Run the bridge worker in a pre-existing environment set up using
+     the quickstart script and check that it does not crash and
+     starts to sync properly.
+   - Perform any additional tests compelled by the specifics of the
+     update.
+3. Open a PR pre-release -> release, wait for a review confirming
+   that the necessary testing steps have been performed, and merge it.
+4. Authorize the release in CircleCI
+5. Check that the image is built and pushed to Docker Hub under
+   `trustlines/bridge:release`.
