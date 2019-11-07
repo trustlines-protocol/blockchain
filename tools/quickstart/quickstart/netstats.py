@@ -101,6 +101,6 @@ def setup_interactively(base_dir, netstats_url) -> None:
 
 
 def check_credentials(netstats_url, username: str, password: str) -> bool:
-    url = f"{netstats_url}/check"
+    url = f"{netstats_url}/check/"
     response = requests.get(url, auth=(username, password), timeout=10.0)
     return response.status_code == 200
