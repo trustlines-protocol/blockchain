@@ -9,7 +9,8 @@ error() {
 
 EXIT_CODE=0
 
-docker run -d --name testrun "$1"
+# Start container with some arbitrary options to also test option parsing to parity
+docker run -d --name testrun "$1" --parity-args --no-color
 
 # Give it some time
 sleep 20
