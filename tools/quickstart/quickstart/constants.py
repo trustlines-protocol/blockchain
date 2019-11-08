@@ -6,6 +6,7 @@ DATABASE_DIR = "databases"
 KEY_DIR = os.path.join(CONFIG_DIR, "keys")
 
 KEYSTORE_FILE_NAME = "account.json"
+LEGACY_KEYSTORE_FILE_NAME_PATTERN = "UTC-*"
 PASSWORD_FILE_NAME = "pass.pwd"
 
 PASSWORD_FILE_PATH = os.path.join(CONFIG_DIR, PASSWORD_FILE_NAME)

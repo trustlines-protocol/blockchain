@@ -1,3 +1,4 @@
+import glob
 import json
 import os
 from textwrap import fill
@@ -13,6 +14,7 @@ from quickstart.constants import (
     ENODE_DIR,
     KEY_DIR,
     KEYSTORE_FILE_NAME,
+    LEGACY_KEYSTORE_FILE_NAME_PATTERN,
     PASSWORD_FILE_PATH,
 )
 from quickstart.utils import (
@@ -29,8 +31,10 @@ from quickstart.utils import (
 
 
 def setup_interactively(base_dir, chain_dir) -> None:
+    handle_legacy_validator_key_file(base_dir, chain_dir)
+
     if is_validator_account_prepared(base_dir):
-        click.echo("\nA validator account has already been set up.")
+        click.echo("A validator account has already been set up.")
         return
 
     make_required_dirs(base_dir, chain_dir)
@@ -171,3 +175,38 @@ def get_author_address(base_dir) -> str:
             return author_address_file.read()
     except FileNotFoundError:
         return get_validator_address(base_dir)
+
+
+def handle_legacy_validator_key_file(base_dir, chain_dir):
+    legacy_key_file_paths = legacy_validator_key_paths(base_dir, chain_dir)
+    key_file_paths = legacy_key_file_paths.copy()
+    if validator_key_file_exists(base_dir, chain_dir):
+        key_file_paths.append(validator_key_file_path(base_dir, chain_dir))
+
+    if len(key_file_paths) > 1:
+        error_message = fill(
+            f"There are multiple files that correspond to validator keys: {key_file_paths}. "
+            f"Please make sure there is at most one key file in {os.path.join(base_dir, KEY_DIR, chain_dir)} "
+            f"and restart the quickstart."
+        )
+        raise click.exceptions.UsageError(error_message)
+    elif len(legacy_key_file_paths) == 1:
+        rename_legacy_key_file(base_dir, chain_dir, key_file_paths[0])
+
+
+def validator_key_file_exists(base_dir, chain_dir):
+    return os.path.isfile(validator_key_file_path(base_dir, chain_dir))
+
+
+def validator_key_file_path(base_dir, chain_dir):
+    return os.path.join(base_dir, KEY_DIR, chain_dir, KEYSTORE_FILE_NAME)
+
+
+def legacy_validator_key_paths(base_dir, chain_dir):
+    return glob.glob(
+        os.path.join(base_dir, KEY_DIR, chain_dir, LEGACY_KEYSTORE_FILE_NAME_PATTERN)
+    )
+
+
+def rename_legacy_key_file(base_dir, chain_dir, legacy_key_file_path):
+    os.rename(legacy_key_file_path, validator_key_file_path(base_dir, chain_dir))
