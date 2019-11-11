@@ -71,6 +71,8 @@ def make_required_dirs(base_dir, chain_dir):
     os.makedirs(os.path.join(base_dir, KEY_DIR, chain_dir), exist_ok=True)
 
 
+# This cannot be used right now because Parity does not allow setting the author address for aura
+# validators (see https://github.com/paritytech/parity-ethereum/issues/11246)
 def setup_author_address(setup_name, base_dir):
     if is_author_address_prepared(base_dir):
         click.echo("\nAn author address has already been configured.")
