@@ -54,15 +54,8 @@ For validators it is crucial to safely back up their private key. If they lose t
 - create any blocks or earn block rewards or
 - withdraw their stake on the main chain once it is unlocked.
 
-Furthermore, it is advisable to configure validating nodes in such a way that mining rewards are not sent to the
-validator account (the default), but to a separate one. The corresponding private key can be kept in a cold wallet and
-even on a different machine, protecting it from attacks on the validator node itself.
-
-The quickstart script provides an option to set a designated reward address. Please make sure that you have full
-control over the reward account (in particular, it is not a contract-based wallet on the Ethereum chain). Otherwise
-you will not be able to access your rewards.
-
-If you do not use the quickstart script, use the `--author` option of Parity.
+Furthermore, it is advisable to keep the amount of funds stored in the validator account small by regularly sending the
+newly earned income to a different account (e.g., a cold wallet stored on a different machine).
 
 
 ### Setup With the Quickstart Script
