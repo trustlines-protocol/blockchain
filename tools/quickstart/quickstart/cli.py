@@ -235,6 +235,7 @@ def run(
                     "restarted and no configuration will be overwritten. It is possible to enable "
                     "additional components that you have chosen not to configure in earlier runs."
                 ),
+                "",
             )
         )
     )
