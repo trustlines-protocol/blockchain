@@ -10,7 +10,7 @@ DEFAULT_CONFIGS = ["laika", "tlbc"]
 LAIKA, TLBC = DEFAULT_CONFIGS
 
 LAIKA_NETSTATS_SERVER_BASE_URL = "https://laikanetstats.trustlines.foundation/"
-TLBC_NETSTATS_SERVER_BASE_URL = "https://netstats.trustlines.foundation/"
+TLBC_NETSTATS_SERVER_BASE_URL = "https://netstats.tlbc.trustlines.foundation/"
 
 
 def docker_compose_file_getter(config_name):
