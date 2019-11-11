@@ -65,10 +65,10 @@ clients. It allows importing a private key in order to act as a validator. In ad
 [watchtower](https://hub.docker.com/r/containrrr/watchtower) to automatically update the Docker containers when newer versions
 become available (e.g. for bug fixes or network forks).
 
-To fetch the most recent version of the quickstart script and run it, execute the following command on your machine:
+To fetch and run the most recent version of the quickstart script for the Laika Testnet, execute the following command on your machine:
 
 ```sh
-$ wget -O quickstart.sh https://github.com/trustlines-protocol/blockchain/raw/master/quickstart.sh && bash quickstart.sh
+bash <(curl -L quickstart.laika.trustlines.foundation)
 ```
 
 The script is interactive and will ask you which components to set up. Once the
