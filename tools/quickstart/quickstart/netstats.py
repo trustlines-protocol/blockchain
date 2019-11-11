@@ -42,6 +42,12 @@ def setup_interactively(base_dir, netstats_url) -> None:
                 fill(
                     "to receive yours if you don't have any yet and would like to participate."
                 ),
+                fill(
+                    "When you decide to report to the netstats server, we automatically collect "
+                    "certain information about you and your device like the nodes IP address. "
+                    "Further information about what gets collected can be obtained during the "
+                    "sign-up process."
+                ),
                 "",
             )
         )
