@@ -16,8 +16,8 @@ services:
         aliases:
           - home-node
     ports:
-      - 30300:30300
-      - 30300:30300/udp
+      - 30302:30302
+      - 30302:30302/udp
     volumes:
       - ${HOST_BASE_DIR:-.}/databases/home-node:/data/tlbc
       - ${HOST_BASE_DIR:-.}/config:/config/custom

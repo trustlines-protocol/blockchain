@@ -27,7 +27,7 @@ RUN chmod 755 $PARITY_BIN
 
 ## Configuring
 ### Network RPC WebSocket SecretStore IPFS
-EXPOSE 30300 8545 8546 8082 5001
+EXPOSE 30302 8545 8546 8082 5001
 
 ### Default chain and node configuration files.
 COPY ./tlbc/tlbc-spec.json $PARITY_CONFIG_FILE_CHAIN
