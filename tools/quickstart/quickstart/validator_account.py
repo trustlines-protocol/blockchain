@@ -191,7 +191,14 @@ def handle_legacy_validator_key_file(base_dir, chain_dir):
         )
         raise click.exceptions.UsageError(error_message)
     elif len(legacy_key_file_paths) == 1:
-        rename_legacy_key_file(base_dir, chain_dir, key_file_paths[0])
+        try:
+            rename_legacy_key_file(base_dir, chain_dir, key_file_paths[0])
+        except PermissionError:
+            error_message = fill(
+                f"The validator key file {key_file_paths[0]} cannot be accessed, "
+                f"please change the permissions of the file."
+            )
+            raise click.exceptions.UsageError(error_message)
 
 
 def validator_key_file_exists(base_dir, chain_dir):

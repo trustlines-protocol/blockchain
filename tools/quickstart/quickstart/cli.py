@@ -235,9 +235,9 @@ def run(
                     "restarted and no configuration will be overwritten. It is possible to enable "
                     "additional components that you have chosen not to configure in earlier runs."
                 ),
+                "",
             )
         )
-        + "\n"
     )
     validator_account.setup_interactively(base_dir=base_dir, chain_dir=chain_dir)
     validator_account.setup_author_address(setup_name=setup_name, base_dir=base_dir)
