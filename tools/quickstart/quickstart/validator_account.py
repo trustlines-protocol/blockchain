@@ -178,24 +178,23 @@ def get_author_address(base_dir) -> str:
 
 
 def handle_legacy_validator_key_file(base_dir, chain_dir):
-    legacy_key_file_paths = legacy_validator_key_paths(base_dir, chain_dir)
-    key_file_paths = legacy_key_file_paths.copy()
     if validator_key_file_exists(base_dir, chain_dir):
-        key_file_paths.append(validator_key_file_path(base_dir, chain_dir))
+        return
 
-    if len(key_file_paths) > 1:
+    legacy_key_file_paths = legacy_validator_key_paths(base_dir, chain_dir)
+    if len(legacy_key_file_paths) > 1:
         error_message = fill(
-            f"There are multiple files that correspond to validator keys: {key_file_paths}. "
-            f"Please make sure there is at most one key file in {os.path.join(base_dir, KEY_DIR, chain_dir)} "
-            f"and restart the quickstart."
+            f"There are multiple files that correspond to validator keys: {legacy_key_file_paths}. "
+            f"Please make sure there is one key file in {os.path.join(base_dir, KEY_DIR, chain_dir)} "
+            f"named 'account.json', so we know which one to select for the bridge."
         )
         raise click.exceptions.UsageError(error_message)
     elif len(legacy_key_file_paths) == 1:
         try:
-            rename_legacy_key_file(base_dir, chain_dir, key_file_paths[0])
+            rename_legacy_key_file(base_dir, chain_dir, legacy_key_file_paths[0])
         except PermissionError:
             error_message = fill(
-                f"The validator key file {key_file_paths[0]} cannot be accessed, "
+                f"The validator key file {legacy_key_file_paths[0]} cannot be accessed, "
                 f"please change the permissions of the file."
             )
             raise click.exceptions.UsageError(error_message)
