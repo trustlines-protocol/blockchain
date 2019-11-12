@@ -31,7 +31,7 @@
     "params": {
         "gasLimitBoundDivisor": "0x400",
         "maximumExtraDataSize": "0x20",
-        "minGasLimit": "0xF4240",
+        "minGasLimit": "0x7a1200",
         "networkID": "0x1234",
         "chainID": "0x1234",
         "eip155Transition": 0,
@@ -59,7 +59,7 @@
         },
         "timestamp": "0x5DC98580",
         "difficulty": "0x20000",
-        "gasLimit": "0x7A12000"
+        "gasLimit": "0x7a1200"
     },
     "accounts": {
         "0x0000000000000000000000000000000000000001": {
