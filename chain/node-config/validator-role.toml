@@ -14,3 +14,5 @@ force_sealing = true
 min_gas_price = 1000000000
 # Maximum number of transactions per sender in the queue. By default it's 1% of the entire queue, but not less than 16.
 tx_queue_per_sender = 100
+# Amount of gas to target when sealing a new block.
+gas_floor_target = "8000000"
