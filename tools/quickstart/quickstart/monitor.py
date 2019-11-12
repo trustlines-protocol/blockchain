@@ -8,7 +8,7 @@ from quickstart.utils import is_monitor_prepared
 
 
 def setup_interactively(base_dir):
-    click.echo("\n")
+    click.echo("")
 
     if is_monitor_prepared(base_dir):
         click.echo("The monitor has already been set up.")
