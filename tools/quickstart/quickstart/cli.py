@@ -226,10 +226,11 @@ def run(
             (
                 fill(
                     f"This script will guide you through the setup of a {setup_name} node as well as a few "
-                    "additional services. Once it is complete, the components will run in the background as "
-                    "docker containers."
+                    "additional services. The services will run in the background as "
+                    "docker containers and will be automatically restarted on failures and updated to new versions. "
+                    "For more information about the setup please checkout the Readme: "
                 ),
-                "",
+                "https://github.com/trustlines-protocol/blockchain",
                 fill(
                     "It is safe to run this script multiple times. Already existing containers will be "
                     "restarted and no configuration will be overwritten. It is possible to enable "
