@@ -9,7 +9,7 @@ from quickstart import bridge, docker, monitor, netstats, utils, validator_accou
 DEFAULT_CONFIGS = ["laika", "tlbc"]
 LAIKA, TLBC = DEFAULT_CONFIGS
 
-LAIKA_NETSTATS_SERVER_BASE_URL = "https://laikanetstats.trustlines.foundation/"
+LAIKA_NETSTATS_SERVER_BASE_URL = "https://netstats.laika.trustlines.foundation/"
 TLBC_NETSTATS_SERVER_BASE_URL = "https://netstats.tlbc.trustlines.foundation/"
 
 
