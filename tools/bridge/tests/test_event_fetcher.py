@@ -165,11 +165,6 @@ def test_fetch_events_in_range_negative_from_number(transfer_event_fetcher):
         transfer_event_fetcher.fetch_events_in_range(-1, 1)
 
 
-def test_fetch_events_in_range_to_high_to_number(transfer_event_fetcher, w3_foreign):
-    with pytest.raises(ValueError):
-        transfer_event_fetcher.fetch_events_in_range(0, w3_foreign.eth.blockNumber + 1)
-
-
 def test_fetch_events_in_range_negative_range(transfer_event_fetcher):
     with pytest.raises(ValueError):
         transfer_event_fetcher.fetch_events_in_range(1, 0)

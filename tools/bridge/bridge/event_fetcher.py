@@ -77,9 +77,6 @@ class EventFetcher:
         if from_block_number < 0:
             raise ValueError("Can not fetch events from a negative block number!")
 
-        if to_block_number > self._rpc_latest_block():
-            raise ValueError("Can not fetch events for blocks past the current head!")
-
         if from_block_number > to_block_number:
             raise ValueError("Can not fetch events for a negative range!")
 
