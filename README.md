@@ -152,7 +152,7 @@ $ docker run -d --name laika-node --network network-laika \
 #### Netstats Client
 
 The netstats client reports the state of your node to the
-[Laika netstats page](https://laikanetstats.trustlines.foundation/) that gives a rough overview of the current network state.
+[Laika netstats page](https://netstats.laika.trustlines.foundation/) that gives a rough overview of the current network state.
 It is an optional component which helps the community by providing information on your running node to a central server.
 
 To participate, you first need to request credentials managed by the Trustlines Foundation. Please email
