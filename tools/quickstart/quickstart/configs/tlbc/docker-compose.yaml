@@ -50,7 +50,6 @@ services:
       --rpcaddr 0.0.0.0
       --nousb
       --ipcdisable
-      --goerli
       --syncmode light
       --datadir /data/database
       --rpccorsdomain *
