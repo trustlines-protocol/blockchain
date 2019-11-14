@@ -13,7 +13,6 @@ repos:
   hooks:
     - id: shfmt
     - id: shellcheck
-      exclude: ^chain/parity_wrapper.sh$
 
 -   repo: https://github.com/trustlines-protocol/prettier
     rev: 804db34393002d572b49ab493ccb12248ae6cb3c
@@ -39,11 +38,11 @@ repos:
     - id: check-yaml
     - id: debug-statements
     - id: end-of-file-fixer
-      exclude: ^contracts/contracts/lib/.*\.sol|contracts/contracts/token/TrustlinesNetworkToken.sol|tools/bridge/.bumpversion.cfg$
+      exclude: ^contracts/contracts/lib/.*\.sol|contracts/contracts/token/TrustlinesNetworkToken.sol|tools/bridge/.bumpversion.cfg|chain/laika/.bumpversion.cfg|chain/tlbc/.bumpversion.cfg$
     - id: flake8
       additional_dependencies: ["flake8-string-format", "pep8-naming"]
     - id: trailing-whitespace
-      exclude: ^(contracts/contracts/lib/.*\.sol|tools/bridge/.bumpversion.cfg)$
+      exclude: ^(contracts/contracts/lib/.*\.sol|tools/bridge/.bumpversion.cfg|chain/laika/.bumpversion.cfg|chain/tlbc/.bumpversion.cfg)$
     - id: no-commit-to-branch
       args: [--branch, develop, --branch, master]
 -   repo: https://github.com/schmir/ethlint-pre-commit.git
