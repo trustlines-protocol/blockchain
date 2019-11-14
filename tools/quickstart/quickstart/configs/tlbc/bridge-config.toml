@@ -1,6 +1,6 @@
 [foreign_chain]
 rpc_url = "http://foreign-node:8545"
-token_contract_address = "0x679131f591b4f369acb8cd8c51e68596806c3916"
+token_contract_address = "0x679131F591B4f369acB8cd8c51E68596806c3916"
 bridge_contract_address = "0x18BDC736b23Ff7294BED9fa988a1443357C7B0ed"
 event_fetch_start_block_number = 8932341
 
