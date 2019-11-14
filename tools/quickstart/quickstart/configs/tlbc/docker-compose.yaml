@@ -6,7 +6,7 @@
 version: "2.2"
 services:
   home-node:
-    image: trustlines/tlbc-node-next:master
+    image: trustlines/tlbc-node:release
     restart: always
     stop_grace_period: 3m
     labels:
