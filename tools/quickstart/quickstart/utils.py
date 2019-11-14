@@ -1,25 +1,29 @@
+import difflib
 import json
 import os
 import sys
+from hashlib import sha1
 from pathlib import Path
 from textwrap import fill
 from typing import Tuple
 
 import click
 from eth_account import Account
-from eth_utils import decode_hex, is_hex, remove_0x_prefix
+from eth_utils import decode_hex, is_checksum_address, is_hex, remove_0x_prefix
 
 from quickstart.constants import (
     ADDRESS_FILE_PATH,
+    AUTHOR_ADDRESS_FILE_PATH,
     BRIDGE_CONFIG_FILE_EXTERNAL,
-    KEYSTORE_FILE_PATH,
+    KEY_DIR,
+    KEYSTORE_FILE_NAME,
     MONITOR_DIR,
     NETSTATS_ENV_FILE_PATH,
     PASSWORD_FILE_PATH,
 )
 
 
-def ensure_clean_setup(base_dir):
+def ensure_clean_setup(base_dir, chain_dir):
     if os.path.isfile(os.path.join(base_dir, PASSWORD_FILE_PATH)):
         raise click.ClickException(
             "\n".join(
@@ -29,7 +33,7 @@ def ensure_clean_setup(base_dir):
                 )
             )
         )
-    if os.path.isfile(os.path.join(base_dir, KEYSTORE_FILE_PATH)):
+    if os.path.isfile(os.path.join(base_dir, KEY_DIR, chain_dir, KEYSTORE_FILE_NAME)):
         raise click.ClickException(
             "\n".join(
                 (
@@ -61,6 +65,10 @@ def is_validator_account_prepared(base_dir) -> bool:
     return os.path.isfile(os.path.join(base_dir, ADDRESS_FILE_PATH))
 
 
+def is_author_address_prepared(base_dir) -> bool:
+    return os.path.isfile(os.path.join(base_dir, AUTHOR_ADDRESS_FILE_PATH))
+
+
 def is_netstats_prepared(base_dir) -> bool:
     return non_empty_file_exists(os.path.join(base_dir, NETSTATS_ENV_FILE_PATH))
 
@@ -85,7 +93,6 @@ class TrustlinesFiles:
         # parity can't handle
         json_account = account.encrypt(password, kdf="pbkdf2")
 
-        os.makedirs(os.path.dirname(os.path.abspath(self.keystore_path)), exist_ok=True)
         with open(self.keystore_path, "x") as f:
             f.write(json.dumps(json_account))
 
@@ -147,6 +154,19 @@ def read_private_key() -> str:
         )
 
 
+def read_address() -> str:
+    while True:
+        address = click.prompt("Address (checksummed)")
+        if is_checksum_address(address):
+            return address
+        else:
+            click.echo(
+                fill(
+                    "Invalid address (must be in hex encoded, 0x prefixed, checksummed format). Please try again"
+                )
+            )
+
+
 def read_encryption_password() -> str:
     click.echo(
         "Please enter a password to encrypt the private key. "
@@ -182,3 +202,43 @@ def read_decryption_password(keyfile_dict) -> Tuple[Account, str]:
             else:
                 click.echo(fill(f"Error: failed to decrypt keystore file: {repr(err)}"))
                 sys.exit(1)
+
+
+def show_file_diff(user_file: str, default_file: str, file_name="file"):
+    click.echo("")
+    with open(user_file) as file:
+        user_lines = file.readlines()
+    with open(default_file) as file:
+        default_lines = file.readlines()
+
+    is_same = True
+    for line in difflib.unified_diff(
+        user_lines,
+        default_lines,
+        fromfile=f"Your {file_name}",
+        tofile=f"New default {file_name}",
+        lineterm="",
+    ):
+        is_same = False
+        if len(line) > 1 and line[-1] == "\n":
+            # Remove final newline otherwise we will show two new lines
+            line = line[:-1]
+        if line.startswith("-"):
+            click.secho(line, fg="red")
+        elif line.startswith("+"):
+            click.secho(line, fg="green")
+        else:
+            click.echo(line)
+
+    if is_same:
+        click.echo("Both files are the same")
+
+    click.echo("")
+
+
+def file_hash(file_name: str) -> str:
+    hasher = sha1()
+    with open(file_name, "rb") as file:
+        buf = file.read()
+        hasher.update(buf)
+    return hasher.hexdigest()

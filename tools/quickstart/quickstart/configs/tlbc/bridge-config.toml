@@ -1,8 +1,8 @@
 [foreign_chain]
 rpc_url = "http://foreign-node:8545"
-token_contract_address = "0x0000000000000000000000000000000000000000"
-bridge_contract_address = "0x0000000000000000000000000000000000000000"
-event_fetch_start_block_number = 99999999999999999
+token_contract_address = "0x679131F591B4f369acB8cd8c51E68596806c3916"
+bridge_contract_address = "0x18BDC736b23Ff7294BED9fa988a1443357C7B0ed"
+event_fetch_start_block_number = 8932341
 
 [home_chain]
 rpc_url = "http://home-node:8545"
@@ -10,5 +10,5 @@ bridge_contract_address = "0x0000000000000000000000000000000000000401"
 event_fetch_start_block_number = 0
 
 [validator_private_key]
-keystore_path = "/config/keys/TLBC/account.json"
+keystore_path = "/config/keys/tlbc/account.json"
 keystore_password_path = "/config/pass.pwd"

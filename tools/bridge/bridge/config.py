@@ -116,7 +116,7 @@ class ChainSchema(Schema):
     rpc_timeout = fields.Integer(missing=180, validate=validate_non_negative)
     bridge_contract_address = AddressField(required=True)
     max_reorg_depth = fields.Integer(validate=validate_non_negative)
-    event_poll_interval = fields.Float(missing=5, validate=validate_non_negative)
+    event_poll_interval = fields.Float(validate=validate_non_negative)
     event_fetch_start_block_number = fields.Integer(
         missing=0, validate=validate_non_negative
     )
@@ -124,17 +124,18 @@ class ChainSchema(Schema):
 
 class ForeignChainSchema(ChainSchema):
     max_reorg_depth = fields.Integer(missing=10, validate=validate_non_negative)
+    event_poll_interval = fields.Float(missing=10, validate=validate_non_negative)
     token_contract_address = AddressField(required=True)
 
 
 class HomeChainSchema(ChainSchema):
     max_reorg_depth = fields.Integer(missing=10, validate=validate_non_negative)
+    event_poll_interval = fields.Float(missing=5, validate=validate_non_negative)
     gas_price = fields.Integer(missing=10 * denoms.gwei, validate=validate_non_negative)
     # disable type check as type hint in eth_utils is wrong, (see
     # https://github.com/ethereum/eth-utils/issues/168)
     minimum_validator_balance = fields.Integer(
-        missing=to_wei(0.04, "ether"),  # type: ignore
-        validate=validate_non_negative,
+        missing=to_wei(0.04, "ether"), validate=validate_non_negative  # type: ignore
     )
     balance_warn_poll_interval = fields.Float(
         missing=60, validate=validate_non_negative

@@ -1,4 +1,3 @@
-import difflib
 import filecmp
 import os
 import shutil
@@ -14,16 +13,48 @@ from quickstart.utils import (
     is_bridge_prepared,
     is_netstats_prepared,
     is_validator_account_prepared,
+    show_file_diff,
 )
-from quickstart.validator_account import get_validator_address
+from quickstart.validator_account import get_author_address, get_validator_address
 
 # List of docker container names to stop and remove on startup in addition to the ones defined in
 # the docker compose file (for backward compatibility)
-LEGACY_CONTAINER_NAMES = ["watchtower-testnet", "trustlines-testnet"]
+LEGACY_CONTAINER_NAMES = [
+    # malta quickstart version
+    "watchtower-testnet",
+    "trustlines-testnet",
+    # intermediate quickstart versions
+    "bridge-client",
+    "tlbc-monitor",
+    "mainnet.node",
+    "laika-testnet.node",
+    "netstats-client",
+    "quickstart_bridge-client_1",
+    "quickstart_tlbc-monitor_1",
+    "quickstart_trustlines-node_1",
+    "quickstart_mainnet-node_1",
+    "quickstart_netstats-client_1",
+    "quickstart_watchtower_1",
+]
 DOCKER_COMPOSE_FILE_NAME = "docker-compose.yaml"
+
+README_PATH = "readme.txt"
+README_TEXT = "\n".join(
+    [
+        "# Readme",
+        "",
+        "You can check which services are running with `docker-compose ps`.",
+        "You can use `docker-compose down` to shut the services down or `docker-compose up` to start them. "
+        "Beware that if you use `docker-compose up`, every service will be started even when they were not set up by the quickstart. "
+        "You can also stop individual services for example `docker-compose stop watchtower`.",
+        "For more information see the docker-compose documentation via `docker-compose --help` or online at https://docs.docker.com/compose/. "
+        "You can also check the docker documentation via `docker --help` or online at https://docs.docker.com/engine/reference/commandline/docker/",
+    ]
+)
 
 
 def setup_interactivaly(base_dir, docker_compose_file):
+    create_docker_readme(base_dir)
     if does_docker_compose_file_exist(base_dir) and not filecmp.cmp(
         os.path.join(base_dir, DOCKER_COMPOSE_FILE_NAME), docker_compose_file
     ):
@@ -31,8 +62,8 @@ def setup_interactivaly(base_dir, docker_compose_file):
             choice = click.prompt(
                 fill(
                     "You already seem to have a docker compose file. "
-                    "If you did not change it, you can safely override it.\n"
-                    "Override with default (1), keep own (2), or show diff (3) ?"
+                    "If you did not change it, you can safely overwrite it.\n"
+                    "Overwrite with default (1), keep own (2), or show diff (3)?"
                 )
                 + "\n",
                 type=click.Choice(("1", "2", "3")),
@@ -57,7 +88,15 @@ def setup_interactivaly(base_dir, docker_compose_file):
         )
 
 
-def update_and_start(*, base_dir, host_base_dir, project_name) -> None:
+def create_docker_readme(base_dir):
+    if not os.path.isfile(os.path.join(base_dir, README_PATH)):
+        with open(os.path.join(base_dir, README_PATH), "x") as f:
+            f.write(README_TEXT)
+
+
+def update_and_start(
+    *, base_dir, host_base_dir, project_name, start_foreign_node
+) -> None:
     if not does_docker_compose_file_exist(base_dir):
         raise click.ClickException(
             "\n"
@@ -68,7 +107,9 @@ def update_and_start(*, base_dir, host_base_dir, project_name) -> None:
         )
 
     main_docker_service_names = ["home-node", "watchtower"]
-    optional_docker_service_names = get_optional_docker_service_names(base_dir)
+    optional_docker_service_names = get_optional_docker_service_names(
+        base_dir, start_foreign_node
+    )
     all_docker_service_names = (
         main_docker_service_names + optional_docker_service_names + ["tlbc-monitor"]
     )
@@ -77,16 +118,13 @@ def update_and_start(*, base_dir, host_base_dir, project_name) -> None:
     if is_validator_account_prepared(base_dir):
         env_variables = {
             **default_env_vars,
-            "VALIDATOR_ADDRESS": get_validator_address(base_dir),
+            "ADDRESS_ARG": f"--address {get_validator_address(base_dir)}",
+            "AUTHOR_ARG": f"--author {get_author_address(base_dir)}",
             "ROLE": "validator",
         }
         click.echo("\nNode will run as a validator")
     else:
-        env_variables = {
-            **default_env_vars,
-            "VALIDATOR_ADDRESS": "",
-            "ROLE": "observer",
-        }
+        env_variables = {**default_env_vars, "ROLE": "observer"}
         click.echo("\nNode will run as a non-validator")
 
     with open(os.path.join(base_dir, ".env"), mode="w") as env_file:
@@ -157,7 +195,16 @@ def update_and_start(*, base_dir, host_base_dir, project_name) -> None:
             )
         )
 
-    click.echo("\nAll services are running. Congratulations!")
+    click.echo(
+        "\n".join(
+            [
+                "",
+                "Congratulations!",
+                f"All services are running as docker container in the background.",
+                f"The configuration has been written to the sub-folder: {base_dir}",
+            ]
+        )
+    )
 
 
 def wait_for_chain_spec(base_dir) -> None:
@@ -165,7 +212,7 @@ def wait_for_chain_spec(base_dir) -> None:
         time.sleep(1)
 
 
-def get_optional_docker_service_names(base_dir) -> List[str]:
+def get_optional_docker_service_names(base_dir, start_foreign_node) -> List[str]:
     docker_service_names = []
 
     if is_netstats_prepared(base_dir=base_dir):
@@ -173,7 +220,8 @@ def get_optional_docker_service_names(base_dir) -> List[str]:
 
     if is_bridge_prepared(base_dir=base_dir):
         docker_service_names.append("bridge-client")
-        docker_service_names.append("foreign-node")
+        if start_foreign_node:
+            docker_service_names.append("foreign-node")
 
     return docker_service_names
 
@@ -196,32 +244,8 @@ def copy_default_docker_file(base_dir, docker_compose_file):
 
 
 def show_diff(base_dir, docker_compose_file):
-    click.echo("")
-    with open(os.path.join(base_dir, DOCKER_COMPOSE_FILE_NAME)) as file:
-        user_lines = file.readlines()
-    with open(docker_compose_file) as file:
-        default_lines = file.readlines()
-
-    is_same = True
-    for line in difflib.unified_diff(
-        user_lines,
-        default_lines,
-        fromfile=f"Your {DOCKER_COMPOSE_FILE_NAME}",
-        tofile=f"New default {DOCKER_COMPOSE_FILE_NAME}",
-        lineterm="",
-    ):
-        is_same = False
-        if len(line) > 1 and line[-1] == "\n":
-            # Remove final newline otherwise we will show two new lines
-            line = line[:-1]
-        if line.startswith("-"):
-            click.secho(line, fg="red")
-        elif line.startswith("+"):
-            click.secho(line, fg="green")
-        else:
-            click.echo(line)
-
-    if is_same:
-        click.echo("Both files are the same")
-
-    click.echo("")
+    show_file_diff(
+        os.path.join(base_dir, DOCKER_COMPOSE_FILE_NAME),
+        docker_compose_file,
+        file_name=DOCKER_COMPOSE_FILE_NAME,
+    )

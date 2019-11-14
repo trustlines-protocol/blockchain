@@ -30,17 +30,26 @@ def setup_interactively(base_dir, netstats_url) -> None:
             (
                 "",
                 fill(
-                    "This script can set up a client that reports to the netstats server running at"
+                    "This script can set up a client that sends reports about your node "
+                    "to the netstats website running at:"
                 ),
                 netstats_url,
-                "This helps the community to observe the state of the network.",
+                "This is optional, but helps the community to observe the state of the network. ",
+                "For more information please visit:",
+                "https://github.com/trustlines-protocol/ethstats-client",
                 "",
                 fill(
-                    "You will need credentials to do that. Please feel free to send an email to"
+                    "The netstats page is a centralized website run by the Trustlines Foundation, you "
+                    "need credentials to send reports to it. To receive your credentials, "
+                    "please send an email to"
                 ),
                 "'netstats@trustlines.foundation'",
                 fill(
-                    "to receive yours if you don't have any yet and would like to participate."
+                    "When you decide to report to the netstats server, the Trustlines Foundation may "
+                    "automatically collect "
+                    "certain information about you and your device such as the node's IP address. "
+                    "Further information about what gets collected can be obtained during the "
+                    "sign-up process."
                 ),
                 "",
             )
@@ -49,7 +58,7 @@ def setup_interactively(base_dir, netstats_url) -> None:
 
     if not click.confirm(
         fill(
-            "Have you already received credentials and do you want to set up the netstats client?"
+            "Have you already received your credentials and do you want to set up the netstats client now?"
         )
     ):
         # Necessary to make docker-compose not complaining about it.
@@ -101,6 +110,6 @@ def setup_interactively(base_dir, netstats_url) -> None:
 
 
 def check_credentials(netstats_url, username: str, password: str) -> bool:
-    url = f"{netstats_url}/check"
+    url = f"{netstats_url}/check/"
     response = requests.get(url, auth=(username, password), timeout=10.0)
     return response.status_code == 200
