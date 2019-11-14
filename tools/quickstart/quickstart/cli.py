@@ -4,13 +4,13 @@ from textwrap import fill
 import click
 import pkg_resources
 
-from quickstart import bridge, docker, monitor, netstats, validator_account
+from quickstart import bridge, docker, monitor, netstats, utils, validator_account
 
 DEFAULT_CONFIGS = ["laika", "tlbc"]
 LAIKA, TLBC = DEFAULT_CONFIGS
 
-LAIKA_NETSTATS_SERVER_BASE_URL = "https://laikanetstats.trustlines.foundation/"
-TLBC_NETSTATS_SERVER_BASE_URL = "https://netstats.trustlines.foundation/"
+LAIKA_NETSTATS_SERVER_BASE_URL = "https://netstats.laika.trustlines.foundation/"
+TLBC_NETSTATS_SERVER_BASE_URL = "https://netstats.tlbc.trustlines.foundation/"
 
 
 def docker_compose_file_getter(config_name):
@@ -98,12 +98,14 @@ def tlbc(host_base_dir, project_name, base_dir):
     netstats_url = TLBC_NETSTATS_SERVER_BASE_URL
     run(
         "Trustlines Blockchain",
+        foreign_chain_name="Ethereum mainnet",
         bridge_config_file=bridge_config_file,
         docker_compose_file=docker_compose_file,
         netstats_url=netstats_url,
         host_base_dir=host_base_dir,
         project_name=project_name,
         base_dir=base_dir,
+        chain_dir="tlbc",
     )
 
 
@@ -122,12 +124,14 @@ def laika(host_base_dir, project_name, base_dir):
     netstats_url = LAIKA_NETSTATS_SERVER_BASE_URL
     run(
         "Laika Testnet",
+        foreign_chain_name="Görli testnet",
         bridge_config_file=bridge_config_file,
         docker_compose_file=docker_compose_file,
         netstats_url=netstats_url,
         host_base_dir=host_base_dir,
         project_name=project_name,
         base_dir=base_dir,
+        chain_dir="Trustlines",
     )
 
 
@@ -164,6 +168,11 @@ def laika(host_base_dir, project_name, base_dir):
     default=None,
     metavar="URL",
 )
+@click.option(
+    "--chain-dir",
+    help="The chain directory name as specified in the chain spec file.",
+    default="Trustlines",
+)
 @project_name_option(default="custom")
 @base_dir_option(default="custom")
 @host_base_dir_option
@@ -174,6 +183,7 @@ def custom(
     project_name,
     bridge_config,
     netstats_url,
+    chain_dir,
 ):
     """
     Setup with custom settings.
@@ -187,8 +197,10 @@ def custom(
         netstats_url = TLBC_NETSTATS_SERVER_BASE_URL
 
     run(
-        "custom blockchain node",
+        "custom home blockchain",
+        foreign_chain_name="foreign chain",
         base_dir=base_dir,
+        chain_dir=chain_dir,
         bridge_config_file=bridge_config,
         docker_compose_file=docker_compose_file,
         netstats_url=netstats_url,
@@ -200,10 +212,12 @@ def custom(
 def run(
     setup_name,
     *,
+    foreign_chain_name,
     bridge_config_file,
     docker_compose_file,
     base_dir,
     project_name,
+    chain_dir,
     netstats_url=None,
     host_base_dir=None,
 ):
@@ -212,28 +226,50 @@ def run(
             (
                 fill(
                     f"This script will guide you through the setup of a {setup_name} node as well as a few "
-                    "additional services. Once it is complete, the components will run in the background as "
-                    "docker containers."
+                    "additional services. The services will run in the background as "
+                    "docker containers and will be automatically restarted on failures and updated to new versions. "
+                    "For more information about the setup please checkout the Readme: "
                 ),
-                "",
+                "https://github.com/trustlines-protocol/blockchain",
                 fill(
                     "It is safe to run this script multiple times. Already existing containers will be "
                     "restarted and no configuration will be overwritten. It is possible to enable "
                     "additional components that you have chosen not to configure in earlier runs."
                 ),
+                "",
             )
         )
     )
-    validator_account.setup_interactively(base_dir=base_dir)
+    validator_account.setup_interactively(base_dir=base_dir, chain_dir=chain_dir)
+    # not in use because of https://github.com/paritytech/parity-ethereum/issues/11246
+    # validator_account.setup_author_address(setup_name=setup_name, base_dir=base_dir)
     monitor.setup_interactively(base_dir=base_dir)
-    bridge.setup_interactively(base_dir=base_dir, bridge_config_file=bridge_config_file)
+    bridge.setup_interactively(
+        base_dir=base_dir,
+        bridge_config_file=bridge_config_file,
+        foreign_chain_name=foreign_chain_name,
+    )
     netstats.setup_interactively(base_dir=base_dir, netstats_url=netstats_url)
     docker.setup_interactivaly(
         base_dir=base_dir, docker_compose_file=docker_compose_file
     )
     docker.update_and_start(
-        base_dir=base_dir, host_base_dir=host_base_dir, project_name=project_name
+        base_dir=base_dir,
+        host_base_dir=host_base_dir,
+        project_name=project_name,
+        start_foreign_node=should_foreign_node_be_started(
+            base_dir=base_dir, bridge_config_file=bridge_config_file
+        ),
     )
+
+
+def should_foreign_node_be_started(*, base_dir, bridge_config_file):
+    if not utils.is_bridge_prepared(base_dir=base_dir):
+        return False
+    else:
+        return bridge.is_bridge_using_template_json_rpc_url(
+            base_dir, bridge_config_file
+        )
 
 
 if __name__ == "__main__":

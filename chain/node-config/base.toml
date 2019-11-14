@@ -1,5 +1,7 @@
+# Base config file for parity
+
 [parity]
-# Custom chain
+# Custom chain spec
 chain = "/home/parity/.local/share/io.parity.ethereum/trustlines-spec.json"
 keys_path = "/home/parity/.local/share/io.parity.ethereum/custom/keys"
 # No updates will be auto-installed
@@ -7,6 +9,6 @@ auto_update = "none"
 # Disables auto downloading of new releases. Not recommended.
 no_download = true
 
-
-[network]
-port = 30300
+[misc]
+# Prevent problems we had with invisible logs
+color = false

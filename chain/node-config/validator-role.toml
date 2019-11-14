@@ -1,0 +1,18 @@
+# validator specific config
+# combine this with base.toml to get a valid config
+
+[account]
+# File should contain passwords to unlock your accounts. One password per line.
+password = ["/home/parity/.local/share/io.parity.ethereum/custom/pass.pwd"]
+
+[mining]
+# Account to sign consensus messages and issue blocks for non-PoW chains.
+engine_signer = "0xAddress"
+# Prepare a block to seal even when there are no miners connected.
+force_sealing = true
+# Minimum amount of Wei per GAS to be paid for a transaction to be accepted for mining. Overrides --usd-per-tx.
+min_gas_price = 1000000000
+# Maximum number of transactions per sender in the queue. By default it's 1% of the entire queue, but not less than 16.
+tx_queue_per_sender = 100
+# Amount of gas to target when sealing a new block.
+gas_floor_target = "8000000"
