@@ -11,8 +11,7 @@ from bridge.events import ChainRole
 def fetch_all_events(fetcher: EventFetcher) -> List:
     result: List = []
     while 1:
-        latest_block = fetcher._rpc_get_node_status().latest_synced_block
-        events = fetcher.fetch_some_events(latest_block=latest_block)
+        events = fetcher.fetch_some_events()
         if not events:
             return result
         result.extend(events)

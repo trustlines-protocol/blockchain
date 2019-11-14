@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Dict, List, Optional
 
 import attr
@@ -17,6 +18,7 @@ class NodeStatus:
     client_version: str
     is_light_node: Optional[bool]
     block_gap: List[int]
+    timestamp: float
 
 
 def _get_node_status_parity(w3, *, client_version):
@@ -53,6 +55,7 @@ def _get_node_status_parity(w3, *, client_version):
         client_version=client_version,
         is_light_node=is_light_node,
         block_gap=block_gap,
+        timestamp=time.time(),
     )
 
 
@@ -69,6 +72,7 @@ def _get_node_status_geth(w3, *, client_version):
         client_version=client_version,
         is_light_node=None,
         block_gap=None,
+        timestamp=time.time(),
     )
 
 
