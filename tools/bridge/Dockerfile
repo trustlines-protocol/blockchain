@@ -5,7 +5,7 @@
 # we use an intermediate image to build this image. it will make the resulting
 # image a bit smaller.
 
-FROM ubuntu:18.04 as builder
+FROM ubuntu:18.04@sha256:f08638ec7ddc90065187e7eabdfac3c96e5ff0f6b2f1762cf31a4f49b53000a5 as builder
 
 WORKDIR /src
 
@@ -31,7 +31,7 @@ RUN pip install -c constraints.txt -r requirements.txt
 COPY ./tools/bridge ./bridge/
 RUN pip install ./bridge/
 
-FROM ubuntu:18.04 as runner
+FROM ubuntu:18.04@sha256:f08638ec7ddc90065187e7eabdfac3c96e5ff0f6b2f1762cf31a4f49b53000a5 as runner
 ENV LANG C.UTF-8
 RUN apt-get update \
     && apt-get install -y apt-utils python3  \
