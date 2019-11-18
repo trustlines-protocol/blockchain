@@ -272,8 +272,10 @@ We refer to the documentation of the individual components:
 - [Monitor](https://github.com/trustlines-protocol/tlbc-monitor)
 - [Bridge](https://github.com/trustlines-protocol/blockchain/tree/master/tools/bridge)
 
-For the Laika node, make sure it uses the correct [chain spec file](), that the right TCP and UDP ports are used
-(30300), and that the JSON RPC APIs `web3`, `eth`, and `net` are enabled.
+For the Trustlines Blockchain node, make sure it uses the correct chain
+specification file (`./chain/tlbc/tlbc-spec.json`), that the right TCP and UDP
+ports are used (30300), and that the JSON RPC APIs `web3`, `eth`, and `net` are
+enabled.
 
 ## Development
 
