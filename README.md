@@ -293,8 +293,10 @@ $ docker run ... MY_TAGNAME ...
 
 ### Running Tests on Contracts
 
-First, install the solidity compiler `solc` for compiling the contracts.
-You can follow the [official installation documentation](https://solidity.readthedocs.io/en/v0.4.24/installing-solidity.html).
+First, install the solidity compiler `solc` for compiling the contracts. You
+can follow the [official installation
+documentation](https://solidity.readthedocs.io/en/v0.4.24/installing-solidity.html).
+From the root directory of the repository you can run the tests by calling `make test contracts`. This will create a virtual Python environment, install the
 dependencies, compile the contracts and run the tests.
 
 ## access.laika.trustlines.foundation
