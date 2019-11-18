@@ -1,7 +1,7 @@
 # Trustlines Blockchain
 
 - [The Trustlines Blockchain Infrastructure](#the-trustlines-blockchain-infrastructure)
-  - [Networks](#networks)
+  - [TLBC and Laika](#tlbc-and-laika)
   - [System Requirements](#system-requirements)
   - [Security](#security)
   - [Setup With the Quickstart Script](#setup-with-the-quickstart-script)
@@ -23,21 +23,22 @@ Nodes of the Trustlines Blockchain run various applications:
 - The node of the blockchain itself
 - The monitor that checks if validators act honestly (optional)
 - The bridge between Ethereum and the Trustlines Blockchain (only run by validators)
-- The netstats client to report the node state to `https://netstats.trustlines.foundation`(optional)
+- The netstats client to report the node state to `https://netstats.tlbc.trustlines.foundation` (optional)
 
 There are multiple ways to set each of these up. The most straightforward one by far is via our interactive quickstart
 script. Finer control can be achieved by starting the components individually as Docker containers. Finally, it is also
 possible to avoid Docker altogether and run everything directly on the host machine.
 
-Before starting the installation process, please have a look at the system requirements and the note on security.
+Before starting the installation process, please have a look at the following
+sections on the distinction between Laika and the Trustlines Blockchain, system
+requirements, and security.
 
-### Networks
+### TLBC and Laika
 
-There are two blockchain networks related to this project. The test network is
-called Laika. The productive network is called the Trustlines Blockchain. Often
-this gets abbreviated to `tlbc`, especially for technical components. The
-instructions within this documentation primarily focus on the Trustlines
-Blockchain.
+There are two different blockchains related to this project. The first one is
+a testnet called Laika. The second one is considered to be the main net and
+called the Trustlines Blockchain or TLBC. The instructions within this document
+primarily focus on the Trustlines Blockchain.
 
 ### System Requirements
 
@@ -143,7 +144,7 @@ $ docker run -d --name tlbc-node --network network-tlbc \
     -v $(pwd)/tlbc/config:/config/custom \
     -v $(pwd)/tlbc/enode:/config/network \
     -v $(pwd)/tlbc/shared:/shared/ \
-    -p 30300:30300 -p 30300:30300/udp \
+    -p 30302:3030r -p 30302:30302/udp \
     trustlines/tlbc-node:release
 ```
 
@@ -159,7 +160,7 @@ $ docker run -d --name tlbc-node --network network-tlbc \
     -v $(pwd)/tlbc/config:/config/custom \
     -v $(pwd)/tlbc/enode:/config/network \
     -v $(pwd)/tlbc/shared:/shared/ \
-    -p 30300:30300 -p 30300:30300/udp \
+    -p 30302:30302 -p 30302:30302/udp \
     trustlines/tlbc-node:release
 ```
 
@@ -274,7 +275,7 @@ We refer to the documentation of the individual components:
 
 For the Trustlines Blockchain node, make sure it uses the correct chain
 specification file (`./chain/tlbc/tlbc-spec.json`), that the right TCP and UDP
-ports are used (30300), and that the JSON RPC APIs `web3`, `eth`, and `net` are
+ports are used (30302), and that the JSON RPC APIs `web3`, `eth`, and `net` are
 enabled.
 
 ## Development
