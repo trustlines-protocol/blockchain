@@ -303,3 +303,11 @@ with `pip install -c constraints.txt -r requirements.txt`
 You can run then run the tests with `pytest tests/`.
 To check for linter errors in the contract code you can run `solium --dir contracts/`.
 To check for linter errors in the python code you can run `flake8 tests/`.
+
+## access.laika.trustlines.foundation
+
+The Trustlines Foundation hosts a publically accessible node for the
+Laika Testnet.
+
+You can access it via the following URL:
+https://access.laika.trustlines.foundation
