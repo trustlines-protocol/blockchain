@@ -53,7 +53,9 @@ most systems, this should be the case by default. You can check the settings wit
 `"System clock synchronized: yes"`). For more information, see for example the corresponding
 [Ubuntu help page](https://help.ubuntu.com/lts/serverguide/NTP.html).
 
-For the quickstart and Docker installation modes, [Docker](https://docker.com) needs to be installed and configured.
+For the Docker installation modes, [Docker](https://docker.com) needs to be installed and configured.
+For the quickstart mode, [docker-compose](https://docs.docker.com/compose/) needs to be installed as well.
+You must have at least version [`1.18.0`](https://github.com/docker/compose/releases/tag/1.18.0) of `docker-compose`.
 Please refer to the official documentation and make sure your user is added to the `docker` user group if you cannot
 access root permissions to run containers.
 
