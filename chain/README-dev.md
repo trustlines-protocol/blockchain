@@ -30,4 +30,5 @@
 5. Check that the image is built and pushed to Docker Hub under
    `trustlines/tlbc-testnet:release` or
    `trustlines/tlbc-node:release`, respectively.
-6. Merge back the changes from the */release branch into master.
+6. Merge back the changes from the */release branch into master and
+   bump the version on the master branch.
