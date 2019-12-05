@@ -35,7 +35,7 @@ git checkout bridge/pre-release
 git pull
 git merge -m 'Merge with master branch' origin/master
 cd tools/bridge
-bumpversion build
+bumpversion release
 ```
 and open a PR for that branch.
 
@@ -62,8 +62,13 @@ master branch with `bumpversion patch`.
 
 0. Prerequsisite: The master branch contains the version to be
    released
-1. Open and merge a PR `master` -> `bridge/pre-release` (no review
-   needed). This will built the docker image and push it to Docker
+1. Create a new branch `bridge/prepare/pre-release-<version>` based
+   on `bridge/pre-release` and merge the `master` branch into it.
+   Bump the version with
+   `bumpversion release`.
+   Verify that the version is a release canditate (e.g. `v0.1.1.rc0`).
+   Now open a PR to `bridge/pre-release`.
+   Merging this will build the docker image and push it to Docker
    Hub under `trustlines/bridge-next:pre-release`.
 2. Test the pre-release:
    - Pull the newly built image from Docker Hub.
@@ -75,9 +80,17 @@ master branch with `bumpversion patch`.
      starts to sync properly.
    - Perform any additional tests compelled by the specifics of the
      update.
-3. Open a PR `bridge/pre-release` -> `bridge/release`, wait for a
+3. Create a new branch `bridge/prepare/release-<version>` based on
+   `bridge/release` and merge `bridge/pre-release` into it.
+   Bump the version with
+   `bumpversion release`
+   and verify that the version is a release (e.g. `v0.1.1`).
+   Now open a PR to `bridge/release`, wait for a
    review confirming that the necessary testing steps have been
    performed, and merge it.
 4. Authorize the release in CircleCI
 5. Check that the image is built and pushed to Docker Hub under
    `trustlines/bridge:release`.
+6. Merge the bridge/release branch back into master and use
+   bumpversion in order to make sure the master branch only contains
+   '-dev' versions.

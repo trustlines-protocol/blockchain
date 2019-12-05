@@ -11,6 +11,8 @@ from bridge import node_status
 from bridge.events import ChainRole, FetcherReachedHeadEvent
 from bridge.utils import sort_events
 
+NODE_STATUS_CACHE_TIME_SECONDS = 1
+
 
 class EventFetcher:
     def __init__(
@@ -46,6 +48,8 @@ class EventFetcher:
         self.max_reorg_depth = max_reorg_depth
         self.last_fetched_block_number = start_block_number - 1
 
+        self._node_status = None
+
         # We can't use the tenacity decorator because we're using an
         # instance local logger So, we instantiate the Retrying object
         # here and use it explicitly.
@@ -54,14 +58,23 @@ class EventFetcher:
             before_sleep=tenacity.before_sleep_log(self.logger, logging.WARN),
         )
 
-    def _rpc_get_node_status(self):
-        return self._retrying.call(node_status.get_node_status, self.web3)
+    def _rpc_get_cached_node_status(self):
+        if (
+            self._node_status is None
+            or time.time() - self._node_status.timestamp
+            > NODE_STATUS_CACHE_TIME_SECONDS
+        ):
+            # To reduce number of node calls we cache the result
+            self._node_status = self._retrying.call(
+                node_status.get_node_status, self.web3
+            )
+        return self._node_status
 
-    def _rpc_latest_block(self):
-        return self._rpc_get_node_status().latest_synced_block
+    def _rpc_cached_latest_block(self):
+        return self._rpc_get_cached_node_status().latest_synced_block
 
-    def _rpc_is_syncing(self):
-        return self._rpc_get_node_status().is_syncing
+    def _rpc_cached_is_syncing(self):
+        return self._rpc_get_cached_node_status().is_syncing
 
     def _rpc_get_logs(
         self,
@@ -82,9 +95,6 @@ class EventFetcher:
     ) -> List:
         if from_block_number < 0:
             raise ValueError("Can not fetch events from a negative block number!")
-
-        if to_block_number > self._rpc_latest_block():
-            raise ValueError("Can not fetch events for blocks past the current head!")
 
         if from_block_number > to_block_number:
             raise ValueError("Can not fetch events for a negative range!")
@@ -123,7 +133,9 @@ class EventFetcher:
         """
         while True:
             from_block_number = self.last_fetched_block_number + 1
-            reorg_safe_block_number = self._rpc_latest_block() - self.max_reorg_depth
+            reorg_safe_block_number = (
+                self._rpc_cached_latest_block() - self.max_reorg_depth
+            )
             to_block_number = min(
                 from_block_number + self.event_fetch_limit - 1, reorg_safe_block_number
             )
@@ -155,6 +167,6 @@ class EventFetcher:
                     chain_role=self.chain_role,
                     last_fetched_block_number=self.last_fetched_block_number,
                 )
-                if not self._rpc_is_syncing():
+                if not self._rpc_cached_is_syncing():
                     self.event_queue.put(reached_head_event)
                 time.sleep(poll_interval)

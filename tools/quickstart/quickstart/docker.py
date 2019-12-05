@@ -38,8 +38,23 @@ LEGACY_CONTAINER_NAMES = [
 ]
 DOCKER_COMPOSE_FILE_NAME = "docker-compose.yaml"
 
+README_PATH = "readme.txt"
+README_TEXT = "\n".join(
+    [
+        "# Readme",
+        "",
+        "You can check which services are running with `docker-compose ps`.",
+        "You can use `docker-compose down` to shut the services down or `docker-compose up` to start them. "
+        "Beware that if you use `docker-compose up`, every service will be started even when they were not set up by the quickstart. "
+        "You can also stop individual services for example `docker-compose stop watchtower`.",
+        "For more information see the docker-compose documentation via `docker-compose --help` or online at https://docs.docker.com/compose/. "
+        "You can also check the docker documentation via `docker --help` or online at https://docs.docker.com/engine/reference/commandline/docker/",
+    ]
+)
+
 
 def setup_interactivaly(base_dir, docker_compose_file):
+    create_docker_readme(base_dir)
     if does_docker_compose_file_exist(base_dir) and not filecmp.cmp(
         os.path.join(base_dir, DOCKER_COMPOSE_FILE_NAME), docker_compose_file
     ):
@@ -71,6 +86,12 @@ def setup_interactivaly(base_dir, docker_compose_file):
         copy_default_docker_file(
             base_dir=base_dir, docker_compose_file=docker_compose_file
         )
+
+
+def create_docker_readme(base_dir):
+    if not os.path.isfile(os.path.join(base_dir, README_PATH)):
+        with open(os.path.join(base_dir, README_PATH), "x") as f:
+            f.write(README_TEXT)
 
 
 def update_and_start(
@@ -174,7 +195,16 @@ def update_and_start(
             )
         )
 
-    click.echo("\nAll services are running. Congratulations!")
+    click.echo(
+        "\n".join(
+            [
+                "",
+                "Congratulations!",
+                f"All services are running as docker container in the background.",
+                f"The configuration has been written to the sub-folder: {base_dir}",
+            ]
+        )
+    )
 
 
 def wait_for_chain_spec(base_dir) -> None:
