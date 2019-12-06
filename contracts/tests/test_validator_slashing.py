@@ -2,8 +2,7 @@
 
 import eth_tester.exceptions
 import pytest
-
-from .data_generation import make_block_header
+from data_generation import make_block_header
 
 
 def test_init_already_initialized(validator_slasher_contract, accounts):
