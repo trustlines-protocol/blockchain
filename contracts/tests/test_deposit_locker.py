@@ -5,7 +5,7 @@ from typing import Any, List
 import attr
 import eth_tester.exceptions
 import pytest
-from data_generation import make_block_header
+from tests.data_generation import make_block_header
 from web3.datastructures import AttributeDict
 
 

@@ -1,16 +1,16 @@
 import json
-from os import path
+import os
 from typing import Dict
 
 from deploy_tools.deploy import deploy_compiled_contract
 from web3 import Web3
 from web3.contract import Contract
 
-SCRIPT_DIRECTORY = path.dirname(path.realpath(__file__))
+SCRIPT_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
 
 def load_contract(contract_name, file_name="contracts"):
-    with open(f"{SCRIPT_DIRECTORY}/../build/{file_name}.json") as json_file:
+    with open(f"{SCRIPT_DIRECTORY}/{file_name}.json") as json_file:
         contract_data = json.load(json_file)
         return contract_data[contract_name]
 

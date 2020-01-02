@@ -2,9 +2,9 @@ from collections import namedtuple
 
 import eth_tester
 import pytest
-from data_generation import make_block_header
 from deploy_tools.deploy import wait_for_successful_transaction_receipt
-from deploy_util import (
+from tests.data_generation import make_block_header
+from tests.deploy_util import (
     initialize_deposit_locker,
     initialize_test_validator_slasher,
     initialize_validator_set,

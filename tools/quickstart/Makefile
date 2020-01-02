@@ -22,7 +22,7 @@ $(VIRTUAL_ENV):
 	python3 -m venv $@
 
 clean:
-	rm -rf build .tox .mypy_cache .pytest_cache */__pycache__ *.egg-info
+	rm -rf build .tox .mypy_cache .pytest_cache */__pycache__ */*/__pycache__ *.egg-info */*.egg-info
 	rm -f .installed
 
 build-docker-image::
