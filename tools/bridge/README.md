@@ -165,8 +165,9 @@ running program.
 
 ### Webservice
 
-The webservice allows to query information about the current state of the bridge node. It is not
-running by default and must be enabled in the config file if desired:
+The webservice allows to query information about the current state of the bridge
+node. It is not running by default and must be enabled in the config file if
+desired:
 
 ```toml
 [webservice]
@@ -177,37 +178,6 @@ port = 8640                # port number the webservice should listen on
 
 ### Validation
 
-The configuration itself as well as the provided contracts and data will be verified at startup and continously. Make sure to check the logs for errors when running your validator node.
-
-## Docker Compose
-
-Using the provided configuration files for `docker-compose` (at `./docker`)
-allows an easy setup including the blockchain nodes. Make sure
-you checked out the section regarding the [docker setup](#docker-image).
-
-### Full Setup
-
-Running the whole bridge validator setup with all components via
-`docker-compose` requires a complete configuration environment file (`.env`). To
-switch between the different setup environments, exchange the `docker-compose`
-configuration file postfix by `development` or `production`. For the
-production setup the `build` does nothing and can be skipped.
-
-```bash
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose-base.yaml --file ./docker/docker-compose-development.yaml build
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose-base.yaml --file ./docker/docker-compose-development.yaml up
-```
-
-### Nodes Only
-
-This approach is useful when it is intended to run the bridge client as
-a standalone application on your machine (see [pip
-install](#python-package-manager)). In contrast to the previous full setup the
-configuration via environment file is not necessary and has no effect.
-
-```bash
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose-base.yaml --file ./docker/docker-compose-development.yaml up node_foreign node_home
-```
-
-The JSON-RPC endpoint of the foreign chain is linked to `http://localhost:8545`.
-The home chain can be connected via `http://localhost:8546`.
+The configuration itself as well as the provided contracts and data will be
+verified at startup and continously. Make sure to check the logs for errors when
+running your validator node.
