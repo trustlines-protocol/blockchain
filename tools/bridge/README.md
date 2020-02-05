@@ -50,13 +50,14 @@ token transfer can not be payed out twice.
 Running a bridge validator requires in addition to this client two synchronized
 nodes for the foreign (_Ethereum_ main chain) and home (_Trustlines_ chain)
 network (see [configuration options](#configuration)). The bridge client
-supports [light nodes](https://www.parity.io/what-is-a-light-client/). For
-a more extended setup including these nodes, check out the
+supports [light
+nodes](https://github.com/ethereum/wiki/wiki/Light-client-protocol). For a more
+extended setup including these nodes, check out the
 [section](#docker-compose) for `docker-compose` instructions.
 
 ### Python Package Manager
 
-The bridge validator client is written in _Python_ can be installed with `pip`
+The bridge validator client is written in _Python_ and can be installed with `pip`
 directly.
 
 ```bash
@@ -82,7 +83,7 @@ docker build --file ./Dockerfile --tag tlbc-bridge ../../
 
 The bridge validator client can be configured with a [TOML
 configuration file](https://github.com/toml-lang/toml#spec), whose
-path must be given via the `--config` (`-c`) CLI paramter.
+path must be given via the `--config` (`-c`) CLI parameter.
 
 Here is an example file with all possible entries. Optional entries
 are listed with their default value.
@@ -152,8 +153,8 @@ level = "INFO"
 
 Internally this is using _Python_'s
 [logging.config.dictConfig](https://docs.python.org/3/library/logging.config.html#logging.config.dictConfig).
-The exact schema for this key can be found at the [configuration dictionary
-schema](https://docs.python.org/3/library/logging.config.html#logging-config-dictschema).
+The exact schema for this can be found at the [configuration
+dictionary](https://docs.python.org/3/library/logging.config.html#logging-config-dictschema).
 
 The logging configuration can be changed at runtime. If you send a
 SIGHUP signal to the tlbc-bridge program, it will re-read the
@@ -196,8 +197,6 @@ production setup the `build` does nothing and can be skipped.
 docker-compose --project-name tlbc-bridge --file ./docker/docker-compose-base.yaml --file ./docker/docker-compose-development.yaml build
 docker-compose --project-name tlbc-bridge --file ./docker/docker-compose-base.yaml --file ./docker/docker-compose-development.yaml up
 ```
-
-**Note: There is no production Trustlines chain yet!**
 
 ### Nodes Only
 
