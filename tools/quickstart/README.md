@@ -1,10 +1,6 @@
-# Overview
-
-This directory contains some short python scripts which are used by
-the quickstart script.
-
-At the moment it's being used to import a raw private key and a
-keystore file as parity account.
-
-The quickstart script uses these scripts via the public
-trustlines/quickstart image.
+This is the quickstart setup tool for the Trustlines Blockchain and the Laika
+test network. It allows an easy and interactive setup of all relevant
+components. Please take a look into the main [README](../../README.md) which is
+heavily based on this tool. In also includes instructions how to easily fetch
+the most recent version. For further information how to use please call the
+`quickstart --help` command on a locally installed version.
