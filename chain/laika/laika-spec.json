@@ -81,7 +81,7 @@
                         "3180813": {
                             "safeContract": "0x7562F6FBFD211cE9896839b5062d2bA16b839e8C"
                         },
-                        "5631545": {
+                        "5652453": {
                             "list": [
                                 "0x116c0fe479f206b8e44c0ac519886484226e2eda",
                                 "0x9523cce7eb06770af7fa889db23bfff1385db686",
@@ -90,7 +90,7 @@
                                 "0x3b447ecc92c8d462ec9bca48c9ba1157996ff6a5"
                             ]
                         },
-                        "5631645": {
+                        "5652553": {
                             "safeContract": "0x7A393Ffc122A61f8249C5571Ad8992038A0F662F"
                         }
                     }
@@ -230,10 +230,10 @@
         }
     },
     "nodes": [
-        "enode://6de980538231f41c7cef43b9c42563d870f99c0bee4b829253a686f9f649a560ab88892d23f99aff4e818956aa611e548178cbf04cc25b5b2ec0091e858efa42@TODO:30302",
-        "enode://77fb25e6ca7020a5d696bb58d4ca3b18a7dd54b83a9c537c4362675deac5cab1863ebd3fb6f3ae1c78f40b05285fc9b1d5ab0ef52d5d4f0df7361d876d05b786@TODO:30302",
-        "enode://5c64b20e3e3097a72e4f8697fcad6cb86a4db46a3cf94e5ce3246f6be210fb1c77d6ebcf3a903322202c83c45e21cda83b143c6852c541e31b08c693bfc51482@TODO:30302",
-        "enode://f2d21783455cb1c4adfb4f686d368ace0c43e1684e84d702360fbcad84f5d5b354693c539b925c8cc6c7040c096ee647eab3b38c09037f779b48ae4df6af7448@TODO:30302",
-        "enode://15b4c7a700e1fb2a1df1df0d181479cf7af14c58da298c66912c1e5e035a42bac56c72494391574c2351a614bad1441683059d4d39a548e8de8fd5bd8877a0bb@TODO:30302"
+        "enode://6de980538231f41c7cef43b9c42563d870f99c0bee4b829253a686f9f649a560ab88892d23f99aff4e818956aa611e548178cbf04cc25b5b2ec0091e858efa42@64.225.82.115:30300",
+        "enode://77fb25e6ca7020a5d696bb58d4ca3b18a7dd54b83a9c537c4362675deac5cab1863ebd3fb6f3ae1c78f40b05285fc9b1d5ab0ef52d5d4f0df7361d876d05b786@64.225.82.116:30300",
+        "enode://5c64b20e3e3097a72e4f8697fcad6cb86a4db46a3cf94e5ce3246f6be210fb1c77d6ebcf3a903322202c83c45e21cda83b143c6852c541e31b08c693bfc51482@174.138.104.191:30300",
+        "enode://f2d21783455cb1c4adfb4f686d368ace0c43e1684e84d702360fbcad84f5d5b354693c539b925c8cc6c7040c096ee647eab3b38c09037f779b48ae4df6af7448@64.225.82.143:30300",
+        "enode://15b4c7a700e1fb2a1df1df0d181479cf7af14c58da298c66912c1e5e035a42bac56c72494391574c2351a614bad1441683059d4d39a548e8de8fd5bd8877a0bb@134.209.137.22:30300"
     ]
 }
