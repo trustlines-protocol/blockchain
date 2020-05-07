@@ -1,4 +1,5 @@
 from collections import namedtuple
+from enum import Enum
 
 import eth_tester
 import pytest
@@ -26,6 +27,7 @@ MALICIOUS_VALIDATOR_INDEX, MALICIOUS_NON_VALIDATOR_INDEX = range(
 
 AUCTION_DURATION_IN_DAYS = 14
 AUCTION_START_PRICE = 10000 * 10 ** 18
+TEST_PRICE = 100
 
 SignedBlockHeader = namedtuple("SignedBlockHeader", "unsignedBlockHeader signature")
 
@@ -289,6 +291,100 @@ def almost_filled_validator_auction(
 
 
 @pytest.fixture(scope="session")
+def token_validator_auction_contract(
+    deploy_contract, whitelist, web3, deposit_locker_init, auctionnable_token_contract
+):
+    deposit_locker = deploy_contract("DepositLocker")
+    contract = deploy_contract(
+        "TestTokenValidatorAuction",
+        constructor_args=(deposit_locker.address, auctionnable_token_contract.address),
+    )
+    deposit_locker_init(deposit_locker, contract.address)
+
+    add_whitelist_to_validator_auction_contract(contract, whitelist)
+
+    return contract
+
+
+@pytest.fixture(scope="session")
+def almost_filled_token_validator_auction(
+    deploy_contract,
+    whitelist,
+    maximal_number_of_auction_participants,
+    auctionnable_token_contract,
+    web3,
+    deposit_locker_init,
+):
+    """Token validator auction contract missing one bid to reach the maximum amount of bidders
+    account[1] has not bid and can be used to test the behaviour of sending the last bid"""
+
+    deposit_locker = deploy_contract("DepositLocker")
+    auction = deploy_contract(
+        "TestTokenValidatorAuction",
+        constructor_args=(deposit_locker.address, auctionnable_token_contract.address),
+    )
+    deposit_locker_init(deposit_locker, auction.address)
+
+    add_whitelist_to_validator_auction_contract(auction, whitelist)
+
+    auction.functions.startAuction().transact()
+
+    for participant in whitelist[1:maximal_number_of_auction_participants]:
+        auctionnable_token_contract.functions.approve(auction.address, 100).transact(
+            {"from": participant}
+        )
+        auction.functions.bid().transact({"from": participant})
+
+    return auction
+
+
+@pytest.fixture(scope="session")
+def real_price_token_validator_auction_contract(
+    deploy_contract,
+    whitelist,
+    maximal_number_of_auction_participants,
+    minimal_number_of_auction_participants,
+    auctionnable_token_contract,
+    web3,
+    deposit_locker_init,
+):
+    deposit_locker = deploy_contract("DepositLocker")
+
+    contract = deploy_contract(
+        "TokenValidatorAuction",
+        constructor_args=(
+            AUCTION_START_PRICE,
+            AUCTION_DURATION_IN_DAYS,
+            minimal_number_of_auction_participants,
+            maximal_number_of_auction_participants,
+            deposit_locker.address,
+            auctionnable_token_contract.address,
+        ),
+    )
+    deposit_locker_init(deposit_locker, contract.address)
+
+    add_whitelist_to_validator_auction_contract(contract, whitelist)
+
+    return contract
+
+
+# This has to be in sync with the AuctionStates in ValidatorAuction.sol
+class AuctionState(Enum):
+    Deployed = 0
+    Started = 1
+    DepositPending = 2
+    Ended = 3
+    Failed = 4
+
+
+def assert_auction_state(validator_contract, expected_auction_state):
+    """assert that the current auctionState() of validator_contract is expected_auction_state"""
+    assert expected_auction_state == AuctionState(
+        validator_contract.functions.auctionState().call()
+    ), "wrong auction state, make sure test_validator_auction.AuctionState is in sync with contracts"
+
+
+@pytest.fixture(scope="session")
 def whitelist(chain, maximal_number_of_auction_participants):
     """whitelisted well-funded accounts, accounts[0] is not in the whitelist"""
     # some other tests do also call add_account and we do not want to
@@ -340,6 +436,32 @@ def tln_token_contract(deploy_contract, premint_token_address, premint_token_val
     )
 
     return deploy_contract("TrustlinesNetworkToken", constructor_args=constructor_args)
+
+
+@pytest.fixture(scope="session")
+def auctionnable_token_contract(deploy_contract, whitelist):
+    """A token dropped to all addresses in whitelist to participate in token validator auction"""
+    token_name = "Trustlines Network Token"
+    token_symbol = "TLN"
+    token_decimal = 18
+    number_to_mint = AUCTION_START_PRICE * 1_000
+    premint_address = whitelist[0]
+    constructor_args = (
+        token_name,
+        token_symbol,
+        token_decimal,
+        premint_address,
+        number_to_mint,
+    )
+
+    token = deploy_contract("TrustlinesNetworkToken", constructor_args=constructor_args)
+
+    for address in whitelist[1:]:
+        token.functions.transfer(address, AUCTION_START_PRICE).transact(
+            {"from": premint_address}
+        )
+
+    return token
 
 
 @pytest.fixture(scope="session")

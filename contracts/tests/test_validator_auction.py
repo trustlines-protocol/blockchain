@@ -1,33 +1,20 @@
 #! pytest
 
 import time
-from enum import Enum
 
 import eth_tester.exceptions
 import pytest
-from tests.conftest import AUCTION_DURATION_IN_DAYS, AUCTION_START_PRICE
+from tests.conftest import (
+    AUCTION_DURATION_IN_DAYS,
+    AUCTION_START_PRICE,
+    TEST_PRICE,
+    AuctionState,
+    assert_auction_state,
+)
 
 TWO_WEEKS_IN_SECONDS = 14 * 24 * 60 * 60
 ONE_HOUR_IN_SECONDS = 60 * 60
 ETH_IN_WEI = 1e18
-
-TEST_PRICE = 100
-
-
-# This has to be in sync with the AuctionStates in ValidatorAuction.sol
-class AuctionState(Enum):
-    Deployed = 0
-    Started = 1
-    DepositPending = 2
-    Ended = 3
-    Failed = 4
-
-
-def assert_auction_state(validator_contract, expected_auction_state):
-    """assert that the current auctionState() of validator_contract is expected_auction_state"""
-    assert expected_auction_state == AuctionState(
-        validator_contract.functions.auctionState().call()
-    ), "wrong auction state, make sure test_validator_auction.AuctionState is in sync with contracts"
 
 
 def time_travel_to_end_of_auction(chain):
