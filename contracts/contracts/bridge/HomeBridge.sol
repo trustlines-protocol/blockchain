@@ -2,6 +2,7 @@ pragma solidity ^0.5.8;
 
 import "../tlc-validator/ValidatorProxy.sol";
 
+
 contract HomeBridge {
     struct TransferState {
         mapping(address => bool) isConfirmedByValidator;
@@ -147,8 +148,7 @@ contract HomeBridge {
                 i++;
             } else {
                 confirmingValidators[i] = confirmingValidators[confirmingValidators
-                        .length -
-                    1];
+                    .length - 1];
                 confirmingValidators.length--;
             }
         }
@@ -156,12 +156,9 @@ contract HomeBridge {
 
     function _getNumRequiredConfirmations() internal view returns (uint) {
         return
-            (
-                    validatorProxy.numberOfValidators() *
-                        validatorsRequiredPercent +
-                        99
-                ) /
-                100;
+            (validatorProxy.numberOfValidators() *
+                validatorsRequiredPercent +
+                99) / 100;
     }
 
     function _confirmTransfer(bytes32 transferStateId, address validator)

@@ -6,6 +6,7 @@ pragma solidity ^0.5.8;
 
 import "./ValidatorAuction.sol";
 
+
 contract TestValidatorAuctionFixedPrice is ValidatorAuction {
     constructor(DepositLocker _depositLocker)
         public

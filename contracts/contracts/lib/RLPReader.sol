@@ -29,6 +29,7 @@
 
 pragma solidity ^0.5.8;
 
+
 library RLPReader {
     uint8 constant STRING_SHORT_START = 0x80;
     uint8 constant STRING_LONG_START = 0xb8;
@@ -43,8 +44,8 @@ library RLPReader {
     }
 
     /*
-    * @param item RLP encoded bytes
-    */
+     * @param item RLP encoded bytes
+     */
     function toRlpItem(bytes memory item)
         internal
         pure
@@ -61,22 +62,22 @@ library RLPReader {
     }
 
     /*
-    * @param item RLP encoded bytes
-    */
+     * @param item RLP encoded bytes
+     */
     function rlpLen(RLPItem memory item) internal pure returns (uint) {
         return item.len;
     }
 
     /*
-    * @param item RLP encoded bytes
-    */
+     * @param item RLP encoded bytes
+     */
     function payloadLen(RLPItem memory item) internal pure returns (uint) {
         return item.len - _payloadOffset(item.memPtr);
     }
 
     /*
-    * @param item RLP encoded list in bytes
-    */
+     * @param item RLP encoded list in bytes
+     */
     function toList(RLPItem memory item)
         internal
         pure
@@ -111,8 +112,8 @@ library RLPReader {
     }
 
     /*
-    * Private Helpers
-    */
+     * Private Helpers
+     */
 
     // @return number of payload items inside an encoded list.
     function numItems(RLPItem memory item) private pure returns (uint) {
@@ -267,12 +268,17 @@ library RLPReader {
         copy(item.memPtr + offset, destPtr, len);
         return result;
     }
+
     /*
-    * @param src Pointer to source
-    * @param dest Pointer to destination
-    * @param len Amount of memory to copy from the source
-    */
-    function copy(uint src, uint dest, uint len) private pure {
+     * @param src Pointer to source
+     * @param dest Pointer to destination
+     * @param len Amount of memory to copy from the source
+     */
+    function copy(
+        uint src,
+        uint dest,
+        uint len
+    ) private pure {
         if (len == 0) return;
 
         // copy as many word sizes as possible
@@ -286,7 +292,7 @@ library RLPReader {
         }
 
         // left over bytes. Mask is used to remove unwanted bytes from the word
-        uint mask = 256 ** (WORD_SIZE - len) - 1;
+        uint mask = 256**(WORD_SIZE - len) - 1;
         assembly {
             let srcpart := and(mload(src), not(mask)) // zero out src
             let destpart := and(mload(dest), mask) // retrieve the bytes

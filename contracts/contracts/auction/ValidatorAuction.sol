@@ -3,6 +3,7 @@ pragma solidity ^0.5.8;
 import "../lib/Ownable.sol";
 import "./DepositLocker.sol";
 
+
 contract ValidatorAuction is Ownable {
     // auction constants set on deployment
     uint public auctionDurationInDays;
@@ -90,7 +91,7 @@ contract ValidatorAuction is Ownable {
         );
         require(
             // To prevent overflows
-            _startPriceInWei < 10 ** 30,
+            _startPriceInWei < 10**30,
             "The start price is too big."
         );
 
@@ -233,9 +234,8 @@ contract ValidatorAuction is Ownable {
         uint msSinceStart = 1000 * secondsSinceStart;
         uint relativeAuctionTime = msSinceStart / auctionDurationInDays;
         uint decayDivisor = 746571428571;
-        uint decay = relativeAuctionTime ** 3 / decayDivisor;
-        uint price = startPrice *
-            (1 + relativeAuctionTime) /
+        uint decay = relativeAuctionTime**3 / decayDivisor;
+        uint price = (startPrice * (1 + relativeAuctionTime)) /
             (1 + relativeAuctionTime + decay);
         return price;
     }

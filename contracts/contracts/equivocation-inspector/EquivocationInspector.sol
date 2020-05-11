@@ -3,6 +3,7 @@ pragma solidity ^0.5.8;
 import "../lib/RLPReader.sol";
 import "../lib/ECDSA.sol";
 
+
 /**
  * Utilities to verify equivocating behavior of validators.
  */
@@ -95,5 +96,4 @@ library EquivocationInspector {
 
         require(stepOne == stepTwo, "The two blocks have different steps.");
     }
-
 }

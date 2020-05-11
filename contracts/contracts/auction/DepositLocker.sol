@@ -3,6 +3,7 @@ pragma solidity ^0.5.8;
 import "../lib/Ownable.sol";
 import "./DepositLockerInterface.sol";
 
+
 /*
   The DepositLocker contract locks the deposits for all of the winning
   participants of the auction.
