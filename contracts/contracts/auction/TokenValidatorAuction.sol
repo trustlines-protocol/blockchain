@@ -2,11 +2,12 @@ pragma solidity ^0.5.8;
 
 import "../lib/Ownable.sol";
 import "./DepositLocker.sol";
-import "../token/AuctionnableTokenInterface.sol";
+import "../token/IERC20.sol";
 import "./ValidatorAuction.sol";
 
+
 contract TokenValidatorAuction is ValidatorAuction {
-    AuctionnableTokenInterface public auctionnedToken;
+    IERC20 public auctionnedToken;
 
     constructor(
         uint _startPriceInWei,
@@ -14,7 +15,7 @@ contract TokenValidatorAuction is ValidatorAuction {
         uint _minimalNumberOfParticipants,
         uint _maximalNumberOfParticipants,
         DepositLocker _depositLocker,
-        AuctionnableTokenInterface _auctionnedToken
+        IERC20 _auctionnedToken
     )
         public
         ValidatorAuction(
@@ -68,5 +69,4 @@ contract TokenValidatorAuction is ValidatorAuction {
 
         auctionnedToken.transferFrom(msg.sender, address(this), slotPrice);
     }
-
 }

@@ -6,8 +6,9 @@ pragma solidity ^0.5.8;
 
 import "./TokenValidatorAuction.sol";
 
+
 contract TestTokenValidatorAuction is TokenValidatorAuction {
-    constructor(DepositLocker _depositLocker, AuctionnableTokenInterface _token)
+    constructor(DepositLocker _depositLocker, IERC20 _token)
         public
         TokenValidatorAuction(100, 14, 50, 123, _depositLocker, _token)
     {}
