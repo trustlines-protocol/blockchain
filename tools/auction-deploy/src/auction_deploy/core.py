@@ -38,8 +38,8 @@ def deploy_auction_contracts(
 
     compiled_contracts = load_contracts_json(__name__)
 
-    deposit_locker_abi = compiled_contracts["DepositLocker"]["abi"]
-    deposit_locker_bin = compiled_contracts["DepositLocker"]["bytecode"]
+    deposit_locker_abi = compiled_contracts["ETHDepositLocker"]["abi"]
+    deposit_locker_bin = compiled_contracts["ETHDepositLocker"]["bytecode"]
 
     validator_slasher_abi = compiled_contracts["ValidatorSlasher"]["abi"]
     validator_slasher_bin = compiled_contracts["ValidatorSlasher"]["bytecode"]
@@ -128,7 +128,7 @@ def get_deployed_auction_contracts(
     compiled_contracts = load_contracts_json(__name__)
 
     auction_abi = compiled_contracts["ValidatorAuction"]["abi"]
-    locker_abi = compiled_contracts["DepositLocker"]["abi"]
+    locker_abi = compiled_contracts["ETHDepositLocker"]["abi"]
     slasher_abi = compiled_contracts["ValidatorSlasher"]["abi"]
 
     auction = web3.eth.contract(address=auction_address, abi=auction_abi)

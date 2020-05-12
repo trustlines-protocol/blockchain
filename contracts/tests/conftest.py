@@ -125,7 +125,7 @@ def non_initialized_validator_slasher_contract_session(deploy_contract):
 
 @pytest.fixture(scope="session")
 def non_initialized_deposit_locker_contract_session(deploy_contract):
-    return deploy_contract("DepositLocker")
+    return deploy_contract("ETHDepositLocker")
 
 
 @pytest.fixture(scope="session")
@@ -133,7 +133,7 @@ def initialized_deposit_and_slasher_contracts(
     validators, deploy_contract, fake_auction_address, web3, release_timestamp
 ):
     slasher_contract = deploy_contract("ValidatorSlasher")
-    locker_contract = deploy_contract("DepositLocker")
+    locker_contract = deploy_contract("ETHDepositLocker")
     """Initializes both the slasher and deposit contract, both initialisation are in the same fixture because we want
     a snapshot where both contracts are initialized and aware of the address of the other"""
 
@@ -211,7 +211,7 @@ def block_header_by_malicious_non_validator(malicious_non_validator_key):
 
 @pytest.fixture(scope="session")
 def validator_auction_contract(deploy_contract, whitelist, web3, deposit_locker_init):
-    deposit_locker = deploy_contract("DepositLocker")
+    deposit_locker = deploy_contract("ETHDepositLocker")
     contract = deploy_contract(
         "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
     )
@@ -231,7 +231,7 @@ def real_price_validator_auction_contract(
     web3,
     deposit_locker_init,
 ):
-    deposit_locker = deploy_contract("DepositLocker")
+    deposit_locker = deploy_contract("ETHDepositLocker")
 
     contract = deploy_contract(
         "ValidatorAuction",
@@ -252,7 +252,7 @@ def real_price_validator_auction_contract(
 
 @pytest.fixture(scope="session")
 def no_whitelist_validator_auction_contract(deploy_contract, web3, deposit_locker_init):
-    deposit_locker = deploy_contract("DepositLocker")
+    deposit_locker = deploy_contract("ETHDepositLocker")
     contract = deploy_contract(
         "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
     )
@@ -272,7 +272,7 @@ def almost_filled_validator_auction(
     """Validator auction contract missing one bid to reach the maximum amount of bidders
     account[1] has not bid and can be used to test the behaviour of sending the last bid"""
 
-    deposit_locker = deploy_contract("DepositLocker")
+    deposit_locker = deploy_contract("ETHDepositLocker")
     contract = deploy_contract(
         "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
     )
