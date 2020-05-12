@@ -3,7 +3,7 @@ Usage: python pack_contracts.py input_contracts.json output_contracts.json
 """
 import json
 
-contracts = ["ValidatorAuction", "DepositLocker", "ValidatorSlasher"]
+contracts = ["ValidatorAuction", "ETHDepositLocker", "ValidatorSlasher"]
 
 
 def pack_contracts(input_filename, output_filename):

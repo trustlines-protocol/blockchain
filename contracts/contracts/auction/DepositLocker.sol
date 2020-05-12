@@ -12,10 +12,12 @@ import "./DepositLockerInterface.sol";
   contracts keeps track of the number of participants and also keeps track if a
   participant address can withdraw the deposit.
 
-  All of the participants have to pay the same eth amount when the auction ends.
+  All of the participants have to pay the same amount when the auction ends.
   The auction contract will deposit the sum of all amounts with a call to
   deposit.
 
+  This is the base contract, how exactly the deposit can be received, withdrawn and burned
+  is left to be implemented in the derived contracts.
 */
 
 contract DepositLocker is DepositLockerInterface, Ownable {
@@ -122,14 +124,11 @@ contract DepositLocker is DepositLockerInterface, Ownable {
             _valuePerDepositor == depositAmount / numberOfDepositors,
             "Overflow in depositAmount calculation"
         );
-        require(
-            msg.value == depositAmount,
-            "the deposit does not match the required value"
-        );
 
         valuePerDepositor = _valuePerDepositor;
         deposited = true;
-        emit Deposit(msg.value, valuePerDepositor, numberOfDepositors);
+        _receive(depositAmount);
+        emit Deposit(depositAmount, valuePerDepositor, numberOfDepositors);
     }
 
     function withdraw() public isInitialised isDeposited {
@@ -140,7 +139,7 @@ contract DepositLocker is DepositLockerInterface, Ownable {
         require(canWithdraw[msg.sender], "cannot withdraw from sender");
 
         canWithdraw[msg.sender] = false;
-        msg.sender.transfer(valuePerDepositor);
+        _transfer(msg.sender, valuePerDepositor);
         emit Withdraw(msg.sender, valuePerDepositor);
     }
 
@@ -155,7 +154,12 @@ contract DepositLocker is DepositLockerInterface, Ownable {
         );
         require(canWithdraw[_depositorToBeSlashed], "cannot slash address");
         canWithdraw[_depositorToBeSlashed] = false;
-        address(0).transfer(valuePerDepositor);
+        _burn(valuePerDepositor);
         emit Slash(_depositorToBeSlashed, valuePerDepositor);
     }
+
+    /// Hooks for derived contracts to receive, transfer and burn the deposits
+    function _receive(uint amount) internal;
+    function _transfer(address payable recipient, uint amount) internal;
+    function _burn(uint amount) internal;
 }
