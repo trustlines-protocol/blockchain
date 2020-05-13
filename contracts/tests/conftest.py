@@ -1,5 +1,4 @@
 from collections import namedtuple
-from enum import Enum
 
 import eth_tester
 import pytest
@@ -366,22 +365,6 @@ def real_price_token_validator_auction_contract(
     add_whitelist_to_validator_auction_contract(contract, whitelist)
 
     return contract
-
-
-# This has to be in sync with the AuctionStates in ValidatorAuction.sol
-class AuctionState(Enum):
-    Deployed = 0
-    Started = 1
-    DepositPending = 2
-    Ended = 3
-    Failed = 4
-
-
-def assert_auction_state(validator_contract, expected_auction_state):
-    """assert that the current auctionState() of validator_contract is expected_auction_state"""
-    assert expected_auction_state == AuctionState(
-        validator_contract.functions.auctionState().call()
-    ), "wrong auction state, make sure test_validator_auction.AuctionState is in sync with contracts"
 
 
 @pytest.fixture(scope="session")
