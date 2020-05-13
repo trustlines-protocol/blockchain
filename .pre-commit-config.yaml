@@ -15,7 +15,7 @@ repos:
     - id: shellcheck
 
 -   repo: https://github.com/trustlines-protocol/prettier
-    rev: cc86a2cf40d6f942c3abe5061ccc7d27aa542fb3
+    rev: 7c13be3983617613e8477df785030fbf3603db7f
     hooks:
       - id: prettier
         entry: prettier --write --list-different

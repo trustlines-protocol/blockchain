@@ -6,7 +6,7 @@ import "../token/IERC20.sol";
 import "./ValidatorAuction.sol";
 
 
-contract TokenValidatorAuction is ValidatorAuction {
+contract TokenValidatorAuction is BaseValidatorAuction {
     IERC20 public auctionnedToken;
 
     constructor(
@@ -18,7 +18,7 @@ contract TokenValidatorAuction is ValidatorAuction {
         IERC20 _auctionnedToken
     )
         public
-        ValidatorAuction(
+        BaseValidatorAuction(
             _startPriceInWei,
             _auctionDurationInDays,
             _minimalNumberOfParticipants,
@@ -26,47 +26,24 @@ contract TokenValidatorAuction is ValidatorAuction {
             _depositLocker
         )
     {
-        depositLocker = _depositLocker;
         auctionnedToken = _auctionnedToken;
     }
 
-    function bid() public payable stateIs(AuctionState.Started) {
-        require(now > startTime, "It is too early to bid.");
-        require(
-            now <= startTime + auctionDurationInDays * 1 days,
-            "Auction has already ended."
-        );
+    function _receiveBid(uint amount) internal {
+        require(msg.value == 0, "Auction does not accept ETH for bidding");
+        auctionnedToken.transferFrom(msg.sender, address(this), amount);
+    }
 
-        require(whitelist[msg.sender], "The sender is not whitelisted.");
-        require(!isSenderContract(), "The sender cannot be a contract.");
-        require(
-            bidders.length < maximalNumberOfParticipants,
-            "The limit of participants has already been reached."
-        );
-        require(bids[msg.sender] == 0, "The sender has already bid.");
+    function _transfer(address payable recipient, uint amount) internal {
+        auctionnedToken.transfer(recipient, amount);
+    }
 
-        uint slotPrice = currentPrice();
-        require(
-            auctionnedToken.allowance(msg.sender, address(this)) >= slotPrice,
-            "The sender did not allow for the auction to withdraw enough tokens"
-        );
-        require(
-            auctionnedToken.balanceOf(msg.sender) >= slotPrice,
-            "The sender does not have enough tokens to bid"
-        );
+    function _deposit(uint slotPrice, uint totalValue) internal {
+        auctionnedToken.approve(address(depositLocker), totalValue);
+        depositLocker.deposit(slotPrice);
+    }
 
-        bids[msg.sender] = slotPrice;
-        bidders.push(msg.sender);
-
-        lowestSlotPrice = slotPrice;
-
-        depositLocker.registerDepositor(msg.sender);
-        emit BidSubmitted(msg.sender, slotPrice, slotPrice, now);
-
-        if (bidders.length == maximalNumberOfParticipants) {
-            transitionToDepositPending();
-        }
-
-        auctionnedToken.transferFrom(msg.sender, address(this), slotPrice);
+    function _getBidAmount(uint slotPrice) internal view returns (uint) {
+        return slotPrice;
     }
 }
