@@ -9,6 +9,14 @@ import "./DepositLocker.sol";
 */
 
 contract ETHDepositLocker is DepositLocker {
+    function init(
+        uint _releaseTimestamp,
+        address _slasher,
+        address _depositorsProxy
+    ) external onlyOwner {
+        DepositLocker._init(_releaseTimestamp, _slasher, _depositorsProxy);
+    }
+
     function _receive(uint amount) internal {
         require(msg.value == amount, "did not receive correct amount");
     }

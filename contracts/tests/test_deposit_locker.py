@@ -156,12 +156,11 @@ def testenv(
 ):
     """return an initialized Env instance"""
     token_contract = None
-    constructor_args = ()
     if request.param == "TokenDepositLocker":
         token_name = "Trustlines Network Token"
         token_symbol = "TLN"
         token_decimal = 18
-        constructor_args = (
+        token_constructor_args = (
             token_name,
             token_symbol,
             token_decimal,
@@ -170,18 +169,24 @@ def testenv(
         )
 
         token_contract = deploy_contract(
-            "TrustlinesNetworkToken", constructor_args=constructor_args
+            "TrustlinesNetworkToken", constructor_args=token_constructor_args
         )
-        constructor_args = (token_contract.address,)
 
-    deposit_locker = deploy_contract(request.param, constructor_args=constructor_args)
+    deposit_locker = deploy_contract(request.param)
     slasher = accounts[1]
     proxy = accounts[2]
     depositors = accounts[3:6]
     other_accounts = accounts[6:]
-    deposit_locker.functions.init(
-        _releaseTimestamp=release_timestamp, _slasher=slasher, _depositorsProxy=proxy
-    ).transact({"from": web3.eth.defaultAccount})
+    deposit_locker_init_args = {
+        "_releaseTimestamp": release_timestamp,
+        "_slasher": slasher,
+        "_depositorsProxy": proxy,
+    }
+    if token_contract is not None:
+        deposit_locker_init_args["_token"] = token_contract.address
+    deposit_locker.functions.init(**deposit_locker_init_args).transact(
+        {"from": web3.eth.defaultAccount}
+    )
 
     testenv = Env(
         deposit_locker=deposit_locker,

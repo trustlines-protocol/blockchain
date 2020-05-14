@@ -4,20 +4,27 @@ import "./DepositLocker.sol";
 import "../token/TrustlinesNetworkToken.sol";
 
 /*
-  The ETHDepositLocker contract locks ETH deposits
+  The TokenDepositLocker contract locks ERC20 token deposits
 
   For more information see DepositLocker.sol
 */
 
 contract TokenDepositLocker is DepositLocker {
+    // TODO Change to generic ERC token interface
     TrustlinesNetworkToken public token;
 
-    constructor(TrustlinesNetworkToken _trustlinesNetworkToken) public {
+    function init(
+        uint _releaseTimestamp,
+        address _slasher,
+        address _depositorsProxy,
+        TrustlinesNetworkToken _token
+    ) external onlyOwner {
+        DepositLocker._init(_releaseTimestamp, _slasher, _depositorsProxy);
         require(
-            address(_trustlinesNetworkToken) != address(0),
+            address(_token) != address(0),
             "Token contract can not be on the zero address!"
         );
-        token = _trustlinesNetworkToken;
+        token = _token;
     }
 
     function _receive(uint amount) internal {
