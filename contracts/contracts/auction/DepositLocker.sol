@@ -76,24 +76,6 @@ contract DepositLocker is DepositLockerInterface, Ownable {
 
     function() external {}
 
-    function init(
-        uint _releaseTimestamp,
-        address _slasher,
-        address _depositorsProxy
-    ) external onlyOwner {
-        require(!initialized, "The contract is already initialised.");
-        require(
-            _releaseTimestamp > now,
-            "The release timestamp must be in the future"
-        );
-
-        releaseTimestamp = _releaseTimestamp;
-        slasher = _slasher;
-        depositorsProxy = _depositorsProxy;
-        initialized = true;
-        owner = address(0);
-    }
-
     function registerDepositor(address _depositor)
         public
         isInitialised
@@ -156,6 +138,24 @@ contract DepositLocker is DepositLockerInterface, Ownable {
         canWithdraw[_depositorToBeSlashed] = false;
         _burn(valuePerDepositor);
         emit Slash(_depositorToBeSlashed, valuePerDepositor);
+    }
+
+    function _init(
+        uint _releaseTimestamp,
+        address _slasher,
+        address _depositorsProxy
+    ) internal {
+        require(!initialized, "The contract is already initialised.");
+        require(
+            _releaseTimestamp > now,
+            "The release timestamp must be in the future"
+        );
+
+        releaseTimestamp = _releaseTimestamp;
+        slasher = _slasher;
+        depositorsProxy = _depositorsProxy;
+        initialized = true;
+        owner = address(0);
     }
 
     /// Hooks for derived contracts to receive, transfer and burn the deposits
