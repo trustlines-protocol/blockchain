@@ -52,6 +52,20 @@ def deposit_locker_init(release_timestamp, web3):
 
 
 @pytest.fixture(scope="session")
+def token_deposit_locker_init(release_timestamp, web3):
+    def init(deposit_locker, depositors_proxy, token):
+        txid = deposit_locker.functions.init(
+            _releaseTimestamp=release_timestamp,
+            _slasher="0x0000000000000000000000000000000000000000",
+            _depositorsProxy=depositors_proxy,
+            _token=token,
+        ).transact()
+        wait_for_successful_transaction_receipt(web3, txid)
+
+    return init
+
+
+@pytest.fixture(scope="session")
 def deposit_amount():
     return 100
 
@@ -125,7 +139,8 @@ def non_initialized_validator_slasher_contract_session(deploy_contract):
 
 
 @pytest.fixture(scope="session")
-def non_initialized_deposit_locker_contract_session(deploy_contract):
+def non_initialized_deposit_locker_contract_session(deploy_contract, web3, chain):
+    # TODO: change to base deposit locker
     return deploy_contract("ETHDepositLocker")
 
 
@@ -214,7 +229,7 @@ def block_header_by_malicious_non_validator(malicious_non_validator_key):
 def validator_auction_contract(deploy_contract, whitelist, web3, deposit_locker_init):
     deposit_locker = deploy_contract("ETHDepositLocker")
     contract = deploy_contract(
-        "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
+        "TestETHValidatorAuction", constructor_args=(deposit_locker.address,)
     )
     deposit_locker_init(deposit_locker, contract.address)
 
@@ -235,7 +250,7 @@ def real_price_validator_auction_contract(
     deposit_locker = deploy_contract("ETHDepositLocker")
 
     contract = deploy_contract(
-        "ValidatorAuction",
+        "ETHValidatorAuction",
         constructor_args=(
             AUCTION_START_PRICE,
             AUCTION_DURATION_IN_DAYS,
@@ -252,12 +267,22 @@ def real_price_validator_auction_contract(
 
 
 @pytest.fixture(scope="session")
-def no_whitelist_validator_auction_contract(deploy_contract, web3, deposit_locker_init):
-    deposit_locker = deploy_contract("ETHDepositLocker")
+def no_whitelist_base_validator_auction_contract(
+    deploy_contract,
+    web3,
+    maximal_number_of_auction_participants,
+    minimal_number_of_auction_participants,
+):
     contract = deploy_contract(
-        "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
+        "BaseValidatorAuction",
+        constructor_args=(
+            AUCTION_START_PRICE,
+            AUCTION_DURATION_IN_DAYS,
+            minimal_number_of_auction_participants,
+            maximal_number_of_auction_participants,
+            "0x0000000000000000000000000000000000000000",
+        ),
     )
-    deposit_locker_init(deposit_locker, contract.address)
 
     return contract
 
@@ -275,7 +300,7 @@ def almost_filled_validator_auction(
 
     deposit_locker = deploy_contract("ETHDepositLocker")
     contract = deploy_contract(
-        "TestValidatorAuctionFixedPrice", constructor_args=(deposit_locker.address,)
+        "TestETHValidatorAuction", constructor_args=(deposit_locker.address,)
     )
     deposit_locker_init(deposit_locker, contract.address)
 
@@ -291,14 +316,20 @@ def almost_filled_validator_auction(
 
 @pytest.fixture(scope="session")
 def token_validator_auction_contract(
-    deploy_contract, whitelist, web3, deposit_locker_init, auctionnable_token_contract
+    deploy_contract,
+    whitelist,
+    web3,
+    token_deposit_locker_init,
+    auctionnable_token_contract,
 ):
-    deposit_locker = deploy_contract("DepositLocker")
+    deposit_locker = deploy_contract("TokenDepositLocker")
     contract = deploy_contract(
         "TestTokenValidatorAuction",
         constructor_args=(deposit_locker.address, auctionnable_token_contract.address),
     )
-    deposit_locker_init(deposit_locker, contract.address)
+    token_deposit_locker_init(
+        deposit_locker, contract.address, auctionnable_token_contract.address
+    )
 
     add_whitelist_to_validator_auction_contract(contract, whitelist)
 
@@ -312,17 +343,19 @@ def almost_filled_token_validator_auction(
     maximal_number_of_auction_participants,
     auctionnable_token_contract,
     web3,
-    deposit_locker_init,
+    token_deposit_locker_init,
 ):
     """Token validator auction contract missing one bid to reach the maximum amount of bidders
     account[1] has not bid and can be used to test the behaviour of sending the last bid"""
 
-    deposit_locker = deploy_contract("DepositLocker")
+    deposit_locker = deploy_contract("TokenDepositLocker")
     auction = deploy_contract(
         "TestTokenValidatorAuction",
         constructor_args=(deposit_locker.address, auctionnable_token_contract.address),
     )
-    deposit_locker_init(deposit_locker, auction.address)
+    token_deposit_locker_init(
+        deposit_locker, auction.address, auctionnable_token_contract.address
+    )
 
     add_whitelist_to_validator_auction_contract(auction, whitelist)
 
@@ -345,9 +378,9 @@ def real_price_token_validator_auction_contract(
     minimal_number_of_auction_participants,
     auctionnable_token_contract,
     web3,
-    deposit_locker_init,
+    token_deposit_locker_init,
 ):
-    deposit_locker = deploy_contract("DepositLocker")
+    deposit_locker = deploy_contract("TokenDepositLocker")
 
     contract = deploy_contract(
         "TokenValidatorAuction",
@@ -360,7 +393,9 @@ def real_price_token_validator_auction_contract(
             auctionnable_token_contract.address,
         ),
     )
-    deposit_locker_init(deposit_locker, contract.address)
+    token_deposit_locker_init(
+        deposit_locker, contract.address, auctionnable_token_contract.address
+    )
 
     add_whitelist_to_validator_auction_contract(contract, whitelist)
 

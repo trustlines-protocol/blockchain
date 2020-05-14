@@ -14,7 +14,7 @@ ONE_HOUR_IN_SECONDS = 60 * 60
 ETH_IN_WEI = 1e18
 
 
-# This has to be in sync with the AuctionStates in ValidatorAuction.sol
+# This has to be in sync with the AuctionStates in BaseValidatorAuction.sol
 class AuctionState(Enum):
     Deployed = 0
     Started = 1
@@ -116,7 +116,9 @@ def send_transaction_with_optional_sender(transaction, sender=None):
     transaction.transact(transaction_options)
 
 
-@pytest.fixture(scope="session", params=["ValidatorAuction", "TokenValidatorAuction"])
+@pytest.fixture(
+    scope="session", params=["ETHValidatorAuction", "TokenValidatorAuction"]
+)
 def testenv(
     request,
     make_requested_testenv_for_contracts,
@@ -143,7 +145,9 @@ def testenv_started_auction(
     return testenv
 
 
-@pytest.fixture(scope="session", params=["ValidatorAuction", "TokenValidatorAuction"])
+@pytest.fixture(
+    scope="session", params=["ETHValidatorAuction", "TokenValidatorAuction"]
+)
 def testenv_almost_filled_auction(
     request,
     make_requested_testenv_for_contracts,
@@ -181,7 +185,9 @@ def testenv_deposit_pending_almost_filled_auction(
     return testenv_almost_filled_auction
 
 
-@pytest.fixture(scope="session", params=["ValidatorAuction", "TokenValidatorAuction"])
+@pytest.fixture(
+    scope="session", params=["ETHValidatorAuction", "TokenValidatorAuction"]
+)
 def testenv_real_price_auction(
     request,
     make_requested_testenv_for_contracts,
@@ -201,7 +207,7 @@ def testenv_real_price_auction(
 @pytest.fixture(scope="session")
 def make_requested_testenv_for_contracts(web3):
     def make_testenv(*, request, eth_auction, token_auction, token) -> TestEnv:
-        if request.param == "ValidatorAuction":
+        if request.param == "ETHValidatorAuction":
             auction = eth_auction
             token_contract = None
         elif request.param == "TokenValidatorAuction":
@@ -235,10 +241,23 @@ def test_cannot_bid_when_not_started(testenv, accounts):
 def test_auction_start_deposit_not_init(
     deploy_contract, non_initialized_deposit_locker_contract_session
 ):
-    # TODO: use BaseAuction
+    start_price = 1_000
+    auction_duration = 14
+    min_participants = 10
+    max_participants = 100
     contract = deploy_contract(
-        "TestValidatorAuctionFixedPrice",
-        constructor_args=(non_initialized_deposit_locker_contract_session.address,),
+        "BaseValidatorAuction",
+        constructor_args=(
+            start_price,
+            auction_duration,
+            min_participants,
+            max_participants,
+            non_initialized_deposit_locker_contract_session.address,
+        ),
+    )
+    assert (
+        non_initialized_deposit_locker_contract_session.functions.initialized().call()
+        is False
     )
 
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
@@ -459,7 +478,7 @@ def test_withdraw_auction_failed(testenv_started_auction: TestEnv, accounts, cha
 
     post_balance = testenv_started_auction.balance_of(accounts[1])
 
-    if testenv_almost_filled_auction.use_token:
+    if testenv_started_auction.use_token:
         # For a token auction, the auction always takes current price as bid
         assert post_balance - pre_balance == TEST_PRICE
     else:
@@ -606,15 +625,15 @@ def test_event_auction_ended(testenv_almost_filled_auction: TestEnv, accounts, w
     assert event["lowestSlotPrice"] == TEST_PRICE
 
 
-def test_event_whitelist(no_whitelist_validator_auction_contract, whitelist, web3):
+def test_event_whitelist(no_whitelist_base_validator_auction_contract, whitelist, web3):
 
-    no_whitelist_validator_auction_contract.functions.addToWhitelist(
+    no_whitelist_base_validator_auction_contract.functions.addToWhitelist(
         whitelist
     ).transact()
 
     latest_block_number = web3.eth.blockNumber
 
-    events = no_whitelist_validator_auction_contract.events.AddressWhitelisted.createFilter(
+    events = no_whitelist_base_validator_auction_contract.events.AddressWhitelisted.createFilter(
         fromBlock=latest_block_number
     ).get_all_entries()
 

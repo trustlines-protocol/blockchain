@@ -1,9 +1,9 @@
 pragma solidity ^0.5.8;
 
 import "../lib/Ownable.sol";
-import "./DepositLocker.sol";
+import "./TokenDepositLocker.sol";
 import "../token/IERC20.sol";
-import "./ValidatorAuction.sol";
+import "./BaseValidatorAuction.sol";
 
 
 contract TokenValidatorAuction is BaseValidatorAuction {
@@ -14,7 +14,7 @@ contract TokenValidatorAuction is BaseValidatorAuction {
         uint _auctionDurationInDays,
         uint _minimalNumberOfParticipants,
         uint _maximalNumberOfParticipants,
-        DepositLocker _depositLocker,
+        TokenDepositLocker _depositLocker,
         IERC20 _auctionnedToken
     )
         public

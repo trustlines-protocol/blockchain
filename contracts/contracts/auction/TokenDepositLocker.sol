@@ -1,7 +1,8 @@
 pragma solidity ^0.5.8;
 
 import "./DepositLocker.sol";
-import "../token/TrustlinesNetworkToken.sol";
+import "../token/IERC20.sol";
+
 
 /*
   The TokenDepositLocker contract locks ERC20 token deposits
@@ -10,14 +11,13 @@ import "../token/TrustlinesNetworkToken.sol";
 */
 
 contract TokenDepositLocker is DepositLocker {
-    // TODO Change to generic ERC token interface
-    TrustlinesNetworkToken public token;
+    IERC20 public token;
 
     function init(
         uint _releaseTimestamp,
         address _slasher,
         address _depositorsProxy,
-        TrustlinesNetworkToken _token
+        IERC20 _token
     ) external onlyOwner {
         DepositLocker._init(_releaseTimestamp, _slasher, _depositorsProxy);
         require(

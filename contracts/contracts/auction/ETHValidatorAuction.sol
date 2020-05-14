@@ -5,8 +5,7 @@ import "./DepositLocker.sol";
 import "./BaseValidatorAuction.sol";
 
 
-// TODO Remame to ETHValidator auction
-contract ValidatorAuction is BaseValidatorAuction {
+contract ETHValidatorAuction is BaseValidatorAuction {
     constructor(
         uint _startPriceInWei,
         uint _auctionDurationInDays,

@@ -8,7 +8,7 @@ import "./TokenValidatorAuction.sol";
 
 
 contract TestTokenValidatorAuction is TokenValidatorAuction {
-    constructor(DepositLocker _depositLocker, IERC20 _token)
+    constructor(TokenDepositLocker _depositLocker, IERC20 _token)
         public
         TokenValidatorAuction(100, 14, 50, 123, _depositLocker, _token)
     {}
