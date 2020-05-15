@@ -350,7 +350,7 @@ def install_signal_handler(signum, name, f, *args, **kwargs):
         logger.info(f"Received {signal.Signals(signum).name} signal.")
         f(*args, **kwargs)
 
-    gevent.signal(signum, handler)
+    gevent.signal_handler(signum, handler)
 
 
 def log_internal_state(recorder):
