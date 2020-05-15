@@ -161,6 +161,8 @@ contract DepositLocker is DepositLockerInterface, Ownable {
 
     /// Hooks for derived contracts to receive, transfer and burn the deposits
     function _receive(uint amount) internal;
+
     function _transfer(address payable recipient, uint amount) internal;
+
     function _burn(uint amount) internal;
 }

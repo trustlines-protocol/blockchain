@@ -7,7 +7,12 @@ from typing import Any, Optional
 import attr
 import eth_tester.exceptions
 import pytest
-from tests.conftest import AUCTION_DURATION_IN_DAYS, AUCTION_START_PRICE, TEST_PRICE
+
+# Keep AUCTION_DURATION_IN_DAYS and AUCTION_START_PRICE in sync with
+# conftest.py fixtures `auction_duration_in_days` and `auction_start_price`
+AUCTION_DURATION_IN_DAYS = 14
+AUCTION_START_PRICE = 10000 * 10 ** 18
+TEST_PRICE = 100
 
 TWO_WEEKS_IN_SECONDS = 14 * 24 * 60 * 60
 ONE_HOUR_IN_SECONDS = 60 * 60
@@ -110,6 +115,11 @@ class TestEnv:
         else:
             return self.web3.eth.getBalance(account)
 
+    def add_to_whitelist(self, whitelist, sender=None):
+        send_transaction_with_optional_sender(
+            self.auction.functions.addToWhitelist(whitelist), sender
+        )
+
 
 def send_transaction_with_optional_sender(transaction, sender=None):
     transaction_options = {"from": sender} if sender else {}
@@ -204,6 +214,93 @@ def testenv_real_price_auction(
     )
 
 
+@pytest.fixture(
+    scope="session", params=["ETHValidatorAuction", "TokenValidatorAuction"]
+)
+def testenv_almost_filled_real_price_auction(
+    request,
+    make_requested_testenv_for_contracts,
+    almost_filled_real_price_validator_auction_contract,
+    almost_filled_real_price_token_validator_auction_contract,
+    auctionnable_token_contract,
+) -> TestEnv:
+
+    return make_requested_testenv_for_contracts(
+        request=request,
+        eth_auction=almost_filled_real_price_validator_auction_contract,
+        token_auction=almost_filled_real_price_token_validator_auction_contract,
+        token=auctionnable_token_contract,
+    )
+
+
+@pytest.fixture(
+    scope="session", params=["ETHValidatorAuction", "TokenValidatorAuction"]
+)
+def testenv_not_initialized_deposit_locker(
+    request,
+    make_requested_testenv_for_contracts,
+    deploy_contract,
+    non_initialized_deposit_locker_contract_session,
+    auctionnable_token_contract,
+) -> TestEnv:
+    """return an initialized TestEnv instance"""
+    assert (
+        non_initialized_deposit_locker_contract_session.functions.initialized().call()
+        is False
+    )
+    start_price = 1_000
+    auction_duration = 14
+    min_participants = 10
+    max_participants = 100
+    eth_auction_contract = deploy_contract(
+        "ETHValidatorAuction",
+        constructor_args=(
+            start_price,
+            auction_duration,
+            min_participants,
+            max_participants,
+            non_initialized_deposit_locker_contract_session.address,
+        ),
+    )
+    token_auction_contract = deploy_contract(
+        "TokenValidatorAuction",
+        constructor_args=(
+            start_price,
+            auction_duration,
+            min_participants,
+            max_participants,
+            non_initialized_deposit_locker_contract_session.address,
+            auctionnable_token_contract.address,
+        ),
+    )
+
+    return make_requested_testenv_for_contracts(
+        request=request,
+        eth_auction=eth_auction_contract,
+        token_auction=token_auction_contract,
+        token=auctionnable_token_contract,
+    )
+
+
+@pytest.fixture(
+    scope="session", params=["ETHValidatorAuction", "TokenValidatorAuction"]
+)
+def testenv_no_whitelist_auction(
+    request,
+    make_requested_testenv_for_contracts,
+    no_whitelist_eth_validator_auction_contract,
+    no_whitelist_token_validator_auction_contract,
+    auctionnable_token_contract,
+) -> TestEnv:
+
+    return make_requested_testenv_for_contracts(
+        request=request,
+        eth_auction=no_whitelist_eth_validator_auction_contract,
+        token_auction=no_whitelist_token_validator_auction_contract,
+        token=auctionnable_token_contract,
+    )
+
+
 @pytest.fixture(scope="session")
 def make_requested_testenv_for_contracts(web3):
     def make_testenv(*, request, eth_auction, token_auction, token) -> TestEnv:
@@ -239,29 +336,10 @@ def test_cannot_bid_when_not_started(testenv, accounts):
 
 
 def test_auction_start_deposit_not_init(
-    deploy_contract, non_initialized_deposit_locker_contract_session
+    testenv_not_initialized_deposit_locker: TestEnv
 ):
-    start_price = 1_000
-    auction_duration = 14
-    min_participants = 10
-    max_participants = 100
-    contract = deploy_contract(
-        "BaseValidatorAuction",
-        constructor_args=(
-            start_price,
-            auction_duration,
-            min_participants,
-            max_participants,
-            non_initialized_deposit_locker_contract_session.address,
-        ),
-    )
-    assert (
-        non_initialized_deposit_locker_contract_session.functions.initialized().call()
-        is False
-    )
-
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        contract.functions.startAuction().transact()
+        testenv_not_initialized_deposit_locker.start_auction()
 
 
 def test_auction_start(testenv, accounts, web3):
@@ -424,25 +502,28 @@ def test_send_bids_to_locker_almost_filled_auction(
 
 
 @pytest.mark.slow
-def test_withdraw_overbid(testenv_almost_filled_auction: TestEnv, accounts):
+def test_withdraw_overbid(
+    testenv_almost_filled_real_price_auction: TestEnv, accounts, chain
+):
+    # make the test bid, which is the second to last to close the auction
+    value_to_bid = AUCTION_START_PRICE
+    testenv_almost_filled_real_price_auction.bid(accounts[1], value_to_bid)
 
-    value_to_bid = 1234
+    # make the closing auction bid
+    # we cannot use this bid for testing withdraw since for token auctions, there will be nothing to withdraw
+    # The bid value needs to have changed so we need to move to the future
+    chain.time_travel(int(time.time()) + 10000)
+    chain.mine_block()
+    testenv_almost_filled_real_price_auction.bid(accounts[2], value_to_bid)
 
-    testenv_almost_filled_auction.bid(accounts[1], value_to_bid)
-    testenv_almost_filled_auction.deposit_bids()
+    testenv_almost_filled_real_price_auction.deposit_bids()
 
-    pre_balance = testenv_almost_filled_auction.balance_of(accounts[1])
+    pre_balance = testenv_almost_filled_real_price_auction.balance_of(accounts[1])
+    testenv_almost_filled_real_price_auction.withdraw(accounts[1])
+    closing_price = testenv_almost_filled_real_price_auction.lowest_slot_price
+    post_balance = testenv_almost_filled_real_price_auction.balance_of(accounts[1])
 
-    testenv_almost_filled_auction.withdraw(accounts[1])
-    closing_price = testenv_almost_filled_auction.lowest_slot_price
-
-    post_balance = testenv_almost_filled_auction.balance_of(accounts[1])
-
-    if testenv_almost_filled_auction.use_token:
-        # For a token auction, the auction always takes current price as bid
-        assert post_balance - pre_balance == TEST_PRICE - closing_price
-    else:
-        assert post_balance - pre_balance == value_to_bid - closing_price
+    assert post_balance - pre_balance == value_to_bid - closing_price
 
 
 def test_cannot_withdraw_too_soon(testenv_started_auction: TestEnv, accounts):
@@ -453,14 +534,26 @@ def test_cannot_withdraw_too_soon(testenv_started_auction: TestEnv, accounts):
 
 
 @pytest.mark.slow
-def test_cannot_withdraw_twice(testenv_almost_filled_auction: TestEnv, accounts):
+def test_cannot_withdraw_twice(
+    testenv_almost_filled_real_price_auction: TestEnv, accounts, chain
+):
 
-    testenv_almost_filled_auction.bid(accounts[1], 1234)
-    testenv_almost_filled_auction.deposit_bids()
-    testenv_almost_filled_auction.withdraw(accounts[1])
+    # make the test bid, which is the second to last to close the auction
+    value_to_bid = AUCTION_START_PRICE
+    testenv_almost_filled_real_price_auction.bid(accounts[1], value_to_bid)
 
+    # make the closing auction bid
+    # we cannot use this bid for testing withdraw since for token auctions, there will be nothing to withdraw
+    # The bid value needs to have changed so we need to move to the future
+    chain.time_travel(int(time.time()) + 10000)
+    chain.mine_block()
+    testenv_almost_filled_real_price_auction.bid(accounts[2], value_to_bid)
+
+    testenv_almost_filled_real_price_auction.deposit_bids()
+
+    testenv_almost_filled_real_price_auction.withdraw(accounts[1])
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        testenv_almost_filled_auction.withdraw(accounts[1])
+        testenv_almost_filled_real_price_auction.withdraw(accounts[1])
 
 
 def test_withdraw_auction_failed(testenv_started_auction: TestEnv, accounts, chain):
@@ -625,15 +718,13 @@ def test_event_auction_ended(testenv_almost_filled_auction: TestEnv, accounts, w
     assert event["lowestSlotPrice"] == TEST_PRICE
 
 
-def test_event_whitelist(no_whitelist_base_validator_auction_contract, whitelist, web3):
+def test_event_whitelist(testenv_no_whitelist_auction: TestEnv, whitelist, web3):
 
-    no_whitelist_base_validator_auction_contract.functions.addToWhitelist(
-        whitelist
-    ).transact()
+    testenv_no_whitelist_auction.add_to_whitelist(whitelist)
 
     latest_block_number = web3.eth.blockNumber
 
-    events = no_whitelist_base_validator_auction_contract.events.AddressWhitelisted.createFilter(
+    events = testenv_no_whitelist_auction.auction.events.AddressWhitelisted.createFilter(
         fromBlock=latest_block_number
     ).get_all_entries()
 
@@ -676,6 +767,15 @@ def pytest_generate_tests(metafunc):
         and "python_price" in metafunc.fixturenames
     ):
         metafunc.parametrize(["hours_since_start", "python_price"], arg_values)
+
+
+def test_verify_auction_duration_in_days_value(
+    auction_duration_in_days, auction_start_price
+):
+    # It is easier to use a const than a fixture to generate the tests auction price
+    # But we still have to ensure the fixture and const match
+    assert auction_duration_in_days == AUCTION_DURATION_IN_DAYS
+    assert auction_start_price == AUCTION_START_PRICE
 
 
 @pytest.mark.slow
