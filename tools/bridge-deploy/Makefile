@@ -10,7 +10,7 @@ lint: install-requirements
 format:
 	$(VIRTUAL_ENV)/bin/black src tests setup.py
 
-test: install-requirements compile
+test: install compile
 	$(VIRTUAL_ENV)/bin/pytest tests
 
 compile: .installed .compiled

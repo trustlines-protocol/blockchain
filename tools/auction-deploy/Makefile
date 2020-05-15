@@ -3,7 +3,7 @@ VIRTUAL_ENV ?= $(TOP_LEVEL)/venv
 CONTRACTS_DIRECTORY=$(TOP_LEVEL)/contracts/contracts
 
 lint: install
-	$(VIRTUAL_ENV)/bin/flake8 src tests setup.py
+	$(VIRTUAL_ENV)/bin/flake8 --config $(TOP_LEVEL)/.flake8 src tests setup.py
 	$(VIRTUAL_ENV)/bin/black --check src tests setup.py
 	$(VIRTUAL_ENV)/bin/mypy src tests setup.py --ignore-missing-imports
 

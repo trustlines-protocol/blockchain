@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Mapping, Optional
 
 import toml
 from eth_keys.constants import SECPK1_N
@@ -25,8 +25,14 @@ class LoggingField(fields.Mapping):
     def _serialize(self, value: dict, attr: str, obj: Any, **kwargs) -> str:
         return super()._serialize(value, attr, obj, **kwargs)
 
-    def _deserialize(self, value: Any, attr: str, obj: Any, **kwargs) -> bytes:
-        deserialized = super()._deserialize(value, attr, obj, **kwargs)
+    def _deserialize(
+        self,
+        value: Any,
+        attr: Optional[str],
+        data: Optional[Mapping[str, Any]],
+        **kwargs,
+    ) -> Mapping:
+        deserialized = super()._deserialize(value, attr, data, **kwargs)
         return merge(FORCED_LOGGING_CONFIG, deserialized)
 
 
@@ -34,7 +40,13 @@ class AddressField(fields.Field):
     def _serialize(self, value: bytes, attr: str, obj: Any, **kwargs) -> str:
         return to_checksum_address(value)
 
-    def _deserialize(self, value: Any, attr: str, obj: Any, **kwargs) -> bytes:
+    def _deserialize(
+        self,
+        value: Any,
+        attr: Optional[str],
+        data: Optional[Mapping[str, Any]],
+        **kwargs,
+    ) -> bytes:
         if not isinstance(value, str) or not is_checksum_address(value):
             raise ValidationError(
                 f"{attr} must be a checksum formatted address, but got {value}"
@@ -46,7 +58,13 @@ class PrivateKeyField(fields.Field):
     def _serialize(self, value: bytes, attr: str, obj: Any, **kwargs) -> str:
         return encode_hex(value)
 
-    def _deserialize(self, value: Any, attr: str, obj: Any, **kwargs) -> bytes:
+    def _deserialize(
+        self,
+        value: Any,
+        attr: Optional[str],
+        data: Optional[Mapping[str, Any]],
+        **kwargs,
+    ) -> bytes:
         if not isinstance(value, str) or not is_hex(value) or not is_0x_prefixed(value):
             raise ValidationError(
                 f"{attr} must be a 0x prefixed hex string, but got {value}"

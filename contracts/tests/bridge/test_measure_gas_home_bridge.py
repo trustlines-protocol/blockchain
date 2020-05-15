@@ -10,7 +10,7 @@ minimal_number_of_validators = 50
 maximal_number_of_validators = 123
 
 # Keep in sync with CONFIRMATION_TRANSACTION_GAS_LIMIT in bridge/constants.py
-maximal_allowed_gas_usage = 500_000
+maximal_allowed_gas_usage = 650_000
 
 
 @pytest.fixture(params=[maximal_number_of_validators, minimal_number_of_validators])

@@ -6,6 +6,7 @@ import tenacity
 from eth_keys.datatypes import PrivateKey
 from eth_utils import is_checksum_address, to_checksum_address
 from gevent.queue import Queue
+from web3 import types as web3types
 from web3.contract import Contract
 from web3.datastructures import AttributeDict
 from web3.exceptions import TransactionNotFound
@@ -60,7 +61,7 @@ class ConfirmationSender:
         transfer_event_queue: Queue,
         home_bridge_contract: Contract,
         private_key: bytes,
-        gas_price: int,
+        gas_price: web3types.Wei,
         max_reorg_depth: int,
         pending_transaction_queue: Queue,
         sanity_check_transfer: Callable,
@@ -152,7 +153,7 @@ class ConfirmationSender:
     run = send_confirmation_transactions
 
     def prepare_confirmation_transaction(
-        self, transfer_event, nonce: int, chain_id: int
+        self, transfer_event, nonce: web3types.Nonce, chain_id: int
     ):
         transfer_hash = compute_transfer_hash(transfer_event)
         transaction_hash = transfer_event.transactionHash
@@ -180,7 +181,7 @@ class ConfirmationSender:
             {
                 "gasPrice": self.gas_price,
                 "nonce": nonce,
-                "gas": CONFIRMATION_TRANSACTION_GAS_LIMIT,
+                "gas": CONFIRMATION_TRANSACTION_GAS_LIMIT,  # type: ignore
                 "chainId": chain_id,
             }
         )

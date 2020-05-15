@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 from eth_typing import Hash32
 from eth_utils import from_wei, is_same_address
@@ -104,7 +104,7 @@ class TransferRecorder:
         sort_events(confirmation_tasks)
         return confirmation_tasks
 
-    def _apply_web3_event(self, event: AttributeDict) -> None:
+    def _apply_web3_event(self, event: Any) -> None:
         event_name = event.event
 
         if event_name == TRANSFER_EVENT_NAME:

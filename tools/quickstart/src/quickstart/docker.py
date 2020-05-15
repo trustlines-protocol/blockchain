@@ -189,7 +189,7 @@ def update_and_start(
                         f"Command {' '.join(called_process_error.cmd)} failed with exit code "
                         f"{called_process_error.returncode}."
                     ),
-                    fill(f"Captured stderr:"),
+                    fill("Captured stderr:"),
                     fill(f"{called_process_error.stderr}"),
                 )
             )
@@ -200,7 +200,7 @@ def update_and_start(
             [
                 "",
                 "Congratulations!",
-                f"All services are running as docker container in the background.",
+                "All services are running as docker container in the background.",
                 f"The configuration has been written to the sub-folder: {base_dir}",
             ]
         )

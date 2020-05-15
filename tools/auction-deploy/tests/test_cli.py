@@ -134,7 +134,7 @@ def deposit_pending_auction(
 
 def test_cli_release_date_option(runner):
     deploy_result = runner.invoke(
-        main, args=f"deploy --release-date '2033-05-18 03:33:21' --jsonrpc test"
+        main, args="deploy --release-date '2033-05-18 03:33:21' --jsonrpc test"
     )
     assert deploy_result.exception is None
     assert deploy_result.exit_code == 0
