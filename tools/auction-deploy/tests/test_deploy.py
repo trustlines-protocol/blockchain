@@ -45,6 +45,7 @@ def test_deploy_contracts(web3, auction_options: AuctionOptions):
 
     assert deployed_contracts.locker.functions.initialized().call() is False
 
+    assert deployed_contracts.slasher is not None
     assert deployed_contracts.slasher.functions.initialized().call() is False
 
 

@@ -1,9 +1,9 @@
 # boot the main program, let gevent do it's monkeypatching and setup
 # a greenlet aware custom logger class
 
-from gevent import monkey  # isort:skip
-
-monkey.patch_all()  # noqa: E402 isort:skip
+# fmt: off
+from gevent import monkey; monkey.patch_all()  # noqa: E402, E702 isort:skip
+# fmt: on
 
 import logging
 import os

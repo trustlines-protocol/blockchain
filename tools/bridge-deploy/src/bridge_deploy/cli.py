@@ -35,7 +35,7 @@ def validate_percentage_value(ctx, param, value):
 
     else:
         raise click.BadParameter(
-            f"The percentage value is not in the valid range of 0 to 100"
+            "The percentage value is not in the valid range of 0 to 100"
         )
 
 

@@ -1,4 +1,4 @@
-from typing import Dict, NamedTuple, Sequence
+from typing import Dict, NamedTuple, Optional, Sequence
 
 from deploy_tools.deploy import (
     deploy_compiled_contract,
@@ -21,7 +21,7 @@ class AuctionOptions(NamedTuple):
 
 class DeployedAuctionContracts(NamedTuple):
     locker: Contract
-    slasher: Contract
+    slasher: Optional[Contract]
     auction: Contract
 
 
@@ -99,6 +99,9 @@ def initialize_auction_contracts(
 ) -> None:
     if transaction_options is None:
         transaction_options = {}
+
+    if contracts.slasher is None:
+        raise RuntimeError("Slasher contract not set")
 
     deposit_init = contracts.locker.functions.init(
         release_timestamp, contracts.slasher.address, contracts.auction.address

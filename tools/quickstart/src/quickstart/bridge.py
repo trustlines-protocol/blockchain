@@ -152,8 +152,8 @@ def read_json_rpc_url(bridge_config_file):
         except (ConnectionError, HTTPError, ValueError) as e:
             click.echo("Error: \n" + fill(str(e)))
             choice = click.confirm(
-                f"We could not properly connect to the given url\n"
-                f"Do you want to proceed anyways?\n",
+                "We could not properly connect to the given url\n"
+                "Do you want to proceed anyways?\n",
                 default=False,
             )
             if choice:

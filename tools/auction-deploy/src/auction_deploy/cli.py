@@ -151,11 +151,11 @@ def deploy(
 
     if release_date is not None and release_timestamp is not None:
         raise click.BadParameter(
-            f"Both --release-date and --release-timestamp have been specified"
+            "Both --release-date and --release-timestamp have been specified"
         )
     if release_date is None and release_timestamp is None:
         raise click.BadParameter(
-            f"Please specify a release date with --release-date or --release-timestamp"
+            "Please specify a release date with --release-date or --release-timestamp"
         )
 
     if release_date is not None:
