@@ -7,7 +7,7 @@ import "./BaseValidatorAuction.sol";
 
 
 contract TokenValidatorAuction is BaseValidatorAuction {
-    IERC20 public auctionnedToken;
+    IERC20 public bidToken;
 
     constructor(
         uint _startPriceInWei,
@@ -15,7 +15,7 @@ contract TokenValidatorAuction is BaseValidatorAuction {
         uint _minimalNumberOfParticipants,
         uint _maximalNumberOfParticipants,
         TokenDepositLocker _depositLocker,
-        IERC20 _auctionnedToken
+        IERC20 _bidToken
     )
         public
         BaseValidatorAuction(
@@ -26,20 +26,20 @@ contract TokenValidatorAuction is BaseValidatorAuction {
             _depositLocker
         )
     {
-        auctionnedToken = _auctionnedToken;
+        bidToken = _bidToken;
     }
 
     function _receiveBid(uint amount) internal {
         require(msg.value == 0, "Auction does not accept ETH for bidding");
-        auctionnedToken.transferFrom(msg.sender, address(this), amount);
+        bidToken.transferFrom(msg.sender, address(this), amount);
     }
 
     function _transfer(address payable recipient, uint amount) internal {
-        auctionnedToken.transfer(recipient, amount);
+        bidToken.transfer(recipient, amount);
     }
 
     function _deposit(uint slotPrice, uint totalValue) internal {
-        auctionnedToken.approve(address(depositLocker), totalValue);
+        bidToken.approve(address(depositLocker), totalValue);
         depositLocker.deposit(slotPrice);
     }
 
