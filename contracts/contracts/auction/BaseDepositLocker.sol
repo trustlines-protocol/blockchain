@@ -21,7 +21,7 @@ import "./DepositLockerInterface.sol";
   is left to be implemented in the derived contracts.
 */
 
-contract DepositLocker is DepositLockerInterface, Ownable {
+contract BaseDepositLocker is DepositLockerInterface, Ownable {
     bool public initialized = false;
     bool public deposited = false;
 

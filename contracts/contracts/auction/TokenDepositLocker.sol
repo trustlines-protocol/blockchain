@@ -1,6 +1,6 @@
 pragma solidity ^0.5.8;
 
-import "./DepositLocker.sol";
+import "./BaseDepositLocker.sol";
 import "../token/IERC20.sol";
 
 
@@ -10,7 +10,7 @@ import "../token/IERC20.sol";
   For more information see DepositLocker.sol
 */
 
-contract TokenDepositLocker is DepositLocker {
+contract TokenDepositLocker is BaseDepositLocker {
     IERC20 public token;
 
     function init(
@@ -19,7 +19,7 @@ contract TokenDepositLocker is DepositLocker {
         address _depositorsProxy,
         IERC20 _token
     ) external onlyOwner {
-        DepositLocker._init(_releaseTimestamp, _slasher, _depositorsProxy);
+        BaseDepositLocker._init(_releaseTimestamp, _slasher, _depositorsProxy);
         require(
             address(_token) != address(0),
             "Token contract can not be on the zero address!"
