@@ -3,6 +3,7 @@ pragma solidity ^0.5.8;
 import "../lib/Ownable.sol";
 import "./DepositLockerInterface.sol";
 
+
 /*
   The DepositLocker contract locks the deposits for all of the winning
   participants of the auction.
@@ -160,6 +161,8 @@ contract DepositLocker is DepositLockerInterface, Ownable {
 
     /// Hooks for derived contracts to receive, transfer and burn the deposits
     function _receive(uint amount) internal;
+
     function _transfer(address payable recipient, uint amount) internal;
+
     function _burn(uint amount) internal;
 }

@@ -44,7 +44,7 @@ def validate_date(ctx, param, value):
         ) from e
 
 
-# This has to be in sync with the AuctionStates in ValidatorAuction.sol
+# This has to be in sync with the AuctionStates in BaseValidatorAuction.sol
 class AuctionState(Enum):
     Deployed = 0
     Started = 1

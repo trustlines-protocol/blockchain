@@ -3,7 +3,8 @@ pragma solidity ^0.5.8;
 import "../lib/Ownable.sol";
 import "./DepositLocker.sol";
 
-contract ValidatorAuction is Ownable {
+
+contract BaseValidatorAuction is Ownable {
     // auction constants set on deployment
     uint public auctionDurationInDays;
     uint public startPrice;
@@ -90,7 +91,7 @@ contract ValidatorAuction is Ownable {
         );
         require(
             // To prevent overflows
-            _startPriceInWei < 10 ** 30,
+            _startPriceInWei < 10**30,
             "The start price is too big."
         );
 
@@ -122,10 +123,6 @@ contract ValidatorAuction is Ownable {
             "Auction has already ended."
         );
         uint slotPrice = currentPrice();
-        require(
-            msg.value >= slotPrice,
-            "Not enough ether was provided for bidding."
-        );
         require(whitelist[msg.sender], "The sender is not whitelisted.");
         require(!isSenderContract(), "The sender cannot be a contract.");
         require(
@@ -134,18 +131,20 @@ contract ValidatorAuction is Ownable {
         );
         require(bids[msg.sender] == 0, "The sender has already bid.");
 
-        bids[msg.sender] = msg.value;
+        uint bidAmount = _getBidAmount(slotPrice);
+        bids[msg.sender] = bidAmount;
         bidders.push(msg.sender);
         if (slotPrice < lowestSlotPrice) {
             lowestSlotPrice = slotPrice;
         }
 
         depositLocker.registerDepositor(msg.sender);
-        emit BidSubmitted(msg.sender, msg.value, slotPrice, now);
+        emit BidSubmitted(msg.sender, bidAmount, slotPrice, now);
 
         if (bidders.length == maximalNumberOfParticipants) {
             transitionToDepositPending();
         }
+        _receiveBid(bidAmount);
     }
 
     function startAuction() public onlyOwner stateIs(AuctionState.Deployed) {
@@ -162,9 +161,7 @@ contract ValidatorAuction is Ownable {
 
     function depositBids() public stateIs(AuctionState.DepositPending) {
         auctionState = AuctionState.Ended;
-        depositLocker.deposit.value(lowestSlotPrice * bidders.length)(
-            lowestSlotPrice
-        );
+        _deposit(lowestSlotPrice, lowestSlotPrice * bidders.length);
         emit AuctionEnded(closeTime, lowestSlotPrice, bidders.length);
     }
 
@@ -233,9 +230,8 @@ contract ValidatorAuction is Ownable {
         uint msSinceStart = 1000 * secondsSinceStart;
         uint relativeAuctionTime = msSinceStart / auctionDurationInDays;
         uint decayDivisor = 746571428571;
-        uint decay = relativeAuctionTime ** 3 / decayDivisor;
-        uint price = startPrice *
-            (1 + relativeAuctionTime) /
+        uint decay = relativeAuctionTime**3 / decayDivisor;
+        uint price = (startPrice * (1 + relativeAuctionTime)) /
             (1 + relativeAuctionTime + decay);
         return price;
     }
@@ -251,7 +247,7 @@ contract ValidatorAuction is Ownable {
 
         bids[msg.sender] = lowestSlotPrice;
 
-        msg.sender.transfer(valueToWithdraw);
+        _transfer(msg.sender, valueToWithdraw);
     }
 
     function withdrawAfterAuctionFailed()
@@ -264,7 +260,7 @@ contract ValidatorAuction is Ownable {
 
         bids[msg.sender] = 0;
 
-        msg.sender.transfer(valueToWithdraw);
+        _transfer(msg.sender, valueToWithdraw);
     }
 
     function transitionToDepositPending()
@@ -294,4 +290,13 @@ contract ValidatorAuction is Ownable {
         }
         return (size > 0);
     }
+
+    /// Hooks for derived contracts to process bids
+    function _receiveBid(uint amount) internal;
+
+    function _transfer(address payable recipient, uint amount) internal;
+
+    function _deposit(uint slotPrice, uint totalValue) internal;
+
+    function _getBidAmount(uint slotPrice) internal view returns (uint);
 }
