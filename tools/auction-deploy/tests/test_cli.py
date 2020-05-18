@@ -156,6 +156,16 @@ def test_cli_contract_parameters_set(runner):
     assert result.exit_code == 0
 
 
+def test_cli_deploy_token_auction(runner):
+    arbitrary_token_address = "0x" + "1234" * 10
+    result = runner.invoke(
+        main,
+        args=f"deploy --use-token --token-address {arbitrary_token_address} --release-timestamp 2000000000 --jsonrpc test",
+    )
+
+    assert result.exit_code == 0
+
+
 def test_cli_transaction_parameters_set(runner):
     result = runner.invoke(
         main,

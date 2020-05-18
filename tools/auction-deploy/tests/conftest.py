@@ -82,12 +82,13 @@ def release_timestamp(web3):
     return now + RELEASE_TIMESTAMP_OFFSET
 
 
-@pytest.fixture
-def auction_options(release_timestamp):
+@pytest.fixture(params=[None, "0x" + "1234" * 10])
+def auction_options(release_timestamp, request):
     start_price = 1
     auction_duration = 2
     minimal_number_of_participants = 3
     maximal_number_of_participants = 4
+    token_address = request.param
 
     contract_options = AuctionOptions(
         start_price=start_price,
@@ -95,6 +96,7 @@ def auction_options(release_timestamp):
         minimal_number_of_participants=minimal_number_of_participants,
         maximal_number_of_participants=maximal_number_of_participants,
         release_timestamp=release_timestamp,
+        token_address=token_address,
     )
 
     return contract_options

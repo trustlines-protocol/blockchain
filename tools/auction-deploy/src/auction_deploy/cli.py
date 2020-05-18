@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 
 import click
 import pendulum
@@ -113,6 +114,18 @@ def main():
     default=123,
 )
 @click.option(
+    "--use-token",
+    is_flag=True,
+    help="Whether to deploy a token validator auction or a regular eth auction",
+)
+@click.option(
+    "--token-address",
+    "token_address",
+    help="The address of the token used for bidding in the case of a token validator auction",
+    type=str,
+    required=False,
+)
+@click.option(
     "--release-timestamp",
     "release_timestamp",
     help="The release timestamp of the deposit locker",
@@ -139,6 +152,8 @@ def deploy(
     auction_duration: int,
     minimal_number_of_participants: int,
     maximal_number_of_participants: int,
+    use_token: bool,
+    token_address: Optional[str],
     release_timestamp: int,
     release_date: pendulum.DateTime,
     keystore: str,
@@ -148,6 +163,16 @@ def deploy(
     nonce: int,
     auto_nonce: bool,
 ) -> None:
+
+    if use_token and token_address is None:
+        raise click.BadParameter(
+            f"The flag `use-token` was provided, the token address must also be provided via `token-address`"
+        )
+    if token_address is not None and not use_token:
+        raise click.BadParameter(
+            f"A token address has been provided, "
+            f"please use the flag --use-token to confirm you want to deploy a token auction"
+        )
 
     if release_date is not None and release_timestamp is not None:
         raise click.BadParameter(
@@ -170,6 +195,7 @@ def deploy(
         minimal_number_of_participants,
         maximal_number_of_participants,
         release_timestamp,
+        token_address,
     )
 
     nonce = get_nonce(
@@ -191,6 +217,7 @@ def deploy(
         transaction_options=transaction_options,
         contracts=contracts,
         release_timestamp=release_timestamp,
+        token_address=token_address,
         private_key=private_key,
     )
 
