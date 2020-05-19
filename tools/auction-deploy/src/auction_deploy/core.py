@@ -1,4 +1,4 @@
-from typing import Dict, NamedTuple, Optional, Sequence
+from typing import Dict, NamedTuple, Optional, Sequence, Tuple
 
 from deploy_tools.deploy import (
     deploy_compiled_contract,
@@ -6,7 +6,9 @@ from deploy_tools.deploy import (
     load_contracts_json,
     send_function_call_transaction,
 )
+from eth_tester.exceptions import TransactionFailed
 from web3.contract import Contract
+from web3.exceptions import BadFunctionCallOutput
 
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -84,7 +86,7 @@ def deploy_auction_contracts(
     )
     increase_transaction_options_nonce(transaction_options)
 
-    auction_constructor_args = (
+    auction_constructor_args: Tuple = (
         auction_options.start_price,
         auction_options.auction_duration,
         auction_options.minimal_number_of_participants,
@@ -126,7 +128,7 @@ def initialize_auction_contracts(
     if contracts.slasher is None:
         raise RuntimeError("Slasher contract not set")
 
-    init_args = (
+    init_args: Tuple = (
         release_timestamp,
         contracts.slasher.address,
         contracts.auction.address,
@@ -179,6 +181,20 @@ def get_deployed_auction_contracts(
     )
 
     return deployed_auction_contracts
+
+
+def get_bid_token_address(web3, auction_address: str):
+    compiled_contracts = load_contracts_json(__name__)
+    auction_abi = compiled_contracts["TokenValidatorAuction"]["abi"]
+    auction = web3.eth.contract(address=auction_address, abi=auction_abi)
+    try:
+        return auction.functions.bidToken().call()
+    except BadFunctionCallOutput:
+        # Thrown by web3 when function does not exist on contract
+        return None
+    except TransactionFailed:
+        # Thrown by eth_tester when function does not exist on contract
+        return None
 
 
 def whitelist_addresses(

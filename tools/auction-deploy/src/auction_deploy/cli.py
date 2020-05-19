@@ -25,6 +25,7 @@ from auction_deploy.core import (
     ZERO_ADDRESS,
     AuctionOptions,
     deploy_auction_contracts,
+    get_bid_token_address,
     get_deployed_auction_contracts,
     initialize_auction_contracts,
     missing_whitelisted_addresses,
@@ -367,13 +368,16 @@ def status(auction_address, jsonrpc):
 
     # constants throughout auction
     duration_in_days = contracts.auction.functions.auctionDurationInDays().call()
-    start_price_in_eth = contracts.auction.functions.startPrice().call() / ETH_IN_WEI
+    start_price_in_biggest_unit = (
+        contracts.auction.functions.startPrice().call() / ETH_IN_WEI
+    )
     minimal_number_of_participants = (
         contracts.auction.functions.minimalNumberOfParticipants().call()
     )
     maximal_number_of_participants = (
         contracts.auction.functions.maximalNumberOfParticipants().call()
     )
+    bid_token_address = get_bid_token_address(web3, auction_address)
     locker_address = contracts.locker.address
     locker_initialized = contracts.locker.functions.initialized().call()
     locker_release_timestamp = contracts.locker.functions.releaseTimestamp().call()
@@ -413,7 +417,9 @@ def status(auction_address, jsonrpc):
         "The auction duration is:                " + str(duration_in_days) + " days"
     )
     click.echo(
-        "The starting price in eth is:           " + str(start_price_in_eth) + " eth"
+        "The starting price is:                  "
+        + str(start_price_in_biggest_unit)
+        + " ETH/TLN"
     )
     click.echo(
         "The minimal number of participants is:  " + str(minimal_number_of_participants)
@@ -421,6 +427,8 @@ def status(auction_address, jsonrpc):
     click.echo(
         "The maximal number of participants is:  " + str(maximal_number_of_participants)
     )
+    if bid_token_address is not None:
+        click.echo("The address of the bid token is:        " + str(bid_token_address))
     click.echo("The address of the locker contract is:  " + str(locker_address))
     click.echo("The locker initialized value is:        " + str(locker_initialized))
     if contracts.slasher is not None:
@@ -452,9 +460,9 @@ def status(auction_address, jsonrpc):
         click.echo(
             "The current price is:                   "
             + str(current_price_in_eth)
-            + " eth"
+            + " ETH/TLN"
         )
-    click.echo("The last slot price is:                  " + str(last_slot_price))
+    click.echo("The last slot price is:                 " + str(last_slot_price))
     click.echo(
         "Deposits will be locked until:          "
         + format_timestamp(locker_release_timestamp)

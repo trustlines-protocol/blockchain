@@ -7,7 +7,6 @@ repos:
     hooks:
       - id: isort
         args: ["--ignore-whitespace", "--settings-path", "./", "--recursive"]
-        #exclude: ^tools/auction-deploy/tests/conftest.py
 
 - repo: https://github.com/trustlines-protocol/more-pre-commit-hooks.git
   rev: 1edc6d3ab9380e17eb01a601551283cf7bc23f2b

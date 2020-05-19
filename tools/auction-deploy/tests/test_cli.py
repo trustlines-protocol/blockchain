@@ -44,7 +44,6 @@ def deployed_auction_address(auction_options, runner, use_token, token_contract)
 
     deploy_result = runner.invoke(main, args=argument)
     if deploy_result.exception is not None:
-        print(deploy_result.output)
         raise RuntimeError(
             "Error while trying to run auction-deploy"
         ) from deploy_result.exception
@@ -122,6 +121,7 @@ def deposit_pending_auction(
     contracts,
     token_contract,
     auction_options,
+    use_token,
     ether_owning_whitelist,
     ensure_auction_state,
 ):
@@ -137,14 +137,14 @@ def deposit_pending_auction(
         token_contract,
         ether_owning_whitelist[0],
         bid_value,
-        auction_options.token_address is not None,
+        use_token,
     )
     bid(
         contracts.auction,
         token_contract,
         ether_owning_whitelist[1],
         bid_value,
-        auction_options.token_address is not None,
+        use_token,
     )
 
     ensure_auction_state(AuctionState.DepositPending)
