@@ -10,6 +10,8 @@ contracts = [
     "TokenDepositLocker",
     "TokenValidatorAuction",
     "TrustlinesNetworkToken",
+    "BaseValidatorAuction",
+    "BaseDepositLocker",
 ]
 
 

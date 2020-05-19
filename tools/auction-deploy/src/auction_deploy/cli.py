@@ -166,12 +166,12 @@ def deploy(
 
     if use_token and token_address is None:
         raise click.BadParameter(
-            f"The flag `use-token` was provided, the token address must also be provided via `token-address`"
+            "The flag `use-token` was provided, the token address must also be provided via `token-address`"
         )
     if token_address is not None and not use_token:
         raise click.BadParameter(
-            f"A token address has been provided, "
-            f"please use the flag --use-token to confirm you want to deploy a token auction"
+            "A token address has been provided, "
+            "please use the flag --use-token to confirm you want to deploy a token auction"
         )
 
     if release_date is not None and release_timestamp is not None:

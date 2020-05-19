@@ -159,8 +159,8 @@ def get_deployed_auction_contracts(
 
     compiled_contracts = load_contracts_json(__name__)
 
-    auction_abi = compiled_contracts["ETHValidatorAuction"]["abi"]
-    locker_abi = compiled_contracts["ETHDepositLocker"]["abi"]
+    auction_abi = compiled_contracts["BaseValidatorAuction"]["abi"]
+    locker_abi = compiled_contracts["BaseDepositLocker"]["abi"]
     slasher_abi = compiled_contracts["ValidatorSlasher"]["abi"]
 
     auction = web3.eth.contract(address=auction_address, abi=auction_abi)
