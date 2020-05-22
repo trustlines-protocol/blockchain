@@ -6,7 +6,6 @@ from deploy_tools.deploy import (
     load_contracts_json,
     send_function_call_transaction,
 )
-from eth_tester.exceptions import TransactionFailed
 from web3.contract import Contract
 from web3.exceptions import BadFunctionCallOutput
 
@@ -191,9 +190,6 @@ def get_bid_token_address(web3, auction_address: str):
         return auction.functions.bidToken().call()
     except BadFunctionCallOutput:
         # Thrown by web3 when function does not exist on contract
-        return None
-    except TransactionFailed:
-        # Thrown by eth_tester when function does not exist on contract
         return None
 
 

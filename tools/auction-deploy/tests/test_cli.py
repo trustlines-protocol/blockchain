@@ -4,8 +4,10 @@ import re
 import pytest
 from click.testing import CliRunner
 from deploy_tools.cli import test_json_rpc, test_provider
+from eth_tester.exceptions import TransactionFailed
 from eth_utils import to_checksum_address
 
+import auction_deploy.core
 from auction_deploy.cli import AuctionState, main
 from auction_deploy.core import (
     DeployedAuctionContracts,
@@ -284,6 +286,17 @@ def test_cli_deposit_bids(runner, deposit_pending_auction, ensure_auction_state)
     ensure_auction_state(AuctionState.Ended)
 
 
+@pytest.fixture()
+def replace_bad_function_call_output():
+    # TransactionFailed is raised by eth_tester
+    # when BadFunctionCallOutput would be raised by web3 in `get_bid_token_address`
+    bad_function_call = auction_deploy.core.BadFunctionCallOutput
+    auction_deploy.core.BadFunctionCallOutput = TransactionFailed
+    yield
+    auction_deploy.core.BadFunctionCallOutput = bad_function_call
+
+
+@pytest.mark.usefixtures("replace_bad_function_call_output")
 def test_cli_auction_status(runner, deployed_auction_address):
 
     result = runner.invoke(
@@ -292,6 +305,7 @@ def test_cli_auction_status(runner, deployed_auction_address):
     assert result.exit_code == 0
 
 
+@pytest.mark.usefixtures("replace_bad_function_call_output")
 def test_cli_auction_status_locker_not_init(runner, contracts_not_initialized):
 
     result = runner.invoke(
@@ -340,6 +354,7 @@ def test_cli_check_whitelist_all_whitelisted(
     assert result.output == f"All {len(whitelist)} addresses have been whitelisted\n"
 
 
+@pytest.mark.usefixtures("replace_bad_function_call_output")
 def test_cli_not_checksummed_address(runner, deployed_auction_address):
 
     address = deployed_auction_address.lower()
