@@ -2,14 +2,14 @@
 
 """Run pytest with gevent's monkeypatching applied"""
 
-from gevent import monkey  # isort:skip
+# fmt: off
+from gevent import monkey; monkey.patch_all()  # noqa: E402, E702 isort:skip
+# fmt: on
 
-monkey.patch_all()  # noqa: E402 isort:skip
+import re
+import sys
 
-import re  # noqa: E402, E702 isort:skip
-import sys  # noqa: E402, E702 isort:skip
-
-from pytest import main  # noqa: E402, E702 isort:skip
+from pytest import main
 
 if __name__ == "__main__":
     sys.argv[0] = re.sub(r"(-script\.pyw?|\.exe)?$", "", sys.argv[0])

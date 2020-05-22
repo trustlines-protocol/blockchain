@@ -1,30 +1,20 @@
-import json
-import os
-
+# fmt: off
 # increase eth_tester's GAS_LIMIT
 # Otherwise we can't whitelist enough addresses for the validator auction in one transaction
 # This needs to be at the top of external imports when imported modules import eth_tester themselves
-import eth_tester  # noqa: E402, E702 isort:skip
+import eth_tester; assert eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT < 8 * 10 ** 6; eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT = 8 * 10 ** 6  # noqa: E402, E702 isort:skip
+# fmt: on
 
-assert (
-    eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT < 8 * 10 ** 6
-)  # noqa: E402, E702 isort:skip
-eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT = (
-    8 * 10 ** 6
-)  # noqa: E402, E702 isort:skip
+import json
+import os
 
+import pytest
+from deploy_tools.cli import test_json_rpc
+from deploy_tools.deploy import deploy_compiled_contract, load_contracts_json
+from eth_keyfile import create_keyfile_json
+from eth_utils import to_canonical_address
 
-import pytest  # noqa: E402, E702 isort:skip
-from deploy_tools.cli import test_json_rpc  # noqa: E402, E702 isort:skip
-from deploy_tools.deploy import (  # noqa: E402, E702 isort:skip
-    deploy_compiled_contract,  # noqa: E402, E702 isort:skip
-    load_contracts_json,  # noqa: E402, E702 isort:skip
-)  # noqa: E402, E702 isort:skip
-from eth_keyfile import create_keyfile_json  # noqa: E402, E702 isort:skip
-from eth_utils import to_canonical_address  # noqa: E402, E702 isort:skip
-
-from auction_deploy.core import AuctionOptions  # noqa: E402, E702 isort:skip
-
+from auction_deploy.core import AuctionOptions
 
 RELEASE_TIMESTAMP_OFFSET = 3600 * 24 * 180
 
