@@ -3,7 +3,16 @@ Usage: python pack_contracts.py input_contracts.json output_contracts.json
 """
 import json
 
-contracts = ["ETHValidatorAuction", "ETHDepositLocker", "ValidatorSlasher"]
+contracts = [
+    "ETHValidatorAuction",
+    "ETHDepositLocker",
+    "ValidatorSlasher",
+    "TokenDepositLocker",
+    "TokenValidatorAuction",
+    "TrustlinesNetworkToken",
+    "BaseValidatorAuction",
+    "BaseDepositLocker",
+]
 
 
 def pack_contracts(input_filename, output_filename):

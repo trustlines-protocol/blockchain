@@ -1,6 +1,6 @@
 pragma solidity ^0.5.8;
 
-import "./DepositLocker.sol";
+import "./BaseDepositLocker.sol";
 
 
 /*
@@ -9,13 +9,13 @@ import "./DepositLocker.sol";
   For more information see DepositLocker.sol
 */
 
-contract ETHDepositLocker is DepositLocker {
+contract ETHDepositLocker is BaseDepositLocker {
     function init(
         uint _releaseTimestamp,
         address _slasher,
         address _depositorsProxy
     ) external onlyOwner {
-        DepositLocker._init(_releaseTimestamp, _slasher, _depositorsProxy);
+        BaseDepositLocker._init(_releaseTimestamp, _slasher, _depositorsProxy);
     }
 
     function _receive(uint amount) internal {

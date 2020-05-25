@@ -1,7 +1,7 @@
 pragma solidity ^0.5.8;
 
 import "../lib/Ownable.sol";
-import "./DepositLocker.sol";
+import "./BaseDepositLocker.sol";
 
 
 contract BaseValidatorAuction is Ownable {
@@ -12,7 +12,7 @@ contract BaseValidatorAuction is Ownable {
     uint public maximalNumberOfParticipants;
 
     AuctionState public auctionState;
-    DepositLocker public depositLocker;
+    BaseDepositLocker public depositLocker;
     mapping(address => bool) public whitelist;
     mapping(address => uint) public bids;
     address[] public bidders;
@@ -67,7 +67,7 @@ contract BaseValidatorAuction is Ownable {
         uint _auctionDurationInDays,
         uint _minimalNumberOfParticipants,
         uint _maximalNumberOfParticipants,
-        DepositLocker _depositLocker
+        BaseDepositLocker _depositLocker
     ) public {
         require(
             _auctionDurationInDays > 0,

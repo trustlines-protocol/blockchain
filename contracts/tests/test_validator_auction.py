@@ -336,7 +336,7 @@ def test_cannot_bid_when_not_started(testenv, accounts):
 
 
 def test_auction_start_deposit_not_init(
-    testenv_not_initialized_deposit_locker: TestEnv
+    testenv_not_initialized_deposit_locker: TestEnv,
 ):
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         testenv_not_initialized_deposit_locker.start_auction()

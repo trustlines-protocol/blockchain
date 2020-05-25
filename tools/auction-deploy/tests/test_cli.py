@@ -4,8 +4,10 @@ import re
 import pytest
 from click.testing import CliRunner
 from deploy_tools.cli import test_json_rpc, test_provider
+from eth_tester.exceptions import TransactionFailed
 from eth_utils import to_checksum_address
 
+import auction_deploy.core
 from auction_deploy.cli import AuctionState, main
 from auction_deploy.core import (
     DeployedAuctionContracts,
@@ -29,17 +31,20 @@ def extract_auction_address(output):
 
 
 @pytest.fixture()
-def deployed_auction_address(runner):
+def deployed_auction_address(auction_options, runner, use_token, token_contract):
     """Deploys an auction and return its address"""
-    number_of_participants = 2
-    starting_price = 1
 
-    deploy_result = runner.invoke(
-        main,
-        args=f"deploy --release-timestamp 2000000000 --max-participants {number_of_participants}"
-        f" --min-participants {number_of_participants - 1}"
-        f" --start-price {starting_price} --jsonrpc test",
+    argument = (
+        f"deploy --release-timestamp 2000000000 --max-participants "
+        f"{auction_options.maximal_number_of_participants} "
+        f"--min-participants {auction_options.minimal_number_of_participants}"
+        f" --start-price {auction_options.start_price} --jsonrpc test"
     )
+
+    if use_token:
+        argument += f" --use-token --token-address {auction_options.token_address}"
+
+    deploy_result = runner.invoke(main, args=argument)
     if deploy_result.exception is not None:
         raise RuntimeError(
             "Error while trying to run auction-deploy"
@@ -101,9 +106,14 @@ def ensure_auction_state(contracts):
     return ensure_state
 
 
-@pytest.fixture
-def ether_owning_whitelist(accounts):
-    return [accounts[1], accounts[2]]
+def bid(auction_contract, token_contract, sender, bid_value, use_token):
+    if use_token:
+        token_contract.functions.approve(auction_contract.address, bid_value).transact(
+            {"from": sender}
+        )
+        auction_contract.functions.bid().transact({"from": sender})
+    else:
+        auction_contract.functions.bid().transact({"from": sender, "value": bid_value})
 
 
 @pytest.fixture
@@ -111,6 +121,9 @@ def deposit_pending_auction(
     runner,
     deployed_auction_address,
     contracts,
+    token_contract,
+    auction_options,
+    use_token,
     ether_owning_whitelist,
     ensure_auction_state,
 ):
@@ -121,11 +134,19 @@ def deposit_pending_auction(
 
     bid_value = contracts.auction.functions.currentPrice().call()
 
-    contracts.auction.functions.bid().transact(
-        {"from": ether_owning_whitelist[0], "value": bid_value}
+    bid(
+        contracts.auction,
+        token_contract,
+        ether_owning_whitelist[0],
+        bid_value,
+        use_token,
     )
-    contracts.auction.functions.bid().transact(
-        {"from": ether_owning_whitelist[1], "value": bid_value}
+    bid(
+        contracts.auction,
+        token_contract,
+        ether_owning_whitelist[1],
+        bid_value,
+        use_token,
     )
 
     ensure_auction_state(AuctionState.DepositPending)
@@ -151,6 +172,16 @@ def test_cli_contract_parameters_set(runner):
         main,
         args="deploy --start-price 123 --duration 4 --max-participants 567 --min-participants 456 "
         "--release-timestamp 2000000000 --jsonrpc test",
+    )
+
+    assert result.exit_code == 0
+
+
+def test_cli_deploy_token_auction(runner):
+    arbitrary_token_address = "0x" + "1234" * 10
+    result = runner.invoke(
+        main,
+        args=f"deploy --use-token --token-address {arbitrary_token_address} --release-timestamp 2000000000 --jsonrpc test",
     )
 
     assert result.exit_code == 0
@@ -255,6 +286,17 @@ def test_cli_deposit_bids(runner, deposit_pending_auction, ensure_auction_state)
     ensure_auction_state(AuctionState.Ended)
 
 
+@pytest.fixture()
+def replace_bad_function_call_output():
+    # TransactionFailed is raised by eth_tester
+    # when BadFunctionCallOutput would be raised by web3 in `get_bid_token_address`
+    bad_function_call = auction_deploy.core.BadFunctionCallOutput
+    auction_deploy.core.BadFunctionCallOutput = TransactionFailed
+    yield
+    auction_deploy.core.BadFunctionCallOutput = bad_function_call
+
+
+@pytest.mark.usefixtures("replace_bad_function_call_output")
 def test_cli_auction_status(runner, deployed_auction_address):
 
     result = runner.invoke(
@@ -263,6 +305,7 @@ def test_cli_auction_status(runner, deployed_auction_address):
     assert result.exit_code == 0
 
 
+@pytest.mark.usefixtures("replace_bad_function_call_output")
 def test_cli_auction_status_locker_not_init(runner, contracts_not_initialized):
 
     result = runner.invoke(
@@ -311,6 +354,7 @@ def test_cli_check_whitelist_all_whitelisted(
     assert result.output == f"All {len(whitelist)} addresses have been whitelisted\n"
 
 
+@pytest.mark.usefixtures("replace_bad_function_call_output")
 def test_cli_not_checksummed_address(runner, deployed_auction_address):
 
     address = deployed_auction_address.lower()

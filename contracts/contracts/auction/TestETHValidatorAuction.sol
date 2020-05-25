@@ -8,7 +8,7 @@ import "./ETHValidatorAuction.sol";
 
 
 contract TestETHValidatorAuction is ETHValidatorAuction {
-    constructor(DepositLocker _depositLocker)
+    constructor(BaseDepositLocker _depositLocker)
         public
         ETHValidatorAuction(100, 14, 50, 123, _depositLocker)
     {}

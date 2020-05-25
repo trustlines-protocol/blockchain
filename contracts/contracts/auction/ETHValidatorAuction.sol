@@ -1,7 +1,7 @@
 pragma solidity ^0.5.8;
 
 import "../lib/Ownable.sol";
-import "./DepositLocker.sol";
+import "./BaseDepositLocker.sol";
 import "./BaseValidatorAuction.sol";
 
 
@@ -11,7 +11,7 @@ contract ETHValidatorAuction is BaseValidatorAuction {
         uint _auctionDurationInDays,
         uint _minimalNumberOfParticipants,
         uint _maximalNumberOfParticipants,
-        DepositLocker _depositLocker
+        BaseDepositLocker _depositLocker
     )
         public
         BaseValidatorAuction(

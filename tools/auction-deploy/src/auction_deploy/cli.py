@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 
 import click
 import pendulum
@@ -24,6 +25,7 @@ from auction_deploy.core import (
     ZERO_ADDRESS,
     AuctionOptions,
     deploy_auction_contracts,
+    get_bid_token_address,
     get_deployed_auction_contracts,
     initialize_auction_contracts,
     missing_whitelisted_addresses,
@@ -113,6 +115,18 @@ def main():
     default=123,
 )
 @click.option(
+    "--use-token",
+    is_flag=True,
+    help="Whether to deploy a token validator auction or a regular eth auction",
+)
+@click.option(
+    "--token-address",
+    "token_address",
+    help="The address of the token used for bidding in the case of a token validator auction",
+    type=str,
+    required=False,
+)
+@click.option(
     "--release-timestamp",
     "release_timestamp",
     help="The release timestamp of the deposit locker",
@@ -139,6 +153,8 @@ def deploy(
     auction_duration: int,
     minimal_number_of_participants: int,
     maximal_number_of_participants: int,
+    use_token: bool,
+    token_address: Optional[str],
     release_timestamp: int,
     release_date: pendulum.DateTime,
     keystore: str,
@@ -148,6 +164,16 @@ def deploy(
     nonce: int,
     auto_nonce: bool,
 ) -> None:
+
+    if use_token and token_address is None:
+        raise click.BadParameter(
+            "The flag `use-token` was provided, the token address must also be provided via `token-address`"
+        )
+    if token_address is not None and not use_token:
+        raise click.BadParameter(
+            "A token address has been provided, "
+            "please use the flag --use-token to confirm you want to deploy a token auction"
+        )
 
     if release_date is not None and release_timestamp is not None:
         raise click.BadParameter(
@@ -170,6 +196,7 @@ def deploy(
         minimal_number_of_participants,
         maximal_number_of_participants,
         release_timestamp,
+        token_address,
     )
 
     nonce = get_nonce(
@@ -191,6 +218,7 @@ def deploy(
         transaction_options=transaction_options,
         contracts=contracts,
         release_timestamp=release_timestamp,
+        token_address=token_address,
         private_key=private_key,
     )
 
@@ -340,13 +368,16 @@ def status(auction_address, jsonrpc):
 
     # constants throughout auction
     duration_in_days = contracts.auction.functions.auctionDurationInDays().call()
-    start_price_in_eth = contracts.auction.functions.startPrice().call() / ETH_IN_WEI
+    start_price_in_biggest_unit = (
+        contracts.auction.functions.startPrice().call() / ETH_IN_WEI
+    )
     minimal_number_of_participants = (
         contracts.auction.functions.minimalNumberOfParticipants().call()
     )
     maximal_number_of_participants = (
         contracts.auction.functions.maximalNumberOfParticipants().call()
     )
+    bid_token_address = get_bid_token_address(web3, auction_address)
     locker_address = contracts.locker.address
     locker_initialized = contracts.locker.functions.initialized().call()
     locker_release_timestamp = contracts.locker.functions.releaseTimestamp().call()
@@ -386,7 +417,9 @@ def status(auction_address, jsonrpc):
         "The auction duration is:                " + str(duration_in_days) + " days"
     )
     click.echo(
-        "The starting price in eth is:           " + str(start_price_in_eth) + " eth"
+        "The starting price is:                  "
+        + str(start_price_in_biggest_unit)
+        + " ETH/TLN"
     )
     click.echo(
         "The minimal number of participants is:  " + str(minimal_number_of_participants)
@@ -394,6 +427,8 @@ def status(auction_address, jsonrpc):
     click.echo(
         "The maximal number of participants is:  " + str(maximal_number_of_participants)
     )
+    if bid_token_address is not None:
+        click.echo("The address of the bid token is:        " + str(bid_token_address))
     click.echo("The address of the locker contract is:  " + str(locker_address))
     click.echo("The locker initialized value is:        " + str(locker_initialized))
     if contracts.slasher is not None:
@@ -425,9 +460,9 @@ def status(auction_address, jsonrpc):
         click.echo(
             "The current price is:                   "
             + str(current_price_in_eth)
-            + " eth"
+            + " ETH/TLN"
         )
-    click.echo("The last slot price is:                  " + str(last_slot_price))
+    click.echo("The last slot price is:                 " + str(last_slot_price))
     click.echo(
         "Deposits will be locked until:          "
         + format_timestamp(locker_release_timestamp)

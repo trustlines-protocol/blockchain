@@ -1,4 +1,4 @@
-from typing import Dict, NamedTuple, Optional, Sequence
+from typing import Dict, NamedTuple, Optional, Sequence, Tuple
 
 from deploy_tools.deploy import (
     deploy_compiled_contract,
@@ -7,6 +7,7 @@ from deploy_tools.deploy import (
     send_function_call_transaction,
 )
 from web3.contract import Contract
+from web3.exceptions import BadFunctionCallOutput
 
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -17,6 +18,7 @@ class AuctionOptions(NamedTuple):
     minimal_number_of_participants: int
     maximal_number_of_participants: int
     release_timestamp: int
+    token_address: Optional[str] = None
 
 
 class DeployedAuctionContracts(NamedTuple):
@@ -33,19 +35,37 @@ def deploy_auction_contracts(
     auction_options: AuctionOptions,
 ) -> DeployedAuctionContracts:
 
+    use_token = auction_options.token_address is not None
+
     if transaction_options is None:
         transaction_options = {}
 
     compiled_contracts = load_contracts_json(__name__)
 
-    deposit_locker_abi = compiled_contracts["ETHDepositLocker"]["abi"]
-    deposit_locker_bin = compiled_contracts["ETHDepositLocker"]["bytecode"]
+    deposit_locker_abi = (
+        compiled_contracts["TokenDepositLocker"]["abi"]
+        if use_token
+        else compiled_contracts["ETHDepositLocker"]["abi"]
+    )
+    deposit_locker_bin = (
+        compiled_contracts["TokenDepositLocker"]["bytecode"]
+        if use_token
+        else compiled_contracts["ETHDepositLocker"]["bytecode"]
+    )
 
     validator_slasher_abi = compiled_contracts["ValidatorSlasher"]["abi"]
     validator_slasher_bin = compiled_contracts["ValidatorSlasher"]["bytecode"]
 
-    auction_abi = compiled_contracts["ETHValidatorAuction"]["abi"]
-    auction_bin = compiled_contracts["ETHValidatorAuction"]["bytecode"]
+    auction_abi = (
+        compiled_contracts["TokenValidatorAuction"]["abi"]
+        if use_token
+        else compiled_contracts["ETHValidatorAuction"]["abi"]
+    )
+    auction_bin = (
+        compiled_contracts["TokenValidatorAuction"]["bytecode"]
+        if use_token
+        else compiled_contracts["ETHValidatorAuction"]["bytecode"]
+    )
 
     deposit_locker_contract: Contract = deploy_compiled_contract(
         abi=deposit_locker_abi,
@@ -65,13 +85,16 @@ def deploy_auction_contracts(
     )
     increase_transaction_options_nonce(transaction_options)
 
-    auction_constructor_args = (
+    auction_constructor_args: Tuple = (
         auction_options.start_price,
         auction_options.auction_duration,
         auction_options.minimal_number_of_participants,
         auction_options.maximal_number_of_participants,
         deposit_locker_contract.address,
     )
+    if use_token:
+        auction_constructor_args += (auction_options.token_address,)
+
     auction_contract: Contract = deploy_compiled_contract(
         abi=auction_abi,
         bytecode=auction_bin,
@@ -95,6 +118,7 @@ def initialize_auction_contracts(
     transaction_options=None,
     contracts: DeployedAuctionContracts,
     release_timestamp,
+    token_address=None,
     private_key=None,
 ) -> None:
     if transaction_options is None:
@@ -103,9 +127,15 @@ def initialize_auction_contracts(
     if contracts.slasher is None:
         raise RuntimeError("Slasher contract not set")
 
-    deposit_init = contracts.locker.functions.init(
-        release_timestamp, contracts.slasher.address, contracts.auction.address
+    init_args: Tuple = (
+        release_timestamp,
+        contracts.slasher.address,
+        contracts.auction.address,
     )
+    if token_address is not None:
+        init_args += (token_address,)
+
+    deposit_init = contracts.locker.functions.init(*init_args)
     send_function_call_transaction(
         deposit_init,
         web3=web3,
@@ -130,8 +160,8 @@ def get_deployed_auction_contracts(
 
     compiled_contracts = load_contracts_json(__name__)
 
-    auction_abi = compiled_contracts["ETHValidatorAuction"]["abi"]
-    locker_abi = compiled_contracts["ETHDepositLocker"]["abi"]
+    auction_abi = compiled_contracts["BaseValidatorAuction"]["abi"]
+    locker_abi = compiled_contracts["BaseDepositLocker"]["abi"]
     slasher_abi = compiled_contracts["ValidatorSlasher"]["abi"]
 
     auction = web3.eth.contract(address=auction_address, abi=auction_abi)
@@ -150,6 +180,17 @@ def get_deployed_auction_contracts(
     )
 
     return deployed_auction_contracts
+
+
+def get_bid_token_address(web3, auction_address: str):
+    compiled_contracts = load_contracts_json(__name__)
+    auction_abi = compiled_contracts["TokenValidatorAuction"]["abi"]
+    auction = web3.eth.contract(address=auction_address, abi=auction_abi)
+    try:
+        return auction.functions.bidToken().call()
+    except BadFunctionCallOutput:
+        # Thrown by web3 when function does not exist on contract
+        return None
 
 
 def whitelist_addresses(

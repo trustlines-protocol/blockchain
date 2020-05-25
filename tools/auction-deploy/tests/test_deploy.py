@@ -42,6 +42,11 @@ def test_deploy_contracts(web3, auction_options: AuctionOptions):
         deployed_contracts.auction.functions.maximalNumberOfParticipants().call()
         == auction_options.maximal_number_of_participants
     )
+    if auction_options.token_address is not None:
+        assert (
+            deployed_contracts.auction.functions.bidToken().call()
+            == auction_options.token_address
+        )
 
     assert deployed_contracts.locker.functions.initialized().call() is False
 
@@ -49,10 +54,13 @@ def test_deploy_contracts(web3, auction_options: AuctionOptions):
     assert deployed_contracts.slasher.functions.initialized().call() is False
 
 
-def test_init_contracts(deployed_contracts, web3, release_timestamp):
+def test_init_contracts(deployed_contracts, web3, release_timestamp, auction_options):
 
     initialize_auction_contracts(
-        web3=web3, contracts=deployed_contracts, release_timestamp=release_timestamp
+        web3=web3,
+        contracts=deployed_contracts,
+        release_timestamp=release_timestamp,
+        token_address=auction_options.token_address,
     )
 
     assert deployed_contracts.locker.functions.initialized().call() is True
