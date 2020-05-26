@@ -187,6 +187,21 @@ def test_cli_deploy_token_auction(runner):
     assert result.exit_code == 0
 
 
+def test_cli_resume_deployment(runner, contracts_not_initialized):
+    result = runner.invoke(
+        main,
+        args=f"deploy --start-price 123 --duration 4 --max-participants 567 --min-participants 456 "
+        f"--release-timestamp 2000000000 --jsonrpc test --auction {contracts_not_initialized.auction.address}"
+        f" --locker {contracts_not_initialized.locker.address}",
+    )
+
+    assert result.exit_code == 0
+    assert (
+        extract_auction_address(result.output)
+        == contracts_not_initialized.auction.address
+    )
+
+
 def test_cli_transaction_parameters_set(runner):
     result = runner.invoke(
         main,

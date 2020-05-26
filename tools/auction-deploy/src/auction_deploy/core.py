@@ -27,18 +27,33 @@ class DeployedAuctionContracts(NamedTuple):
     auction: Contract
 
 
+class DeployedContractsAddresses(NamedTuple):
+    locker: Optional[str] = None
+    slasher: Optional[str] = None
+    auction: Optional[str] = None
+
+
 def deploy_auction_contracts(
     *,
     web3,
     transaction_options: Dict = None,
     private_key=None,
     auction_options: AuctionOptions,
+    already_deployed_contracts: DeployedContractsAddresses = DeployedContractsAddresses(),
 ) -> DeployedAuctionContracts:
 
     use_token = auction_options.token_address is not None
 
     if transaction_options is None:
         transaction_options = {}
+
+    if (
+        already_deployed_contracts.auction is not None
+        and already_deployed_contracts.locker is None
+    ):
+        raise ValueError(
+            "Cannot deploy new locker if auction already deployed due to constructor of auction."
+        )
 
     compiled_contracts = load_contracts_json(__name__)
 
@@ -67,43 +82,64 @@ def deploy_auction_contracts(
         else compiled_contracts["ETHValidatorAuction"]["bytecode"]
     )
 
-    deposit_locker_contract: Contract = deploy_compiled_contract(
-        abi=deposit_locker_abi,
-        bytecode=deposit_locker_bin,
-        web3=web3,
-        transaction_options=transaction_options,
-        private_key=private_key,
-    )
-    increase_transaction_options_nonce(transaction_options)
+    if already_deployed_contracts.locker is not None:
+        deposit_locker_contract = web3.eth.contract(
+            abi=deposit_locker_abi,
+            bytecode=deposit_locker_bin,
+            address=already_deployed_contracts.locker,
+        )
+    else:
+        deposit_locker_contract: Contract = deploy_compiled_contract(
+            abi=deposit_locker_abi,
+            bytecode=deposit_locker_bin,
+            web3=web3,
+            transaction_options=transaction_options,
+            private_key=private_key,
+        )
+        increase_transaction_options_nonce(transaction_options)
 
-    validator_slasher_contract = deploy_compiled_contract(
-        abi=validator_slasher_abi,
-        bytecode=validator_slasher_bin,
-        web3=web3,
-        transaction_options=transaction_options,
-        private_key=private_key,
-    )
-    increase_transaction_options_nonce(transaction_options)
+    if already_deployed_contracts.slasher is not None:
+        validator_slasher_contract = web3.eth.contract(
+            abi=validator_slasher_abi,
+            bytecode=validator_slasher_bin,
+            address=already_deployed_contracts.slasher,
+        )
+    else:
+        validator_slasher_contract = deploy_compiled_contract(
+            abi=validator_slasher_abi,
+            bytecode=validator_slasher_bin,
+            web3=web3,
+            transaction_options=transaction_options,
+            private_key=private_key,
+        )
+        increase_transaction_options_nonce(transaction_options)
 
-    auction_constructor_args: Tuple = (
-        auction_options.start_price,
-        auction_options.auction_duration,
-        auction_options.minimal_number_of_participants,
-        auction_options.maximal_number_of_participants,
-        deposit_locker_contract.address,
-    )
-    if use_token:
-        auction_constructor_args += (auction_options.token_address,)
+    if already_deployed_contracts.auction is not None:
+        auction_contract = web3.eth.contract(
+            abi=auction_abi,
+            bytecode=auction_bin,
+            address=already_deployed_contracts.auction,
+        )
+    else:
+        auction_constructor_args: Tuple = (
+            auction_options.start_price,
+            auction_options.auction_duration,
+            auction_options.minimal_number_of_participants,
+            auction_options.maximal_number_of_participants,
+            deposit_locker_contract.address,
+        )
+        if use_token:
+            auction_constructor_args += (auction_options.token_address,)
 
-    auction_contract: Contract = deploy_compiled_contract(
-        abi=auction_abi,
-        bytecode=auction_bin,
-        web3=web3,
-        constructor_args=auction_constructor_args,
-        transaction_options=transaction_options,
-        private_key=private_key,
-    )
-    increase_transaction_options_nonce(transaction_options)
+        auction_contract: Contract = deploy_compiled_contract(
+            abi=auction_abi,
+            bytecode=auction_bin,
+            web3=web3,
+            constructor_args=auction_constructor_args,
+            transaction_options=transaction_options,
+            private_key=private_key,
+        )
+        increase_transaction_options_nonce(transaction_options)
 
     contracts = DeployedAuctionContracts(
         deposit_locker_contract, validator_slasher_contract, auction_contract
@@ -127,31 +163,33 @@ def initialize_auction_contracts(
     if contracts.slasher is None:
         raise RuntimeError("Slasher contract not set")
 
-    init_args: Tuple = (
-        release_timestamp,
-        contracts.slasher.address,
-        contracts.auction.address,
-    )
-    if token_address is not None:
-        init_args += (token_address,)
+    if not contracts.locker.functions.initialized().call():
+        init_args: Tuple = (
+            release_timestamp,
+            contracts.slasher.address,
+            contracts.auction.address,
+        )
+        if token_address is not None:
+            init_args += (token_address,)
 
-    deposit_init = contracts.locker.functions.init(*init_args)
-    send_function_call_transaction(
-        deposit_init,
-        web3=web3,
-        transaction_options=transaction_options,
-        private_key=private_key,
-    )
-    increase_transaction_options_nonce(transaction_options)
+        deposit_init = contracts.locker.functions.init(*init_args)
+        send_function_call_transaction(
+            deposit_init,
+            web3=web3,
+            transaction_options=transaction_options,
+            private_key=private_key,
+        )
+        increase_transaction_options_nonce(transaction_options)
 
-    slasher_init = contracts.slasher.functions.init(contracts.locker.address)
-    send_function_call_transaction(
-        slasher_init,
-        web3=web3,
-        transaction_options=transaction_options,
-        private_key=private_key,
-    )
-    increase_transaction_options_nonce(transaction_options)
+    if not contracts.slasher.functions.initialized().call():
+        slasher_init = contracts.slasher.functions.init(contracts.locker.address)
+        send_function_call_transaction(
+            slasher_init,
+            web3=web3,
+            transaction_options=transaction_options,
+            private_key=private_key,
+        )
+        increase_transaction_options_nonce(transaction_options)
 
 
 def get_deployed_auction_contracts(

@@ -3,6 +3,7 @@ import pytest
 from auction_deploy.core import (
     AuctionOptions,
     DeployedAuctionContracts,
+    DeployedContractsAddresses,
     deploy_auction_contracts,
     initialize_auction_contracts,
     missing_whitelisted_addresses,
@@ -52,6 +53,18 @@ def test_deploy_contracts(web3, auction_options: AuctionOptions):
 
     assert deployed_contracts.slasher is not None
     assert deployed_contracts.slasher.functions.initialized().call() is False
+
+
+def test_resume_deploy_contracts(web3, auction_options, deployed_contracts):
+    deployed_contracts: DeployedAuctionContracts = deploy_auction_contracts(
+        web3=web3,
+        auction_options=auction_options,
+        already_deployed_contracts=DeployedContractsAddresses(
+            deployed_contracts.locker.address
+        ),
+    )
+
+    assert deployed_contracts.locker.address == deployed_contracts.locker.address
 
 
 def test_init_contracts(deployed_contracts, web3, release_timestamp, auction_options):
