@@ -24,6 +24,8 @@ from deploy_tools.files import read_addresses_in_csv
 from auction_deploy.core import (
     ZERO_ADDRESS,
     AuctionOptions,
+    DeployedAuctionContracts,
+    DeployedContractsAddresses,
     deploy_auction_contracts,
     get_bid_token_address,
     get_deployed_auction_contracts,
@@ -44,6 +46,13 @@ def validate_date(ctx, param, value):
         raise click.BadParameter(
             f'The parameter "{value}" cannot be parsed as a date. (Try e.g. "2020-09-28", "2020-09-28T13:56")'
         ) from e
+
+
+def validate_optional_address(ctx, param, value):
+    if value is None:
+        return value
+    else:
+        return validate_address(ctx, param, value)
 
 
 # This has to be in sync with the AuctionStates in BaseValidatorAuction.sol
@@ -72,6 +81,74 @@ whitelist_file_option = click.option(
     type=click.Path(exists=True, dir_okay=False),
     required=True,
 )
+already_deployed_auction_option = click.option(
+    "--auction",
+    "already_deployed_auction",
+    help="Address of an already deployed auction contract to resume deployment with.",
+    type=str,
+    callback=validate_optional_address,
+    required=False,
+)
+already_deployed_locker_option = click.option(
+    "--locker",
+    "already_deployed_locker",
+    help="Address of an already deployed / init deposit locker to resume deployment with.",
+    type=str,
+    callback=validate_optional_address,
+    required=False,
+)
+already_deployed_slasher_option = click.option(
+    "--slasher",
+    "already_deployed_slasher",
+    help="Address of an already deployed / init validator slasher to resume deployment with.",
+    type=str,
+    callback=validate_optional_address,
+    required=False,
+)
+
+
+def print_errors_on_contracts_links(all_contracts: DeployedAuctionContracts):
+
+    locker_address = all_contracts.locker.address
+
+    locker_address_in_auction_contract = (
+        all_contracts.auction.functions.depositLocker().call()
+    )
+    auction_address_in_locker_contract = (
+        all_contracts.locker.functions.depositorsProxy().call()
+    )
+    slasher_address_in_locker_contract = all_contracts.locker.functions.slasher().call()
+
+    locker_address_in_slasher_contract = ZERO_ADDRESS
+    if all_contracts.slasher is not None:
+        locker_address_in_slasher_contract = (
+            all_contracts.slasher.functions.depositContract().call()
+        )
+
+    slasher_address = ZERO_ADDRESS
+    if all_contracts.slasher is not None:
+        slasher_address = all_contracts.slasher.address
+
+    if locker_address_in_auction_contract != locker_address:
+        click.secho(
+            "The locker address in the auction contract does not match to the locker address",
+            fg="red",
+        )
+    if auction_address_in_locker_contract != all_contracts.auction.address:
+        click.secho(
+            "The auction address in the locker contract does not match the auction address",
+            fg="red",
+        )
+    if slasher_address_in_locker_contract != slasher_address:
+        click.secho(
+            "The slasher address in the locker contract does not match the slasher address",
+            fg="red",
+        )
+    if locker_address_in_slasher_contract != locker_address:
+        click.secho(
+            "The locker address in the slasher contract does not match the slasher address",
+            fg="red",
+        )
 
 
 @click.group()
@@ -148,6 +225,9 @@ def main():
 @nonce_option
 @auto_nonce_option
 @jsonrpc_option
+@already_deployed_auction_option
+@already_deployed_locker_option
+@already_deployed_slasher_option
 def deploy(
     start_price: int,
     auction_duration: int,
@@ -163,6 +243,9 @@ def deploy(
     gas_price: int,
     nonce: int,
     auto_nonce: bool,
+    already_deployed_auction,
+    already_deployed_locker,
+    already_deployed_slasher,
 ) -> None:
 
     if use_token and token_address is None:
@@ -182,6 +265,13 @@ def deploy(
     if release_date is None and release_timestamp is None:
         raise click.BadParameter(
             "Please specify a release date with --release-date or --release-timestamp"
+        )
+
+    if already_deployed_auction is not None and already_deployed_locker is None:
+        raise click.BadOptionUsage(
+            "--auction",
+            "Cannot resume deployment from already deployed auction without already deployed locker. "
+            "Locker address is part of auction's constructor argument.",
         )
 
     if release_date is not None:
@@ -211,6 +301,9 @@ def deploy(
         transaction_options=transaction_options,
         private_key=private_key,
         auction_options=auction_options,
+        already_deployed_contracts=DeployedContractsAddresses(
+            already_deployed_locker, already_deployed_slasher, already_deployed_auction
+        ),
     )
 
     initialize_auction_contracts(
@@ -225,6 +318,7 @@ def deploy(
     click.echo("Auction address: " + contracts.auction.address)
     click.echo("Deposit locker address: " + contracts.locker.address)
     click.echo("Validator slasher address: " + contracts.slasher.address)
+    print_errors_on_contracts_links(contracts)
 
 
 @main.command(short_help="Start the auction at corresponding address.")
@@ -382,19 +476,6 @@ def status(auction_address, jsonrpc):
     locker_initialized = contracts.locker.functions.initialized().call()
     locker_release_timestamp = contracts.locker.functions.releaseTimestamp().call()
 
-    locker_address_in_auction_contract = (
-        contracts.auction.functions.depositLocker().call()
-    )
-    auction_address_in_locker_contract = (
-        contracts.locker.functions.depositorsProxy().call()
-    )
-    slasher_address_in_locker_contract = contracts.locker.functions.slasher().call()
-    locker_address_in_slasher_contract = ZERO_ADDRESS
-    if contracts.slasher is not None:
-        locker_address_in_slasher_contract = (
-            contracts.slasher.functions.depositContract().call()
-        )
-
     slasher_address = ZERO_ADDRESS
     slasher_initialized = False
     if contracts.slasher is not None:
@@ -472,26 +553,7 @@ def status(auction_address, jsonrpc):
         "------------------------------------    ------------------------------------------"
     )
 
-    if locker_address_in_auction_contract != locker_address:
-        click.secho(
-            "The locker address in the auction contract does not match to the locker address",
-            fg="red",
-        )
-    if auction_address_in_locker_contract != auction_address:
-        click.secho(
-            "The auction address in the locker contract does not match the auction address",
-            fg="red",
-        )
-    if slasher_address_in_locker_contract != slasher_address:
-        click.secho(
-            "The slasher address in the locker contract does not match the slasher address",
-            fg="red",
-        )
-    if locker_address_in_slasher_contract != locker_address:
-        click.secho(
-            "The locker address in the slasher contract does not match the slasher address",
-            fg="red",
-        )
+    print_errors_on_contracts_links(contracts)
 
 
 @main.command(short_help="Whitelists addresses for the auction")
