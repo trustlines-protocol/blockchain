@@ -83,13 +83,13 @@ def deploy_auction_contracts(
     )
 
     if already_deployed_contracts.locker is not None:
-        deposit_locker_contract = web3.eth.contract(
+        deposit_locker_contract: Contract = web3.eth.contract(
             abi=deposit_locker_abi,
             bytecode=deposit_locker_bin,
             address=already_deployed_contracts.locker,
         )
     else:
-        deposit_locker_contract: Contract = deploy_compiled_contract(
+        deposit_locker_contract = deploy_compiled_contract(
             abi=deposit_locker_abi,
             bytecode=deposit_locker_bin,
             web3=web3,
@@ -115,7 +115,7 @@ def deploy_auction_contracts(
         increase_transaction_options_nonce(transaction_options)
 
     if already_deployed_contracts.auction is not None:
-        auction_contract = web3.eth.contract(
+        auction_contract: Contract = web3.eth.contract(
             abi=auction_abi,
             bytecode=auction_bin,
             address=already_deployed_contracts.auction,
@@ -131,7 +131,7 @@ def deploy_auction_contracts(
         if use_token:
             auction_constructor_args += (auction_options.token_address,)
 
-        auction_contract: Contract = deploy_compiled_contract(
+        auction_contract = deploy_compiled_contract(
             abi=auction_abi,
             bytecode=auction_bin,
             web3=web3,
@@ -180,6 +180,18 @@ def initialize_auction_contracts(
             private_key=private_key,
         )
         increase_transaction_options_nonce(transaction_options)
+    else:
+        if (
+            contracts.locker.functions.depositorsProxy().call()
+            != contracts.auction.address
+        ):
+            raise ValueError(
+                "Locker is already initialized but address of auction in locker and given auction contract do not match"
+            )
+        if contracts.locker.functions.slasher().call() != contracts.slasher.address:
+            raise ValueError(
+                "Locker is already initialized but address of slasher in locker and given slasher contract do not match"
+            )
 
     if not contracts.slasher.functions.initialized().call():
         slasher_init = contracts.slasher.functions.init(contracts.locker.address)
@@ -190,6 +202,18 @@ def initialize_auction_contracts(
             private_key=private_key,
         )
         increase_transaction_options_nonce(transaction_options)
+    else:
+        if (
+            contracts.slasher.functions.depositContract().call()
+            != contracts.locker.address
+        ):
+            raise ValueError(
+                "Slasher is already initialized but address of locker in slasher and given locker contract do not match"
+            )
+    if contracts.auction.functions.depositLocker().call() != contracts.locker.address:
+        raise ValueError(
+            "Address of deposit locker in auction contract does not match with address of locker"
+        )
 
 
 def get_deployed_auction_contracts(
