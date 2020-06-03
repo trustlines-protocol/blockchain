@@ -91,6 +91,7 @@ contract BaseValidatorAuction is Ownable {
             _minimalNumberOfParticipants <= _maximalNumberOfParticipants,
             "The minimal number of participants must be smaller than the maximal number of participants."
         );
+        require(_startPriceInWei > 0, "The start price has to be > 0");
         require(
             // To prevent overflows
             _startPriceInWei < 10**30,
