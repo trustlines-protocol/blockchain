@@ -5,6 +5,8 @@ import "./BaseDepositLocker.sol";
 
 
 contract BaseValidatorAuction is Ownable {
+    uint constant MAX_UINT = ~uint(0);
+
     // auction constants set on deployment
     uint public auctionDurationInDays;
     uint public startPrice;
@@ -101,7 +103,7 @@ contract BaseValidatorAuction is Ownable {
         minimalNumberOfParticipants = _minimalNumberOfParticipants;
         depositLocker = _depositLocker;
 
-        lowestSlotPrice = ~uint(0);
+        lowestSlotPrice = MAX_UINT;
 
         emit AuctionDeployed(
             startPrice,
