@@ -132,9 +132,10 @@ contract BaseValidatorAuction is Ownable {
             bidders.length < maximalNumberOfParticipants,
             "The limit of participants has already been reached."
         );
-        require(bids[msg.sender] == 0, "The sender has already bid.");
 
+        require(bids[msg.sender] == 0, "The sender has already bid.");
         uint bidAmount = _getBidAmount(slotPrice);
+        require(bidAmount > 0, "The bid amount has to be > 0");
         bids[msg.sender] = bidAmount;
         bidders.push(msg.sender);
         if (slotPrice < lowestSlotPrice) {
