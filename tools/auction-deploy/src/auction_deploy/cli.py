@@ -1,4 +1,5 @@
 from enum import Enum
+from os import linesep
 from typing import Optional
 
 import click
@@ -107,7 +108,7 @@ already_deployed_slasher_option = click.option(
 )
 
 
-def print_errors_on_contracts_links(all_contracts: DeployedAuctionContracts):
+def get_errors_messages_on_contracts_links(all_contracts: DeployedAuctionContracts):
 
     locker_address = all_contracts.locker.address
 
@@ -129,26 +130,25 @@ def print_errors_on_contracts_links(all_contracts: DeployedAuctionContracts):
     if all_contracts.slasher is not None:
         slasher_address = all_contracts.slasher.address
 
+    warning_messages = []
     if locker_address_in_auction_contract != locker_address:
-        click.secho(
-            "The locker address in the auction contract does not match to the locker address",
-            fg="red",
+        warning_messages.append(
+            "The locker address in the auction contract does not match to the locker address."
         )
     if auction_address_in_locker_contract != all_contracts.auction.address:
-        click.secho(
-            "The auction address in the locker contract does not match the auction address",
-            fg="red",
+        warning_messages.append(
+            "The auction address in the locker contract does not match the auction address."
         )
     if slasher_address_in_locker_contract != slasher_address:
-        click.secho(
-            "The slasher address in the locker contract does not match the slasher address",
-            fg="red",
+        warning_messages.append(
+            "The slasher address in the locker contract does not match the slasher address."
         )
     if locker_address_in_slasher_contract != locker_address:
-        click.secho(
-            "The locker address in the slasher contract does not match the slasher address",
-            fg="red",
+        warning_messages.append(
+            "The locker address in the slasher contract does not match the locker address."
         )
+
+    return warning_messages
 
 
 @click.group()
@@ -318,7 +318,10 @@ def deploy(
     click.echo("Auction address: " + contracts.auction.address)
     click.echo("Deposit locker address: " + contracts.locker.address)
     click.echo("Validator slasher address: " + contracts.slasher.address)
-    print_errors_on_contracts_links(contracts)
+    warning_messages = get_errors_messages_on_contracts_links(contracts)
+    if warning_messages:
+        warning_messages.append("Verify what is wrong with `auction-deploy status`.")
+        click.secho(linesep.join(warning_messages), fg="red")
 
 
 @main.command(short_help="Start the auction at corresponding address.")
@@ -553,7 +556,9 @@ def status(auction_address, jsonrpc):
         "------------------------------------    ------------------------------------------"
     )
 
-    print_errors_on_contracts_links(contracts)
+    warning_messages = get_errors_messages_on_contracts_links(contracts)
+    if warning_messages:
+        click.secho(linesep.join(warning_messages), fg="red")
 
 
 @main.command(short_help="Whitelists addresses for the auction")
