@@ -3,7 +3,7 @@
 
 [account]
 # File should contain passwords to unlock your accounts. One password per line.
-password = ["/home/parity/.local/share/io.parity.ethereum/custom/pass.pwd"]
+password = ["/home/openethereum/.local/share/openethereum/custom/pass.pwd"]
 
 [mining]
 # Account to sign consensus messages and issue blocks for non-PoW chains.

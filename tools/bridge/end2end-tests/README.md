@@ -17,7 +17,7 @@ from the blockchain root directory.
 
 ## Run without make
 
-To run the tests without `make`, make sure that tlbc-bridge and Parity
+To run the tests without `make`, make sure that tlbc-bridge and Openethereum
 are installed. Then run `pytest tools/bridge/end2end-tests/tests`.
 
 ## Test Structure
