@@ -14,15 +14,27 @@ ENV PARITY_CONFIG_FILE_CHAIN=$PARITY_HOME_DIR/trustlines-spec.json
 ENV PARITY_DATA_DIR=$PARITY_HOME_DIR/chains
 ENV PARITY_BIN=/usr/local/bin/parity
 ENV PARITY_WRAPPER_SCRIPT=$HOME/parity_wrapper.sh
+ENV OPENETHERUEM_ZIP=/usr/local/openethereum.zip
 
 RUN mkdir -p $PARITY_HOME_DIR && \
     ls -la $PARITY_HOME_DIR
 
 
-# Download parity executable, check that it's what we expect
-ADD https://releases.parity.io/ethereum/v2.3.6/x86_64-unknown-linux-gnu/parity $PARITY_BIN
-RUN echo a99f7ba6bc90dd128acea7cc2c730279c6da6783ffcae521d6fe4ff8c3eee0d9 $PARITY_BIN | sha256sum -c
-RUN chmod 755 $PARITY_BIN
+# Donload unzip
+RUN  apt-get update -y && \
+     apt-get upgrade -y && \
+     apt-get dist-upgrade -y && \
+     apt-get -y autoremove && \
+     apt-get clean
+RUN apt-get install -y unzip
+
+# Download openethereum
+ADD https://github.com/openethereum/openethereum/releases/download/v3.0.1/openethereum-linux-v3.0.1.zip $OPENETHERUEM_ZIP
+RUN echo 8dd753058e5db77ffaede5a53418005f9c8133212448e11df9169a651cdac997 $OPENETHERUEM_ZIP | sha256sum -c \
+&& unzip -j $OPENETHERUEM_ZIP openethereum -d /usr/local/bin/ \
+&& mv /usr/local/bin/openethereum $PARITY_BIN \
+&& chmod 755 $PARITY_BIN \
+&& rm -f $OPENETHERUEM_ZIP
 
 
 ## Configuring
