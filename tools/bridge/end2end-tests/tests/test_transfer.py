@@ -12,8 +12,8 @@ from web3 import HTTPProvider, Web3
 from web3.contract import Contract
 from web3.middleware import construct_sign_and_send_raw_middleware
 
-PARITY_DEV_ACCOUNT = "0x00a329c0648769A73afAc7F9381E08FB43dBEA72"
-PARITY_DEV_KEY = "0x4D5DB4107D237DF6A3D58EE5F70AE63D73D7658D4026F2EEFD2F204C81682CB7"
+DEV_ACCOUNT = "0x00a329c0648769A73afAc7F9381E08FB43dBEA72"
+DEV_KEY = "0x4D5DB4107D237DF6A3D58EE5F70AE63D73D7658D4026F2EEFD2F204C81682CB7"
 
 HOME_RPC_URL = "http://localhost:8545"
 FOREIGN_RPC_URL = "http://localhost:8645"
@@ -266,18 +266,18 @@ def mine_min_blocks(web3, number_of_blocks):
     block_height = web3.eth.blockNumber
     while web3.eth.blockNumber < block_height + number_of_blocks:
         wait_for_successful_transaction_receipt(
-            web3, web3.eth.sendTransaction({"from": PARITY_DEV_ACCOUNT})
+            web3, web3.eth.sendTransaction({"from": DEV_ACCOUNT})
         )
 
 
 @pytest.fixture()
 def accounts(accounts):
-    return [PARITY_DEV_ACCOUNT] + list(accounts)
+    return [DEV_ACCOUNT] + list(accounts)
 
 
 @pytest.fixture(scope="session")
 def account_keys(account_keys):
-    return [PARITY_DEV_KEY] + list(account_keys)
+    return [DEV_KEY] + list(account_keys)
 
 
 @pytest.fixture()
@@ -617,7 +617,7 @@ def test_offline_validators_do_not_validates_complete_transfer(
     assert_after_timout(check_no_transaction_sent, 10)
 
 
-def test_parity_node_restarting(
+def test_openethereum_node_restarting(
     web3_home,
     web3_foreign,
     foreign_bridge_contract,
@@ -628,7 +628,7 @@ def test_parity_node_restarting(
     node_foreign,
 ):
     """
-    Tests that the parity node bound to the bridge can crash and restart without impacting the bridge
+    Tests that the openethereum node bound to the bridge can crash and restart without impacting the bridge
     """
     bridges[0].start()
     bridges[1].start()

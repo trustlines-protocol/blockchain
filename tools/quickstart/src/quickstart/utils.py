@@ -90,7 +90,7 @@ class TrustlinesFiles:
     def store(self, account, password):
         # Instead of just copying the file, we encrypt it again since the
         # file itself may use scrypt as key derivative function which
-        # parity can't handle
+        # openethereum can't handle
         json_account = account.encrypt(password, kdf="pbkdf2")
 
         with open(self.keystore_path, "x") as f:
