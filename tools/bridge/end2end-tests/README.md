@@ -6,7 +6,7 @@ This directory contains the end2end tests of the Trustlines Blockchain Bridge (t
 
 To run the end2end tests you need to have the tlbc-bridge
 installed in your environment. This will be automatically done if using `make`.
-Additionally Parity must be installed.
+Additionally Openethereum must be installed.
 
 ## Run
 

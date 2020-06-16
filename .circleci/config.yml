@@ -3,7 +3,7 @@ version: 2.1
 executors:
   ubuntu-builder:
     docker:
-      - image: trustlines/builder:master25
+      - image: trustlines/builder:openethereum31
         environment:
           - SOLC_VERSION=v0.5.8
     working_directory: ~/repo
@@ -508,12 +508,6 @@ jobs:
       - attach_workspace:
           at: '~'
       - config-bridge-validator-path
-      - run:
-          name: Install parity
-          command: curl -o ~/bin/parity https://releases.parity.io/ethereum/v2.6.4/x86_64-unknown-linux-gnu/parity
-      - run:
-          name: Make parity executable
-          command: chmod 755 ~/bin/parity
       - run:
           name: Run pytest
           command: |

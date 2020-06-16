@@ -168,7 +168,7 @@ class Node(Service):
 
         super().__init__(
             [
-                "parity",
+                "openethereum",
                 # If we don't pass the --jsonrpc-server-threads
                 # argument, the tests do fail on circle ci, because
                 # transactions will not be mined.
