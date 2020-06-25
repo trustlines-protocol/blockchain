@@ -289,7 +289,7 @@ the build must be the project root, the path to the `Dockerfile` has to be speci
 
 ```sh
 $ git clone https://github.com/trustlines-protocol/blockchain
-$ docker build -f chain/laika/Dockerfile -t MY_TAGNAME .
+$ docker build -f ./chain/laika/Dockerfile -t MY_TAGNAME ./chain
 $ docker run ... MY_TAGNAME ...
 ```
 
@@ -297,7 +297,7 @@ $ docker run ... MY_TAGNAME ...
 
 First, install the solidity compiler `solc` for compiling the contracts. You
 can follow the [official installation
-documentation](https://solidity.readthedocs.io/en/v0.4.24/installing-solidity.html).
+documentation](https://solidity.readthedocs.io/en/v0.5.8/installing-solidity.html). Make sure that you install the version `0.5.8`.
 From the root directory of the repository you can run the tests by calling `make test contracts`. This will create a virtual Python environment, install the
 dependencies, compile the contracts and run the tests.
 

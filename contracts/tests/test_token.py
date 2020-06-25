@@ -59,6 +59,7 @@ def test_race_condition_fix_on_allowance(
         tln_token_contract_with_allowance.functions.approve(
             spender, allowance
         ).transact({"from": allower})
+
     chain.enable_auto_mine_transactions()
 
 

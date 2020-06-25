@@ -3,7 +3,7 @@
 ## Branches
 
 We use `bridge/pre-release` for release candidates and
-`bridge/release` for releases.  We only merge from master to
+`bridge/release` for releases. We only merge from master to
 `bridge/pre-release` and from `bridge/pre-release` to
 `bridge/release`.
 We never merge back to the `master` branch.
@@ -16,15 +16,14 @@ always major.minor.patch)
 
 ## bumpversion
 
-tools/bridge uses bumpversion in order to maintain it's
-version. bumpversion can be used to automatically upgrade the version
+`tools/bridge` uses [bumpversion](https://pypi.org/project/bumpversion/) in order
+to maintain it's version. bumpversion can be used to automatically upgrade the version
 in multiple files. The file `VERSION` contains the current version,
 it's also maintained in `bridge/version.py` and `setup.cfg`.
 
 bumpversion is configured via the `tools/bridge/.bumpversion.cfg`
 configuration file. If you want to run bumpversion to change the
-bridge's version, please cd to the `tools/bridge` directory first.
-
+bridge's version, please change to the `tools/bridge` directory first.
 
 ## Making a pre-release
 
@@ -37,6 +36,7 @@ git merge -m 'Merge with master branch' origin/master
 cd tools/bridge
 bumpversion release
 ```
+
 and open a PR for that branch.
 
 The version in the `bridge/pre-release` branch should always be a
@@ -60,13 +60,13 @@ master branch with `bumpversion patch`.
 
 ## Release Checklist
 
-0. Prerequsisite: The master branch contains the version to be
+0. Prerequisite: The master branch contains the version to be
    released
 1. Create a new branch `bridge/prepare/pre-release-<version>` based
    on `bridge/pre-release` and merge the `master` branch into it.
    Bump the version with
    `bumpversion release`.
-   Verify that the version is a release canditate (e.g. `v0.1.1.rc0`).
+   Verify that the version is a release candidate (e.g. `v0.1.1.rc0`).
    Now open a PR to `bridge/pre-release`.
    Merging this will build the docker image and push it to Docker
    Hub under `trustlines/bridge-next:pre-release`.

@@ -1,17 +1,20 @@
+# fmt: off
+# increase eth_tester's GAS_LIMIT
+# Otherwise we can't whitelist enough addresses for the validator auction in one transaction
+# This needs to be at the top of external imports when imported modules import eth_tester themselves
+import eth_tester; assert eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT < 8 * 10 ** 6; eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT = 8 * 10 ** 6  # noqa: E402, E702 isort:skip
+# fmt: on
+
 import json
 import os
 
-import eth_tester
 import pytest
+from deploy_tools.cli import test_json_rpc
+from deploy_tools.deploy import deploy_compiled_contract, load_contracts_json
 from eth_keyfile import create_keyfile_json
 from eth_utils import to_canonical_address
 
 from auction_deploy.core import AuctionOptions
-
-# increase eth_tester's GAS_LIMIT
-# Otherwise we can't whitelist enough addresses for the validator auction in one transaction
-assert eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT < 8 * 10 ** 6
-eth_tester.backends.pyevm.main.GENESIS_GAS_LIMIT = 8 * 10 ** 6
 
 RELEASE_TIMESTAMP_OFFSET = 3600 * 24 * 180
 
@@ -76,18 +79,62 @@ def whitelist():
 
 
 @pytest.fixture
+def ether_owning_whitelist(accounts):
+    return [accounts[1], accounts[2]]
+
+
+@pytest.fixture
 def release_timestamp(web3):
     """release timestamp used for DepositLocker contract"""
     now = web3.eth.getBlock("latest").timestamp
     return now + RELEASE_TIMESTAMP_OFFSET
 
 
-@pytest.fixture
-def auction_options(release_timestamp):
+@pytest.fixture()
+def token_contract(ether_owning_whitelist):
+    contract_assets = load_contracts_json("auction_deploy")
+    abi = contract_assets["TrustlinesNetworkToken"]["abi"]
+    bytecode = contract_assets["TrustlinesNetworkToken"]["bytecode"]
+    token_name = "Trustlines Network Token"
+    token_symbol = "TLN"
+    token_decimal = 18
+    number_to_mint = 10 * 10 ** 18
+    premint_address = ether_owning_whitelist[0]
+    constructor_args = (
+        token_name,
+        token_symbol,
+        token_decimal,
+        premint_address,
+        number_to_mint,
+    )
+
+    token_contract = deploy_compiled_contract(
+        abi=abi,
+        bytecode=bytecode,
+        web3=test_json_rpc,
+        constructor_args=constructor_args,
+    )
+    token_contract.functions.transfer(
+        ether_owning_whitelist[1], int(number_to_mint / 2)
+    ).transact({"from": ether_owning_whitelist[0]})
+
+    return token_contract
+
+
+@pytest.fixture(params=["Eth auction", "Token auction"])
+def use_token(request):
+    if request.param == "Eth auction":
+        return False
+    return True
+
+
+@pytest.fixture()
+def auction_options(release_timestamp, use_token, token_contract):
     start_price = 1
     auction_duration = 2
-    minimal_number_of_participants = 3
-    maximal_number_of_participants = 4
+    minimal_number_of_participants = 1
+    maximal_number_of_participants = 2
+    token_address = token_contract.address if use_token else None
 
     contract_options = AuctionOptions(
         start_price=start_price,
@@ -95,6 +142,7 @@ def auction_options(release_timestamp):
         minimal_number_of_participants=minimal_number_of_participants,
         maximal_number_of_participants=maximal_number_of_participants,
         release_timestamp=release_timestamp,
+        token_address=token_address,
     )
 
     return contract_options

@@ -2,9 +2,8 @@
 
 import eth_tester.exceptions
 import pytest
+from tests.data_generation import make_block_header
 from web3.exceptions import MismatchedABI
-
-from .data_generation import make_block_header
 
 
 def test_get_validator(validator_set_contract_session, validators):

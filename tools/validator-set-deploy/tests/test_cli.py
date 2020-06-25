@@ -92,7 +92,7 @@ def test_deploy_proxy(runner, validators_file):
 
 def test_deploy_proxy_no_validators(runner):
 
-    result = runner.invoke(main, args=f"deploy-proxy --jsonrpc test")
+    result = runner.invoke(main, args="deploy-proxy --jsonrpc test")
 
     print(result.output)
     assert result.exit_code == 0

@@ -5,8 +5,7 @@ import itertools
 import eth_tester.exceptions
 import pytest
 from eth_utils.address import is_same_address
-
-from .data_generation import make_block_header, make_random_signed_data
+from tests.data_generation import make_block_header, make_random_signed_data
 
 STEP_DURATION = 5  # Value in seconds
 MAX_UINT = 2 ** 256 - 1  # Maximum uint256 value in Solidity

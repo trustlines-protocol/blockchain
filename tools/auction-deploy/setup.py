@@ -1,15 +1,4 @@
-from setuptools import find_packages, setup
+from setuptools import setup
 
-setup(
-    name="auction-deploy",
-    setup_requires=["setuptools_scm"],
-    # use_scm_version=True,
-    version="0.0.1",
-    packages=find_packages(),
-    package_data={"auction_deploy": ["contracts.json"]},
-    install_requires=["click", "web3", "contract-deploy-tools", "pendulum"],
-    entry_points="""
-    [console_scripts]
-    auction-deploy=auction_deploy.cli:main
-    """,
-)
+# configuration is read from setup.cfg
+setup()
