@@ -1,6 +1,9 @@
 ==========
 Change Log
 ==========
+1.2.0 (2020-06-25)
+-------------------------------
+- Fork tlbc to update validator set after token validator auction of 2020-06-23
 
 1.1.0 (2019-12-09)
 -------------------------------
