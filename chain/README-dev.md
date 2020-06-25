@@ -34,8 +34,10 @@ $ git checkout master
 $ git pull
 $ git checkout -b laika-node/prepare/pre-release-<version>
 $ cd chain/laika
-$ bumpversion release
 ```
+
+You then need to run `bumpversion {major} or {minor} or {patch}` to bump the version to the desired version.
+You then need to run `bumpversion release` to change the release value to `rc0`.
 
 and open a PR for this new branch to `laika-node/pre-release`.
 
@@ -71,7 +73,7 @@ $ git checkout laika-node/release
 $ git pull
 $ git checkout -b laika-node/prepare/master-<next-version>
 $ cd chain/laika
-$ bumpversion path
+$ bumpversion patch
 ```
 
 and open a PR for this branch to `master`.
