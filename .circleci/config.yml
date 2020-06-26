@@ -122,7 +122,7 @@ jobs:
       - run:
           name: Configuring PATH
           command: |
-            echo 'export PATH=~/bin:~/repo/venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
+            echo 'export PATH=~/bin:~/repo/venv/bin:${PATH}' >> ${BASH_ENV}
       - run:
           name: Create python virtualenv
           command: |
