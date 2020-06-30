@@ -1,6 +1,6 @@
 # This can be build with the following command:
 #
-#   docker build -t quickstart ../.. -f Dockerfile
+#   docker build -t quickstart ../. -f Dockerfile
 #
 # we use an intermediate image to build this image. it will make the resulting
 # image a bit smaller.
@@ -21,16 +21,16 @@ ENV PATH="/opt/quickstart/bin:${PATH}"
 WORKDIR /src
 
 # enable docker to cache some install steps
-COPY tools/quickstart/constraints.txt /src/
+COPY quickstart/constraints.txt /src/
 RUN pip install -c constraints.txt pip wheel setuptools
-COPY tools/quickstart/requirements.txt /src/
+COPY quickstart/requirements.txt /src/
 # remove development dependencies from the end of the file
 RUN sed -i -e '/development dependencies/q' requirements.txt
 RUN pip install -c constraints.txt -r requirements.txt
 
-COPY tools/quickstart /src/
+COPY quickstart /src/
 # we need to copy the symlinked file again, otherwise we have a symlink that points to nowhere
-COPY tools/quickstart/constraints.txt /src/
+COPY quickstart/constraints.txt /src/
 RUN pip install -c constraints.txt .
 
 # get docker as standalone binary

@@ -16,14 +16,14 @@ always major.minor.patch)
 
 ## bumpversion
 
-`tools/bridge` uses [bumpversion](https://pypi.org/project/bumpversion/) in order
+`bridge` uses [bumpversion](https://pypi.org/project/bumpversion/) in order
 to maintain it's version. bumpversion can be used to automatically upgrade the version
 in multiple files. The file `VERSION` contains the current version,
 it's also maintained in `bridge/version.py` and `setup.cfg`.
 
-bumpversion is configured via the `tools/bridge/.bumpversion.cfg`
+bumpversion is configured via the `bridge/.bumpversion.cfg`
 configuration file. If you want to run bumpversion to change the
-bridge's version, please change to the `tools/bridge` directory first.
+bridge's version, please change to the `bridge` directory first.
 
 ## Making a pre-release
 
@@ -33,7 +33,7 @@ Checkout the `bridge/pre-release` branch:
 git checkout bridge/pre-release
 git pull
 git merge -m 'Merge with master branch' origin/master
-cd tools/bridge
+cd bridge
 bumpversion release
 ```
 

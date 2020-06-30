@@ -12,4 +12,4 @@ falcon
 # --- development dependencies:
 
 contract-deploy-tools
--r ../../requirements-dev.txt
+-r ../requirements-dev.txt

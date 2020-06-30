@@ -30,14 +30,14 @@ blockchain, and an ERC20 Token on the foreign chain. The _Trustlines_ bridge is
 unidirectional. It allows to transfer `TLN` (_Trustlines_ network token) from
 the Ethereum mainnet (foreign chain) to the _Trustlines_ chain (home) as
 native `TLC` (_Trustline_ coins). Therefore a dedicated
-[ForeignBridge](https://github.com/trustlines-protocol/blockchain/blob/master/contracts/contracts/bridge/ForeignBridge.sol)
+[ForeignBridge](../contracts/contracts/bridge/ForeignBridge.sol)
 contract gets deployed on the main chain. Token holders can then initiate
 a transfer to this contract to trigger a bridge transfer. Tokens send to the
 bridge are not recoverable and will be burned over time. Bridge validators are
 obliged to observe the transfer events of the
-[TrustlinesNetworkToken](https://github.com/trustlines-protocol/blockchain/blob/master/contracts/contracts/token/TrustlinesNetworkToken.sol)
+[TrustlinesNetworkToken](../contracts/contracts/token/TrustlinesNetworkToken.sol)
 to the foreign bridge contract. They then confirm each transfer on the
-[HomeBridgeContract](https://github.com/trustlines-protocol/blockchain/blob/master/contracts/contracts/bridge/HomeBridge.sol)
+[HomeBridgeContract](../contracts/contracts/bridge/HomeBridge.sol)
 on the _Trustlines_ chain with their signature. As soon as more than 50% of all
 registered bridge validators have confirmed the same token transfer, the
 `HomeBridge` initiates an internal transaction to release the `TLC`. To be able
@@ -61,7 +61,7 @@ The bridge validator client is written in _Python_ and can be installed with `pi
 directly.
 
 ```bash
-pip install git+https://github.com/trustlines-protocol/blockchain.git#subdirectory=tools/bridge
+pip install git+https://github.com/trustlines-protocol/blockchain.git#subdirectory=bridge
 ```
 
 The client can be started with the `tlbc-bridge` command, but needs
@@ -71,10 +71,10 @@ a [configuration](#configuration) to do so.
 
 The docker image needs to be built from the root directory of this repository.
 The following example illustrates how to do so from the current directory
-(`tools/bridge`).
+(`bridge`).
 
 ```bash
-docker build --file ./Dockerfile --tag tlbc-bridge ../../
+docker build --file ./Dockerfile --tag tlbc-bridge ../
 ```
 
 ---

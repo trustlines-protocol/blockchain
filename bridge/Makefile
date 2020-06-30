@@ -1,4 +1,4 @@
-TOP_LEVEL=$(shell cd ../..; pwd)
+TOP_LEVEL=$(shell cd ..; pwd)
 VIRTUAL_ENV ?= $(TOP_LEVEL)/venv
 
 lint: install-requirements

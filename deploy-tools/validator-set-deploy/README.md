@@ -7,7 +7,7 @@ The contracts can be found in [blockchain/contracts](https://github.com/trustlin
 
 The installation of the validator-set-deploy tool will require python 3.6 or up and pip.
 
-You can install the validator-set-deploy tool by running `make install-tools/validator-set-deploy` 
+You can install the validator-set-deploy tool by running `make install-tools/validator-set-deploy`
 from the root directory. This will create a virtual Python environment if one was not created yet,
 install the dependencies and compile the contracts.
 You will then need to activate the created virtual environment with for example `source venv/bin/activate`.
@@ -35,5 +35,5 @@ Commands:
 
 ## Running the tests
 
-You can run the tests on the validator-set-deploy tool by running 
+You can run the tests on the validator-set-deploy tool by running
 `make test-tools/validator-set-deploy` from the root directory.

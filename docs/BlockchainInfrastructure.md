@@ -1,6 +1,6 @@
 ## The Trustlines Blockchain Infrastructure
 
-This document describes the trustlines blockchain infrastructure 
+This document describes the trustlines blockchain infrastructure
 which involves multiple components across this repository.
 
 Nodes of the Trustlines Blockchain run various applications:
@@ -12,7 +12,7 @@ Nodes of the Trustlines Blockchain run various applications:
 
 There are multiple ways to set each of these up.
 The most straightforward one by far is via our interactive quickstartscript.
-Finer control can be achieved by starting the components individually as Docker containers. 
+Finer control can be achieved by starting the components individually as Docker containers.
 Finally, it is also possible to avoid Docker altogether and run everything directly on the host machine.
 
 Before starting the installation process, please have a look at the following
