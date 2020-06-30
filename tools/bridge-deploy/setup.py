@@ -1,15 +1,4 @@
-from setuptools import find_packages, setup
+from setuptools import setup
 
-setup(
-    name="bridge-deploy",
-    setup_requires=["setuptools_scm"],
-    # use_scm_version=True,
-    version="0.0.1",
-    packages=find_packages(),
-    package_data={"bridge_deploy": ["contracts.json"]},
-    install_requires=["click", "web3", "contract-deploy-tools"],
-    entry_points="""
-    [console_scripts]
-    bridge-deploy=bridge_deploy.cli:main
-    """,
-)
+# configuration is read from setup.cfg
+setup()

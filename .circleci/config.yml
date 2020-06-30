@@ -122,7 +122,7 @@ jobs:
       - run:
           name: Configuring PATH
           command: |
-            echo 'export PATH=~/bin:~/repo/venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
+            echo 'export PATH=~/bin:~/repo/venv/bin:${PATH}' >> ${BASH_ENV}
       - run:
           name: Create python virtualenv
           command: |
@@ -303,7 +303,7 @@ jobs:
       - run:
           name: Run mypy
           command: |
-            mypy --ignore-missing-imports tools/auction-deploy/tests tools/auction-deploy/auction_deploy tools/auction-deploy/setup.py
+            mypy --ignore-missing-imports tools/auction-deploy/tests tools/auction-deploy/src tools/auction-deploy/setup.py
 
   install-auction:
     executor: ubuntu-builder
@@ -352,7 +352,7 @@ jobs:
       - run:
           name: Run mypy
           command: |
-            mypy --ignore-missing-imports tools/validator-set-deploy/tests tools/validator-set-deploy/validator_set_deploy tools/validator-set-deploy/setup.py
+            mypy --ignore-missing-imports tools/validator-set-deploy/tests tools/validator-set-deploy/src tools/validator-set-deploy/setup.py
 
   install-validator-set:
     executor: ubuntu-builder
@@ -395,7 +395,7 @@ jobs:
       - run:
           name: Run mypy
           command: |
-            mypy --ignore-missing-imports tools/bridge-deploy/tests tools/bridge-deploy/bridge_deploy tools/bridge-deploy/setup.py
+            mypy --ignore-missing-imports tools/bridge-deploy/tests tools/bridge-deploy/src tools/bridge-deploy/setup.py
 
   install-bridge-deploy:
     executor: ubuntu-builder
@@ -438,7 +438,7 @@ jobs:
       - run:
           name: Run mypy
           command: |
-            mypy --ignore-missing-imports tools/bridge/tests tools/bridge/end2end-tests/tests tools/bridge/bridge tools/bridge/setup.py
+            mypy --ignore-missing-imports tools/bridge/tests tools/bridge/end2end-tests/tests tools/bridge/src tools/bridge/setup.py
 
   install-bridge-validator:
     executor: ubuntu-builder

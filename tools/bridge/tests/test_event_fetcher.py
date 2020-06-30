@@ -111,21 +111,21 @@ def transfer_tokens_to_foreign_bridge(foreign_bridge_contract, transfer_tokens_t
 
 
 def test_instantiate_event_fetcher_with_negative_event_fetch_limit(
-    make_transfer_event_fetcher
+    make_transfer_event_fetcher,
 ):
     with pytest.raises(ValueError):
         make_transfer_event_fetcher(event_fetch_limit=-1)
 
 
 def test_instantiate_event_fetcher_with_negative_max_reorg_depth(
-    make_transfer_event_fetcher
+    make_transfer_event_fetcher,
 ):
     with pytest.raises(ValueError):
         make_transfer_event_fetcher(max_reorg_depth=-1)
 
 
 def test_instantiate_event_fetcher_with_negative_start_block_number(
-    make_transfer_event_fetcher
+    make_transfer_event_fetcher,
 ):
     with pytest.raises(ValueError):
         make_transfer_event_fetcher(start_block_number=-1)

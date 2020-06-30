@@ -50,13 +50,14 @@ token transfer can not be payed out twice.
 Running a bridge validator requires in addition to this client two synchronized
 nodes for the foreign (_Ethereum_ main chain) and home (_Trustlines_ chain)
 network (see [configuration options](#configuration)). The bridge client
-supports [light nodes](https://www.parity.io/what-is-a-light-client/). For
-a more extended setup including these nodes, check out the
+supports [light
+nodes](https://github.com/ethereum/wiki/wiki/Light-client-protocol). For a more
+extended setup including these nodes, check out the
 [section](#docker-compose) for `docker-compose` instructions.
 
 ### Python Package Manager
 
-The bridge validator client is written in _Python_ can be installed with `pip`
+The bridge validator client is written in _Python_ and can be installed with `pip`
 directly.
 
 ```bash
@@ -82,7 +83,7 @@ docker build --file ./Dockerfile --tag tlbc-bridge ../../
 
 The bridge validator client can be configured with a [TOML
 configuration file](https://github.com/toml-lang/toml#spec), whose
-path must be given via the `--config` (`-c`) CLI paramter.
+path must be given via the `--config` (`-c`) CLI parameter.
 
 Here is an example file with all possible entries. Optional entries
 are listed with their default value.
@@ -152,8 +153,8 @@ level = "INFO"
 
 Internally this is using _Python_'s
 [logging.config.dictConfig](https://docs.python.org/3/library/logging.config.html#logging.config.dictConfig).
-The exact schema for this key can be found at the [configuration dictionary
-schema](https://docs.python.org/3/library/logging.config.html#logging-config-dictschema).
+The exact schema for this can be found at the [configuration
+dictionary](https://docs.python.org/3/library/logging.config.html#logging-config-dictschema).
 
 The logging configuration can be changed at runtime. If you send a
 SIGHUP signal to the tlbc-bridge program, it will re-read the
@@ -164,8 +165,9 @@ running program.
 
 ### Webservice
 
-The webservice allows to query information about the current state of the bridge node. It is not
-running by default and must be enabled in the config file if desired:
+The webservice allows to query information about the current state of the bridge
+node. It is not running by default and must be enabled in the config file if
+desired:
 
 ```toml
 [webservice]
@@ -176,39 +178,6 @@ port = 8640                # port number the webservice should listen on
 
 ### Validation
 
-The configuration itself as well as the provided contracts and data will be verified at startup and continously. Make sure to check the logs for errors when running your validator node.
-
-## Docker Compose
-
-Using the provided configuration files for `docker-compose` (at `./docker`)
-allows an easy setup including the blockchain nodes. Make sure
-you checked out the section regarding the [docker setup](#docker-image).
-
-### Full Setup
-
-Running the whole bridge validator setup with all components via
-`docker-compose` requires a complete configuration environment file (`.env`). To
-switch between the different setup environments, exchange the `docker-compose`
-configuration file postfix by `development` or `production`. For the
-production setup the `build` does nothing and can be skipped.
-
-```bash
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose-base.yaml --file ./docker/docker-compose-development.yaml build
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose-base.yaml --file ./docker/docker-compose-development.yaml up
-```
-
-**Note: There is no production Trustlines chain yet!**
-
-### Nodes Only
-
-This approach is useful when it is intended to run the bridge client as
-a standalone application on your machine (see [pip
-install](#python-package-manager)). In contrast to the previous full setup the
-configuration via environment file is not necessary and has no effect.
-
-```bash
-docker-compose --project-name tlbc-bridge --file ./docker/docker-compose-base.yaml --file ./docker/docker-compose-development.yaml up node_foreign node_home
-```
-
-The JSON-RPC endpoint of the foreign chain is linked to `http://localhost:8545`.
-The home chain can be connected via `http://localhost:8546`.
+The configuration itself as well as the provided contracts and data will be
+verified at startup and continously. Make sure to check the logs for errors when
+running your validator node.

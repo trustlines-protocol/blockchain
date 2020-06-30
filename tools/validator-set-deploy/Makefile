@@ -3,16 +3,16 @@ VIRTUAL_ENV ?= $(TOP_LEVEL)/venv
 CONTRACTS_DIRECTORY=$(TOP_LEVEL)/contracts/contracts
 
 lint: install
-	$(VIRTUAL_ENV)/bin/flake8 validator_set_deploy tests setup.py
-	$(VIRTUAL_ENV)/bin/black --check validator_set_deploy tests setup.py
-	$(VIRTUAL_ENV)/bin/mypy validator_set_deploy tests setup.py --ignore-missing-imports
+	$(VIRTUAL_ENV)/bin/flake8 --config $(TOP_LEVEL)/.flake8 src tests setup.py
+	$(VIRTUAL_ENV)/bin/black --check src tests setup.py
+	$(VIRTUAL_ENV)/bin/mypy src tests setup.py --ignore-missing-imports
 
 test: install
 	$(VIRTUAL_ENV)/bin/pytest tests
 
 compile: install-requirements
 	$(VIRTUAL_ENV)/bin/deploy-tools compile --evm-version petersburg -d $(CONTRACTS_DIRECTORY)
-	$(VIRTUAL_ENV)/bin/python scripts/pack_contracts.py build/contracts.json validator_set_deploy/contracts.json
+	$(VIRTUAL_ENV)/bin/python scripts/pack_contracts.py build/contracts.json src/validator_set_deploy/contracts.json
 
 build: compile
 	$(VIRTUAL_ENV)/bin/python setup.py sdist
@@ -31,7 +31,7 @@ $(VIRTUAL_ENV):
 	python3 -m venv $@
 
 clean:
-	rm -rf build .tox .mypy_cache .pytest_cache */__pycache__ *.egg-info
-	rm -f .installed validator_set_deploy/contracts.json
+	rm -rf build .tox .mypy_cache .pytest_cache */__pycache__ */*/__pycache__ *.egg-info */*.egg-info
+	rm -f .installed src/validator_set_deploy/contracts.json
 
 .PHONY: install install-requirements test lint compile build clean

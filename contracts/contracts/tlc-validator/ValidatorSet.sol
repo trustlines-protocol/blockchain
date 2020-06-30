@@ -3,6 +3,7 @@ pragma solidity ^0.5.8;
 import "../equivocation-inspector/EquivocationInspector.sol";
 import "./ValidatorProxy.sol";
 
+
 contract ValidatorSet {
     /// Issue this log event to signal a desired change in validator set.
     /// This will not lead to a change in active validator set until

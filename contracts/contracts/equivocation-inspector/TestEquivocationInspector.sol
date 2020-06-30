@@ -6,6 +6,7 @@ pragma solidity ^0.5.8;
 
 import "./EquivocationInspector.sol";
 
+
 contract TestEquivocationInspector {
     function testGetSignerAddress(bytes memory _data, bytes memory _signature)
         public
@@ -28,5 +29,4 @@ contract TestEquivocationInspector {
             _signatureTwo
         );
     }
-
 }

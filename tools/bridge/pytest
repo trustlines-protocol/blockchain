@@ -2,9 +2,9 @@
 
 """Run pytest with gevent's monkeypatching applied"""
 
-from gevent import monkey  # isort:skip
-
-monkey.patch_all()  # noqa: E402 isort:skip
+# fmt: off
+from gevent import monkey; monkey.patch_all()  # noqa: E402, E702 isort:skip
+# fmt: on
 
 import re
 import sys
