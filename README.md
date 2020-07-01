@@ -1,3 +1,12 @@
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/psf/black
+
+.. image:: https://circleci.com/gh/trustlines-protocol/blockchain.svg?style=svg
+    :target: https://circleci.com/gh/trustlines-protocol/blockchain
+
+.. image:: https://badges.gitter.im/Join%20Chat.svg
+    :target: https://gitter.im/trustlines/community
+
 # Trustlines Blockchain
 
 The Trustlines Blockchain is a component of the [Trustlines Protocol](https://trustlines.foundation/protocol.html).
@@ -23,11 +32,11 @@ refer to the [Trustlines Blockchain documentation](docs/BlockchainInfrastructure
 
 You can also learn more about
 [the contracts](contracts/README.md),
-[the auction-deploy tool](deploy-tools/auction-deploy/README.md),
-[the bridge](bridge/README.md),
-[the bridge-deploy tool](deploy-tools/bridge-deploy/README.md),
 [the quickstart](quickstart/README.md),
-[the validator-set-deploy tool](deploy-tools/validator-set-deploy/README.md),
+[the bridge](bridge/README.md),
+[the auction-deploy tool](deploy-tools/README.md),
+[the bridge-deploy tool](deploy-tools/README.md),
+[the validator-set-deploy tool](deploy-tools/README.md),
 by reading their corresponding readmes.
 
 ## Installation
