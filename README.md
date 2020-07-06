@@ -45,6 +45,14 @@ If you want a quickstart setup for the Laika testnet, use the following command 
 bash <(curl -L quickstart.laika.trustlines.foundation)
 ```
 
+## Public Laika Node
+
+The Trustlines Foundation hosts a publically accessible node for the
+Laika Testnet.
+
+You can access it via the following URL:
+https://access.laika.trustlines.foundation
+
 ## Start Developing
 
 We refer you to the different readmes of the components you want to start developing on.
