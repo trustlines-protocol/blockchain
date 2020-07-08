@@ -4,4 +4,4 @@ requests
 toml
 web3
 # development dependencies
--r ../../requirements-dev.txt
+-r ../requirements-dev.txt

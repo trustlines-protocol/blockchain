@@ -1,4 +1,4 @@
-TOP_LEVEL=$(shell cd ../..; pwd)
+TOP_LEVEL=$(shell cd ..; pwd)
 VIRTUAL_ENV ?= $(TOP_LEVEL)/venv
 
 lint: install
@@ -26,6 +26,6 @@ clean:
 	rm -f .installed
 
 build-docker-image::
-	docker build -t quickstart ../.. -f Dockerfile
+	docker build -t quickstart ../. -f Dockerfile
 
 .PHONY: install install-requirements test lint compile build clean build-docker-image

@@ -41,8 +41,8 @@ if [ $EXIT_CODE -eq 0 ]; then
   fi
 
   # Check if can connect to boot nodes
-  if ! docker logs testrun 2>&1 | grep "[3-9][0-9]*/[0-9]* peers"; then
-    error "It seems like the image could not connected to at least all three bootnodes"
+  if ! docker logs testrun 2>&1 | grep "[1-9][0-9]*/[0-9]* peers"; then
+    error "It seems like the image could not connected to at least one node"
     EXIT_CODE=2
   else
     echo "Image was connected to at least all bootnodes"

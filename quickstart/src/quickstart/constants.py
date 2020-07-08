@@ -17,7 +17,7 @@ NETSTATS_ENV_FILE_PATH = "netstats-env"
 
 BRIDGE_CONFIG_FILE_EXTERNAL = "bridge-config.toml"
 BRIDGE_DOCUMENTATION_URL = (
-    "https://github.com/trustlines-protocol/blockchain/tree/master/tools/bridge"
+    "https://github.com/trustlines-protocol/blockchain/tree/master/bridge"
 )
 
 MONITOR_DIR = "monitor"

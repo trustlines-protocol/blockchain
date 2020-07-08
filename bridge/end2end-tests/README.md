@@ -12,13 +12,13 @@ Additionally Openethereum must be installed.
 
 To run the end2end tests, use
 `make test-end2end`
-from the `tools/bridge` directory, or use `make test-end2end-tools/bridge`
+from the `bridge` directory, or use `make test-end2end/bridge`
 from the blockchain root directory.
 
 ## Run without make
 
 To run the tests without `make`, make sure that tlbc-bridge and Openethereum
-are installed. Then run `pytest tools/bridge/end2end-tests/tests`.
+are installed. Then run `pytest bridge/end2end-tests/tests`.
 
 ## Test Structure
 
