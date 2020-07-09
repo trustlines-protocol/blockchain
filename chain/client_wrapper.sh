@@ -1,29 +1,29 @@
 #!/bin/bash
 #
 # NAME
-#   Parity Wrapper
+#   Client Wrapper
 #
 # SYNOPSIS
-#   parity_wrapper.sh [-r] [role] [-a] [address] [-p] [arguments]
+#   client_wrapper.sh [-r] [role] [-a] [address] [-c] [arguments]
 #
 # DESCRIPTION
-#   A wrapper for the actual Parity client to make the Docker image easy usable by preparing the Parity client for
-#   a set of predefined list of roles the client can take without have to write lines of arguments on run Docker.
+#   A wrapper for the actual client to make the Docker image easy to use by preparing the client for
+#   a set of predefined list of roles the client can take without having to write lines of arguments on run Docker.
 #
 # OPTIONS
-#   -r [--role]         Role the Parity client should use.
-#                       Depending on the chosen role Parity gets prepared for that role.
+#   -r [--role]         Role the client should use.
+#                       Depending on the chosen role the client gets prepared for that role.
 #                       Selecting a specific role can require further arguments.
 #                       Checkout ROLES for further information.
 #
-#   -a [--address]      The Ethereum address that parity should use.
+#   -a [--address]      The Ethereum address that the client should use.
 #                       Depending on the chosen role, the address gets inserted at the right
-#                       place of the configuration, so Parity is aware of it.
+#                       place of the configuration, so the client is aware of it.
 #                       Gets ignored if not necessary for the chosen role.
 #
-#   -p [--parity-args]  Additional arguments that should be forwarded to the Parity client.
+#   -c [--client-args]  Additional arguments that should be forwarded to the client.
 #                       Make sure this is the last argument, cause everything after is
-#                       forwarded to Parity.
+#                       forwarded.
 #
 # ROLES
 #   The list of available roles is:
@@ -44,13 +44,13 @@
 #     - Needs the password file and the key-set. (see FILES)
 #
 # FILES
-#   The configuration folder for Parity takes place at /home/parity/.local/share/io.parity.ethereum.
+#   The configuration folder for used client takes place at /home/openethereum/.local/share/openethereum.
 #   Alternately the shorthand symbolic link at /config can be used.
-#   Parity's data base is at /home/parity/.local/share/io.parity.ethereum/chains or available trough /data as well.
+#   Openethereum's data base is at /home/openethereum/.local/share/openethereum/chains or available trough /data as well.
 #   To provide custom files in addition bind a volume through Docker to the sub-folder called 'custom'.
 #   The password file is expected to be placed in the custom configuration folder names 'pass.pwd'.
 #   The key-set is expected to to be placed in the custom configuration folder under 'keys/Trustlines/'
-#   Besides from using the pre-defined locations, it is possible to define them manually thought the parity
+#   Besides from using the pre-defined locations, it is possible to define them manually thought the client
 #   arguments. Checkout their documentation to do so.
 #
 
@@ -59,7 +59,7 @@ set -e
 # Adjustable configuration values.
 ROLE="observer"
 ADDRESS=""
-PARITY_ARGS_ARRAY=()
+CLIENT_ARGS_ARRAY=()
 
 # Internal stuff.
 declare -a VALID_ROLE_LIST=(
@@ -70,10 +70,10 @@ declare -a VALID_ROLE_LIST=(
 SHARED_VOLUME_PATH="/shared/"
 
 # Make sure some environment variables are defined.
-[[ -z "$PARITY_BIN" ]] && PARITY_BIN=/usr/local/bin/parity
-[[ -z "$PARITY_CONFIG_DIR" ]] &&
-  PARITY_CONFIG_DIR=/home/parity/.local/share/io.parity.ethereum
-PARITY_CONFIG_FILE="${PARITY_CONFIG_DIR}/config.toml"
+[[ -z "$CLIENT_BIN" ]] && CLIENT_BIN=/usr/local/bin/openethereum
+[[ -z "$NODE_HOME_DIR" ]] &&
+  NODE_HOME_DIR=/home/openethereum/.local/share/openethereum
+NODE_CONFIG_FILE="${NODE_HOME_DIR}/config.toml"
 
 function showVersion() {
   if [[ -e /VERSION ]]; then
@@ -147,11 +147,11 @@ function parseArguments() {
       shift                # arg
       shift                # value
 
-    # Additional arguments for the Parity client.
-    # Use all remain arguments for parity.
-    elif [[ $arg == --parity-args ]] || [[ $arg == -p ]]; then
+    # Additional arguments for the client.
+    # Use all remain arguments.
+    elif [[ $arg == --client-args ]] || [[ $arg == -c ]]; then
       shift # arg
-      PARITY_ARGS_ARRAY=("$@")
+      CLIENT_ARGS_ARRAY=("$@")
       break
 
     # A not known argument.
@@ -162,8 +162,8 @@ function parseArguments() {
   done
 }
 
-# Replace a option value for the parity configuration file.
-# The file is determined by the $PARITY_CONFIG_FILE variable.
+# Replace an option value for the configuration file.
+# The file is determined by the $NODE_CONFIG_FILE variable.
 # The change of the file happens in place.
 #
 # Developer:
@@ -187,10 +187,10 @@ function replace_configuration_placeholder() {
   # The placeholder/value could be within a list.
   # Anything could follow afterwards (comment).
   sed -i -e "s/^\(${key_name}\ *=\ *\[\?\"\)${placeholder}\(\"\]\?.*$\)/\1${value}\2/" \
-    "$PARITY_CONFIG_FILE"
+    "$NODE_CONFIG_FILE"
 }
 
-# Adjust the configuration file for parity for the selected role.
+# Adjust the configuration file for the client for the selected role.
 # Includes some checks of the arguments constellation and hints for the user.
 # Use the predefined configuration snippets filled with the users input.
 #
@@ -198,20 +198,20 @@ function adjustConfiguration() {
   # Make sure an address is given if needed.
   if { [[ $ROLE == 'participant' ]] || [[ $ROLE == 'validator' ]]; } && [[ -z "$ADDRESS" ]]; then
     echo "Missing or empty address but required by selected role!"
-    echo "Make sure the argument order is correct (parity arguments at the end)."
+    echo "Make sure the argument order is correct (client arguments at the end)."
     exit 1
   fi
 
   # Copy base config file
-  cp "${PARITY_CONFIG_DIR}/base.toml" ${PARITY_CONFIG_FILE}
+  cp "${NODE_HOME_DIR}/base.toml" ${NODE_CONFIG_FILE}
   {
     # Append the correct configuration template for the selected role.
-    cat "${PARITY_CONFIG_DIR}/${ROLE}-role.toml"
+    cat "${NODE_HOME_DIR}/${ROLE}-role.toml"
     # Append docker specific config
-    cat "${PARITY_CONFIG_DIR}/docker.toml"
+    cat "${NODE_HOME_DIR}/docker.toml"
     # Append chainspecific config
-    cat "${PARITY_CONFIG_DIR}/chain.toml"
-  } >>${PARITY_CONFIG_FILE}
+    cat "${NODE_HOME_DIR}/chain.toml"
+  } >>${NODE_CONFIG_FILE}
 
   # Handle the different roles.
   # Append the respective configuration snippet with the necessary variable to the default configuration file.
@@ -232,16 +232,16 @@ function adjustConfiguration() {
   esac
 }
 
-# Caller of the actual Parity client binaries.
+# Caller of the actual client binaries.
 # The provided arguments by the user gets forwarded.
 #
-function runParity() {
-  printf "\nStart Parity"
-  number_parity_args=${#PARITY_ARGS_ARRAY[@]}
-  [[ $number_parity_args -gt 0 ]] && printf " with the additional %d arguments: %-s" "$number_parity_args" "${PARITY_ARGS_ARRAY[*]}"
+function runClient() {
+  printf "\nStarting Client"
+  number_client_args=${#CLIENT_ARGS_ARRAY[@]}
+  [[ $number_client_args -gt 0 ]] && printf " with the additional %d arguments: %-s" "$number_client_args" "${CLIENT_ARGS_ARRAY[*]}"
   printf "\n"
 
-  exec $PARITY_BIN "${PARITY_ARGS_ARRAY[@]}"
+  exec $CLIENT_BIN "${CLIENT_ARGS_ARRAY[@]}"
 }
 
 function copySpecFileToSharedVolume() {
@@ -258,4 +258,4 @@ showVersion
 parseArguments "$@"
 adjustConfiguration
 copySpecFileToSharedVolume
-runParity
+runClient

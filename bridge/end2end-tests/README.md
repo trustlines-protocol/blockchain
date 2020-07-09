@@ -6,7 +6,7 @@ This directory contains the end2end tests of the Trustlines Blockchain Bridge (t
 
 To run the end2end tests you need to have the tlbc-bridge
 installed in your environment. This will be automatically done if using `make`.
-Additionally Parity must be installed.
+Additionally Openethereum must be installed.
 
 ## Run
 
@@ -17,7 +17,7 @@ from the blockchain root directory.
 
 ## Run without make
 
-To run the tests without `make`, make sure that tlbc-bridge and Parity
+To run the tests without `make`, make sure that tlbc-bridge and Openethereum
 are installed. Then run `pytest bridge/end2end-tests/tests`.
 
 ## Test Structure

@@ -22,7 +22,6 @@ class NodeStatus:
 
 
 def _get_node_status_parity(w3, *, client_version):
-    logger.debug("Fetch parity node status")
     block_number = w3.eth.blockNumber
 
     syncing_map = w3.eth.syncing or None
@@ -60,7 +59,6 @@ def _get_node_status_parity(w3, *, client_version):
 
 
 def _get_node_status_geth(w3, *, client_version):
-    logger.debug("Fetch geth node status")
     block_number = w3.eth.blockNumber
     syncing_map = w3.eth.syncing or None
     is_syncing = bool(syncing_map)
@@ -79,8 +77,14 @@ def _get_node_status_geth(w3, *, client_version):
 def get_node_status(w3):
     client_version = w3.clientVersion
     if client_version.startswith("Parity"):
+        logger.debug("Fetch parity node status")
+        return _get_node_status_parity(w3, client_version=client_version)
+    elif client_version.startswith("OpenEthereum"):
+        logger.debug("Fetch openethereum node status")
+        # Parity and OpenEthereum use the same rpc
         return _get_node_status_parity(w3, client_version=client_version)
     else:
+        logger.debug("Fetch geth node status")
         return _get_node_status_geth(w3, client_version=client_version)
 
 

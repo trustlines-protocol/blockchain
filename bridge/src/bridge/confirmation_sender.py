@@ -90,7 +90,9 @@ class ConfirmationSender:
             )
         ]
 
-        self.is_parity = self.w3.clientVersion.startswith("Parity")
+        self.is_parity = self.w3.clientVersion.startswith(
+            "Parity"
+        ) or self.w3.clientVersion.startswith("OpenEthereum")
 
     @tenacity.retry(
         wait=tenacity.wait_exponential(multiplier=1, min=5, max=120),
