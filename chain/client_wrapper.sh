@@ -24,6 +24,8 @@
 #   -c [--client-args]  Additional arguments that should be forwarded to the client.
 #                       Make sure this is the last argument, cause everything after is
 #                       forwarded.
+#   -p [--parity-args]  Same as client-args, only exists for backwards compatibility
+#                       [DEPRECATED]
 #
 # ROLES
 #   The list of available roles is:
@@ -150,6 +152,14 @@ function parseArguments() {
     # Additional arguments for the client.
     # Use all remain arguments.
     elif [[ $arg == --client-args ]] || [[ $arg == -c ]]; then
+      shift # arg
+      CLIENT_ARGS_ARRAY=("$@")
+      break
+
+    # Additional arguments for clients
+    # Use all remain argument
+    # Same as --client-args, only for backwards compatibility
+    elif [[ $arg == --parity-args ]] || [[ $arg == -p ]]; then
       shift # arg
       CLIENT_ARGS_ARRAY=("$@")
       break
