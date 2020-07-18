@@ -6,7 +6,6 @@ pragma solidity ^0.5.8;
 
 import "./ValidatorSet.sol";
 
-
 contract TestValidatorSet is ValidatorSet {
     constructor(address _systemAddress) public {
         systemAddress = _systemAddress;

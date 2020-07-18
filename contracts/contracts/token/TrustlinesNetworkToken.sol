@@ -2,7 +2,6 @@ pragma solidity ^0.5.8;
 
 import "../lib/SafeMath.sol";
 
-
 contract TrustlinesNetworkToken {
     using SafeMath for uint256;
 

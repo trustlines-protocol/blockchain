@@ -3,7 +3,6 @@ pragma solidity ^0.5.8;
 import "../lib/Ownable.sol";
 import "./BaseDepositLocker.sol";
 
-
 contract BaseValidatorAuction is Ownable {
     uint constant MAX_UINT = ~uint(0);
 

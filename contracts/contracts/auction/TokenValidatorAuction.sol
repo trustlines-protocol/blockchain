@@ -5,7 +5,6 @@ import "./TokenDepositLocker.sol";
 import "../token/IERC20.sol";
 import "./BaseValidatorAuction.sol";
 
-
 contract TokenValidatorAuction is BaseValidatorAuction {
     IERC20 public bidToken;
 
