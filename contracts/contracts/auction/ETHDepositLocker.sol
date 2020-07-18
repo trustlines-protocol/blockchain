@@ -2,7 +2,6 @@ pragma solidity ^0.5.8;
 
 import "./BaseDepositLocker.sol";
 
-
 /*
   The ETHDepositLocker contract locks ETH deposits
 

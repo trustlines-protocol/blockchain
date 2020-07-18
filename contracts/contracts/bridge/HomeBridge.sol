@@ -2,7 +2,6 @@ pragma solidity ^0.5.8;
 
 import "../tlc-validator/ValidatorProxy.sol";
 
-
 contract HomeBridge {
     struct TransferState {
         mapping(address => bool) isConfirmedByValidator;

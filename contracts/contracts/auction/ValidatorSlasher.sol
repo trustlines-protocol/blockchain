@@ -4,7 +4,6 @@ import "../lib/Ownable.sol";
 import "./DepositLockerInterface.sol";
 import "../equivocation-inspector/EquivocationInspector.sol";
 
-
 contract ValidatorSlasher is Ownable {
     bool public initialized = false;
     DepositLockerInterface public depositContract;
