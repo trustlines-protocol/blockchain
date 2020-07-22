@@ -13,6 +13,7 @@ pragma solidity ^0.5.8;
 
 import "./TrustlinesNetworkToken.sol";
 
+
 contract FakeNetworkToken is TrustlinesNetworkToken {
     constructor()
         public
@@ -23,12 +24,20 @@ contract FakeNetworkToken is TrustlinesNetworkToken {
         _mint(account, amount);
     }
 
-    function fakeTransfer(address from, address to, uint256 value) public {
+    function fakeTransfer(
+        address from,
+        address to,
+        uint256 value
+    ) public {
         emit Transfer(from, to, value);
     }
 
     /* emit multiple events in a single transaction */
-    function fakeTransfer4(address from, address to, uint256 value) public {
+    function fakeTransfer4(
+        address from,
+        address to,
+        uint256 value
+    ) public {
         emit Transfer(from, to, value);
         emit Transfer(from, to, value);
 

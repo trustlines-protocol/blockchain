@@ -1,6 +1,6 @@
-# Parity Configuration
+# Openethereum Configuration
 
-This directory contains the configuration files for the Parity client
+This directory contains the configuration files for the Openethereum client
 To get a valid configuration you need to combine
 
 - `base.toml`
@@ -17,4 +17,4 @@ and one of the chain specific files
 - `../tlbc/config.toml`
 
 Because the files will just be concatenated, this only works with disjoint
-Parity configurations.
+Openethereum configurations.

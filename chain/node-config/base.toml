@@ -1,9 +1,11 @@
-# Base config file for parity
+# Base config file for openethereum
 
 [parity]
-# Custom chain spec
-chain = "/home/parity/.local/share/io.parity.ethereum/trustlines-spec.json"
-keys_path = "/home/parity/.local/share/io.parity.ethereum/custom/keys"
+base_path = "/home/openethereum/.local/share/openethereum"
+chain = "/home/openethereum/.local/share/openethereum/trustlines-spec.json"
+keys_path = "/home/openethereum/.local/share/openethereum/custom/keys"
+db_path = "/home/openethereum/.local/share/openethereum/chains"
+
 # No updates will be auto-installed
 auto_update = "none"
 # Disables auto downloading of new releases. Not recommended.

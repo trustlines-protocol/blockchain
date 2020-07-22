@@ -1,4 +1,4 @@
-# Docker specific parity configuration
+# Docker specific openethereum configuration
 
 [rpc]
   interface = "all"

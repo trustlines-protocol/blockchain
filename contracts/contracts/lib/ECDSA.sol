@@ -1,8 +1,8 @@
 /*
  * The MIT License (MIT)
- * 
+ *
  * Copyright (c) 2016 Smart Contract Solutions, Inc.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
  * "Software"), to deal in the Software without restriction, including
@@ -10,10 +10,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included
  * in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -24,6 +24,7 @@
  */
 
 pragma solidity ^0.5.8;
+
 
 /**
  * @title Elliptic curve signature operations
@@ -49,7 +50,7 @@ library ECDSA {
 
         // Check the signature length
         if (signature.length != 65) {
-            return (address(0));
+            revert("ECDSA: invalid signature length");
         }
 
         // Divide the signature in r, s and v variables
@@ -69,10 +70,12 @@ library ECDSA {
 
         // If the version is correct return the signer address
         if (v != 27 && v != 28) {
-            return (address(0));
+            revert("ECDSA: incorrect signature version");
         } else {
             // solium-disable-next-line arg-overflow
-            return ecrecover(hash, v, r, s);
+            address signer = ecrecover(hash, v, r, s);
+            require(signer != address(0), "ECDSA: invalid signature");
+            return signer;
         }
     }
 
