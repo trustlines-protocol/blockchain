@@ -3,7 +3,7 @@ version: 2.1
 executors:
   ubuntu-builder:
     docker:
-      - image: trustlines/builder:master25
+      - image: trustlines/builder:master32
         environment:
           - SOLC_VERSION=v0.5.8
     working_directory: ~/repo
@@ -276,23 +276,23 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: quickstart-venv-{{ checksum "tools/quickstart/constraints.txt" }}-{{ checksum "tools/quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
+          key: quickstart-venv-{{ checksum "quickstart/constraints.txt" }}-{{ checksum "quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
       - run:
           name: Install requirements
           command: |
-            make -C tools/quickstart install-requirements
+            make -C quickstart install-requirements
       - save_cache:
-          key: quickstart-venv-{{ checksum "tools/quickstart/constraints.txt" }}-{{ checksum "tools/quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
+          key: quickstart-venv-{{ checksum "quickstart/constraints.txt" }}-{{ checksum "quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
           paths:
             - venv
       - run:
-          name: Install tools/quickstart
+          name: Install quickstart
           command: |
-            make -C tools/quickstart install
+            make -C quickstart install
       - run:
           name: Run tests
           command: |
-            make -C tools/quickstart test
+            make -C quickstart test
 
   mypy-auction:
     executor: ubuntu-builder
@@ -303,7 +303,7 @@ jobs:
       - run:
           name: Run mypy
           command: |
-            mypy --ignore-missing-imports tools/auction-deploy/tests tools/auction-deploy/src tools/auction-deploy/setup.py
+            mypy --ignore-missing-imports deploy-tools/auction-deploy/tests deploy-tools/auction-deploy/src deploy-tools/auction-deploy/setup.py
 
   install-auction:
     executor: ubuntu-builder
@@ -311,20 +311,20 @@ jobs:
       - checkout
       - config-auction-path
       - restore_cache:
-          key: auction-venv-{{ checksum "tools/auction-deploy/constraints.txt" }}-{{ checksum "tools/auction-deploy/requirements.txt" }}
+          key: auction-venv-{{ checksum "deploy-tools/auction-deploy/constraints.txt" }}-{{ checksum "deploy-tools/auction-deploy/requirements.txt" }}
       - create-venv
       - run:
           name: Install requirements
           command: |
-            make -C tools/auction-deploy install-requirements
+            make -C deploy-tools/auction-deploy install-requirements
       - save_cache:
-          key: auction-venv-{{ checksum "tools/auction-deploy/constraints.txt" }}-{{ checksum "tools/auction-deploy/requirements.txt" }}
+          key: auction-venv-{{ checksum "deploy-tools/auction-deploy/constraints.txt" }}-{{ checksum "deploy-tools/auction-deploy/requirements.txt" }}
           paths:
             - auction-venv
       - run:
           name: Install auction-deploy
           command: |
-            make -C tools/auction-deploy install
+            make -C deploy-tools/auction-deploy install
       - persist_to_workspace:
           root: "~"
           paths:
@@ -339,7 +339,7 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            cd tools/auction-deploy
+            cd deploy-tools/auction-deploy
             make test
             cd ..
 
@@ -352,7 +352,7 @@ jobs:
       - run:
           name: Run mypy
           command: |
-            mypy --ignore-missing-imports tools/validator-set-deploy/tests tools/validator-set-deploy/src tools/validator-set-deploy/setup.py
+            mypy --ignore-missing-imports deploy-tools/validator-set-deploy/tests deploy-tools/validator-set-deploy/src deploy-tools/validator-set-deploy/setup.py
 
   install-validator-set:
     executor: ubuntu-builder
@@ -360,14 +360,14 @@ jobs:
       - checkout
       - config-validator-set-path
       - restore_cache:
-          key: validator-set-venv-{{ checksum "tools/validator-set-deploy/constraints.txt" }}-{{ checksum "tools/validator-set-deploy/requirements.txt" }}
+          key: validator-set-venv-{{ checksum "deploy-tools/validator-set-deploy/constraints.txt" }}-{{ checksum "deploy-tools/validator-set-deploy/requirements.txt" }}
       - create-venv
       - run:
           name: Install requirements and validator-set deploy tool
           command: |
-            make -C tools/validator-set-deploy install
+            make -C deploy-tools/validator-set-deploy install
       - save_cache:
-          key: validator-set-venv-{{ checksum "tools/validator-set-deploy/constraints.txt" }}-{{ checksum "tools/validator-set-deploy/requirements.txt" }}
+          key: validator-set-venv-{{ checksum "deploy-tools/validator-set-deploy/constraints.txt" }}-{{ checksum "deploy-tools/validator-set-deploy/requirements.txt" }}
           paths:
             - validator-set-venv
       - persist_to_workspace:
@@ -384,7 +384,7 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            make -C tools/validator-set-deploy test
+            make -C deploy-tools/validator-set-deploy test
 
   mypy-bridge-deploy:
     executor: ubuntu-builder
@@ -395,7 +395,7 @@ jobs:
       - run:
           name: Run mypy
           command: |
-            mypy --ignore-missing-imports tools/bridge-deploy/tests tools/bridge-deploy/src tools/bridge-deploy/setup.py
+            mypy --ignore-missing-imports deploy-tools/bridge-deploy/tests deploy-tools/bridge-deploy/src deploy-tools/bridge-deploy/setup.py
 
   install-bridge-deploy:
     executor: ubuntu-builder
@@ -403,14 +403,14 @@ jobs:
       - checkout
       - config-bridge-deploy-path
       - restore_cache:
-          key: bridge-deploy-venv-{{ checksum "tools/bridge-deploy/constraints.txt" }}-{{ checksum "tools/bridge-deploy/requirements.txt" }}
+          key: bridge-deploy-venv-{{ checksum "deploy-tools/bridge-deploy/constraints.txt" }}-{{ checksum "deploy-tools/bridge-deploy/requirements.txt" }}
       - create-venv
       - run:
           name: Install requirements and bridge deploy tool
           command: |
-            make -C tools/bridge-deploy install
+            make -C deploy-tools/bridge-deploy install
       - save_cache:
-          key: bridge-deploy-venv-{{ checksum "tools/bridge-deploy/constraints.txt" }}-{{ checksum "tools/bridge-deploy/requirements.txt" }}
+          key: bridge-deploy-venv-{{ checksum "deploy-tools/bridge-deploy/constraints.txt" }}-{{ checksum "deploy-tools/bridge-deploy/requirements.txt" }}
           paths:
             - bridge-deploy-venv
       - persist_to_workspace:
@@ -427,7 +427,7 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            make -C tools/bridge-deploy test
+            make -C deploy-tools/bridge-deploy test
 
   mypy-bridge-validator:
     executor: ubuntu-builder
@@ -438,7 +438,7 @@ jobs:
       - run:
           name: Run mypy
           command: |
-            mypy --ignore-missing-imports tools/bridge/tests tools/bridge/end2end-tests/tests tools/bridge/src tools/bridge/setup.py
+            mypy --ignore-missing-imports bridge/tests bridge/end2end-tests/tests bridge/src bridge/setup.py
 
   install-bridge-validator:
     executor: ubuntu-builder
@@ -446,7 +446,7 @@ jobs:
       - checkout
       - config-bridge-validator-path
       - restore_cache:
-          key: bridge-validator-venv-{{ checksum "tools/bridge/constraints.txt" }}-{{ checksum "tools/bridge/requirements.txt" }}
+          key: bridge-validator-venv-{{ checksum "bridge/constraints.txt" }}-{{ checksum "bridge/requirements.txt" }}
       - create-venv
       - run:
           name: Install codecov
@@ -455,15 +455,15 @@ jobs:
       - run:
           name: Install requirements and bridge validator client
           command: |
-            make -C tools/bridge install
+            make -C bridge install
       - save_cache:
-          key: bridge-validator-venv-{{ checksum "tools/bridge/constraints.txt" }}-{{ checksum "tools/bridge/requirements.txt" }}
+          key: bridge-validator-venv-{{ checksum "bridge/constraints.txt" }}-{{ checksum "bridge/requirements.txt" }}
           paths:
             - bridge-validator-venv
       - run:
           name: Build dist
           command: |
-            make -C tools/bridge dist
+            make -C bridge dist
 
       - persist_to_workspace:
           root: "~"
@@ -485,7 +485,7 @@ jobs:
       - run:
           name: Upload to pypi
           command: |
-            twine upload tools/bridge/dist/*
+            twine upload bridge/dist/*
 
   pytest-bridge-validator:
     executor: ubuntu-builder
@@ -496,11 +496,11 @@ jobs:
       - run:
           name: Run pytest
           command: |
-            cd tools/bridge
+            cd bridge
             make test-coverage
-            codecov --flags bridge_unit --prefix tools/bridge/
+            codecov --flags bridge_unit --prefix bridge/
       - store_test_results:
-          path: tools/bridge/test-results
+          path: bridge/test-results
 
   end2end-test-bridge-validator:
     executor: ubuntu-builder
@@ -509,17 +509,11 @@ jobs:
           at: '~'
       - config-bridge-validator-path
       - run:
-          name: Install parity
-          command: curl -o ~/bin/parity https://releases.parity.io/ethereum/v2.6.4/x86_64-unknown-linux-gnu/parity
-      - run:
-          name: Make parity executable
-          command: chmod 755 ~/bin/parity
-      - run:
           name: Run pytest
           command: |
-            cd tools/bridge
+            cd bridge
             make test-end2end-coverage
-            codecov --flags bridge_end2end --prefix tools/bridge/
+            codecov --flags bridge_end2end --prefix bridge/
 
   build-bridge-image:
     executor: ubuntu-builder
@@ -531,7 +525,7 @@ jobs:
       - run:
           name: Build bridge image
           command: |
-            docker build -f tools/bridge/Dockerfile -t $LOCAL_IMAGE .
+            docker build -f bridge/Dockerfile -t $LOCAL_IMAGE .
       - run:
           name: Save bridge image
           command: |
@@ -605,7 +599,7 @@ jobs:
       - run:
           name: Build quickstart image
           command: |
-            make -C tools/quickstart build-docker-image
+            make -C quickstart build-docker-image
       - run:
           name: Save quickstart image
           command: |
