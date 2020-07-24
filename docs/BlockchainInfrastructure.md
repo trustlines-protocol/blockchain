@@ -101,7 +101,7 @@ We refer to the documentation of the individual components:
 - [Parity](https://wiki.parity.io/Parity-Ethereum)
 - [Netstats](https://github.com/trustlines-protocol/ethstats-client)
 - [Monitor](https://github.com/trustlines-protocol/tlbc-monitor)
-- [Bridge](https://github.com/trustlines-protocol/blockchain/tree/master/tools/bridge)
+- [Bridge](https://github.com/trustlines-protocol/blockchain/tree/master/bridge)
 
 For the Trustlines Blockchain node, make sure it uses the correct chain
 specification file (`./chain/tlbc/tlbc-spec.json`), that the right TCP and UDP
