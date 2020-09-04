@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 import time
+import typing
 from textwrap import fill
 from typing import List
 
@@ -94,6 +95,8 @@ def create_docker_readme(base_dir):
             f.write(README_TEXT)
 
 
+# Ignore typing because it seems not to handle `subprocess.run` **kwargs properly
+@typing.no_type_check
 def update_and_start(
     *, base_dir, host_base_dir, project_name, start_foreign_node
 ) -> None:
