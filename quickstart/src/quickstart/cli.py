@@ -77,6 +77,33 @@ def base_dir_option(**kwargs):
     )
 
 
+def confirm_expose_ports(ctx, param, value):
+    if value:
+        click.secho(
+            "Running the home node with exposed ports incurs risks.\n"
+            "If the machine on which the node is ran exposes the\n"
+            "ports itself the node will be queryable from outside.\n"
+            "With the wrong settings, this means funds could be stolen.\n\n"
+            "Only use this option if you know what you are doing.\n",
+            "You can later change the exposed ports via the docker-compose.override.yaml file",
+            fg="red",
+        )
+        if not click.confirm("Do you wish to continue?", default=False):
+            ctx.abort()
+    return value
+
+
+expose_ports_option = click.option(
+    "--expose-ports",
+    "expose_node_ports",
+    help="Expose the HTTP and WebSocket ports of the home node to the local machine on 8545 and 8546 respectively.",
+    show_default=True,
+    is_flag=True,
+    default=False,
+    callback=confirm_expose_ports,
+)
+
+
 @click.group()
 def main():
     """Script to guide you through the quick setup of a Trustlines Blockchain node."""
@@ -87,7 +114,8 @@ def main():
 @project_name_option(default="tlbc")
 @base_dir_option(default="tlbc")
 @host_base_dir_option
-def tlbc(host_base_dir, project_name, base_dir):
+@expose_ports_option
+def tlbc(host_base_dir, project_name, base_dir, expose_node_ports):
     """
     Setup with Trustlines Blockchain settings.
 
@@ -106,6 +134,7 @@ def tlbc(host_base_dir, project_name, base_dir):
         project_name=project_name,
         base_dir=base_dir,
         chain_dir="tlbc",
+        expose_node_ports=expose_node_ports,
     )
 
 
@@ -113,7 +142,8 @@ def tlbc(host_base_dir, project_name, base_dir):
 @project_name_option(default="laika")
 @base_dir_option(default="trustlines")  # for backwards compatibility
 @host_base_dir_option
-def laika(host_base_dir, project_name, base_dir):
+@expose_ports_option
+def laika(host_base_dir, project_name, base_dir, expose_node_ports):
     """
     Setup with Laika settings.
 
@@ -132,6 +162,7 @@ def laika(host_base_dir, project_name, base_dir):
         project_name=project_name,
         base_dir=base_dir,
         chain_dir="Trustlines",
+        expose_node_ports=expose_node_ports,
     )
 
 
@@ -176,6 +207,7 @@ def laika(host_base_dir, project_name, base_dir):
 @project_name_option(default="custom")
 @base_dir_option(default="custom")
 @host_base_dir_option
+@expose_ports_option
 def custom(
     host_base_dir,
     docker_compose_file,
@@ -184,6 +216,7 @@ def custom(
     bridge_config,
     netstats_url,
     chain_dir,
+    expose_node_ports,
 ):
     """
     Setup with custom settings.
@@ -206,6 +239,7 @@ def custom(
         netstats_url=netstats_url,
         project_name=project_name,
         host_base_dir=host_base_dir,
+        expose_node_ports=expose_node_ports,
     )
 
 
@@ -220,6 +254,7 @@ def run(
     chain_dir,
     netstats_url=None,
     host_base_dir=None,
+    expose_node_ports=False,
 ):
     click.echo(
         "\n".join(
@@ -251,7 +286,9 @@ def run(
     )
     netstats.setup_interactively(base_dir=base_dir, netstats_url=netstats_url)
     docker.setup_interactivaly(
-        base_dir=base_dir, docker_compose_file=docker_compose_file
+        base_dir=base_dir,
+        docker_compose_file=docker_compose_file,
+        expose_node_ports=expose_node_ports,
     )
     docker.update_and_start(
         base_dir=base_dir,
