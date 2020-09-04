@@ -21,6 +21,7 @@ from deploy_tools.deploy import (
     send_function_call_transaction,
 )
 from deploy_tools.files import read_addresses_in_csv
+from web3.contract import Contract
 
 from auction_deploy.core import (
     ZERO_ADDRESS,
@@ -314,10 +315,11 @@ def deploy(
         token_address=token_address,
         private_key=private_key,
     )
+    slasher: Contract = contracts.slasher
 
     click.echo("Auction address: " + contracts.auction.address)
     click.echo("Deposit locker address: " + contracts.locker.address)
-    click.echo("Validator slasher address: " + contracts.slasher.address)
+    click.echo("Validator slasher address: " + slasher.address)
     warning_messages = get_errors_messages_on_contracts_links(contracts)
     if warning_messages:
         warning_messages.append("Verify what is wrong with `auction-deploy status`.")

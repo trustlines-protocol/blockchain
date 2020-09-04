@@ -52,3 +52,31 @@ repos:
     - id: ethlint
       exclude: ^contracts/contracts/lib/|^contracts/contracts/reward-contract/
       args: ["--config", "contracts/.soliumrc.json"]
+
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.782
+    hooks:
+    -   id: mypy
+        name: mypy-bridge
+        args: [--ignore-missing-imports]
+        files: ^bridge/
+    -   id: mypy
+        name: mypy-contracts
+        args: [--ignore-missing-imports]
+        files: ^contracts/
+    -   id: mypy
+        name: mypy-auction-deploy-tools
+        args: [--ignore-missing-imports]
+        files: ^deploy-tools/auction-deploy/
+    -   id: mypy
+        name: mypy-bridge-deploy-tools
+        args: [--ignore-missing-imports]
+        files: ^deploy-tools/bridge-deploy/
+    -   id: mypy
+        name: mypy-validator-set-deploy-tools
+        args: [--ignore-missing-imports]
+        files: ^deploy-tools/validator-set-deploy/
+    -   id: mypy
+        name: mypy-quickstart
+        args: [--ignore-missing-imports]
+        files: ^quickstart/
