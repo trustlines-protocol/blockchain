@@ -183,12 +183,13 @@ jobs:
           name: Run prettier
           command: |
             pre-commit run -a prettier
-
       - run:
           name: Run isort
           command: |
             pre-commit run -a isort
-
+      - run:
+          name: Run mypy
+          command: pre-commit run -a mypy
   run-black:
     executor: ubuntu-builder
     steps:
@@ -270,7 +271,6 @@ jobs:
       - run:
           name: Run pytest
           command: pytest contracts/tests
-
   test-quickstart:
     executor: ubuntu-builder
     steps:
@@ -294,16 +294,7 @@ jobs:
           command: |
             make -C quickstart test
 
-  mypy-auction:
-    executor: ubuntu-builder
-    steps:
-      - attach_workspace:
-          at: '~'
-      - config-auction-path
-      - run:
-          name: Run mypy
-          command: |
-            mypy --ignore-missing-imports deploy-tools/auction-deploy/tests deploy-tools/auction-deploy/src deploy-tools/auction-deploy/setup.py
+
 
   install-auction:
     executor: ubuntu-builder
@@ -329,7 +320,6 @@ jobs:
           root: "~"
           paths:
             - repo
-
   pytest-auction:
     executor: ubuntu-builder
     steps:
@@ -343,16 +333,6 @@ jobs:
             make test
             cd ..
 
-  mypy-validator-set:
-    executor: ubuntu-builder
-    steps:
-      - attach_workspace:
-          at: '~'
-      - config-validator-set-path
-      - run:
-          name: Run mypy
-          command: |
-            mypy --ignore-missing-imports deploy-tools/validator-set-deploy/tests deploy-tools/validator-set-deploy/src deploy-tools/validator-set-deploy/setup.py
 
   install-validator-set:
     executor: ubuntu-builder
@@ -374,7 +354,6 @@ jobs:
           root: "~"
           paths:
             - repo
-
   pytest-validator-set:
     executor: ubuntu-builder
     steps:
@@ -386,16 +365,6 @@ jobs:
           command: |
             make -C deploy-tools/validator-set-deploy test
 
-  mypy-bridge-deploy:
-    executor: ubuntu-builder
-    steps:
-      - attach_workspace:
-          at: '~'
-      - config-bridge-deploy-path
-      - run:
-          name: Run mypy
-          command: |
-            mypy --ignore-missing-imports deploy-tools/bridge-deploy/tests deploy-tools/bridge-deploy/src deploy-tools/bridge-deploy/setup.py
 
   install-bridge-deploy:
     executor: ubuntu-builder
@@ -417,7 +386,6 @@ jobs:
           root: "~"
           paths:
             - repo
-
   pytest-bridge-deploy:
     executor: ubuntu-builder
     steps:
@@ -429,16 +397,6 @@ jobs:
           command: |
             make -C deploy-tools/bridge-deploy test
 
-  mypy-bridge-validator:
-    executor: ubuntu-builder
-    steps:
-      - attach_workspace:
-          at: '~'
-      - config-bridge-validator-path
-      - run:
-          name: Run mypy
-          command: |
-            mypy --ignore-missing-imports bridge/tests bridge/end2end-tests/tests bridge/src bridge/setup.py
 
   install-bridge-validator:
     executor: ubuntu-builder
@@ -469,7 +427,6 @@ jobs:
           root: "~"
           paths:
             - repo
-
   upload-pypi-bridge-validator:
     executor: ubuntu-builder
     steps:
@@ -501,7 +458,6 @@ jobs:
             codecov --flags bridge_unit --prefix bridge/
       - store_test_results:
           path: bridge/test-results
-
   end2end-test-bridge-validator:
     executor: ubuntu-builder
     steps:
@@ -514,6 +470,7 @@ jobs:
             cd bridge
             make test-end2end-coverage
             codecov --flags bridge_end2end --prefix bridge/
+
 
   build-bridge-image:
     executor: ubuntu-builder
@@ -536,7 +493,6 @@ jobs:
           root: '~'
           paths:
             - images
-
   compare-bridge-image:
     executor: ubuntu-builder
     environment:
@@ -554,7 +510,6 @@ jobs:
             docker load --input ~/images/$LOCAL_IMAGE.tar
       - compare-docker-image:
           repo: "trustlines/bridge-next:pre-release"
-
   deploy-bridge-image:
     executor: ubuntu-builder
     environment:
@@ -569,7 +524,6 @@ jobs:
           # fork. makes testing easier.
 
       - upload-docker-image
-
   deploy-bridge-release-image:
     executor: ubuntu-builder
     environment:
@@ -588,6 +542,7 @@ jobs:
           command: |
             docker tag $LOCAL_IMAGE $DOCKER_REPO:latest
             docker push $DOCKER_REPO:latest
+
 
   build-quickstart-image:
     executor: ubuntu-builder
@@ -610,7 +565,6 @@ jobs:
           root: "~"
           paths:
             - images
-
   deploy-quickstart-image:
     executor: ubuntu-builder
     environment:
@@ -647,7 +601,6 @@ jobs:
           root: "~"
           paths:
             - images
-
   build-tlbc-docker-image:
     executor: ubuntu-builder
     environment:
@@ -808,6 +761,7 @@ jobs:
             docker tag $LOCAL_IMAGE $DOCKER_REPO:latest
             docker push $DOCKER_REPO:latest
 
+
 workflows:
   version: 2
   default:
@@ -821,32 +775,20 @@ workflows:
           requires:
             - install-contracts
       - install-auction
-      - mypy-auction:
-          requires:
-            - install-auction
       - pytest-auction:
           requires:
             - install-auction
       - install-validator-set
-      - mypy-validator-set:
-          requires:
-            - install-validator-set
       - pytest-validator-set:
           requires:
             - install-validator-set
 
       - install-bridge-deploy
-      - mypy-bridge-deploy:
-          requires:
-            - install-bridge-deploy
       - pytest-bridge-deploy:
           requires:
             - install-bridge-deploy
 
       - install-bridge-validator
-      - mypy-bridge-validator:
-          requires:
-            - install-bridge-validator
       - pytest-bridge-validator:
           requires:
             - install-bridge-validator
@@ -869,7 +811,6 @@ workflows:
             - pre-commit-checks
             - run-black
             - run-flake8
-            - mypy-bridge-validator
             - pytest-bridge-validator
             - end2end-test-bridge-validator
             - build-bridge-image
@@ -1017,7 +958,6 @@ workflows:
             - pre-commit-checks
             - run-black
             - run-flake8
-            - mypy-bridge-validator
             - pytest-bridge-validator
             - build-bridge-image
           context: docker-release-credentials
@@ -1034,6 +974,5 @@ workflows:
             - pre-commit-checks
             - run-black
             - run-flake8
-            - mypy-bridge-validator
             - pytest-bridge-validator
             - build-bridge-image
