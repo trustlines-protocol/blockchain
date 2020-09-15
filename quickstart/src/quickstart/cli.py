@@ -84,7 +84,7 @@ def confirm_expose_ports(ctx, param, value):
             "If the machine on which the node is ran exposes the\n"
             "ports itself the node will be queryable from outside.\n"
             "With the wrong settings, this means funds could be stolen.\n\n"
-            "Only use this option if you know what you are doing.\n",
+            "Only use this option if you know what you are doing.\n"
             "You can later change the exposed ports via the docker-compose.override.yaml file",
             fg="red",
         )
