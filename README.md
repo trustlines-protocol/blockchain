@@ -66,7 +66,7 @@ as well as each components. You will need to activate the virtual environment wi
 
 ## Contributing
 
-Contributions are highly appreciated, but please check our `contributing guidelines </CONTRIBUTING.md>`__.
+Contributions are highly appreciated, but please check our [contributing guidelines](/CONTRIBUTING.md).
 
 ### Pre-commit hooks
 
