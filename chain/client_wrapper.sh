@@ -254,6 +254,21 @@ function runClient() {
   exec $CLIENT_BIN "${CLIENT_ARGS_ARRAY[@]}"
 }
 
+function runMigrationTool() {
+  if [[ -d ${NODE_DATABASE_DIR} ]]; then
+    # shellcheck disable=SC2010
+    number_of_files=$(ls -l "${NODE_DATABASE_DIR}" | grep -cv ^l)
+    if [[ ${number_of_files} -gt 2 ]]; then
+      echo "Found more than one file in folder $NODE_DATABASE_DIR"
+      echo "Make sure there is only one database there"
+      exit 1
+    fi
+    echo "Running migration tool"
+    db_dir_name=$(ls "$NODE_DATABASE_DIR")
+    (cd /migration_tool && echo "I AGREE" | cargo run "${NODE_DATABASE_DIR}"/"${db_dir_name}"/overlayrecent)
+  fi
+}
+
 function copySpecFileToSharedVolume() {
   if [[ -d "$SHARED_VOLUME_PATH" ]]; then
     echo "Copying chain spec file to shared volume"
@@ -268,4 +283,5 @@ showVersion
 parseArguments "$@"
 adjustConfiguration
 copySpecFileToSharedVolume
+runMigrationTool
 runClient
