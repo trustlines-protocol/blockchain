@@ -133,13 +133,13 @@ jobs:
           command: |
             pip install -c constraints.txt pre-commit
       - restore_cache:
-          key: pre-commit-cache-{{ checksum ".pre-commit-config.yaml" }}
+          key: pre-commit-cache-{{ checksum ".pre-commit-config.yaml" }}-{{ .Environment.CACHE_VERSION }}
       - run:
           name: Install hooks
           command: |
             pre-commit install-hooks
       - save_cache:
-          key: pre-commit-cache-{{ checksum ".pre-commit-config.yaml" }}
+          key: pre-commit-cache-{{ checksum ".pre-commit-config.yaml" }}-{{ .Environment.CACHE_VERSION }}
           paths:
             - ~/.cache/pre-commit
 
