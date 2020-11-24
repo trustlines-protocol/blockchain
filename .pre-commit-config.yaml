@@ -18,7 +18,6 @@ repos:
     rev: 2.0.5
     hooks:
       - id: prettier
-        language_version: system
         additional_dependencies: ["prettier-plugin-solidity@1.0.0-alpha.54"]
         files: "\\.sol$"
         args: ["--plugin=prettier-plugin-solidity"]
