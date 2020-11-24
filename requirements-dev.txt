@@ -1,6 +1,6 @@
 black
 mypy
-pre-commit
+pre-commit>=2.8.0
 pytest
 pytest-cov
 setuptools_scm
