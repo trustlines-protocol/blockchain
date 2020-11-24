@@ -15,7 +15,7 @@ repos:
     - id: shellcheck
 
 -   repo: https://github.com/prettier/prettier
-    rev: 2.0.5
+    rev: 2.1.2
     hooks:
       - id: prettier
         additional_dependencies: ["prettier-plugin-solidity@1.0.0-alpha.54"]
