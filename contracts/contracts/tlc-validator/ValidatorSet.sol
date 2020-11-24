@@ -106,10 +106,11 @@ contract ValidatorSet {
         // Since the proof has already verified, that both blocks have been
         // issued by the same validator, it doesn't matter which one is used here
         // to recover the address.
-        address validator = EquivocationInspector.getSignerAddress(
-            _rlpUnsignedHeaderOne,
-            _signatureOne
-        );
+        address validator =
+            EquivocationInspector.getSignerAddress(
+                _rlpUnsignedHeaderOne,
+                _signatureOne
+            );
 
         require(
             status[validator].isValidator,
@@ -150,8 +151,9 @@ contract ValidatorSet {
         );
 
         uint index = status[_validator].index;
-        pendingValidators[index] = pendingValidators[pendingValidators.length -
-            1];
+        pendingValidators[index] = pendingValidators[
+            pendingValidators.length - 1
+        ];
         status[pendingValidators[index]].index = index;
         delete pendingValidators[pendingValidators.length - 1];
         pendingValidators.length--;
