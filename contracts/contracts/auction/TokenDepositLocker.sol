@@ -3,7 +3,6 @@ pragma solidity ^0.5.8;
 import "./BaseDepositLocker.sol";
 import "../token/IERC20.sol";
 
-
 /*
   The TokenDepositLocker contract locks ERC20 token deposits
 

@@ -4,7 +4,6 @@ import "../lib/Ownable.sol";
 import "./DepositLockerInterface.sol";
 import "../equivocation-inspector/EquivocationInspector.sol";
 
-
 contract ValidatorSlasher is Ownable {
     bool public initialized = false;
     DepositLockerInterface public depositContract;
@@ -50,10 +49,11 @@ contract ValidatorSlasher is Ownable {
         // Since the proof has already verified, that both blocks have been
         // issued by the same validator, it doesn't matter which one is used here
         // to recover the address.
-        address validator = EquivocationInspector.getSignerAddress(
-            _rlpUnsignedHeaderOne,
-            _signatureOne
-        );
+        address validator =
+            EquivocationInspector.getSignerAddress(
+                _rlpUnsignedHeaderOne,
+                _signatureOne
+            );
 
         depositContract.slash(validator);
     }

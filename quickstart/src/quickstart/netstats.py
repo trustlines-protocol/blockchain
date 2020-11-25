@@ -58,7 +58,7 @@ def setup_interactively(base_dir, netstats_url) -> None:
 
     if not click.confirm(
         fill(
-            "Have you already received your credentials and do you want to set up the netstats client now?"
+            "Have you already received your credentials and do you want to set up the netstats client now?\n"
         )
     ):
         # Necessary to make docker-compose not complaining about it.

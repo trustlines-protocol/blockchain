@@ -6,7 +6,6 @@ pragma solidity ^0.5.8;
 
 import "./ETHValidatorAuction.sol";
 
-
 contract TestETHValidatorAuction is ETHValidatorAuction {
     constructor(BaseDepositLocker _depositLocker)
         public
