@@ -14,11 +14,11 @@ repos:
     - id: shfmt
     - id: shellcheck
 
--   repo: https://github.com/prettier/prettier
-    rev: 2.0.5
+-   repo: https://github.com/pre-commit/mirrors-prettier
+    rev: "v2.2.0"
     hooks:
       - id: prettier
-        additional_dependencies: ["prettier-plugin-solidity@1.0.0-alpha.54"]
+        additional_dependencies: ["prettier@2.1.2", "prettier-plugin-solidity@1.0.0-beta.1"]
         files: "\\.sol$"
         args: ["--plugin=prettier-plugin-solidity"]
 
@@ -46,12 +46,6 @@ repos:
       exclude: ^(contracts/contracts/lib/.*\.sol|tools/bridge/.bumpversion.cfg|chain/laika/.bumpversion.cfg|chain/tlbc/.bumpversion.cfg)$
     - id: no-commit-to-branch
       args: [--branch, develop, --branch, master]
--   repo: https://github.com/schmir/ethlint-pre-commit.git
-    rev: ceedc72aa232b9391840256c7781226a3e238b1a
-    hooks:
-    - id: ethlint
-      exclude: ^contracts/contracts/lib/|^contracts/contracts/reward-contract/
-      args: ["--config", "contracts/.soliumrc.json"]
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.782

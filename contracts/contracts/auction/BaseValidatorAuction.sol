@@ -234,8 +234,9 @@ contract BaseValidatorAuction is Ownable {
         uint relativeAuctionTime = msSinceStart / auctionDurationInDays;
         uint decayDivisor = 746571428571;
         uint decay = relativeAuctionTime**3 / decayDivisor;
-        uint price = (startPrice * (1 + relativeAuctionTime)) /
-            (1 + relativeAuctionTime + decay);
+        uint price =
+            (startPrice * (1 + relativeAuctionTime)) /
+                (1 + relativeAuctionTime + decay);
         return price;
     }
 

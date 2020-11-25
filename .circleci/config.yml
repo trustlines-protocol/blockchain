@@ -224,20 +224,6 @@ jobs:
           command: |
             venv/bin/flake8 --exclude venv .
 
-  solium-contracts:
-    executor: ubuntu-builder
-    steps:
-      - checkout
-      - config-contracts-path
-      - run:
-          name: Install ethlint (=solium)
-          command: |
-            npm install -g 'ethlint@>=1.0.9'
-      - run:
-          name: Run solium
-          command: |
-            cd contracts
-            solium --dir contracts
   install-contracts:
     executor: ubuntu-builder
     steps:
@@ -769,7 +755,6 @@ workflows:
       - pre-commit-checks
       - run-black
       - run-flake8
-      - solium-contracts
       - install-contracts
       - pytest-contracts:
           requires:
@@ -829,7 +814,6 @@ workflows:
                 - master
                 - laika-node/pre-release
           requires:
-            - solium-contracts
             - pre-commit-checks
             - run-black
             - run-flake8
@@ -846,7 +830,6 @@ workflows:
                 - master
                 - tlbc-node/pre-release
           requires:
-            - solium-contracts
             - pre-commit-checks
             - run-black
             - run-flake8
@@ -922,7 +905,6 @@ workflows:
                 - laika-node/release
           requires:
             - approve-testnet-docker-release
-            - solium-contracts
             - pre-commit-checks
             - run-black
             - run-flake8
@@ -939,7 +921,6 @@ workflows:
                 - tlbc-node/release
           requires:
             - approve-tlbc-docker-release
-            - solium-contracts
             - pre-commit-checks
             - run-black
             - run-flake8
