@@ -28,5 +28,4 @@ contract TestEquivocationInspector {
             _signatureTwo
         );
     }
-
 }

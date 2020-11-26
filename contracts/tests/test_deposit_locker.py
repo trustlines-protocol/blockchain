@@ -1,24 +1,17 @@
 #! pytest
-
-from typing import Any, List
+from typing import Any, List, Optional
 
 import attr
 import eth_tester.exceptions
 import pytest
-from tests.data_generation import make_block_header
 from web3.datastructures import AttributeDict
 
 
-@pytest.fixture()
-def deposit_contract_released_deposits(
-    chain_cleanup, deposit_locker_contract_with_deposits, web3, chain, release_timestamp
-):
-    """returns a deposit contract from which the deposits can be withdrawn"""
-    contract = deposit_locker_contract_with_deposits
-    chain.time_travel(release_timestamp + 1)
-    chain.mine_block()
-
-    return contract
+def get_balance_function(web3=None, token_contract=None):
+    if token_contract is None:
+        return web3.eth.getBalance
+    else:
+        return lambda address: token_contract.functions.balanceOf(address).call()
 
 
 def test_init_already_initialized(
@@ -70,34 +63,6 @@ def test_owner_after_init(deposit_locker_contract):
     )
 
 
-def test_withdraw(deposit_contract_released_deposits, accounts, web3, deposit_amount):
-    """test whether we can withdraw after block 10"""
-    contract = deposit_contract_released_deposits
-
-    pre_balance = web3.eth.getBalance(accounts[0])
-    assert contract.functions.canWithdraw(accounts[0]).call()
-
-    tx = contract.functions.withdraw().transact({"from": accounts[0]})
-    gas_used = web3.eth.getTransactionReceipt(tx).gasUsed
-
-    assert not contract.functions.canWithdraw(accounts[0]).call()
-    new_balance = web3.eth.getBalance(accounts[0])
-
-    assert new_balance - pre_balance == deposit_amount - gas_used
-
-
-def test_withdraw_too_soon(
-    deposit_locker_contract_with_deposits, accounts, deposit_amount
-):
-    """test whether we can withdraw before deposits are released"""
-    contract = deposit_locker_contract_with_deposits
-
-    assert contract.functions.canWithdraw(accounts[0]).call()
-
-    with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        contract.functions.withdraw().transact({"from": accounts[0]})
-
-
 def test_withdraw_not_initialized(
     non_initialized_deposit_locker_contract_session, accounts
 ):
@@ -134,59 +99,6 @@ def test_deposit_not_initialized(
         )
 
 
-def test_event_withdraw(
-    deposit_contract_released_deposits, deposit_amount, validators, web3
-):
-    contract = deposit_contract_released_deposits
-
-    withdrawer = validators[0]
-
-    latest_block_number = web3.eth.blockNumber
-
-    contract.functions.withdraw().transact({"from": withdrawer})
-
-    event = contract.events.Withdraw.createFilter(
-        fromBlock=latest_block_number
-    ).get_all_entries()[0]["args"]
-
-    assert event["withdrawer"] == withdrawer
-    assert event["value"] == deposit_amount
-
-
-def test_event_slash(
-    deposit_locker_contract_with_deposits,
-    validator_slasher_contract,
-    malicious_validator_address,
-    malicious_validator_key,
-    deposit_amount,
-    web3,
-):
-
-    latest_block_number = web3.eth.blockNumber
-
-    timestamp = 100
-    signed_block_header_one = make_block_header(
-        timestamp=timestamp, private_key=malicious_validator_key
-    )
-    signed_block_header_two = make_block_header(
-        timestamp=timestamp, private_key=malicious_validator_key
-    )
-
-    validator_slasher_contract.functions.reportMaliciousValidator(
-        signed_block_header_one.unsignedBlockHeader,
-        signed_block_header_one.signature,
-        signed_block_header_two.unsignedBlockHeader,
-        signed_block_header_two.signature,
-    ).transact()
-
-    event = deposit_locker_contract_with_deposits.events.Slash.createFilter(
-        fromBlock=latest_block_number
-    ).get_all_entries()[0]["args"]
-
-    assert event["slashedDepositor"] == malicious_validator_address
-    assert event["slashedValue"] == deposit_amount
-
-
 @attr.s(auto_attribs=True)
 class Env:
     deposit_locker: Any
@@ -194,6 +106,11 @@ class Env:
     proxy: Any
     depositors: List[Any]
     other_accounts: List[Any]
+    token_contract: Optional[Any]
+
+    @property
+    def use_token(self):
+        return self.token_contract is not None
 
     def register_depositor(self, depositor):
         return self.deposit_locker.functions.registerDepositor(depositor).transact(
@@ -206,7 +123,8 @@ class Env:
 
     def deposit(self, value_per_depositor, total_value):
         return self.deposit_locker.functions.deposit(value_per_depositor).transact(
-            {"from": self.proxy, "value": total_value}
+            # do not send eth along if token is used
+            {"from": self.proxy, "value": total_value if not self.use_token else 0}
         )
 
     def slash(self, depositor):
@@ -220,26 +138,74 @@ class Env:
     def can_withdraw(self, depositor):
         return self.deposit_locker.functions.canWithdraw(depositor).call()
 
+    def balance_of(self, address):
+        return get_balance_function(self.deposit_locker.web3, self.token_contract)(
+            address
+        )
 
-@pytest.fixture(scope="session")
-def testenv(deploy_contract, accounts, web3, release_timestamp):
+
+@pytest.fixture(scope="session", params=["ETHDepositLocker", "TokenDepositLocker"])
+def testenv(
+    request,
+    deploy_contract,
+    accounts,
+    web3,
+    release_timestamp,
+    premint_token_address,
+    premint_token_value,
+):
     """return an initialized Env instance"""
-    deposit_locker = deploy_contract("DepositLocker")
+    token_contract = None
+    if request.param == "TokenDepositLocker":
+        token_name = "Trustlines Network Token"
+        token_symbol = "TLN"
+        token_decimal = 18
+        token_constructor_args = (
+            token_name,
+            token_symbol,
+            token_decimal,
+            premint_token_address,
+            premint_token_value,
+        )
+
+        token_contract = deploy_contract(
+            "TrustlinesNetworkToken", constructor_args=token_constructor_args
+        )
+
+    deposit_locker = deploy_contract(request.param)
     slasher = accounts[1]
     proxy = accounts[2]
     depositors = accounts[3:6]
     other_accounts = accounts[6:]
-    deposit_locker.functions.init(
-        _releaseTimestamp=release_timestamp, _slasher=slasher, _depositorsProxy=proxy
-    ).transact({"from": web3.eth.defaultAccount})
+    deposit_locker_init_args = {
+        "_releaseTimestamp": release_timestamp,
+        "_slasher": slasher,
+        "_depositorsProxy": proxy,
+    }
+    if token_contract is not None:
+        deposit_locker_init_args["_token"] = token_contract.address
+    deposit_locker.functions.init(**deposit_locker_init_args).transact(
+        {"from": web3.eth.defaultAccount}
+    )
 
-    return Env(
+    testenv = Env(
         deposit_locker=deposit_locker,
         slasher=slasher,
         proxy=proxy,
         depositors=depositors,
         other_accounts=other_accounts,
+        token_contract=token_contract,
     )
+
+    if testenv.use_token:
+        testenv.token_contract.functions.transfer(testenv.proxy, 100000).transact(
+            {"from": premint_token_address}
+        )
+        testenv.token_contract.functions.approve(
+            testenv.deposit_locker.address, 2 ** 256 - 1
+        ).transact({"from": testenv.proxy})
+
+    return testenv
 
 
 @pytest.fixture()
@@ -248,11 +214,64 @@ def value_per_depositor():
 
 
 @pytest.fixture()
-def testenv_deposited(testenv, value_per_depositor):
+def testenv_deposited(testenv, value_per_depositor, premint_token_address):
     """return a test environment, with all depositors registered and the deposit already made"""
     testenv.register_all_depositors()
     testenv.deposit(value_per_depositor, len(testenv.depositors) * value_per_depositor)
     return testenv
+
+
+@pytest.fixture()
+def testenv_deposits_released(testenv_deposited, release_timestamp, chain):
+    chain.time_travel(release_timestamp + 1)
+    chain.mine_block()
+
+    return testenv_deposited
+
+
+def test_withdraw(testenv_deposits_released, accounts, web3, value_per_depositor):
+    """test whether we can withdraw after block 10"""
+    withdrawer = accounts[3]
+    testenv = testenv_deposits_released
+    pre_balance = testenv.balance_of(withdrawer)
+    assert testenv.can_withdraw(withdrawer)
+
+    tx = testenv.withdraw(withdrawer)
+    gas_used = web3.eth.getTransactionReceipt(tx).gasUsed
+
+    assert not testenv.can_withdraw(withdrawer)
+    new_balance = testenv.balance_of(withdrawer)
+
+    if testenv.use_token:
+        assert new_balance - pre_balance == value_per_depositor
+    else:
+        assert new_balance - pre_balance == value_per_depositor - gas_used
+
+
+def test_withdraw_too_soon(testenv_deposited, accounts):
+    """test whether we can withdraw before deposits are released"""
+    testenv = testenv_deposited
+    withdrawer = accounts[3]
+    assert testenv.can_withdraw(withdrawer)
+
+    with pytest.raises(eth_tester.exceptions.TransactionFailed):
+        testenv.withdraw(withdrawer)
+
+
+def test_event_withdraw(testenv_deposits_released, value_per_depositor, accounts, web3):
+    testenv = testenv_deposits_released
+    withdrawer = accounts[3]
+
+    latest_block_number = web3.eth.blockNumber
+
+    testenv.withdraw(withdrawer)
+
+    event = testenv.deposit_locker.events.Withdraw.createFilter(
+        fromBlock=latest_block_number
+    ).get_all_entries()[0]["args"]
+
+    assert event["withdrawer"] == withdrawer
+    assert event["value"] == value_per_depositor
 
 
 def test_register_from_non_proxy_throws(testenv, web3):
@@ -322,6 +341,21 @@ def test_deposit_with_right_amount_logs_event(testenv):
     )
 
 
+def test_deposit_right_amount(testenv, web3):
+    testenv.register_all_depositors()
+
+    contract_address = testenv.deposit_locker.address
+
+    contract_address_balance_before = testenv.balance_of(contract_address)
+    testenv.deposit(3456, len(testenv.depositors) * 3456)
+    contract_address_balance_after = testenv.balance_of(contract_address)
+
+    assert (
+        contract_address_balance_after - contract_address_balance_before
+        == len(testenv.depositors) * 3456
+    )
+
+
 def test_deposit_twice_throws(testenv):
     testenv.register_all_depositors()
     testenv.deposit(100, len(testenv.depositors) * 100)
@@ -330,12 +364,14 @@ def test_deposit_twice_throws(testenv):
 
 
 def test_deposit_unequal_amount(testenv):
-    """total value send must match sum of deposits"""
+    """total value send must match sum of deposits for ETH locker"""
     testenv.register_all_depositors()
     total_deposit = 100 * len(testenv.depositors)
-
-    with pytest.raises(eth_tester.exceptions.TransactionFailed):
-        testenv.deposit(100, total_deposit + 1)
+    if not testenv.use_token:
+        with pytest.raises(eth_tester.exceptions.TransactionFailed):
+            testenv.deposit(100, total_deposit + 1)
+    else:
+        testenv.deposit(100, 0)
 
 
 def test_deposit_overflow_throws(testenv):
@@ -375,29 +411,16 @@ def test_slash_after_deposit_can_not_withdraw(testenv_deposited):
     assert not testenv_deposited.can_withdraw(depositor)
 
 
-def test_slash_after_deposit_burn_deposit(
-    testenv_deposited, web3, value_per_depositor, block_reward_amount
-):
-    burn_address = "0x0000000000000000000000000000000000000000"
+def test_slash_after_deposit_burn_deposit(testenv_deposited, web3, value_per_depositor):
     contract_address = testenv_deposited.deposit_locker.address
+    contract_address_balance_before = testenv_deposited.balance_of(contract_address)
 
-    burn_address_balance_before = web3.eth.getBalance(burn_address)
-    contract_address_balance_before = web3.eth.getBalance(contract_address)
-
-    # The burning address is in this testing scenario also the address getting
-    # the transaction fees and block rewards. To have a clear calculation make
-    # sure the transaction has no fees.
     testenv_deposited.deposit_locker.functions.slash(
         testenv_deposited.depositors[0]
-    ).transact({"from": testenv_deposited.slasher, "gasPrice": 0})
+    ).transact({"from": testenv_deposited.slasher})
 
-    burn_address_balance_after = web3.eth.getBalance(burn_address)
-    contract_address_balance_after = web3.eth.getBalance(contract_address)
+    contract_address_balance_after = testenv_deposited.balance_of(contract_address)
 
-    assert (
-        burn_address_balance_after
-        == burn_address_balance_before + value_per_depositor + block_reward_amount
-    )
     assert (
         contract_address_balance_after
         == contract_address_balance_before - value_per_depositor
@@ -415,3 +438,18 @@ def test_slash_twice_throws(testenv_deposited):
 def test_slash_non_depositor_throws(testenv_deposited):
     with pytest.raises(eth_tester.exceptions.TransactionFailed):
         testenv_deposited.slash(testenv_deposited.other_accounts[0])
+
+
+def test_event_slash(testenv_deposited, value_per_depositor, web3):
+    testenv = testenv_deposited
+    latest_block_number = web3.eth.blockNumber
+
+    depositor = testenv.depositors[0]
+    testenv.slash(depositor)
+
+    event = testenv.deposit_locker.events.Slash.createFilter(
+        fromBlock=latest_block_number
+    ).get_all_entries()[0]["args"]
+
+    assert event["slashedDepositor"] == depositor
+    assert event["slashedValue"] == value_per_depositor

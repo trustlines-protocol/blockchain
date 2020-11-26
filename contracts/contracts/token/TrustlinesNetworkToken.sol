@@ -6,7 +6,7 @@ contract TrustlinesNetworkToken {
     using SafeMath for uint256;
 
     // We use MAX_UINT value for an approval of infinite value
-    uint constant MAX_UINT = 2 ** 256 - 1;
+    uint constant MAX_UINT = 2**256 - 1;
     string private _name;
     string private _symbol;
     uint8 private _decimals;
@@ -37,19 +37,19 @@ contract TrustlinesNetworkToken {
     }
 
     /**
-    * @dev Returns the amount of tokens owned by `account`.
-    */
+     * @dev Returns the amount of tokens owned by `account`.
+     */
     function balanceOf(address account) public view returns (uint256) {
         return _balances[account];
     }
 
     /**
-    * @dev Returns the remaining number of tokens that `spender` will be
-    * allowed to spend on behalf of `owner` through {transferFrom}. This is
-    * zero by default.
-    *
-    * This value changes when {approve} or {transferFrom} are called.
-    */
+     * @dev Returns the remaining number of tokens that `spender` will be
+     * allowed to spend on behalf of `owner` through {transferFrom}. This is
+     * zero by default.
+     *
+     * This value changes when {approve} or {transferFrom} are called.
+     */
     function allowance(address owner, address spender)
         public
         view
@@ -71,41 +71,41 @@ contract TrustlinesNetworkToken {
     }
 
     /**
-    * @dev Returns the amount of tokens in existence.
-    */
+     * @dev Returns the amount of tokens in existence.
+     */
     function totalSupply() public view returns (uint256) {
         return _totalSupply;
     }
 
     /**
-    * @dev Moves `amount` tokens from the caller's account to `recipient`.
-    *
-    * Returns a boolean value indicating whether the operation succeeded.
-    *
-    * Emits a {Transfer} event.
-    */
+     * @dev Moves `amount` tokens from the caller's account to `recipient`.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
     function transfer(address recipient, uint256 amount) public returns (bool) {
         _transfer(msg.sender, recipient, amount);
         return true;
     }
 
     /**
-    * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
-    *
-    * Returns a boolean value indicating whether the operation succeeded.
-    *
-    * Approve with a value of `MAX_UINT = 2 ** 256 - 1` will symbolize
-    * an approval of infinite value.
-    *
-    * IMPORTANT:to prevent the risk that someone may use both the old and
-    * the new allowance by unfortunate transaction ordering,
-    * the approval must be set to 0 before it can be changed to any
-    * different desired value.
-    *
-    * see: https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-    *
-    * Emits an {Approval} event.
-    */
+     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Approve with a value of `MAX_UINT = 2 ** 256 - 1` will symbolize
+     * an approval of infinite value.
+     *
+     * IMPORTANT:to prevent the risk that someone may use both the old and
+     * the new allowance by unfortunate transaction ordering,
+     * the approval must be set to 0 before it can be changed to any
+     * different desired value.
+     *
+     * see: https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+     *
+     * Emits an {Approval} event.
+     */
     function approve(address spender, uint256 value) public returns (bool) {
         require(
             value == 0 || _allowances[msg.sender][spender] == 0,
@@ -116,18 +116,19 @@ contract TrustlinesNetworkToken {
     }
 
     /**
-    * @dev Moves `amount` tokens from `sender` to `recipient` using the
-    * allowance mechanism. `amount` is then deducted from the caller's
-    * allowance unless the allowance is `MAX_UINT = 2 ** 256 - 1`.
-    *
-    * Returns a boolean value indicating whether the operation succeeded.
-    *
-    * Emits a {Transfer} event.
-    */
-    function transferFrom(address sender, address recipient, uint256 amount)
-        public
-        returns (bool)
-    {
+     * @dev Moves `amount` tokens from `sender` to `recipient` using the
+     * allowance mechanism. `amount` is then deducted from the caller's
+     * allowance unless the allowance is `MAX_UINT = 2 ** 256 - 1`.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) public returns (bool) {
         _transfer(sender, recipient, amount);
 
         uint _allowance = _allowances[sender][msg.sender];
@@ -150,9 +151,11 @@ contract TrustlinesNetworkToken {
         emit Transfer(address(0), account, amount);
     }
 
-    function _transfer(address sender, address recipient, uint256 amount)
-        internal
-    {
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) internal {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
@@ -161,7 +164,11 @@ contract TrustlinesNetworkToken {
         emit Transfer(sender, recipient, amount);
     }
 
-    function _approve(address owner, address spender, uint256 value) internal {
+    function _approve(
+        address owner,
+        address spender,
+        uint256 value
+    ) internal {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
 
@@ -194,4 +201,3 @@ the following conditions:
 The above copyright notice and this permission notice shall be included
 in all copies or substantial portions of the Software.
 */
-

@@ -14,12 +14,13 @@ repos:
     - id: shfmt
     - id: shellcheck
 
--   repo: https://github.com/trustlines-protocol/prettier
-    rev: 804db34393002d572b49ab493ccb12248ae6cb3c
+-   repo: https://github.com/pre-commit/mirrors-prettier
+    rev: "v2.2.0"
     hooks:
       - id: prettier
-        entry: prettier --write --list-different
+        additional_dependencies: ["prettier@2.1.2", "prettier-plugin-solidity@1.0.0-beta.1"]
         files: "\\.sol$"
+        args: ["--plugin=prettier-plugin-solidity"]
 
 -   repo: https://github.com/psf/black
     rev: 19.3b0
@@ -45,9 +46,31 @@ repos:
       exclude: ^(contracts/contracts/lib/.*\.sol|tools/bridge/.bumpversion.cfg|chain/laika/.bumpversion.cfg|chain/tlbc/.bumpversion.cfg)$
     - id: no-commit-to-branch
       args: [--branch, develop, --branch, master]
--   repo: https://github.com/schmir/ethlint-pre-commit.git
-    rev: ceedc72aa232b9391840256c7781226a3e238b1a
+
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.782
     hooks:
-    - id: ethlint
-      exclude: ^contracts/contracts/lib/|^contracts/contracts/reward-contract/
-      args: ["--config", "contracts/.soliumrc.json"]
+    -   id: mypy
+        name: mypy-bridge
+        args: [--ignore-missing-imports]
+        files: ^bridge/
+    -   id: mypy
+        name: mypy-contracts
+        args: [--ignore-missing-imports]
+        files: ^contracts/
+    -   id: mypy
+        name: mypy-auction-deploy-tools
+        args: [--ignore-missing-imports]
+        files: ^deploy-tools/auction-deploy/
+    -   id: mypy
+        name: mypy-bridge-deploy-tools
+        args: [--ignore-missing-imports]
+        files: ^deploy-tools/bridge-deploy/
+    -   id: mypy
+        name: mypy-validator-set-deploy-tools
+        args: [--ignore-missing-imports]
+        files: ^deploy-tools/validator-set-deploy/
+    -   id: mypy
+        name: mypy-quickstart
+        args: [--ignore-missing-imports]
+        files: ^quickstart/

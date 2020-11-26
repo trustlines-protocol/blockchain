@@ -68,12 +68,10 @@ library EquivocationInspector {
 
         // Parse the RLP encoded block header list.
         // Note that this can fail here, if the block header has no list format.
-        RLPReader.RLPItem[] memory blockOne = _rlpUnsignedHeaderOne
-            .toRlpItem()
-            .toList();
-        RLPReader.RLPItem[] memory blockTwo = _rlpUnsignedHeaderTwo
-            .toRlpItem()
-            .toList();
+        RLPReader.RLPItem[] memory blockOne =
+            _rlpUnsignedHeaderOne.toRlpItem().toList();
+        RLPReader.RLPItem[] memory blockTwo =
+            _rlpUnsignedHeaderTwo.toRlpItem().toList();
 
         // Header length rule.
         // Keep it open ended, since they could contain a list of empty messages for finality.
@@ -95,5 +93,4 @@ library EquivocationInspector {
 
         require(stepOne == stepTwo, "The two blocks have different steps.");
     }
-
 }
