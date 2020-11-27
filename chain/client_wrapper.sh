@@ -22,7 +22,7 @@
 #                       Gets ignored if not necessary for the chosen role.
 #
 #   -c [--client-args]  Additional arguments that should be forwarded to the client.
-#                       Make sure this is the last argument, cause everything after is
+#                       Make sure this is the last argument, because everything after is
 #                       forwarded.
 #   -p [--parity-args]  Same as client-args, only exists for backwards compatibility
 #                       [DEPRECATED]
@@ -265,7 +265,17 @@ function runMigrationTool() {
     fi
     echo "Running migration tool"
     db_dir_name=$(ls "$NODE_DATABASE_DIR")
-    (cd /migration_tool && echo "I AGREE" | cargo run "${NODE_DATABASE_DIR}"/"${db_dir_name}"/overlayrecent)
+
+    if [[ -d "${NODE_DATABASE_DIR}/${db_dir_name}/archive" ]]; then
+      inner_db_name="archive"
+    elif [[ -d "${NODE_DATABASE_DIR}/${db_dir_name}/overlayrecent" ]]; then
+      inner_db_name="overlayrecent"
+    else
+      echo "Tried to migrate database, but no folder named archive or overlayrecent in" "${NODE_DATABASE_DIR}"/"${db_dir_name}"
+      exit 1
+    fi
+
+    (cd /migration_tool && echo "I AGREE" | cargo run "${NODE_DATABASE_DIR}"/"${db_dir_name}"/${inner_db_name})
   fi
 }
 
