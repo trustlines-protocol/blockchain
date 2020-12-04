@@ -45,6 +45,8 @@ If you want a quickstart setup for the Laika testnet, use the following command 
 bash <(curl -L quickstart.laika.trustlines.foundation)
 ```
 
+For more information about the quickstart script and options see its [readme](quickstart/README.md).
+
 ## Public Laika Node
 
 The Trustlines Foundation hosts a publically accessible node for the
@@ -64,7 +66,7 @@ as well as each components. You will need to activate the virtual environment wi
 
 ## Contributing
 
-Contributions are highly appreciated, but please check our `contributing guidelines </CONTRIBUTING.md>`__.
+Contributions are highly appreciated, but please check our [contributing guidelines](/CONTRIBUTING.md).
 
 ### Pre-commit hooks
 

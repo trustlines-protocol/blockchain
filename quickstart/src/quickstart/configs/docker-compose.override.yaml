@@ -1,0 +1,10 @@
+# This file is used to optionally add a config to expose the ports of the home node
+
+version: "2.2"
+services:
+  home-node:
+    ports:
+      - 8545:8545
+      - 8545:8545/udp
+      - 8546:8546
+      - 8546:8546/udp

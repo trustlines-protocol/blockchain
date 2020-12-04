@@ -22,7 +22,7 @@
 #                       Gets ignored if not necessary for the chosen role.
 #
 #   -c [--client-args]  Additional arguments that should be forwarded to the client.
-#                       Make sure this is the last argument, cause everything after is
+#                       Make sure this is the last argument, because everything after is
 #                       forwarded.
 #   -p [--parity-args]  Same as client-args, only exists for backwards compatibility
 #                       [DEPRECATED]
@@ -254,6 +254,31 @@ function runClient() {
   exec $CLIENT_BIN "${CLIENT_ARGS_ARRAY[@]}"
 }
 
+function runMigrationTool() {
+  if [[ -d ${NODE_DATABASE_DIR} ]]; then
+    # shellcheck disable=SC2010
+    number_of_files=$(ls -l "${NODE_DATABASE_DIR}" | grep -cv ^l)
+    if [[ ${number_of_files} -gt 2 ]]; then
+      echo "Found more than one file in folder $NODE_DATABASE_DIR"
+      echo "Make sure there is only one database there"
+      exit 1
+    fi
+    echo "Running migration tool"
+    db_dir_name=$(ls "$NODE_DATABASE_DIR")
+
+    if [[ -d "${NODE_DATABASE_DIR}/${db_dir_name}/archive" ]]; then
+      inner_db_name="archive"
+    elif [[ -d "${NODE_DATABASE_DIR}/${db_dir_name}/overlayrecent" ]]; then
+      inner_db_name="overlayrecent"
+    else
+      echo "Tried to migrate database, but no folder named archive or overlayrecent in" "${NODE_DATABASE_DIR}"/"${db_dir_name}"
+      exit 1
+    fi
+
+    (cd /migration_tool && echo "I AGREE" | cargo run "${NODE_DATABASE_DIR}"/"${db_dir_name}"/${inner_db_name})
+  fi
+}
+
 function copySpecFileToSharedVolume() {
   if [[ -d "$SHARED_VOLUME_PATH" ]]; then
     echo "Copying chain spec file to shared volume"
@@ -268,4 +293,5 @@ showVersion
 parseArguments "$@"
 adjustConfiguration
 copySpecFileToSharedVolume
+runMigrationTool
 runClient

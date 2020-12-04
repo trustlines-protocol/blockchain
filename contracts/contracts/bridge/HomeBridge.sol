@@ -2,7 +2,6 @@ pragma solidity ^0.5.8;
 
 import "../tlc-validator/ValidatorProxy.sol";
 
-
 contract HomeBridge {
     struct TransferState {
         mapping(address => bool) isConfirmedByValidator;
@@ -52,9 +51,15 @@ contract HomeBridge {
         address payable recipient
     ) public {
         // We compute a keccak hash for the transfer and use that as an identifier for the transfer
-        bytes32 transferStateId = keccak256(
-            abi.encodePacked(transferHash, transactionHash, amount, recipient)
-        );
+        bytes32 transferStateId =
+            keccak256(
+                abi.encodePacked(
+                    transferHash,
+                    transactionHash,
+                    amount,
+                    recipient
+                )
+            );
 
         require(
             !transferState[transferStateId].isCompleted,
@@ -116,17 +121,23 @@ contract HomeBridge {
         require(amount > 0, "amount must not be zero");
 
         // We compute a keccak hash for the transfer and use that as an identifier for the transfer
-        bytes32 transferStateId = keccak256(
-            abi.encodePacked(transferHash, transactionHash, amount, recipient)
-        );
+        bytes32 transferStateId =
+            keccak256(
+                abi.encodePacked(
+                    transferHash,
+                    transactionHash,
+                    amount,
+                    recipient
+                )
+            );
 
         require(
             !transferState[transferStateId].isCompleted,
             "transfer already completed"
         );
 
-        address[] storage confirmingValidators = transferState[transferStateId]
-            .confirmingValidators;
+        address[] storage confirmingValidators =
+            transferState[transferStateId].confirmingValidators;
         uint numConfirming = 0;
         for (uint i = 0; i < confirmingValidators.length; i++) {
             if (validatorProxy.isValidator(confirmingValidators[i])) {
@@ -139,16 +150,17 @@ contract HomeBridge {
     function _purgeConfirmationsFromExValidators(bytes32 transferStateId)
         internal
     {
-        address[] storage confirmingValidators = transferState[transferStateId]
-            .confirmingValidators;
+        address[] storage confirmingValidators =
+            transferState[transferStateId].confirmingValidators;
 
         uint i = 0;
         while (i < confirmingValidators.length) {
             if (validatorProxy.isValidator(confirmingValidators[i])) {
                 i++;
             } else {
-                confirmingValidators[i] = confirmingValidators[confirmingValidators
-                    .length - 1];
+                confirmingValidators[i] = confirmingValidators[
+                    confirmingValidators.length - 1
+                ];
                 confirmingValidators.length--;
             }
         }

@@ -6,11 +6,6 @@ chain = "/home/openethereum/.local/share/openethereum/trustlines-spec.json"
 keys_path = "/home/openethereum/.local/share/openethereum/custom/keys"
 db_path = "/home/openethereum/.local/share/openethereum/chains"
 
-# No updates will be auto-installed
-auto_update = "none"
-# Disables auto downloading of new releases. Not recommended.
-no_download = true
-
 [misc]
 # Prevent problems we had with invisible logs
 color = false

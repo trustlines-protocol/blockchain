@@ -5,7 +5,7 @@ The contracts can be found in [blockchain/contracts](https://github.com/trustlin
 
 ## Installation
 
-The installation of the any deploy tool will require python 3.6 or up and pip.
+The installation of any deploy tool will require python 3.6 or up and pip.
 
 You can install the deploy tool you'd like by running `make install` from the desired tool directory.
 You can also install any of them by running `make install-deploy-tools/auction-deploy`,
