@@ -27,7 +27,7 @@ commands:
           name: Create python virtualenv
           command: |
             make setup-venv
-            pip install -c constraints.txt pip wheel setuptools
+            pip install -c constraints.txt pip==20.2.4 wheel setuptools
 
   config-auction-path:
     description: "Set environment variables and change PATH for auction"
@@ -833,10 +833,9 @@ workflows:
             - pre-commit-checks
             - run-black
             - run-flake8
-            - install-contracts
             - pytest-contracts
             - build-tlbc-docker-image
-            - smoketest-testnet-docker-image
+            - smoketest-tlbc-docker-image
           context: docker-credentials
       - deploy-quickstart-image:
           filters:
