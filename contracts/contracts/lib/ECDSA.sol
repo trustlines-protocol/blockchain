@@ -25,7 +25,6 @@
 
 pragma solidity ^0.5.8;
 
-
 /**
  * @title Elliptic curve signature operations
  * @dev Based on https://gist.github.com/axic/5b33912c6f61ae6fd96d6c4a47afde6d
@@ -50,7 +49,7 @@ library ECDSA {
 
         // Check the signature length
         if (signature.length != 65) {
-            return (address(0));
+            revert("ECDSA: invalid signature length");
         }
 
         // Divide the signature in r, s and v variables
@@ -70,10 +69,12 @@ library ECDSA {
 
         // If the version is correct return the signer address
         if (v != 27 && v != 28) {
-            return (address(0));
+            revert("ECDSA: incorrect signature version");
         } else {
             // solium-disable-next-line arg-overflow
-            return ecrecover(hash, v, r, s);
+            address signer = ecrecover(hash, v, r, s);
+            require(signer != address(0), "ECDSA: invalid signature");
+            return signer;
         }
     }
 

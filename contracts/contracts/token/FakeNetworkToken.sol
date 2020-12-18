@@ -13,7 +13,6 @@ pragma solidity ^0.5.8;
 
 import "./TrustlinesNetworkToken.sol";
 
-
 contract FakeNetworkToken is TrustlinesNetworkToken {
     constructor()
         public

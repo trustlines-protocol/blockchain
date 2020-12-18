@@ -4,7 +4,6 @@ import "../lib/Ownable.sol";
 import "./BaseDepositLocker.sol";
 import "./BaseValidatorAuction.sol";
 
-
 contract ETHValidatorAuction is BaseValidatorAuction {
     constructor(
         uint _startPriceInWei,
