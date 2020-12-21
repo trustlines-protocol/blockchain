@@ -33,7 +33,7 @@ if [ $EXIT_CODE -eq 0 ]; then
   docker logs testrun
 
   # Check if importing blocks
-  if ! docker logs testrun 2>&1 | grep -E "(Imported|Syncing) #[0-9]*"; then
+  if ! docker logs testrun 2>&1 | grep -E "(Imported|Syncing)( )+#[0-9]*"; then
     error "It seems like the image is not importing blocks"
     EXIT_CODE=2
   else
