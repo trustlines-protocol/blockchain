@@ -65,6 +65,16 @@ commands:
             echo 'export PATH=~/bin:~/repo/bridge-validator-venv/bin:${PATH}' >> ${BASH_ENV}
             echo 'export VIRTUAL_ENV=~/repo/bridge-validator-venv' >> ${BASH_ENV}
 
+  config-quickstart-path:
+    description: "Set environment variables and change PATH for contracts"
+    steps:
+    - run:
+        name: Configuring PATH
+        command: |
+          echo 'export PATH=~/bin:~/repo/quickstart-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
+          echo 'export VIRTUAL_ENV=~/repo/quickstart-venv' >> ${BASH_ENV}
+
+
   upload-docker-image:
     description: "Deploy docker image"
     steps:
@@ -257,12 +267,15 @@ jobs:
       - run:
           name: Run pytest
           command: pytest contracts/tests
-  test-quickstart:
+
+  install-quickstart:
     executor: ubuntu-builder
     steps:
       - checkout
+      - config-quickstart-path
       - restore_cache:
           key: quickstart-venv-{{ checksum "quickstart/constraints.txt" }}-{{ checksum "quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
+      - create-venv
       - run:
           name: Install requirements
           command: |
@@ -275,12 +288,20 @@ jobs:
           name: Install quickstart
           command: |
             make -C quickstart install
+      - persist_to_workspace:
+          root: "~"
+          paths:
+            - repo
+  test-quickstart:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-quickstart-path
       - run:
           name: Run tests
           command: |
             make -C quickstart test
-
-
 
   install-auction:
     executor: ubuntu-builder
@@ -781,11 +802,16 @@ workflows:
           requires:
             - install-bridge-validator
 
+      - install-quickstart
+      - test-quickstart:
+          requires:
+            - install-quickstart
+
       - build-bridge-image
       - build-testnet-docker-image
       - build-tlbc-docker-image
       - build-quickstart-image
-      - test-quickstart
+
       - deploy-bridge-image:
           filters:
             branches:
