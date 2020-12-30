@@ -9,7 +9,7 @@ It can be deployed with the following command
 Please note that all of the functions are public.
 */
 
-pragma solidity ^0.5.8;
+pragma solidity ^0.6.5;
 
 import "./TrustlinesNetworkToken.sol";
 

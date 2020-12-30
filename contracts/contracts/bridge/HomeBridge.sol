@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.6.5;
 
 import "../tlc-validator/ValidatorProxy.sol";
 
@@ -161,7 +161,7 @@ contract HomeBridge {
                 confirmingValidators[i] = confirmingValidators[
                     confirmingValidators.length - 1
                 ];
-                confirmingValidators.length--;
+                confirmingValidators.pop();
             }
         }
     }

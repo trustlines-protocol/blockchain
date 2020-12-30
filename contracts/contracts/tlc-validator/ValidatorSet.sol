@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.6.5;
 
 import "../equivocation-inspector/EquivocationInspector.sol";
 import "./ValidatorProxy.sol";
@@ -155,8 +155,7 @@ contract ValidatorSet {
             pendingValidators.length - 1
         ];
         status[pendingValidators[index]].index = index;
-        delete pendingValidators[pendingValidators.length - 1];
-        pendingValidators.length--;
+        pendingValidators.pop();
 
         delete status[_validator];
         initiateChange(pendingValidators);

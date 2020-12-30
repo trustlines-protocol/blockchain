@@ -1,7 +1,7 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.6.5;
 
 contract TestNonPayableRecipient {
-    function() external payable {
+    receive() external payable {
         require(false, "do not pay me");
     }
 }

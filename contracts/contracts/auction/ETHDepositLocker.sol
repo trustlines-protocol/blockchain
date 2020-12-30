@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.6.5;
 
 import "./BaseDepositLocker.sol";
 
@@ -17,15 +17,18 @@ contract ETHDepositLocker is BaseDepositLocker {
         BaseDepositLocker._init(_releaseTimestamp, _slasher, _depositorsProxy);
     }
 
-    function _receive(uint amount) internal {
+    function _receive(uint amount) internal override {
         require(msg.value == amount, "did not receive correct amount");
     }
 
-    function _transfer(address payable recipient, uint amount) internal {
+    function _transfer(address payable recipient, uint amount)
+        internal
+        override
+    {
         recipient.transfer(amount);
     }
 
-    function _burn(uint amount) internal {
+    function _burn(uint amount) internal override {
         address(0).transfer(amount);
     }
 }

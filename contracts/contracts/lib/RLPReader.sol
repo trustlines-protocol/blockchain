@@ -27,7 +27,7 @@
     with small modifications
  */
 
-pragma solidity ^0.5.8;
+pragma solidity ^0.6.5;
 
 library RLPReader {
     uint8 constant STRING_SHORT_START = 0x80;

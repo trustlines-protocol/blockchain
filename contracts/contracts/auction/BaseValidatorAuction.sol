@@ -1,9 +1,9 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.6.5;
 
 import "../lib/Ownable.sol";
 import "./BaseDepositLocker.sol";
 
-contract BaseValidatorAuction is Ownable {
+abstract contract BaseValidatorAuction is Ownable {
     uint constant MAX_UINT = ~uint(0);
 
     // auction constants set on deployment
@@ -114,7 +114,7 @@ contract BaseValidatorAuction is Ownable {
         auctionState = AuctionState.Deployed;
     }
 
-    function() external payable stateIs(AuctionState.Started) {
+    receive() external payable stateIs(AuctionState.Started) {
         bid();
     }
 
@@ -212,6 +212,7 @@ contract BaseValidatorAuction is Ownable {
     function currentPrice()
         public
         view
+        virtual
         stateIs(AuctionState.Started)
         returns (uint)
     {
@@ -296,11 +297,11 @@ contract BaseValidatorAuction is Ownable {
     }
 
     /// Hooks for derived contracts to process bids
-    function _receiveBid(uint amount) internal;
+    function _receiveBid(uint amount) internal virtual;
 
-    function _transfer(address payable recipient, uint amount) internal;
+    function _transfer(address payable recipient, uint amount) internal virtual;
 
-    function _deposit(uint slotPrice, uint totalValue) internal;
+    function _deposit(uint slotPrice, uint totalValue) internal virtual;
 
-    function _getBidAmount(uint slotPrice) internal view returns (uint);
+    function _getBidAmount(uint slotPrice) internal view virtual returns (uint);
 }
