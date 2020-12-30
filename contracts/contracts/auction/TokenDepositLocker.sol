@@ -43,3 +43,5 @@ contract TokenDepositLocker is BaseDepositLocker {
         token.burn(amount);
     }
 }
+
+// SPDX-License-Identifier: MIT

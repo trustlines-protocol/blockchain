@@ -166,3 +166,5 @@ contract ValidatorSet {
         emit InitiateChange(blockhash(block.number - 1), _newValidatorSet);
     }
 }
+
+// SPDX-License-Identifier: MIT

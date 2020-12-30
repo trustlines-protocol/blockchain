@@ -32,3 +32,5 @@ contract ETHDepositLocker is BaseDepositLocker {
         payable(0).transfer(amount);
     }
 }
+
+// SPDX-License-Identifier: MIT

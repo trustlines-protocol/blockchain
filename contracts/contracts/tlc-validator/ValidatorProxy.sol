@@ -44,3 +44,5 @@ contract ValidatorProxy {
         return validators;
     }
 }
+
+// SPDX-License-Identifier: MIT

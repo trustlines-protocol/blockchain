@@ -94,3 +94,5 @@ library EquivocationInspector {
         require(stepOne == stepTwo, "The two blocks have different steps.");
     }
 }
+
+// SPDX-License-Identifier: MIT

@@ -15,3 +15,5 @@ contract TestTokenValidatorAuction is TokenValidatorAuction {
         return 100;
     }
 }
+
+// SPDX-License-Identifier: MIT

@@ -9,3 +9,5 @@ contract TestValidatorProxy is ValidatorProxy {
         systemAddress = _systemAddress;
     }
 }
+
+// SPDX-License-Identifier: MIT

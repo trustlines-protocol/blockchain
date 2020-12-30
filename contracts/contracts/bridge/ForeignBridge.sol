@@ -20,3 +20,5 @@ contract ForeignBridge {
         trustlinesNetworkToken.burn(balance);
     }
 }
+
+// SPDX-License-Identifier: MIT

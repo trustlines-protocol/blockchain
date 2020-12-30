@@ -53,3 +53,5 @@ contract TokenValidatorAuction is BaseValidatorAuction {
         return slotPrice;
     }
 }
+
+// SPDX-License-Identifier: MIT

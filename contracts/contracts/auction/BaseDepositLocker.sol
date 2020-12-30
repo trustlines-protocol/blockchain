@@ -166,3 +166,5 @@ abstract contract BaseDepositLocker is DepositLockerInterface, Ownable {
 
     function _burn(uint amount) internal virtual;
 }
+
+// SPDX-License-Identifier: MIT

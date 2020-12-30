@@ -5,3 +5,5 @@ contract TestNonPayableRecipient {
         require(false, "do not pay me");
     }
 }
+
+// SPDX-License-Identifier: MIT

@@ -37,3 +37,5 @@ contract TestValidatorSet is ValidatorSet {
         systemAddress = originSystemAddress;
     }
 }
+
+// SPDX-License-Identifier: MIT

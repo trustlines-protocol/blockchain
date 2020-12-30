@@ -43,3 +43,5 @@ contract FakeNetworkToken is TrustlinesNetworkToken {
         emit Transfer(from, to, value + 2);
     }
 }
+
+// SPDX-License-Identifier: MIT

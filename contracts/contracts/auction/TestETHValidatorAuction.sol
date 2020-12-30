@@ -15,3 +15,5 @@ contract TestETHValidatorAuction is ETHValidatorAuction {
         return 100;
     }
 }
+
+// SPDX-License-Identifier: MIT

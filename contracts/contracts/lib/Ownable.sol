@@ -28,3 +28,5 @@ contract Ownable {
         }
     }
 }
+
+// SPDX-License-Identifier: MIT

@@ -29,3 +29,5 @@ contract TestEquivocationInspector {
         );
     }
 }
+
+// SPDX-License-Identifier: MIT

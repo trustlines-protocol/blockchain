@@ -58,3 +58,5 @@ contract ValidatorSlasher is Ownable {
         depositContract.slash(validator);
     }
 }
+
+// SPDX-License-Identifier: MIT

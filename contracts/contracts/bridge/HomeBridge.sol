@@ -228,3 +228,5 @@ contract HomeBridge {
         return true;
     }
 }
+
+// SPDX-License-Identifier: MIT

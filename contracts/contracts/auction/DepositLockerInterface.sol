@@ -4,3 +4,5 @@ pragma solidity ^0.8.0;
 abstract contract DepositLockerInterface {
     function slash(address _depositorToBeSlashed) public virtual;
 }
+
+// SPDX-License-Identifier: MIT

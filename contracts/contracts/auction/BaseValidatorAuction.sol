@@ -305,3 +305,5 @@ abstract contract BaseValidatorAuction is Ownable {
 
     function _getBidAmount(uint slotPrice) internal view virtual returns (uint);
 }
+
+// SPDX-License-Identifier: MIT
