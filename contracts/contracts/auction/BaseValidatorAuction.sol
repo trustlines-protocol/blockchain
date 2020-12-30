@@ -1,4 +1,4 @@
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 import "../lib/Ownable.sol";
 import "./BaseDepositLocker.sol";
@@ -252,7 +252,7 @@ abstract contract BaseValidatorAuction is Ownable {
 
         bids[msg.sender] = lowestSlotPrice;
 
-        _transfer(msg.sender, valueToWithdraw);
+        _transfer(payable(msg.sender), valueToWithdraw);
     }
 
     function withdrawAfterAuctionFailed()
@@ -265,7 +265,7 @@ abstract contract BaseValidatorAuction is Ownable {
 
         bids[msg.sender] = 0;
 
-        _transfer(msg.sender, valueToWithdraw);
+        _transfer(payable(msg.sender), valueToWithdraw);
     }
 
     function transitionToDepositPending()

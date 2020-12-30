@@ -1,4 +1,4 @@
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 import "../lib/Ownable.sol";
 import "./DepositLockerInterface.sol";
@@ -121,7 +121,7 @@ abstract contract BaseDepositLocker is DepositLockerInterface, Ownable {
         require(canWithdraw[msg.sender], "cannot withdraw from sender");
 
         canWithdraw[msg.sender] = false;
-        _transfer(msg.sender, valuePerDepositor);
+        _transfer(payable(msg.sender), valuePerDepositor);
         emit Withdraw(msg.sender, valuePerDepositor);
     }
 

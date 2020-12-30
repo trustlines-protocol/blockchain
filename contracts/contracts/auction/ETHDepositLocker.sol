@@ -1,4 +1,4 @@
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 import "./BaseDepositLocker.sol";
 
@@ -29,6 +29,6 @@ contract ETHDepositLocker is BaseDepositLocker {
     }
 
     function _burn(uint amount) internal override {
-        address(0).transfer(amount);
+        payable(0).transfer(amount);
     }
 }

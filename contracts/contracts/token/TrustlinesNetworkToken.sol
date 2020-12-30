@@ -1,4 +1,4 @@
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 import "../lib/SafeMath.sol";
 
@@ -7,9 +7,9 @@ contract TrustlinesNetworkToken {
 
     // We use MAX_UINT value for an approval of infinite value
     uint constant MAX_UINT = 2**256 - 1;
-    string private _name;
-    string private _symbol;
-    uint8 private _decimals;
+    string public name;
+    string public symbol;
+    uint8 public decimals;
     uint256 private _totalSupply;
 
     mapping(address => uint256) private _balances;
@@ -23,15 +23,15 @@ contract TrustlinesNetworkToken {
     );
 
     constructor(
-        string memory name,
-        string memory symbol,
-        uint8 decimals,
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals,
         address preMintAddress,
         uint256 preMintAmount
     ) {
-        _name = name;
-        _symbol = symbol;
-        _decimals = decimals;
+        name = _name;
+        symbol = _symbol;
+        decimals = _decimals;
 
         _mint(preMintAddress, preMintAmount);
     }
@@ -56,18 +56,6 @@ contract TrustlinesNetworkToken {
         returns (uint256)
     {
         return _allowances[owner][spender];
-    }
-
-    function name() public view returns (string memory) {
-        return _name;
-    }
-
-    function symbol() public view returns (string memory) {
-        return _symbol;
-    }
-
-    function decimals() public view returns (uint8) {
-        return _decimals;
     }
 
     /**

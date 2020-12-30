@@ -1,4 +1,4 @@
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 /**
     This contract gives access to an up to date validator set on chain, that can be used by any other contracts.
