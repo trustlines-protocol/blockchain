@@ -1,4 +1,4 @@
-pragma solidity ^0.6.5;
+pragma solidity ^0.7.0;
 
 import "../lib/Ownable.sol";
 import "./DepositLockerInterface.sol";
@@ -115,7 +115,7 @@ abstract contract BaseDepositLocker is DepositLockerInterface, Ownable {
 
     function withdraw() public isInitialised isDeposited {
         require(
-            now >= releaseTimestamp,
+            block.timestamp >= releaseTimestamp,
             "The deposit cannot be withdrawn yet."
         );
         require(canWithdraw[msg.sender], "cannot withdraw from sender");
@@ -148,7 +148,7 @@ abstract contract BaseDepositLocker is DepositLockerInterface, Ownable {
     ) internal {
         require(!initialized, "The contract is already initialised.");
         require(
-            _releaseTimestamp > now,
+            _releaseTimestamp > block.timestamp,
             "The release timestamp must be in the future"
         );
 

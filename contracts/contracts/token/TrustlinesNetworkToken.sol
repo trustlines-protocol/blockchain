@@ -1,4 +1,4 @@
-pragma solidity ^0.6.5;
+pragma solidity ^0.7.0;
 
 import "../lib/SafeMath.sol";
 
@@ -28,7 +28,7 @@ contract TrustlinesNetworkToken {
         uint8 decimals,
         address preMintAddress,
         uint256 preMintAmount
-    ) public {
+    ) {
         _name = name;
         _symbol = symbol;
         _decimals = decimals;

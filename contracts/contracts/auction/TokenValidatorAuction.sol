@@ -1,4 +1,4 @@
-pragma solidity ^0.6.5;
+pragma solidity ^0.7.0;
 
 import "../lib/Ownable.sol";
 import "./TokenDepositLocker.sol";
@@ -16,7 +16,6 @@ contract TokenValidatorAuction is BaseValidatorAuction {
         TokenDepositLocker _depositLocker,
         IERC20 _bidToken
     )
-        public
         BaseValidatorAuction(
             _startPriceInWei,
             _auctionDurationInDays,
@@ -47,7 +46,7 @@ contract TokenValidatorAuction is BaseValidatorAuction {
 
     function _getBidAmount(uint slotPrice)
         internal
-        view
+        pure
         override
         returns (uint)
     {

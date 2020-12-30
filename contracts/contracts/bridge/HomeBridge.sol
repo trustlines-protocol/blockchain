@@ -1,4 +1,4 @@
-pragma solidity ^0.6.5;
+pragma solidity ^0.7.0;
 
 import "../tlc-validator/ValidatorProxy.sol";
 
@@ -28,7 +28,7 @@ contract HomeBridge {
     ValidatorProxy public validatorProxy;
     uint public validatorsRequiredPercent;
 
-    constructor(ValidatorProxy _proxy, uint _validatorsRequiredPercent) public {
+    constructor(ValidatorProxy _proxy, uint _validatorsRequiredPercent) {
         require(
             address(_proxy) != address(0),
             "proxy must not be the zero address!"

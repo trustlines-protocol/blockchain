@@ -9,13 +9,12 @@ It can be deployed with the following command
 Please note that all of the functions are public.
 */
 
-pragma solidity ^0.6.5;
+pragma solidity ^0.7.0;
 
 import "./TrustlinesNetworkToken.sol";
 
 contract FakeNetworkToken is TrustlinesNetworkToken {
     constructor()
-        public
         TrustlinesNetworkToken("TestToken", "tt", 18, msg.sender, 1 ether)
     {}
 

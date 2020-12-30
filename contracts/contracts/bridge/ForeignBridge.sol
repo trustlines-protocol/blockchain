@@ -1,4 +1,4 @@
-pragma solidity ^0.6.5;
+pragma solidity ^0.7.0;
 
 import "../token/TrustlinesNetworkToken.sol";
 
@@ -6,7 +6,7 @@ contract ForeignBridge {
     uint public requiredBlockConfirmations = 8;
     TrustlinesNetworkToken public trustlinesNetworkToken;
 
-    constructor(TrustlinesNetworkToken _trustlinesNetworkToken) public {
+    constructor(TrustlinesNetworkToken _trustlinesNetworkToken) {
         require(
             address(_trustlinesNetworkToken) != address(0),
             "Token contract can not be on the zero address!"

@@ -1,4 +1,4 @@
-pragma solidity ^0.6.5;
+pragma solidity ^0.7.0;
 
 import "../lib/Ownable.sol";
 import "./BaseDepositLocker.sol";
@@ -69,7 +69,7 @@ abstract contract BaseValidatorAuction is Ownable {
         uint _minimalNumberOfParticipants,
         uint _maximalNumberOfParticipants,
         BaseDepositLocker _depositLocker
-    ) public {
+    ) {
         require(
             _auctionDurationInDays > 0,
             "Duration of auction must be greater than 0"
@@ -119,9 +119,9 @@ abstract contract BaseValidatorAuction is Ownable {
     }
 
     function bid() public payable stateIs(AuctionState.Started) {
-        require(now > startTime, "It is too early to bid.");
+        require(block.timestamp > startTime, "It is too early to bid.");
         require(
-            now <= startTime + auctionDurationInDays * 1 days,
+            block.timestamp <= startTime + auctionDurationInDays * 1 days,
             "Auction has already ended."
         );
         uint slotPrice = currentPrice();
@@ -142,7 +142,7 @@ abstract contract BaseValidatorAuction is Ownable {
         }
 
         depositLocker.registerDepositor(msg.sender);
-        emit BidSubmitted(msg.sender, bidAmount, slotPrice, now);
+        emit BidSubmitted(msg.sender, bidAmount, slotPrice, block.timestamp);
 
         if (bidders.length == maximalNumberOfParticipants) {
             transitionToDepositPending();
@@ -157,9 +157,9 @@ abstract contract BaseValidatorAuction is Ownable {
         );
 
         auctionState = AuctionState.Started;
-        startTime = now;
+        startTime = block.timestamp;
 
-        emit AuctionStarted(now);
+        emit AuctionStarted(block.timestamp);
     }
 
     function depositBids() public stateIs(AuctionState.DepositPending) {
@@ -170,7 +170,7 @@ abstract contract BaseValidatorAuction is Ownable {
 
     function closeAuction() public stateIs(AuctionState.Started) {
         require(
-            now > startTime + auctionDurationInDays * 1 days,
+            block.timestamp > startTime + auctionDurationInDays * 1 days,
             "The auction cannot be closed this early."
         );
         assert(bidders.length < maximalNumberOfParticipants);
@@ -216,8 +216,8 @@ abstract contract BaseValidatorAuction is Ownable {
         stateIs(AuctionState.Started)
         returns (uint)
     {
-        assert(now >= startTime);
-        uint secondsSinceStart = (now - startTime);
+        assert(block.timestamp >= startTime);
+        uint secondsSinceStart = (block.timestamp - startTime);
         return priceAtElapsedTime(secondsSinceStart);
     }
 
@@ -273,7 +273,7 @@ abstract contract BaseValidatorAuction is Ownable {
         stateIs(AuctionState.Started)
     {
         auctionState = AuctionState.DepositPending;
-        closeTime = now;
+        closeTime = block.timestamp;
         emit AuctionDepositPending(closeTime, lowestSlotPrice, bidders.length);
     }
 
@@ -282,7 +282,7 @@ abstract contract BaseValidatorAuction is Ownable {
         stateIs(AuctionState.Started)
     {
         auctionState = AuctionState.Failed;
-        closeTime = now;
+        closeTime = block.timestamp;
         emit AuctionFailed(closeTime, bidders.length);
     }
 

@@ -1,4 +1,4 @@
-pragma solidity ^0.6.5;
+pragma solidity ^0.7.0;
 
 /**
     This contract gives access to an up to date validator set on chain, that can be used by any other contracts.
@@ -11,7 +11,7 @@ contract ValidatorProxy {
     address public systemAddress = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
     address[] public validators;
 
-    constructor(address[] memory _validators) public {
+    constructor(address[] memory _validators) {
         validators = _validators;
 
         for (uint i = 0; i < _validators.length; i++) {

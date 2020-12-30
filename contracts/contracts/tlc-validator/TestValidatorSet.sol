@@ -1,4 +1,4 @@
-pragma solidity ^0.6.5;
+pragma solidity ^0.7.0;
 
 /*
   The sole purpose of this file is to be able to test the internal functions of the ValidatorSet
@@ -7,7 +7,7 @@ pragma solidity ^0.6.5;
 import "./ValidatorSet.sol";
 
 contract TestValidatorSet is ValidatorSet {
-    constructor(address _systemAddress) public {
+    constructor(address _systemAddress) {
         systemAddress = _systemAddress;
     }
 
