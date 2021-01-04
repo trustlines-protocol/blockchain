@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.8.0;
 
 import "../lib/RLPReader.sol";
 import "../lib/ECDSA.sol";
@@ -94,3 +94,5 @@ library EquivocationInspector {
         require(stepOne == stepTwo, "The two blocks have different steps.");
     }
 }
+
+// SPDX-License-Identifier: MIT

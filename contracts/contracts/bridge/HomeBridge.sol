@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.8.0;
 
 import "../tlc-validator/ValidatorProxy.sol";
 
@@ -28,7 +28,7 @@ contract HomeBridge {
     ValidatorProxy public validatorProxy;
     uint public validatorsRequiredPercent;
 
-    constructor(ValidatorProxy _proxy, uint _validatorsRequiredPercent) public {
+    constructor(ValidatorProxy _proxy, uint _validatorsRequiredPercent) {
         require(
             address(_proxy) != address(0),
             "proxy must not be the zero address!"
@@ -161,7 +161,7 @@ contract HomeBridge {
                 confirmingValidators[i] = confirmingValidators[
                     confirmingValidators.length - 1
                 ];
-                confirmingValidators.length--;
+                confirmingValidators.pop();
             }
         }
     }
@@ -228,3 +228,5 @@ contract HomeBridge {
         return true;
     }
 }
+
+// SPDX-License-Identifier: MIT

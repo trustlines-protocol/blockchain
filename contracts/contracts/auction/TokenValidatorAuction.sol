@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.8.0;
 
 import "../lib/Ownable.sol";
 import "./TokenDepositLocker.sol";
@@ -16,7 +16,6 @@ contract TokenValidatorAuction is BaseValidatorAuction {
         TokenDepositLocker _depositLocker,
         IERC20 _bidToken
     )
-        public
         BaseValidatorAuction(
             _startPriceInWei,
             _auctionDurationInDays,
@@ -28,21 +27,31 @@ contract TokenValidatorAuction is BaseValidatorAuction {
         bidToken = _bidToken;
     }
 
-    function _receiveBid(uint amount) internal {
+    function _receiveBid(uint amount) internal override {
         require(msg.value == 0, "Auction does not accept ETH for bidding");
         bidToken.transferFrom(msg.sender, address(this), amount);
     }
 
-    function _transfer(address payable recipient, uint amount) internal {
+    function _transfer(address payable recipient, uint amount)
+        internal
+        override
+    {
         bidToken.transfer(recipient, amount);
     }
 
-    function _deposit(uint slotPrice, uint totalValue) internal {
+    function _deposit(uint slotPrice, uint totalValue) internal override {
         bidToken.approve(address(depositLocker), totalValue);
         depositLocker.deposit(slotPrice);
     }
 
-    function _getBidAmount(uint slotPrice) internal view returns (uint) {
+    function _getBidAmount(uint slotPrice)
+        internal
+        pure
+        override
+        returns (uint)
+    {
         return slotPrice;
     }
 }
+
+// SPDX-License-Identifier: MIT

@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.8.0;
 
 /*
   The sole purpose of this file is to be able to test the internal functions of the ValidatorSet
@@ -7,7 +7,7 @@ pragma solidity ^0.5.8;
 import "./ValidatorSet.sol";
 
 contract TestValidatorSet is ValidatorSet {
-    constructor(address _systemAddress) public {
+    constructor(address _systemAddress) {
         systemAddress = _systemAddress;
     }
 
@@ -37,3 +37,5 @@ contract TestValidatorSet is ValidatorSet {
         systemAddress = originSystemAddress;
     }
 }
+
+// SPDX-License-Identifier: MIT
