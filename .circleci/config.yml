@@ -27,7 +27,7 @@ commands:
           name: Create python virtualenv
           command: |
             make setup-venv
-            pip install -c constraints.txt pip==20.2.4 wheel setuptools
+            pip install pip wheel setuptools
 
   config-auction-path:
     description: "Set environment variables and change PATH for auction"
@@ -137,11 +137,11 @@ jobs:
           name: Create python virtualenv
           command: |
             make setup-venv
-            pip install -c constraints.txt pip wheel setuptools
+            pip install pip wheel setuptools
       - run:
           name: Install pre-commit
           command: |
-            pip install -c constraints.txt pre-commit
+            pip install pre-commit
       - restore_cache:
           key: pre-commit-cache-{{ checksum ".pre-commit-config.yaml" }}
       - run:
@@ -211,7 +211,7 @@ jobs:
       - run:
           name: Install black
           command: |
-            venv/bin/pip install -c constraints.txt black
+            venv/bin/pip install $(grep black== requirements.txt)
       - run:
           name: Run black
           command: |
@@ -228,7 +228,7 @@ jobs:
       - run:
           name: Install flake8
           command: |
-            venv/bin/pip install -c constraints.txt flake8 pep8-naming
+            venv/bin/pip install flake8 pep8-naming
       - run:
           name: Run flake8
           command: |
@@ -240,14 +240,14 @@ jobs:
       - checkout
       - config-contracts-path
       - restore_cache:
-          key: contracts-venv-{{ checksum "contracts/constraints.txt" }}-{{ checksum "contracts/requirements.txt" }}
+          key: contracts-venv-{{ checksum "contracts/requirements.txt" }}
       - create-venv
       - run:
           name: Install requirements
           command: |
             make -C contracts install-requirements
       - save_cache:
-          key: contracts-venv-{{ checksum "contracts/constraints.txt" }}-{{ checksum "contracts/requirements.txt" }}
+          key: contracts-venv-{{ checksum "contracts/requirements.txt" }}
           paths:
             - contracts-venv
       - run:
@@ -274,14 +274,14 @@ jobs:
       - checkout
       - config-quickstart-path
       - restore_cache:
-          key: quickstart-venv-{{ checksum "quickstart/constraints.txt" }}-{{ checksum "quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
+          key: quickstart-venv-{{ checksum "quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
       - create-venv
       - run:
           name: Install requirements
           command: |
             make -C quickstart install-requirements
       - save_cache:
-          key: quickstart-venv-{{ checksum "quickstart/constraints.txt" }}-{{ checksum "quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
+          key: quickstart-venv-{{ checksum "quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
           paths:
             - venv
       - run:
@@ -309,14 +309,14 @@ jobs:
       - checkout
       - config-auction-path
       - restore_cache:
-          key: auction-venv-{{ checksum "deploy-tools/auction-deploy/constraints.txt" }}-{{ checksum "deploy-tools/auction-deploy/requirements.txt" }}
+          key: auction-venv-{{ checksum "deploy-tools/auction-deploy/requirements.txt" }}
       - create-venv
       - run:
           name: Install requirements
           command: |
             make -C deploy-tools/auction-deploy install-requirements
       - save_cache:
-          key: auction-venv-{{ checksum "deploy-tools/auction-deploy/constraints.txt" }}-{{ checksum "deploy-tools/auction-deploy/requirements.txt" }}
+          key: auction-venv-{{ checksum "deploy-tools/auction-deploy/requirements.txt" }}
           paths:
             - auction-venv
       - run:
@@ -347,14 +347,14 @@ jobs:
       - checkout
       - config-validator-set-path
       - restore_cache:
-          key: validator-set-venv-{{ checksum "deploy-tools/validator-set-deploy/constraints.txt" }}-{{ checksum "deploy-tools/validator-set-deploy/requirements.txt" }}
+          key: validator-set-venv-{{ checksum "deploy-tools/validator-set-deploy/requirements.txt" }}
       - create-venv
       - run:
           name: Install requirements and validator-set deploy tool
           command: |
             make -C deploy-tools/validator-set-deploy install
       - save_cache:
-          key: validator-set-venv-{{ checksum "deploy-tools/validator-set-deploy/constraints.txt" }}-{{ checksum "deploy-tools/validator-set-deploy/requirements.txt" }}
+          key: validator-set-venv-{{ checksum "deploy-tools/validator-set-deploy/requirements.txt" }}
           paths:
             - validator-set-venv
       - persist_to_workspace:
@@ -379,14 +379,14 @@ jobs:
       - checkout
       - config-bridge-deploy-path
       - restore_cache:
-          key: bridge-deploy-venv-{{ checksum "deploy-tools/bridge-deploy/constraints.txt" }}-{{ checksum "deploy-tools/bridge-deploy/requirements.txt" }}
+          key: bridge-deploy-venv-{{ checksum "deploy-tools/bridge-deploy/requirements.txt" }}
       - create-venv
       - run:
           name: Install requirements and bridge deploy tool
           command: |
             make -C deploy-tools/bridge-deploy install
       - save_cache:
-          key: bridge-deploy-venv-{{ checksum "deploy-tools/bridge-deploy/constraints.txt" }}-{{ checksum "deploy-tools/bridge-deploy/requirements.txt" }}
+          key: bridge-deploy-venv-{{ checksum "deploy-tools/bridge-deploy/requirements.txt" }}
           paths:
             - bridge-deploy-venv
       - persist_to_workspace:
@@ -411,18 +411,18 @@ jobs:
       - checkout
       - config-bridge-validator-path
       - restore_cache:
-          key: bridge-validator-venv-{{ checksum "bridge/constraints.txt" }}-{{ checksum "bridge/requirements.txt" }}
+          key: bridge-validator-venv-{{ checksum "bridge/requirements.txt" }}
       - create-venv
       - run:
           name: Install codecov
           command: |
-            pip install -c constraints.txt codecov
+            pip install codecov
       - run:
           name: Install requirements and bridge validator client
           command: |
             make -C bridge install
       - save_cache:
-          key: bridge-validator-venv-{{ checksum "bridge/constraints.txt" }}-{{ checksum "bridge/requirements.txt" }}
+          key: bridge-validator-venv-{{ checksum "bridge/requirements.txt" }}
           paths:
             - bridge-validator-venv
       - run:
