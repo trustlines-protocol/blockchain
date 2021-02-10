@@ -51,6 +51,7 @@ $(SUB_TEST_E2E): test-end2end-%: setup-venv
 $(VIRTUAL_ENV):
 	@echo "==> Creating virtualenv in $(VIRTUAL_ENV)"
 	python3 -m venv $@
+	$@/bin/pip install --upgrade pip
 
 setup-venv: $(VIRTUAL_ENV)
 	@echo "==> Using virtualenv in $(VIRTUAL_ENV)"
