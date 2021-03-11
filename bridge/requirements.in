@@ -1,7 +1,7 @@
 attrs
 Click
 eth-utils
-gevent
+gevent>=20.5.1  # earlier versions fail to install with python3.9
 marshmallow
 toml
 web3
