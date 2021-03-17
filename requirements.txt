@@ -155,9 +155,9 @@ flake8==3.8.1
     #   -r requirements-dev.txt
     #   flake8-polyfill
     #   flake8-string-format
-gevent==20.5.0
+gevent==21.1.2
     # via -r bridge/requirements.in
-greenlet==0.4.15
+greenlet==1.0.0
     # via gevent
 hexbytes==0.2.0
     # via
@@ -168,19 +168,6 @@ identify==1.4.15
     # via pre-commit
 idna==2.9
     # via requests
-importlib-metadata==1.6.0
-    # via
-    #   flake8
-    #   importlib-resources
-    #   jsonschema
-    #   pluggy
-    #   pre-commit
-    #   pytest
-    #   virtualenv
-importlib-resources==1.5.0
-    # via
-    #   pre-commit
-    #   virtualenv
 ipfshttpclient==0.4.13.2
     # via web3
 jsonschema==3.2.0
@@ -223,7 +210,7 @@ parsimonious==0.8.1
     # via eth-abi
 pathspec==0.8.0
     # via black
-pendulum==2.1.0
+pendulum==2.1.2
     # via -r deploy-tools/auction-deploy/requirements.in
 pep8-naming==0.10.0
     # via
@@ -301,7 +288,7 @@ pytest==5.4.2
     #   pytest-cov
 python-dateutil==2.8.1
     # via pendulum
-pytzdata==2019.3
+pytzdata==2020.1
     # via pendulum
 pyyaml==5.3.1
     # via pre-commit
@@ -364,9 +351,7 @@ typed-ast==1.4.1
     #   black
     #   mypy
 typing-extensions==3.7.4.2
-    # via
-    #   mypy
-    #   web3
+    # via mypy
 urllib3==1.25.9
     # via requests
 varint==1.0.2
@@ -386,10 +371,10 @@ web3==5.9.0
     #   contract-deploy-tools
 websockets==8.1
     # via web3
-zipp==3.1.0
-    # via
-    #   importlib-metadata
-    #   importlib-resources
+zope.event==4.5.0
+    # via gevent
+zope.interface==5.2.0
+    # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip

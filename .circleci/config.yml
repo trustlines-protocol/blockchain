@@ -3,7 +3,7 @@ version: 2.1
 executors:
   ubuntu-builder:
     docker:
-      - image: trustlines/builder:master37
+      - image: trustlines/builder:master61
         environment:
           - SOLC_VERSION=v0.8.0
     working_directory: ~/repo
@@ -11,69 +11,207 @@ executors:
 # define some common commands
 # see https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21
 commands:
-  config-contracts-path:
-    description: "Set environment variables and change PATH for contracts"
-    steps:
-    - run:
-        name: Configuring PATH
-        command: |
-          echo 'export PATH=~/bin:~/repo/contracts-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
-          echo 'export VIRTUAL_ENV=~/repo/contracts-venv' >> ${BASH_ENV}
-
   create-venv:
     description: "Create venv"
+    parameters:
+      python-version:
+        default: "3.8"
+        type: string
+      venv-name:
+        type: string
     steps:
       - run:
           name: Create python virtualenv
           command: |
-            make setup-venv
-            pip install pip wheel setuptools
+            python<<parameters.python-version>> -m venv <<parameters.venv-name>>
+            pip install -U pip wheel setuptools
 
-  config-auction-path:
-    description: "Set environment variables and change PATH for auction"
-    steps:
-      - run:
-          name: Configuring PATH
-          command: |
-            echo 'export PATH=~/bin:~/repo/auction-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
-            echo 'export VIRTUAL_ENV=~/repo/auction-venv' >> ${BASH_ENV}
-
-  config-validator-set-path:
-    description: "Set environment variables and change PATH for validator-set"
-    steps:
-      - run:
-          name: Configuring PATH
-          command: |
-            echo 'export PATH=~/bin:~/repo/validator-set-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
-            echo 'export VIRTUAL_ENV=~/repo/validator-set-venv' >> ${BASH_ENV}
-
-  config-bridge-deploy-path:
-    description: "Set environment variables and change PATH for bridge deployment"
-    steps:
-      - run:
-          name: Configuring PATH
-          command: |
-            echo 'export PATH=~/bin:~/repo/bridge-deploy-venv/bin:${PATH}' >> ${BASH_ENV}
-            echo 'export VIRTUAL_ENV=~/repo/bridge-deploy-venv' >> ${BASH_ENV}
-
-  config-bridge-validator-path:
-    description: "Set environment variables and change PATH for bridge validator"
-    steps:
-      - run:
-          name: Configuring PATH
-          command: |
-            echo 'export PATH=~/bin:~/repo/bridge-validator-venv/bin:${PATH}' >> ${BASH_ENV}
-            echo 'export VIRTUAL_ENV=~/repo/bridge-validator-venv' >> ${BASH_ENV}
-
-  config-quickstart-path:
-    description: "Set environment variables and change PATH for contracts"
+  config-path-for-venv:
+    description: "Set environment variables and change PATH for using a venv"
+    parameters:
+      venv-name:
+        type: string
     steps:
     - run:
         name: Configuring PATH
         command: |
-          echo 'export PATH=~/bin:~/repo/quickstart-venv/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
-          echo 'export VIRTUAL_ENV=~/repo/quickstart-venv' >> ${BASH_ENV}
+          echo 'export PATH=~/bin:~/repo/<<parameters.venv-name>>/bin:~/.cargo/bin:${PATH}; . ~/.nvm/nvm.sh' >> ${BASH_ENV}
+          echo 'export VIRTUAL_ENV=~/repo/<<parameters.venv-name>>' >> ${BASH_ENV}
 
+  install-contracts:
+    parameters:
+      python-version:
+        default: "3.8"
+        type: string
+    steps:
+      - checkout
+      - config-path-for-venv:
+          venv-name: contracts-venv
+      - restore_cache:
+          key: contracts-venv<<parameters.python-version>>-{{ checksum "contracts/requirements.txt" }}
+      - create-venv:
+          python-version: <<parameters.python-version>>
+          venv-name: contracts-venv
+      - run:
+          name: Install requirements
+          command: |
+            make -C contracts install-requirements
+      - save_cache:
+          key: contracts-venv<<parameters.python-version>>-{{ checksum "contracts/requirements.txt" }}
+          paths:
+            - contracts-venv
+      - run:
+          name: Install contracts
+          command: |
+            make -C contracts install
+
+  install-auction:
+    parameters:
+      python-version:
+        default: "3.8"
+        type: string
+    steps:
+      - checkout
+      - config-path-for-venv:
+          venv-name: auction-venv
+      - restore_cache:
+          key: auction-venv<<parameters.python-version>>-{{ checksum "deploy-tools/auction-deploy/requirements.txt" }}
+      - create-venv:
+          python-version: <<parameters.python-version>>
+          venv-name: auction-venv
+      - run:
+          name: Install requirements
+          command: |
+            make -C deploy-tools/auction-deploy install-requirements
+      - save_cache:
+          key: auction-venv<<parameters.python-version>>-{{ checksum "deploy-tools/auction-deploy/requirements.txt" }}
+          paths:
+            - auction-venv
+      - run:
+          name: Install auction-deploy
+          command: |
+            make -C deploy-tools/auction-deploy install
+
+  install-validator-set:
+    parameters:
+      python-version:
+        default: "3.8"
+        type: string
+    steps:
+      - checkout
+      - config-path-for-venv:
+          venv-name: validator-set-venv
+      - restore_cache:
+          key: validator-set-venv<<parameters.python-version>>-{{ checksum "deploy-tools/validator-set-deploy/requirements.txt" }}
+      - create-venv:
+          python-version: <<parameters.python-version>>
+          venv-name: validator-set-venv
+      - run:
+          name: Install requirements
+          command: |
+            make -C deploy-tools/validator-set-deploy install-requirements
+      - save_cache:
+          key: validator-set-venv<<parameters.python-version>>-{{ checksum "deploy-tools/validator-set-deploy/requirements.txt" }}
+          paths:
+            - validator-set-venv
+      - run:
+          name: Install validator-set-deploy
+          command: |
+            make -C deploy-tools/validator-set-deploy install
+
+  install-bridge-deploy:
+    parameters:
+      python-version:
+        default: "3.8"
+        type: string
+    steps:
+      - checkout
+      - config-path-for-venv:
+          venv-name: bridge-deploy-venv
+      - restore_cache:
+          key: bridge-deploy-venv<<parameters.python-version>>-{{ checksum "deploy-tools/bridge-deploy/requirements.txt" }}
+      - create-venv:
+          python-version: <<parameters.python-version>>
+          venv-name: bridge-deploy-venv
+      - run:
+          name: Install requirements
+          command: |
+            make -C deploy-tools/bridge-deploy install-requirements
+      - save_cache:
+          key: bridge-deploy-venv<<parameters.python-version>>-{{ checksum "deploy-tools/bridge-deploy/requirements.txt" }}
+          paths:
+            - bridge-deploy-venv
+      - run:
+          name: Install bridge-deploy
+          command: |
+            make -C deploy-tools/bridge-deploy install
+      - run:
+          name: Build dist
+          command: |
+            make -C bridge dist
+
+  config-bridge-validator-path:
+    description: "Set environment variables and change PATH for bridge validator"
+    steps:
+      - config-path-for-venv:
+          venv-name: bridge-validator-venv
+
+  install-bridge-validator:
+    parameters:
+      python-version:
+        default: "3.8"
+        type: string
+    steps:
+      - checkout
+      - config-bridge-validator-path
+      - restore_cache:
+          key: bridge-validator-venv<<parameters.python-version>>-{{ checksum "bridge/requirements.txt" }}
+      - create-venv:
+          python-version: <<parameters.python-version>>
+          venv-name: bridge-validator-venv
+      - run:
+          name: Install codecov
+          command: |
+            pip install codecov
+      - run:
+          name: Install requirements
+          command: |
+            make -C bridge install-requirements
+      - save_cache:
+          key: bridge-validator-venv<<parameters.python-version>>-{{ checksum "bridge/requirements.txt" }}
+          paths:
+            - bridge-validator-venv
+      - run:
+          name: Install validator-set-deploy
+          command: |
+            make -C deploy-tools/auction-deploy install
+
+  install-quickstart:
+    parameters:
+      python-version:
+        default: "3.8"
+        type: string
+    steps:
+      - checkout
+      - config-path-for-venv:
+          venv-name: quickstart-venv
+      - restore_cache:
+          key: quickstart-venv<<parameters.python-version>>-{{ checksum "quickstart/requirements.txt" }}-{{ checksum "requirements-dev.txt"}}
+      - create-venv:
+          python-version: <<parameters.python-version>>
+          venv-name: quickstart-venv
+      - run:
+          name: Install requirements
+          command: |
+            make -C quickstart install-requirements
+      - save_cache:
+          key: quickstart-venv<<parameters.python-version>>-{{ checksum "quickstart/requirements.txt" }}-{{ checksum "requirements-dev.txt"}}
+          paths:
+            - quickstart-venv
+      - run:
+          name: Install quickstart
+          command: |
+            make -C quickstart install
 
   upload-docker-image:
     description: "Deploy docker image"
@@ -152,7 +290,6 @@ jobs:
           key: pre-commit-cache-{{ checksum ".pre-commit-config.yaml" }}
           paths:
             - ~/.cache/pre-commit
-
       - run:
           name: Run shfmt
           command: |
@@ -200,6 +337,7 @@ jobs:
       - run:
           name: Run mypy
           command: pre-commit run -a mypy
+
   run-black:
     executor: ubuntu-builder
     steps:
@@ -234,105 +372,56 @@ jobs:
           command: |
             venv/bin/flake8 --exclude venv .
 
-  install-contracts:
+  install-contracts-py38:
     executor: ubuntu-builder
     steps:
-      - checkout
-      - config-contracts-path
-      - restore_cache:
-          key: contracts-venv-{{ checksum "contracts/requirements.txt" }}
-      - create-venv
-      - run:
-          name: Install requirements
-          command: |
-            make -C contracts install-requirements
-      - save_cache:
-          key: contracts-venv-{{ checksum "contracts/requirements.txt" }}
-          paths:
-            - contracts-venv
-      - run:
-          name: Install contracts
-          command: |
-            make -C contracts install
+      - install-contracts:
+          python-version: "3.8"
       - persist_to_workspace:
           root: "~"
           paths:
             - repo
+
+  install-contracts-py39:
+    executor: ubuntu-builder
+    steps:
+      - install-contracts:
+          python-version: "3.9"
+
   pytest-contracts:
     executor: ubuntu-builder
     steps:
       - attach_workspace:
           at: '~'
-      - config-contracts-path
+      - config-path-for-venv:
+          venv-name: contracts-venv
       - run:
           name: Run pytest
           command: pytest contracts/tests
 
-  install-quickstart:
+  install-auction-py38:
     executor: ubuntu-builder
     steps:
-      - checkout
-      - config-quickstart-path
-      - restore_cache:
-          key: quickstart-venv-{{ checksum "quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
-      - create-venv
-      - run:
-          name: Install requirements
-          command: |
-            make -C quickstart install-requirements
-      - save_cache:
-          key: quickstart-venv-{{ checksum "quickstart/requirements.txt"}}-{{ checksum "requirements-dev.txt"}}
-          paths:
-            - venv
-      - run:
-          name: Install quickstart
-          command: |
-            make -C quickstart install
+      - install-auction:
+          python-version: "3.8"
       - persist_to_workspace:
           root: "~"
           paths:
             - repo
-  test-quickstart:
-    executor: ubuntu-builder
-    steps:
-      - attach_workspace:
-          at: '~'
-      - config-quickstart-path
-      - run:
-          name: Run tests
-          command: |
-            make -C quickstart test
 
-  install-auction:
+  install-auction-py39:
     executor: ubuntu-builder
     steps:
-      - checkout
-      - config-auction-path
-      - restore_cache:
-          key: auction-venv-{{ checksum "deploy-tools/auction-deploy/requirements.txt" }}
-      - create-venv
-      - run:
-          name: Install requirements
-          command: |
-            make -C deploy-tools/auction-deploy install-requirements
-      - save_cache:
-          key: auction-venv-{{ checksum "deploy-tools/auction-deploy/requirements.txt" }}
-          paths:
-            - auction-venv
-      - run:
-          name: Install auction-deploy
-          command: |
-            make -C deploy-tools/auction-deploy install
-      - persist_to_workspace:
-          root: "~"
-          paths:
-            - repo
+      - install-auction:
+          python-version: "3.9"
+
   pytest-auction:
     executor: ubuntu-builder
     steps:
       - attach_workspace:
           at: '~'
-      - config-auction-path
+      - config-path-for-venv:
+          venv-name: auction-venv
       - run:
           name: Run pytest
           command: |
@@ -340,100 +429,78 @@ jobs:
             make test
             cd ..
 
-
-  install-validator-set:
+  install-validator-set-py38:
     executor: ubuntu-builder
     steps:
-      - checkout
-      - config-validator-set-path
-      - restore_cache:
-          key: validator-set-venv-{{ checksum "deploy-tools/validator-set-deploy/requirements.txt" }}
-      - create-venv
-      - run:
-          name: Install requirements and validator-set deploy tool
-          command: |
-            make -C deploy-tools/validator-set-deploy install
-      - save_cache:
-          key: validator-set-venv-{{ checksum "deploy-tools/validator-set-deploy/requirements.txt" }}
-          paths:
-            - validator-set-venv
+      - install-validator-set:
+          python-version: "3.8"
       - persist_to_workspace:
           root: "~"
           paths:
             - repo
+
+  install-validator-set-py39:
+    executor: ubuntu-builder
+    steps:
+      - install-validator-set:
+          python-version: "3.9"
+
   pytest-validator-set:
     executor: ubuntu-builder
     steps:
       - attach_workspace:
           at: '~'
-      - config-validator-set-path
+      - config-path-for-venv:
+          venv-name: validator-set-venv
       - run:
           name: Run pytest
           command: |
             make -C deploy-tools/validator-set-deploy test
 
-
-  install-bridge-deploy:
+  install-bridge-deploy-py38:
     executor: ubuntu-builder
     steps:
-      - checkout
-      - config-bridge-deploy-path
-      - restore_cache:
-          key: bridge-deploy-venv-{{ checksum "deploy-tools/bridge-deploy/requirements.txt" }}
-      - create-venv
-      - run:
-          name: Install requirements and bridge deploy tool
-          command: |
-            make -C deploy-tools/bridge-deploy install
-      - save_cache:
-          key: bridge-deploy-venv-{{ checksum "deploy-tools/bridge-deploy/requirements.txt" }}
-          paths:
-            - bridge-deploy-venv
+      - install-bridge-deploy:
+          python-version: "3.8"
       - persist_to_workspace:
           root: "~"
           paths:
             - repo
+
+  install-bridge-deploy-py39:
+    executor: ubuntu-builder
+    steps:
+      - install-bridge-deploy:
+          python-version: "3.9"
+
   pytest-bridge-deploy:
     executor: ubuntu-builder
     steps:
       - attach_workspace:
           at: '~'
-      - config-bridge-deploy-path
+      - config-path-for-venv:
+          venv-name: bridge-deploy-venv
       - run:
           name: Run pytest
           command: |
             make -C deploy-tools/bridge-deploy test
 
-
-  install-bridge-validator:
+  install-bridge-validator-py38:
     executor: ubuntu-builder
     steps:
-      - checkout
-      - config-bridge-validator-path
-      - restore_cache:
-          key: bridge-validator-venv-{{ checksum "bridge/requirements.txt" }}
-      - create-venv
-      - run:
-          name: Install codecov
-          command: |
-            pip install codecov
-      - run:
-          name: Install requirements and bridge validator client
-          command: |
-            make -C bridge install
-      - save_cache:
-          key: bridge-validator-venv-{{ checksum "bridge/requirements.txt" }}
-          paths:
-            - bridge-validator-venv
-      - run:
-          name: Build dist
-          command: |
-            make -C bridge dist
-
+      - install-bridge-validator:
+          python-version: "3.8"
       - persist_to_workspace:
           root: "~"
           paths:
             - repo
+
+  install-bridge-validator-py39:
+    executor: ubuntu-builder
+    steps:
+      - install-bridge-validator:
+          python-version: "3.9"
+
   upload-pypi-bridge-validator:
     executor: ubuntu-builder
     steps:
@@ -465,6 +532,7 @@ jobs:
             codecov --flags bridge_unit --prefix bridge/
       - store_test_results:
           path: bridge/test-results
+
   end2end-test-bridge-validator:
     executor: ubuntu-builder
     steps:
@@ -477,7 +545,6 @@ jobs:
             cd bridge
             make test-end2end-coverage
             codecov --flags bridge_end2end --prefix bridge/
-
 
   build-bridge-image:
     executor: ubuntu-builder
@@ -500,6 +567,7 @@ jobs:
           root: '~'
           paths:
             - images
+
   compare-bridge-image:
     executor: ubuntu-builder
     environment:
@@ -517,6 +585,7 @@ jobs:
             docker load --input ~/images/$LOCAL_IMAGE.tar
       - compare-docker-image:
           repo: "trustlines/bridge-next:pre-release"
+
   deploy-bridge-image:
     executor: ubuntu-builder
     environment:
@@ -529,8 +598,8 @@ jobs:
             echo ': \"${DOCKER_REPO:=trustlines/bridge-next}\"' >> ${BASH_ENV}
           # this allows us to set DOCKER_REPO from circleci when building in a
           # fork. makes testing easier.
-
       - upload-docker-image
+
   deploy-bridge-release-image:
     executor: ubuntu-builder
     environment:
@@ -550,6 +619,33 @@ jobs:
             docker tag $LOCAL_IMAGE $DOCKER_REPO:latest
             docker push $DOCKER_REPO:latest
 
+  install-quickstart-py38:
+    executor: ubuntu-builder
+    steps:
+      - install-quickstart:
+          python-version: "3.8"
+      - persist_to_workspace:
+          root: "~"
+          paths:
+            - repo
+
+  install-quickstart-py39:
+    executor: ubuntu-builder
+    steps:
+      - install-quickstart:
+          python-version: "3.9"
+
+  test-quickstart:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+          at: '~'
+      - config-path-for-venv:
+          venv-name: quickstart-venv
+      - run:
+          name: Run tests
+          command: |
+            make -C quickstart test
 
   build-quickstart-image:
     executor: ubuntu-builder
@@ -608,6 +704,7 @@ jobs:
           root: "~"
           paths:
             - images
+
   build-tlbc-docker-image:
     executor: ubuntu-builder
     environment:
@@ -768,7 +865,6 @@ jobs:
             docker tag $LOCAL_IMAGE $DOCKER_REPO:latest
             docker push $DOCKER_REPO:latest
 
-
 workflows:
   version: 2
   default:
@@ -776,36 +872,45 @@ workflows:
       - pre-commit-checks
       - run-black
       - run-flake8
-      - install-contracts
+
+      - install-contracts-py38
+      - install-contracts-py39
       - pytest-contracts:
           requires:
-            - install-contracts
-      - install-auction
+            - install-contracts-py38
+
+      - install-auction-py38
+      - install-auction-py39
       - pytest-auction:
           requires:
-            - install-auction
-      - install-validator-set
+            - install-auction-py38
+
+      - install-validator-set-py38
+      - install-validator-set-py39
       - pytest-validator-set:
           requires:
-            - install-validator-set
+            - install-validator-set-py38
 
-      - install-bridge-deploy
+      - install-bridge-deploy-py38
+      - install-bridge-deploy-py39
       - pytest-bridge-deploy:
           requires:
-            - install-bridge-deploy
+            - install-bridge-deploy-py38
 
-      - install-bridge-validator
+      - install-bridge-validator-py38
+      - install-bridge-validator-py39
       - pytest-bridge-validator:
           requires:
-            - install-bridge-validator
+            - install-bridge-validator-py38
       - end2end-test-bridge-validator:
           requires:
-            - install-bridge-validator
+            - install-bridge-validator-py38
 
-      - install-quickstart
+      - install-quickstart-py38
+      - install-quickstart-py39
       - test-quickstart:
           requires:
-            - install-quickstart
+            - install-quickstart-py38
 
       - build-bridge-image
       - build-testnet-docker-image
@@ -843,7 +948,6 @@ workflows:
             - pre-commit-checks
             - run-black
             - run-flake8
-            - install-contracts
             - pytest-contracts
             - build-testnet-docker-image
             - smoketest-testnet-docker-image
@@ -933,7 +1037,6 @@ workflows:
             - pre-commit-checks
             - run-black
             - run-flake8
-            - install-contracts
             - pytest-contracts
             - build-testnet-docker-image
             - smoketest-testnet-docker-image
@@ -949,7 +1052,6 @@ workflows:
             - pre-commit-checks
             - run-black
             - run-flake8
-            - install-contracts
             - pytest-contracts
             - build-tlbc-docker-image
             - smoketest-tlbc-docker-image
@@ -976,7 +1078,6 @@ workflows:
                 - bridge/pre-release
                 - bridge/release
           requires:
-            - install-bridge-validator
             - pre-commit-checks
             - run-black
             - run-flake8
