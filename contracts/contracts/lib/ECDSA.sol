@@ -23,7 +23,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-pragma solidity ^0.5.8;
+pragma solidity ^0.8.0;
 
 /**
  * @title Elliptic curve signature operations
@@ -96,3 +96,5 @@ library ECDSA {
             );
     }
 }
+
+// SPDX-License-Identifier: MIT

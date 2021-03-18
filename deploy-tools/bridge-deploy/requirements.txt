@@ -1,5 +1,1 @@
-click
-web3
-contract-deploy-tools
-nodeenv
--r ../../requirements-dev.txt
+../../requirements.txt

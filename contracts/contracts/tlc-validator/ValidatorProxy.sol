@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.8.0;
 
 /**
     This contract gives access to an up to date validator set on chain, that can be used by any other contracts.
@@ -11,7 +11,7 @@ contract ValidatorProxy {
     address public systemAddress = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
     address[] public validators;
 
-    constructor(address[] memory _validators) public {
+    constructor(address[] memory _validators) {
         validators = _validators;
 
         for (uint i = 0; i < _validators.length; i++) {
@@ -44,3 +44,5 @@ contract ValidatorProxy {
         return validators;
     }
 }
+
+// SPDX-License-Identifier: MIT

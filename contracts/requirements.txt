@@ -1,6 +1,1 @@
-web3
-rlp
-eth-utils
-contract-deploy-tools>=0.3.0
-attrs
--r ../requirements-dev.txt
+../requirements.txt

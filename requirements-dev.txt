@@ -5,7 +5,7 @@ pytest
 pytest-cov
 setuptools_scm
 bump2version
-pip-tools
+pip-tools>=5.5.0
 
 # flake8 and plugins, keep them in sync with pre-commit's config
 flake8

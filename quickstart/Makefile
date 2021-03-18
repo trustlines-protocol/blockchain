@@ -11,11 +11,10 @@ test: install
 install-requirements: .installed
 
 install: install-requirements
-	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -e .
+	$(VIRTUAL_ENV)/bin/pip install -r requirements.txt -e .
 
-.installed: constraints.txt requirements.txt $(VIRTUAL_ENV)
-	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt pip wheel setuptools
-	$(VIRTUAL_ENV)/bin/pip install -c constraints.txt -r requirements.txt
+.installed: requirements.txt $(VIRTUAL_ENV)
+	$(VIRTUAL_ENV)/bin/pip install -r requirements.txt pip wheel setuptools
 	@echo "This file controls for make if the requirements in your virtual env are up to date" > $@
 
 $(VIRTUAL_ENV):

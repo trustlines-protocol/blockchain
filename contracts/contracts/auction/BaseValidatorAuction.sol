@@ -1,9 +1,9 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.8.0;
 
 import "../lib/Ownable.sol";
 import "./BaseDepositLocker.sol";
 
-contract BaseValidatorAuction is Ownable {
+abstract contract BaseValidatorAuction is Ownable {
     uint constant MAX_UINT = ~uint(0);
 
     // auction constants set on deployment
@@ -69,7 +69,7 @@ contract BaseValidatorAuction is Ownable {
         uint _minimalNumberOfParticipants,
         uint _maximalNumberOfParticipants,
         BaseDepositLocker _depositLocker
-    ) public {
+    ) {
         require(
             _auctionDurationInDays > 0,
             "Duration of auction must be greater than 0"
@@ -114,14 +114,14 @@ contract BaseValidatorAuction is Ownable {
         auctionState = AuctionState.Deployed;
     }
 
-    function() external payable stateIs(AuctionState.Started) {
+    receive() external payable stateIs(AuctionState.Started) {
         bid();
     }
 
     function bid() public payable stateIs(AuctionState.Started) {
-        require(now > startTime, "It is too early to bid.");
+        require(block.timestamp > startTime, "It is too early to bid.");
         require(
-            now <= startTime + auctionDurationInDays * 1 days,
+            block.timestamp <= startTime + auctionDurationInDays * 1 days,
             "Auction has already ended."
         );
         uint slotPrice = currentPrice();
@@ -142,7 +142,7 @@ contract BaseValidatorAuction is Ownable {
         }
 
         depositLocker.registerDepositor(msg.sender);
-        emit BidSubmitted(msg.sender, bidAmount, slotPrice, now);
+        emit BidSubmitted(msg.sender, bidAmount, slotPrice, block.timestamp);
 
         if (bidders.length == maximalNumberOfParticipants) {
             transitionToDepositPending();
@@ -157,9 +157,9 @@ contract BaseValidatorAuction is Ownable {
         );
 
         auctionState = AuctionState.Started;
-        startTime = now;
+        startTime = block.timestamp;
 
-        emit AuctionStarted(now);
+        emit AuctionStarted(block.timestamp);
     }
 
     function depositBids() public stateIs(AuctionState.DepositPending) {
@@ -170,7 +170,7 @@ contract BaseValidatorAuction is Ownable {
 
     function closeAuction() public stateIs(AuctionState.Started) {
         require(
-            now > startTime + auctionDurationInDays * 1 days,
+            block.timestamp > startTime + auctionDurationInDays * 1 days,
             "The auction cannot be closed this early."
         );
         assert(bidders.length < maximalNumberOfParticipants);
@@ -212,11 +212,12 @@ contract BaseValidatorAuction is Ownable {
     function currentPrice()
         public
         view
+        virtual
         stateIs(AuctionState.Started)
         returns (uint)
     {
-        assert(now >= startTime);
-        uint secondsSinceStart = (now - startTime);
+        assert(block.timestamp >= startTime);
+        uint secondsSinceStart = (block.timestamp - startTime);
         return priceAtElapsedTime(secondsSinceStart);
     }
 
@@ -251,7 +252,7 @@ contract BaseValidatorAuction is Ownable {
 
         bids[msg.sender] = lowestSlotPrice;
 
-        _transfer(msg.sender, valueToWithdraw);
+        _transfer(payable(msg.sender), valueToWithdraw);
     }
 
     function withdrawAfterAuctionFailed()
@@ -264,7 +265,7 @@ contract BaseValidatorAuction is Ownable {
 
         bids[msg.sender] = 0;
 
-        _transfer(msg.sender, valueToWithdraw);
+        _transfer(payable(msg.sender), valueToWithdraw);
     }
 
     function transitionToDepositPending()
@@ -272,7 +273,7 @@ contract BaseValidatorAuction is Ownable {
         stateIs(AuctionState.Started)
     {
         auctionState = AuctionState.DepositPending;
-        closeTime = now;
+        closeTime = block.timestamp;
         emit AuctionDepositPending(closeTime, lowestSlotPrice, bidders.length);
     }
 
@@ -281,7 +282,7 @@ contract BaseValidatorAuction is Ownable {
         stateIs(AuctionState.Started)
     {
         auctionState = AuctionState.Failed;
-        closeTime = now;
+        closeTime = block.timestamp;
         emit AuctionFailed(closeTime, bidders.length);
     }
 
@@ -296,11 +297,13 @@ contract BaseValidatorAuction is Ownable {
     }
 
     /// Hooks for derived contracts to process bids
-    function _receiveBid(uint amount) internal;
+    function _receiveBid(uint amount) internal virtual;
 
-    function _transfer(address payable recipient, uint amount) internal;
+    function _transfer(address payable recipient, uint amount) internal virtual;
 
-    function _deposit(uint slotPrice, uint totalValue) internal;
+    function _deposit(uint slotPrice, uint totalValue) internal virtual;
 
-    function _getBidAmount(uint slotPrice) internal view returns (uint);
+    function _getBidAmount(uint slotPrice) internal view virtual returns (uint);
 }
+
+// SPDX-License-Identifier: MIT

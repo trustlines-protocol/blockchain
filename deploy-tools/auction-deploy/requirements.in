@@ -1,0 +1,5 @@
+click
+web3
+contract-deploy-tools
+pendulum>=2.1.1  # lower versions do not install with python3.9
+-r ../../requirements-dev.txt

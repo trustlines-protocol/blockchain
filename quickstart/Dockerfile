@@ -21,17 +21,14 @@ ENV PATH="/opt/quickstart/bin:${PATH}"
 WORKDIR /src
 
 # enable docker to cache some install steps
-COPY quickstart/constraints.txt /src/
-RUN pip install -c constraints.txt pip wheel setuptools
+RUN pip install pip wheel setuptools
 COPY quickstart/requirements.txt /src/
 # remove development dependencies from the end of the file
 RUN sed -i -e '/development dependencies/q' requirements.txt
-RUN pip install -c constraints.txt -r requirements.txt
+RUN pip install -r requirements.txt
 
 COPY quickstart /src/
-# we need to copy the symlinked file again, otherwise we have a symlink that points to nowhere
-COPY quickstart/constraints.txt /src/
-RUN pip install -c constraints.txt .
+RUN pip install .
 
 # get docker as standalone binary
 RUN curl -L https://download.docker.com/`uname -s | awk '{print tolower($0)}'`/static/stable/`uname -m`/docker-19.03.2.tgz --output /tmp/docker.tgz &&  \

@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.8.0;
 
 import "../lib/Ownable.sol";
 import "./DepositLockerInterface.sol";
@@ -20,7 +20,7 @@ import "./DepositLockerInterface.sol";
   is left to be implemented in the derived contracts.
 */
 
-contract BaseDepositLocker is DepositLockerInterface, Ownable {
+abstract contract BaseDepositLocker is DepositLockerInterface, Ownable {
     bool public initialized = false;
     bool public deposited = false;
 
@@ -74,7 +74,7 @@ contract BaseDepositLocker is DepositLockerInterface, Ownable {
         _;
     }
 
-    function() external {}
+    fallback() external {}
 
     function registerDepositor(address _depositor)
         public
@@ -115,18 +115,19 @@ contract BaseDepositLocker is DepositLockerInterface, Ownable {
 
     function withdraw() public isInitialised isDeposited {
         require(
-            now >= releaseTimestamp,
+            block.timestamp >= releaseTimestamp,
             "The deposit cannot be withdrawn yet."
         );
         require(canWithdraw[msg.sender], "cannot withdraw from sender");
 
         canWithdraw[msg.sender] = false;
-        _transfer(msg.sender, valuePerDepositor);
+        _transfer(payable(msg.sender), valuePerDepositor);
         emit Withdraw(msg.sender, valuePerDepositor);
     }
 
     function slash(address _depositorToBeSlashed)
         public
+        override
         isInitialised
         isDeposited
     {
@@ -147,7 +148,7 @@ contract BaseDepositLocker is DepositLockerInterface, Ownable {
     ) internal {
         require(!initialized, "The contract is already initialised.");
         require(
-            _releaseTimestamp > now,
+            _releaseTimestamp > block.timestamp,
             "The release timestamp must be in the future"
         );
 
@@ -159,9 +160,11 @@ contract BaseDepositLocker is DepositLockerInterface, Ownable {
     }
 
     /// Hooks for derived contracts to receive, transfer and burn the deposits
-    function _receive(uint amount) internal;
+    function _receive(uint amount) internal virtual;
 
-    function _transfer(address payable recipient, uint amount) internal;
+    function _transfer(address payable recipient, uint amount) internal virtual;
 
-    function _burn(uint amount) internal;
+    function _burn(uint amount) internal virtual;
 }
+
+// SPDX-License-Identifier: MIT

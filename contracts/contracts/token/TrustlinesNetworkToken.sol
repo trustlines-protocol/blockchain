@@ -1,15 +1,11 @@
-pragma solidity ^0.5.8;
-
-import "../lib/SafeMath.sol";
+pragma solidity ^0.8.0;
 
 contract TrustlinesNetworkToken {
-    using SafeMath for uint256;
-
     // We use MAX_UINT value for an approval of infinite value
-    uint constant MAX_UINT = 2**256 - 1;
-    string private _name;
-    string private _symbol;
-    uint8 private _decimals;
+    uint constant MAX_UINT = type(uint).max;
+    string public name;
+    string public symbol;
+    uint8 public decimals;
     uint256 private _totalSupply;
 
     mapping(address => uint256) private _balances;
@@ -23,15 +19,15 @@ contract TrustlinesNetworkToken {
     );
 
     constructor(
-        string memory name,
-        string memory symbol,
-        uint8 decimals,
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals,
         address preMintAddress,
         uint256 preMintAmount
-    ) public {
-        _name = name;
-        _symbol = symbol;
-        _decimals = decimals;
+    ) {
+        name = _name;
+        symbol = _symbol;
+        decimals = _decimals;
 
         _mint(preMintAddress, preMintAmount);
     }
@@ -56,18 +52,6 @@ contract TrustlinesNetworkToken {
         returns (uint256)
     {
         return _allowances[owner][spender];
-    }
-
-    function name() public view returns (string memory) {
-        return _name;
-    }
-
-    function symbol() public view returns (string memory) {
-        return _symbol;
-    }
-
-    function decimals() public view returns (uint8) {
-        return _decimals;
     }
 
     /**
@@ -133,7 +117,7 @@ contract TrustlinesNetworkToken {
 
         uint _allowance = _allowances[sender][msg.sender];
         if (_allowance < MAX_UINT) {
-            uint updatedAllowance = _allowance.sub(amount);
+            uint updatedAllowance = _allowance - amount;
             _approve(sender, msg.sender, updatedAllowance);
         }
         return true;
@@ -146,8 +130,8 @@ contract TrustlinesNetworkToken {
     function _mint(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: mint to the zero address");
 
-        _totalSupply = _totalSupply.add(amount);
-        _balances[account] = _balances[account].add(amount);
+        _totalSupply += amount;
+        _balances[account] += amount;
         emit Transfer(address(0), account, amount);
     }
 
@@ -159,8 +143,8 @@ contract TrustlinesNetworkToken {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
-        _balances[sender] = _balances[sender].sub(amount);
-        _balances[recipient] = _balances[recipient].add(amount);
+        _balances[sender] -= amount;
+        _balances[recipient] += amount;
         emit Transfer(sender, recipient, amount);
     }
 
@@ -179,8 +163,8 @@ contract TrustlinesNetworkToken {
     function _burn(address account, uint256 value) internal {
         require(account != address(0), "ERC20: burn from the zero address");
 
-        _totalSupply = _totalSupply.sub(value);
-        _balances[account] = _balances[account].sub(value);
+        _totalSupply -= value;
+        _balances[account] -= value;
         emit Transfer(account, address(0), value);
     }
 }
@@ -201,3 +185,5 @@ the following conditions:
 The above copyright notice and this permission notice shall be included
 in all copies or substantial portions of the Software.
 */
+
+// SPDX-License-Identifier: MIT

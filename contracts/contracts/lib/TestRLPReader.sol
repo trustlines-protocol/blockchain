@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.8.0;
 
 /**
  * The sole purpose of this file is to be able to test the internal functions
@@ -8,7 +8,7 @@ pragma solidity ^0.5.8;
 import "./RLPReader.sol";
 
 contract TestRLPReader {
-    function() external {}
+    fallback() external {}
 
     function testToRlpItem(bytes memory _rlpEncodedItem)
         public
@@ -73,3 +73,5 @@ contract TestRLPReader {
         return RLPReader.toUint(RLPReader.toList(rlpItem)[index]);
     }
 }
+
+// SPDX-License-Identifier: MIT
