@@ -19,14 +19,13 @@ RUN apt-get -y update \
 
 RUN python3 -m venv /opt/bridge
 ENV PATH "/opt/bridge/bin:${PATH}"
-COPY ./constraints.txt .
-RUN pip install -c constraints.txt pip wheel setuptools
+RUN pip install pip wheel setuptools
 COPY ./bridge/requirements.txt .
 
 # remove development dependencies from the end of the file
 RUN sed -i -e '/development dependencies/q' requirements.txt
 
-RUN pip install -c constraints.txt -r requirements.txt
+RUN pip install -r requirements.txt
 
 COPY ./bridge ./bridge/
 RUN pip install ./bridge/

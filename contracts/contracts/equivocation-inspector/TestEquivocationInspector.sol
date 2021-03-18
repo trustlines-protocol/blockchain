@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.8.0;
 
 /*
   The sole purpose of this file is to be able to test the internal functions of the EquivocationInspector.
@@ -29,3 +29,5 @@ contract TestEquivocationInspector {
         );
     }
 }
+
+// SPDX-License-Identifier: MIT

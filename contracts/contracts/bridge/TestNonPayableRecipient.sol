@@ -1,7 +1,9 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.8.0;
 
 contract TestNonPayableRecipient {
-    function() external payable {
+    receive() external payable {
         require(false, "do not pay me");
     }
 }
+
+// SPDX-License-Identifier: MIT

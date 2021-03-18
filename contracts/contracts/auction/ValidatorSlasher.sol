@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.8.0;
 
 import "../lib/Ownable.sol";
 import "./DepositLockerInterface.sol";
@@ -8,7 +8,7 @@ contract ValidatorSlasher is Ownable {
     bool public initialized = false;
     DepositLockerInterface public depositContract;
 
-    function() external {}
+    fallback() external {}
 
     function init(address _depositContractAddress) external onlyOwner {
         require(!initialized, "The contract is already initialized.");
@@ -58,3 +58,5 @@ contract ValidatorSlasher is Ownable {
         depositContract.slash(validator);
     }
 }
+
+// SPDX-License-Identifier: MIT

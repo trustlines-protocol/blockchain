@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.8.0;
 
 import "./BaseDepositLocker.sol";
 import "../token/IERC20.sol";
@@ -26,17 +26,22 @@ contract TokenDepositLocker is BaseDepositLocker {
         token = _token;
     }
 
-    function _receive(uint amount) internal {
+    function _receive(uint amount) internal override {
         require(msg.value == 0, "Token locker contract does not accept ETH");
         // to receive erc20 tokens, we have to pull them
         token.transferFrom(msg.sender, address(this), amount);
     }
 
-    function _transfer(address payable recipient, uint amount) internal {
+    function _transfer(address payable recipient, uint amount)
+        internal
+        override
+    {
         token.transfer(recipient, amount);
     }
 
-    function _burn(uint amount) internal {
+    function _burn(uint amount) internal override {
         token.burn(amount);
     }
 }
+
+// SPDX-License-Identifier: MIT
