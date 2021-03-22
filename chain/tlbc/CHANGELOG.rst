@@ -2,7 +2,12 @@
 Change Log
 ==========
 
+1.4.1 (2021-03-22)
+______________________________
+- Fork tlbc to a validator set list as the proposed smart contract set didn't kick in due to not having finality
+
 1.4.0 (2021-03-18)
+______________________________
 - Fork tlbc to update validator set after token validator auction of 2021-03-16
 
 1.3.0 (2020-12-18)
