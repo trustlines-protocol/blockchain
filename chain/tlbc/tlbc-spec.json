@@ -64,6 +64,45 @@
                         },
                         "6259269": {
                             "safeContract": "0xeC09F68EfDb98D0e875e06e44155d18bF8D03051"
+                        },
+                        "6264701":  {
+                            "list": [
+                                "0x01Dd97Bcb406472E22c69977D9D27B69A951dE1C",
+                                "0x090Bb0C7CDF2f9e15AD2b61A17f49616A07f909D",
+                                "0x0Db461Aeb7e2BD1551662Fb52Cbdd2eDa85469A7",
+                                "0x107FA40357876Ef058Ea308c5AA6b6627f565A7d",
+                                "0x155E447a3c15B81600092ee269039f6ABE7FF5d5",
+                                "0x236dAA98f115caa9991A3894ae387CDc13eaaD1B",
+                                "0x31CB71956B44593bE1632c55C2DdCd5e0b6F6F6e",
+                                "0x393A5853e9dB00312C4D4d5a621Ff0c84f7ABE21",
+                                "0x3F5948DE91A72e6885F18EEC428F465d65e5A686",
+                                "0x4386Eb681DBf8b97A70577dDF46415EC4992c257",
+                                "0x47C2F6f13C97C4a4D36B4E695F26d648Ee053ec4",
+                                "0x576ac8189481f675a179ea96eAa8d8D03c490dE3",
+                                "0x591e7DD518098fD7291B1236cf96E44AcDB4A8De",
+                                "0x60B1F0766399E7B2596472e521722AAD8C02ffCb",
+                                "0x6a0CD7ec77a3014C35dbE2F8D18A512E962BDc47",
+                                "0x8034ac9fd4C2f5dD86f729d28890dfe10DF142c9",
+                                "0x93229CB7baEb9a72454BAFE8405aEE3Bb2e9846f",
+                                "0x9e557934B1f2488D37c1F739aC34eE1907C562C0",
+                                "0xA82289545e7a75aF8618c1Bd6816C26e3a8AE09c",
+                                "0xA92BE7F728Ef585851212b1cEB318B8A2fBacc96",
+                                "0xB3a68b00986277fFfDAeeDF9534b4BD5E9f8A489",
+                                "0xBaf45CaA21a43594b72D6201346F42f4D346f973",
+                                "0xC3101956Af63cE87F1a5aeE04901629878357c82",
+                                "0xCD28a9eB40aBF71320A4d3b526E1eC1E090C163C",
+                                "0xD31e0eEC136353bc77b49d1FEE27292A8b5bdc93",
+                                "0xDc4d0D92Ae598Ae497a7Fa824BFf7f9492df691B",
+                                "0xE7d98003523dfE6E3571Cb3795033545461eb28D",
+                                "0xEF18997A4189a72952051B5bBf1DbE471403425c",
+                                "0xF5D14eE784e6D780f25E34Af31dC2e7Ca908ab88",
+                                "0xa9Cf168388a5fd05d11B7Ba77338dD9712208bd8",
+                                "0xbD1273e122bE429A4b59FDD61ED2db5ad88Cf0C3",
+                                "0xe18c37a7da4F40eea18F55C5525244E1C4a3645b",
+                                "0xe82823ADF6cE7EaFb23E72485b6f30499c9208A9",
+                                "0xe92DaCDF367e6039c8bC356fF8CbA29F64Ba756B",
+                                "0xeb124Cf478E4146a9CeDEFFdf8088cd90271010D"
+                            ]
                         }
                     }
                 },
