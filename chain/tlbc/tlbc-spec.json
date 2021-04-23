@@ -103,6 +103,9 @@
                                 "0xe92DaCDF367e6039c8bC356fF8CbA29F64Ba756B",
                                 "0xeb124Cf478E4146a9CeDEFFdf8088cd90271010D"
                             ]
+                        },
+                        "6752600": {
+                            "safeContract": "0xc29356fE0151f5369f72B997A0D6108A31Bf9feE"
                         }
                     }
                 },
