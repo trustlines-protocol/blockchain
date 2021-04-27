@@ -1,7 +1,7 @@
 ==========
 Change Log
 ==========
-1.5.0 (2021-03-22)
+1.5.0 (2021-04-26)
 -------------------------------
 - Fork tlbc to a validator set contract `0xc29356fE0151f5369f72B997A0D6108A31Bf9feE` and remove inactive validators
 
