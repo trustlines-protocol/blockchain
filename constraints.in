@@ -1,0 +1,2 @@
+pyyaml>=5.4  # To avoid pyyaml vulnerability
+py>=1.10.0  # To avoid py vulnerability
