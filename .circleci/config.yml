@@ -182,9 +182,13 @@ commands:
           paths:
             - bridge-validator-venv
       - run:
-          name: Install validator-set-deploy
+          name: Install bridge validator
           command: |
-            make -C deploy-tools/auction-deploy install
+            make -C bridge install
+      - run:
+          name: Build bridge validator dist
+          command: |
+            make -C bridge dist
 
   install-quickstart:
     parameters:
