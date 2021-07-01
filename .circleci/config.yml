@@ -505,6 +505,16 @@ jobs:
       - install-bridge-validator:
           python-version: "3.9"
 
+  check-dist-bridge-validator:
+    executor: ubuntu-builder
+    steps:
+      - attach_workspace:
+         at: '~'
+      - run:
+          name: Check dist
+          command: |
+            twine check bridge/dist/*
+
   upload-pypi-bridge-validator:
     executor: ubuntu-builder
     steps:
@@ -1073,6 +1083,10 @@ workflows:
             - pytest-bridge-validator
             - build-bridge-image
           context: docker-release-credentials
+
+      - check-dist-bridge-validator:
+          requires:
+            - install-bridge-validator-py38
 
       - upload-pypi-bridge-validator:
           context: pypi-credentials
